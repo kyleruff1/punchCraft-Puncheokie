@@ -129,3 +129,12 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
   2. Read 0x1070, 0x1071, 0x1073, 0x1074 in a diagnostic pass and log the raw bytes.
   3. Once M01-04 official-app HCI captures land, correlate the first writes the vendor app sends to 0x1079 with what appears on 0x1077 in response.
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H08 — Lenovo TB125FU (Tab M10 Plus 3rd Gen) blocks HCI snoop logging
+
+- **Status:** confirmed
+- **Confidence:** high
+- **Claim:** On this Lenovo build (Android 13 / API 33 / MediaTek), the Bluetooth HCI snoop-log toggle in Developer options does not persist to `persist.bluetooth.btsnoopenable` and Lenovo's BluetoothManagerService does not honor the AOSP-standard `settings put secure bluetooth_hci_log 1` fallback. Without root or a system-UID app, HCI snoop capture is not achievable on this tablet.
+- **Evidence:** 2026-08-22. After confirming Developer options enabled (`development_settings_enabled = 1`) and cycling Bluetooth off/on, `getprop persist.bluetooth.btsnoopenable` returns empty; `dumpsys bluetooth_manager` shows `mSnoopLogSettingAtEnable = empty`; writing both `secure.bluetooth_hci_log = 1` and `global.bluetooth_hci_log = 1` via `settings put` succeeds but does not affect the persist prop; the `/data/misc/bluetooth/logs/` directory is not readable without root.
+- **Consequence:** HCI snoop capture for §12.2 controlled scenarios must either (a) use a different Android tablet whose Dev options toggle works, (b) use a rooted device, or (c) skip HCI capture entirely and reverse-engineer via active probing (writing byte sequences to the tracker's command channel and observing notification responses on our own BLE stack).
+- **Owner / date:** Kyle + Claude, 2026-08-22.
