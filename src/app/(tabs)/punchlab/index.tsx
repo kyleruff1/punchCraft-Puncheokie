@@ -1,5 +1,6 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 
 export default function PunchLabLanding() {
   return (
@@ -16,6 +17,7 @@ export default function PunchLabLanding() {
           ),
         }}
       />
+      <TrackerBadgesRow />
       <Text style={styles.title}>PunchLab</Text>
       <Text style={styles.paragraph}>
         PunchLab is the studio surface for building freeform combos, drills, and structured

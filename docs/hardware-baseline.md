@@ -26,21 +26,23 @@ Fill-in for the development tablet and the two FightCamp v1 punch trackers. Task
 
 _(Fill in after physically inspecting the trackers.)_
 
+Both trackers advertise the truncated BLE local name **`FightCam`** (8 chars — the BLE 31-byte advertising limit clips the 'p'). Each advertises a single custom service UUID `ca280069-5470-4e34-94dd-caf160200b29` and no manufacturer-specific data. Full GATT inventory: **6 services / 25 characteristics** per tracker (see Velocity Lab spike report).
+
 Blue tracker (left hand):
 
+- Advertised BLE name / MAC: `FightCam` / **TBD — one of `D7:34:B4:27:D5:84` or `EA:69:2D:9C:FD:53`** (physical L/R still to be confirmed against the tablet)
 - Battery %: TODO
 - Firmware version (if readable): TODO
 - Serial / FCC markings on case: TODO
-- Advertised BLE name / MAC: TODO
-- Notes: TODO
+- Notes: **Falls asleep after ~10 s of no motion.** Physical tap to wake — the app is fully connected but stops receiving notification frames until the tracker is moved. Wake-on-motion appears to be a firmware-side power-save behavior. Recorded 2026-08-22.
 
 Red tracker (right hand):
 
+- Advertised BLE name / MAC: `FightCam` / **TBD — the other of `D7:34:B4:27:D5:84` or `EA:69:2D:9C:FD:53`**
 - Battery %: TODO
 - Firmware version (if readable): TODO
 - Serial / FCC markings on case: TODO
-- Advertised BLE name / MAC: TODO
-- Notes: TODO
+- Notes: **Stays engaged / awake** through the observation window (2026-08-22). Possibly different battery state, different firmware revision, or different sleep-timer configuration vs blue — worth checking once we can read the firmware-revision characteristic.
 
 ## Photos
 

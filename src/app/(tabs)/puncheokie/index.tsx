@@ -1,5 +1,6 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 
 export default function PuncheokieLanding() {
   return (
@@ -16,6 +17,7 @@ export default function PuncheokieLanding() {
           ),
         }}
       />
+      <TrackerBadgesRow />
       <Text style={styles.title}>Puncheokie</Text>
       <Text style={styles.paragraph}>
         Puncheokie is punch-along-to-the-song mode: a Spotify-authenticated experience where
