@@ -84,3 +84,25 @@ The snoop log lives inside the bugreport (`FS/data/misc/bluetooth/logs/btsnoop_h
 
 - The PC and tablet must not connect to the same tracker at the same time (§5.1). While Metro-driven builds run and the tablet holds the connection, don't launch Bleak experiments against the same tracker from the PC.
 - Raw captures and bugreports remain under `captures/` (git-ignored). Only curated replay fixtures under `src/protocol/**/fixtures/` are committed.
+
+## Connect the tablet wirelessly (Android 11+)
+
+Once the tablet has been paired at least once over USB, subsequent dev sessions can attach over Wi-Fi so the USB port stays free.
+
+1. On the tablet, open **Settings → System → Developer options → Wireless debugging** and turn it on. Tap **Pair device with pairing code**. Note the six-digit pairing code and the `IP:PORT` shown on the pairing dialog (the pairing port is different from the connect port shown on the main Wireless debugging screen).
+2. On the Windows workstation, in the same Wi-Fi network, run:
+
+   ```bash
+   adb pair <host>:<pairing-port>
+   ```
+
+   Paste the six-digit code when prompted. On success adb prints `Successfully paired`.
+3. Then attach to the tablet using the connect port from the Wireless debugging main screen:
+
+   ```bash
+   adb connect <host>:<connect-port>
+   ```
+
+   Verify with `adb devices -l` — the tablet should appear as `<host>:<connect-port>  device`.
+
+USB is still required for the first-time bugreport export of the HCI snoop log (see the HCI snoop section above) — `adb bugreport` over Wi-Fi can drop mid-transfer on large captures, and the initial pairing itself was easier to establish once over USB before falling back to wireless.
