@@ -45,3 +45,17 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 - **Consequence if false:** No behavior change; the "sleep" was actually a lost connection or a coincidence.
 - **Next test:** Repeat with (a) both trackers at similar battery level, (b) both trackers on the same wrist strap sequentially, (c) longer observation windows. Note whether idle-sleep triggers a BLE disconnect or is purely a notification-silence.
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H03 — Tracker LED encodes connection state
+
+- **Status:** proposed
+- **Confidence:** low
+- **Claim:** The physical LED on each v1 tracker indicates connection state. Observed on 2026-08-22:
+  - Blue (case): steady non-blinking blue → likely **connected/paired** with a central (the tablet).
+  - Red (case): slow blinking red → likely **advertising, no central connected**.
+- **Evidence:** Kyle observed during a Velocity Lab session immediately after a connect to one tracker: "right now R is slow blinking red, L is not blinking it's regularly blue".
+- **Counter-evidence:** LED color may just match the case color rather than signal state; slow-blink could equally mean low battery. Single-session observation.
+- **Consequence if true:** Physical LED provides an out-of-band ground truth for connection state and can be used to validate the app's TrackerStore vs. reality.
+- **Consequence if false:** Ignore the LED as a signal; use the BLE-visible state exclusively.
+- **Next test:** Force a disconnect on the currently-connected tracker and observe its LED transition; connect the other tracker and see whether its LED transitions to steady.
+- **Owner / date:** Kyle + Claude, 2026-08-22.
