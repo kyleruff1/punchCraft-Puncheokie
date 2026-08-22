@@ -25,10 +25,21 @@ function sortAdvertisements(list: AdvertisementSnapshot[]): AdvertisementSnapsho
   })
 }
 
+/** Recognizes a FightCamp v1 tracker by advertised name (truncated to
+ * "FightCam") OR by the confirmed primary service UUID (H01). Both are
+ * accepted so the filter still works if a firmware revision changes the
+ * advertised name but keeps the service. */
+const FIGHTCAM_SERVICE_UUID = 'ca280069-5470-4e34-94dd-caf160200b29'
+function isFightCam(ad: AdvertisementSnapshot): boolean {
+  if (ad.name && /fightcam/i.test(ad.name)) return true
+  return ad.serviceUuids.some((u) => u.toLowerCase() === FIGHTCAM_SERVICE_UUID)
+}
+
 export default function VelocityLabLanding() {
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
   const [picker, setPicker] = useState<PickerState>({ status: 'idle' })
+  const [fightCamOnly, setFightCamOnly] = useState(true)
 
   async function startScan(hand: TrackerSlotHand) {
     setPicker({ status: 'scanning', hand })
@@ -150,10 +161,29 @@ export default function VelocityLabLanding() {
 
           {picker.status === 'picking' && (
             <View style={styles.pickerBody}>
-              {picker.results.length === 0 ? (
-                <Text style={styles.pickerBodyText}>No trackers found.</Text>
-              ) : (
-                picker.results.map((snap) => (
+              <Pressable
+                onPress={() => setFightCamOnly((v) => !v)}
+                style={styles.filterRow}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: fightCamOnly }}
+              >
+                <View style={[styles.checkboxBox, fightCamOnly && styles.checkboxBoxOn]}>
+                  {fightCamOnly ? <Text style={styles.checkboxTick}>✓</Text> : null}
+                </View>
+                <Text style={styles.filterLabel}>
+                  Only FightCam trackers ({picker.results.filter(isFightCam).length}/{picker.results.length})
+                </Text>
+              </Pressable>
+              {(() => {
+                const visible = fightCamOnly ? picker.results.filter(isFightCam) : picker.results
+                if (visible.length === 0) {
+                  return (
+                    <Text style={styles.pickerBodyText}>
+                      {fightCamOnly ? 'No FightCam trackers in range. Uncheck the filter to see everything.' : 'No devices in range.'}
+                    </Text>
+                  )
+                }
+                return visible.map((snap) => (
                   <Pressable
                     key={snap.deviceId}
                     style={styles.deviceRow}
@@ -162,10 +192,11 @@ export default function VelocityLabLanding() {
                     <Text style={styles.deviceName}>{snap.name ?? 'Unnamed tracker'}</Text>
                     <Text style={styles.deviceMeta}>
                       RSSI {snap.rssi ?? '—'}
+                      {snap.serviceUuids.length > 0 ? ` · ${snap.serviceUuids.length} svc` : ''}
                     </Text>
                   </Pressable>
                 ))
-              )}
+              })()}
               <Pressable onPress={() => startScan(picker.hand)} style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Rescan</Text>
               </Pressable>
@@ -252,4 +283,18 @@ const styles = StyleSheet.create({
   linkButtonText: { fontSize: 16, fontWeight: '600' },
   headerLink: { paddingHorizontal: 12 },
   headerLinkText: { fontSize: 15, fontWeight: '600' },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  checkboxBox: {
+    width: 22,
+    height: 22,
+    borderWidth: 2,
+    borderColor: '#333',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  checkboxBoxOn: { backgroundColor: '#0a84ff', borderColor: '#0a84ff' },
+  checkboxTick: { color: '#fff', fontSize: 14, fontWeight: '800', lineHeight: 16 },
+  filterLabel: { fontSize: 14, fontWeight: '600' },
 })

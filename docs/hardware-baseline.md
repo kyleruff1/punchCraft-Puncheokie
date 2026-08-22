@@ -44,6 +44,10 @@ Red tracker (right hand):
 - Serial / FCC markings on case: TODO
 - Notes: **Stays engaged / awake** through the observation window (2026-08-22). Possibly different battery state, different firmware revision, or different sleep-timer configuration vs blue — worth checking once we can read the firmware-revision characteristic.
 
+## Reset procedure
+
+- **Both trackers reset by plugging into the power harness (charging cradle)**. Confirmed 2026-08-22. No BLE-side "factory reset" command is known; power-cycle via the cradle appears to be the only reliable reset. Recorded so future incident-recovery runbooks have the physical step written down.
+
 ## Photos
 
 Store originals under `docs/hardware-baseline/` (git-ignored — keep on the workstation) and link them here.
