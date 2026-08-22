@@ -21,7 +21,9 @@ ios/
 *.keystore
 *.jks
 !debug.keystore
-artifacts/
+artifacts/*
+!artifacts/.gitkeep
+!artifacts/README.md
 
 # Caches
 .metro-health-check*
