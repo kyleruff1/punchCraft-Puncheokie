@@ -16,7 +16,9 @@ import type {
   ConnectionStatus,
   GattSnapshot,
   RawBleFrame,
+  ReadResult,
   SubscriptionResult,
+  WriteResult,
 } from './bleTypes'
 
 export type UnsubscribeFn = () => void
@@ -103,6 +105,33 @@ export interface BleManagerFacade {
     snapshot: GattSnapshot,
     onFrame: (frame: RawBleFrame) => void,
   ): Promise<SubscriptionHandle[]>
+
+  /**
+   * Write a value to a characteristic. Exactly one of `base64` or `hex` must
+   * be provided on the payload. `withResponse=true` uses the acknowledged
+   * write path; false uses write-without-response. The returned WriteResult
+   * carries `durationMs` measured with performance.now() around the underlying
+   * library call. Errors are reported via `success=false` + `errorMessage`,
+   * NOT thrown — the probe UI needs the timing either way.
+   */
+  writeCharacteristic(
+    deviceId: string,
+    serviceUuid: string,
+    characteristicUuid: string,
+    payload: { base64?: string; hex?: string },
+    withResponse: boolean,
+  ): Promise<WriteResult>
+
+  /**
+   * Read a characteristic's current value. Returns both base64 and hex
+   * encodings in the ReadResult, plus the round-trip `durationMs`. Errors
+   * are reported via `success=false` + `errorMessage`, NOT thrown.
+   */
+  readCharacteristic(
+    deviceId: string,
+    serviceUuid: string,
+    characteristicUuid: string,
+  ): Promise<ReadResult>
 
   /** Release all resources; safe to call multiple times. */
   destroy(): Promise<void>

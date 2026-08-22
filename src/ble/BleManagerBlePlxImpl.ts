@@ -23,8 +23,11 @@ import type {
   GattServiceSnapshot,
   GattSnapshot,
   RawBleFrame,
+  ReadResult,
   SubscriptionResult,
+  WriteResult,
 } from './bleTypes'
+import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 import {
   resetBleManagerSingleton,
   type BleManagerFacade,
@@ -49,6 +52,48 @@ export class Base64DecodeError extends Error {
     super(message)
     this.name = 'Base64DecodeError'
   }
+}
+
+export class HexDecodeError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'HexDecodeError'
+  }
+}
+
+/** Pure-JS hex → base64. Accepts optional whitespace/':' separators. Throws
+ * HexDecodeError on odd length or any non-hex character. */
+function hexToBase64(hex: string): string {
+  if (typeof hex !== 'string') throw new HexDecodeError('hex input is not a string')
+  const clean = hex.replace(/[\s:]/g, '')
+  if (clean.length % 2 !== 0) throw new HexDecodeError('hex input has odd length')
+  const bytes: number[] = []
+  for (let i = 0; i < clean.length; i += 2) {
+    const pair = clean.substring(i, i + 2)
+    if (!/^[0-9a-fA-F]{2}$/.test(pair)) {
+      throw new HexDecodeError(`invalid hex pair at index ${i}`)
+    }
+    bytes.push(parseInt(pair, 16))
+  }
+  let out = ''
+  let i = 0
+  while (i < bytes.length) {
+    // bytes[i] is safe because the while() guard; the two conditionals for
+    // b2/b3 gate on i-vs-length before advancing. tsconfig has
+    // noUncheckedIndexedAccess so we assert non-null explicitly here.
+    const b1 = bytes[i++]!
+    const b2 = i < bytes.length ? bytes[i++]! : -1
+    const b3 = i < bytes.length ? bytes[i++]! : -1
+    const c1 = b1 >> 2
+    const c2 = ((b1 & 0x03) << 4) | (b2 === -1 ? 0 : (b2 >> 4))
+    const c3 = b2 === -1 ? -1 : (((b2 & 0x0f) << 2) | (b3 === -1 ? 0 : (b3 >> 6)))
+    const c4 = b3 === -1 ? -1 : (b3 & 0x3f)
+    out += BASE64_ALPHABET.charAt(c1)
+    out += BASE64_ALPHABET.charAt(c2)
+    out += c3 === -1 ? '=' : BASE64_ALPHABET.charAt(c3)
+    out += c4 === -1 ? '=' : BASE64_ALPHABET.charAt(c4)
+  }
+  return out
 }
 
 /** Pure-JS base64 → hex. Ignores '=' padding. Throws Base64DecodeError on
@@ -482,6 +527,136 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       }
     }
     return handles
+  }
+
+  async writeCharacteristic(
+    deviceId: string,
+    serviceUuid: string,
+    characteristicUuid: string,
+    payload: { base64?: string; hex?: string },
+    withResponse: boolean,
+  ): Promise<WriteResult> {
+    const manager = this.ensure()
+    const hasBase64 = typeof payload.base64 === 'string' && payload.base64.length > 0
+    const hasHex = typeof payload.hex === 'string' && payload.hex.length > 0
+    if (hasBase64 === hasHex) {
+      const errorMessage = 'writeCharacteristic requires exactly one of base64 or hex'
+      return { success: false, bytesWritten: 0, durationMs: 0, errorMessage }
+    }
+    let base64Payload: string
+    let bytesWritten = 0
+    try {
+      if (hasBase64) {
+        base64Payload = payload.base64 as string
+        // Decode to count bytes accurately (accounts for padding).
+        bytesWritten = base64ToHex(base64Payload).length / 2
+      } else {
+        base64Payload = hexToBase64(payload.hex as string)
+        bytesWritten = (payload.hex as string).replace(/[\s:]/g, '').length / 2
+      }
+    } catch (e) {
+      return {
+        success: false,
+        bytesWritten: 0,
+        durationMs: 0,
+        errorMessage: (e as Error)?.message ?? String(e),
+      }
+    }
+    logger.info('ble.write.attempt', 'developer-mode write to characteristic', {
+      deviceId: deviceSensitive(deviceId),
+      serviceUuid: deviceSensitive(serviceUuid),
+      characteristicUuid: deviceSensitive(characteristicUuid),
+      valueBase64: deviceSensitive(base64Payload),
+      byteCount: safe(bytesWritten),
+      withResponse: safe(withResponse),
+    })
+    const start = performance.now()
+    try {
+      if (withResponse) {
+        await manager.writeCharacteristicWithResponseForDevice(
+          deviceId,
+          serviceUuid,
+          characteristicUuid,
+          base64Payload,
+        )
+      } else {
+        await manager.writeCharacteristicWithoutResponseForDevice(
+          deviceId,
+          serviceUuid,
+          characteristicUuid,
+          base64Payload,
+        )
+      }
+      const durationMs = performance.now() - start
+      logger.info('ble.write.ok', 'developer-mode write completed', {
+        deviceId: deviceSensitive(deviceId),
+        serviceUuid: deviceSensitive(serviceUuid),
+        characteristicUuid: deviceSensitive(characteristicUuid),
+        byteCount: safe(bytesWritten),
+        durationMs: safe(durationMs),
+        withResponse: safe(withResponse),
+      })
+      return { success: true, bytesWritten, durationMs }
+    } catch (e) {
+      const durationMs = performance.now() - start
+      const errorMessage = (e as Error)?.message ?? String(e)
+      logger.warn('ble.write.err', 'developer-mode write failed', {
+        deviceId: deviceSensitive(deviceId),
+        serviceUuid: deviceSensitive(serviceUuid),
+        characteristicUuid: deviceSensitive(characteristicUuid),
+        byteCount: safe(bytesWritten),
+        durationMs: safe(durationMs),
+        withResponse: safe(withResponse),
+        errorMessage: safe(errorMessage),
+      })
+      return { success: false, bytesWritten, durationMs, errorMessage }
+    }
+  }
+
+  async readCharacteristic(
+    deviceId: string,
+    serviceUuid: string,
+    characteristicUuid: string,
+  ): Promise<ReadResult> {
+    const manager = this.ensure()
+    logger.info('ble.read.attempt', 'developer-mode read of characteristic', {
+      deviceId: deviceSensitive(deviceId),
+      serviceUuid: deviceSensitive(serviceUuid),
+      characteristicUuid: deviceSensitive(characteristicUuid),
+    })
+    const start = performance.now()
+    try {
+      const characteristic = await manager.readCharacteristicForDevice(
+        deviceId,
+        serviceUuid,
+        characteristicUuid,
+      )
+      const durationMs = performance.now() - start
+      const valueBase64 = characteristic.value ?? undefined
+      let valueHex: string | undefined
+      if (valueBase64 != null) {
+        try { valueHex = base64ToHex(valueBase64) } catch { valueHex = undefined }
+      }
+      logger.info('ble.read.ok', 'developer-mode read completed', {
+        deviceId: deviceSensitive(deviceId),
+        serviceUuid: deviceSensitive(serviceUuid),
+        characteristicUuid: deviceSensitive(characteristicUuid),
+        byteCount: safe(valueHex ? valueHex.length / 2 : 0),
+        durationMs: safe(durationMs),
+      })
+      return { success: true, valueBase64, valueHex, durationMs }
+    } catch (e) {
+      const durationMs = performance.now() - start
+      const errorMessage = (e as Error)?.message ?? String(e)
+      logger.warn('ble.read.err', 'developer-mode read failed', {
+        deviceId: deviceSensitive(deviceId),
+        serviceUuid: deviceSensitive(serviceUuid),
+        characteristicUuid: deviceSensitive(characteristicUuid),
+        durationMs: safe(durationMs),
+        errorMessage: safe(errorMessage),
+      })
+      return { success: false, durationMs, errorMessage }
+    }
   }
 
   async destroy(): Promise<void> {
