@@ -2,7 +2,7 @@
 
 Android-first mobile app that restores useful life to a pair of unsupported **FightCamp first-generation Bluetooth punch trackers**. It connects to the left- and right-hand trackers over Bluetooth Low Energy, preserves every raw frame, decodes punch events, calculates session metrics, and powers three training workflows.
 
-> **Status (2026-08-22):** planning complete; Sprint 1 starts 2026-08-24. There is no app code yet — the Expo scaffold is Sprint 1 Story 1. See [docs/sprint-1.md](docs/sprint-1.md).
+> **Status (2026-08-22):** planning complete — 30 milestones, 8 phase epics, 152 task/story/spike issues on the [project board](https://github.com/users/kyleruff1/projects/5). Sprint 1 starts 2026-08-24. There is no app code yet — the Expo scaffold is Sprint 1 Story 1 (issue M02-01). See [docs/sprint-1.md](docs/sprint-1.md).
 
 ## The three modes
 

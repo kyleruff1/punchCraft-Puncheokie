@@ -175,13 +175,13 @@ function derivedLabels(issue, phaseIndex, isEpic = false) {
   return [...labels]
 }
 
-async function findOrCreateIssue({ title, body, labels, milestoneNumber }, allExisting) {
+async function findOrCreateIssue({ title, body, labels, milestoneTitle }, allExisting) {
   const existing = allExisting.find(i => i.title === title)
   if (existing) return { number: existing.number, url: existing.url, nodeId: existing.node_id || null, created: false }
   if (DRY_RUN) { log(`DRY-RUN issue ${title}`); return { number: null, url: null, nodeId: null, created: false } }
   const argv = ['issue', 'create', '--repo', REPO, '--title', title, '--body', body]
   for (const l of labels) argv.push('--label', l)
-  if (milestoneNumber) argv.push('--milestone', String(milestoneNumber))
+  if (milestoneTitle) argv.push('--milestone', milestoneTitle)
   const r = await ghRetry(argv, { allowFail: true })
   if (r.status !== 0) { console.error(`Issue ${title} failed: ${r.stderr}`); return null }
   const url = r.stdout.trim().split('\n').pop()
@@ -210,7 +210,7 @@ async function seedEpics(msByKey, allExisting) {
       title,
       body: frag.epic.body,
       labels: derivedLabels(null, phase, true),
-      milestoneNumber: null,
+      milestoneTitle: null,
     }, allExisting)
     if (!info) continue
     if (info.created) { summary.epics.c++; log(`Epic ${title}`) } else { summary.epics.s++ }
@@ -230,7 +230,7 @@ async function seedIssues(msByKey, epicByPhase, allExisting) {
       const ms = msByKey.get(issue.milestoneKey)
       const labels = derivedLabels(issue, frag.phase, false)
       const bodyWithHeader = `> Milestone: **${issue.milestoneKey}** · Phase ${frag.phase} · Epic: ${frag.epic.title} · Area: ${STATIC.areaSlugToName[issue.areaSlug] || issue.areaSlug}\n\n${issue.body}`
-      const info = await findOrCreateIssue({ title, body: bodyWithHeader, labels, milestoneNumber: ms?.number }, allExisting)
+      const info = await findOrCreateIssue({ title, body: bodyWithHeader, labels, milestoneTitle: ms?.title }, allExisting)
       if (!info) continue
       if (info.created) { summary.issues.c++; log(`Issue ${issue.key} ${issue.title.slice(0, 60)}`) } else { summary.issues.s++ }
       info.nodeId ||= await fetchIssueNodeId(info.number)
