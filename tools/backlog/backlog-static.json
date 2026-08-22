@@ -1,0 +1,147 @@
+{
+  "project": {
+    "title": "PunchLab Puncheokie",
+    "description": "Android-first Expo app reviving FightCamp v1 BLE punch trackers.",
+    "iteration": {
+      "startDate": "2026-08-24",
+      "durationDays": 14,
+      "iterations": [
+        { "title": "Sprint 1", "startDate": "2026-08-24" },
+        { "title": "Sprint 2", "startDate": "2026-09-07" },
+        { "title": "Sprint 3", "startDate": "2026-09-21" },
+        { "title": "Sprint 4", "startDate": "2026-10-05" },
+        { "title": "Sprint 5", "startDate": "2026-10-19" },
+        { "title": "Sprint 6", "startDate": "2026-11-02" }
+      ]
+    },
+    "singleSelectFields": [
+      {
+        "name": "Phase",
+        "options": [
+          { "name": "Phase 0", "color": "GRAY" },
+          { "name": "Phase 1", "color": "BLUE" },
+          { "name": "Phase 2", "color": "GREEN" },
+          { "name": "Phase 3", "color": "YELLOW" },
+          { "name": "Phase 4", "color": "ORANGE" },
+          { "name": "Phase 5", "color": "RED" },
+          { "name": "Phase 6", "color": "PINK" },
+          { "name": "Phase 7", "color": "PURPLE" }
+        ]
+      },
+      {
+        "name": "Area",
+        "options": [
+          { "name": "Infra", "color": "GRAY" },
+          { "name": "BLE", "color": "BLUE" },
+          { "name": "Protocol", "color": "GREEN" },
+          { "name": "Velocity Lab", "color": "PURPLE" },
+          { "name": "Calibration", "color": "YELLOW" },
+          { "name": "PunchLab", "color": "ORANGE" },
+          { "name": "Puncheokie", "color": "PINK" },
+          { "name": "Spotify", "color": "GREEN" },
+          { "name": "Storage", "color": "GRAY" },
+          { "name": "QA/Docs", "color": "BLUE" }
+        ]
+      },
+      {
+        "name": "Priority",
+        "options": [
+          { "name": "P0", "color": "RED" },
+          { "name": "P1", "color": "ORANGE" },
+          { "name": "P2", "color": "GRAY" }
+        ]
+      },
+      {
+        "name": "Size",
+        "options": [
+          { "name": "XS", "color": "GRAY" },
+          { "name": "S", "color": "BLUE" },
+          { "name": "M", "color": "GREEN" },
+          { "name": "L", "color": "PURPLE" }
+        ]
+      }
+    ],
+    "views": [
+      { "name": "Sprint board", "layout": "BOARD_LAYOUT" },
+      { "name": "Roadmap by milestone", "layout": "TABLE_LAYOUT" },
+      { "name": "Epics", "layout": "TABLE_LAYOUT" },
+      { "name": "Timeline", "layout": "ROADMAP_LAYOUT" }
+    ]
+  },
+  "areaSlugToName": {
+    "infra": "Infra",
+    "ble": "BLE",
+    "protocol": "Protocol",
+    "velocity-lab": "Velocity Lab",
+    "calibration": "Calibration",
+    "punchlab": "PunchLab",
+    "puncheokie": "Puncheokie",
+    "spotify": "Spotify",
+    "storage": "Storage",
+    "qa-docs": "QA/Docs"
+  },
+  "labels": [
+    { "name": "epic", "color": "8250df", "description": "Phase-level container. Do not open ad-hoc; issues are its sub-issues." },
+    { "name": "story", "color": "0e8a16", "description": "Vertical slice large enough to demonstrate against hardware or a user." },
+    { "name": "task", "color": "0366d6", "description": "Concrete unit of engineering work; usually a few hours to a day." },
+    { "name": "spike", "color": "b60205", "description": "Time-boxed investigation; deliverable is a decision, not shipped code." },
+    { "name": "phase:0", "color": "d1d5db", "description": "Phase 0 — Preserve the baseline and establish the repository" },
+    { "name": "phase:1", "color": "bfdbfe", "description": "Phase 1 — Velocity Lab Bluetooth listener" },
+    { "name": "phase:2", "color": "bbf7d0", "description": "Phase 2 — Protocol initialization, decoding, and synchronization" },
+    { "name": "phase:3", "color": "fef08a", "description": "Phase 3 — Velocity Lab calibration" },
+    { "name": "phase:4", "color": "fed7aa", "description": "Phase 4 — PunchLab sessions" },
+    { "name": "phase:5", "color": "fecaca", "description": "Phase 5 — Puncheokie program engine without Spotify" },
+    { "name": "phase:6", "color": "fbcfe8", "description": "Phase 6 — Spotify playlist connection" },
+    { "name": "phase:7", "color": "e9d5ff", "description": "Phase 7 — Hardening and release preparation" },
+    { "name": "area:infra", "color": "e5e7eb", "description": "Repository, build, CI, tooling" },
+    { "name": "area:ble", "color": "3b82f6", "description": "Bluetooth transport" },
+    { "name": "area:protocol", "color": "10b981", "description": "FightCamp v1 protocol adapter and replay" },
+    { "name": "area:velocity-lab", "color": "8b5cf6", "description": "Velocity Lab surface" },
+    { "name": "area:calibration", "color": "f59e0b", "description": "Calibration engine and workflows" },
+    { "name": "area:punchlab", "color": "f97316", "description": "PunchLab session and metrics" },
+    { "name": "area:puncheokie", "color": "ec4899", "description": "Puncheokie program engine and cue runner" },
+    { "name": "area:spotify", "color": "22c55e", "description": "Spotify integration" },
+    { "name": "area:storage", "color": "6b7280", "description": "SQLite schema and repositories" },
+    { "name": "area:qa-docs", "color": "0ea5e9", "description": "Testing, docs, release artifacts" },
+    { "name": "P0", "color": "b91c1c", "description": "Blocks the sprint or an MVP capability" },
+    { "name": "P1", "color": "ea580c", "description": "Important but not blocking" },
+    { "name": "P2", "color": "6b7280", "description": "Polish, CI, cosmetics" },
+    { "name": "sprint-1", "color": "1d4ed8", "description": "Scheduled for Sprint 1 (2026-08-24 → 2026-09-04)" },
+    { "name": "hardware-required", "color": "9333ea", "description": "Cannot be executed without the physical tablet or trackers" },
+    { "name": "go-no-go", "color": "dc2626", "description": "Decision gate; result determines whether subsequent work proceeds" },
+    { "name": "policy-review", "color": "f97316", "description": "Requires Spotify or other policy/legal review before enabling" },
+    { "name": "blocked", "color": "111827", "description": "Waiting on another issue, decision, or external event" }
+  ],
+  "milestones": [
+    { "key": "M01", "title": "M01: Baseline preserved & official-app captures archived", "phase": 0, "due_on": "2026-09-04T00:00:00Z", "description": "Tablet + tracker inventory recorded (model, Android release, API level, Bluetooth chipset); trackers labeled blue=left/red=right; official-app HCI snoop logs + screen recordings archived on the Windows PC. Spec §12.2, §22 Phase 0." },
+    { "key": "M02", "title": "M02: Installable Expo development build", "phase": 0, "due_on": "2026-09-04T00:00:00Z", "description": "TS-strict Expo project, dev-client build installs over USB, build-info screen, known-good APK archived, exact Expo/RN/BLE-library versions locked after Story 1 spike. Spec §11.2, §22 Phase 0, §23 Story 1." },
+    { "key": "M03", "title": "M03: BLE permissions & Bluetooth-state onboarding", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "First-launch explainer, denied/permanently-denied → settings, Bluetooth-off distinguished from permission denial, neverForLocation decision. Spec §11.3, §23 Story 2." },
+    { "key": "M04", "title": "M04: Bounded scan & advertisement capture", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "TrackerScanner bounded 10–15 s, stop-on-found, dedup summary preserves latest RSSI/manufacturer bytes, JSON export. Spec §11.6, §23 Story 3." },
+    { "key": "M05", "title": "M05: Single-tracker connect & GATT inventory", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "BleManagerFacade + TrackerConnection state machine with generation counter, GattOperationQueue serialized, GATT inspector, device fingerprint + manual L/R assignment. Spec §11.4, §11.5, §11.7, §11.8, §11.10, §23 Story 4." },
+    { "key": "M06", "title": "M06: Notification subscription & raw-frame persistence", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "NotificationRouter subscribes to safe notify/indicate characteristics, RawBleFrame persisted BEFORE parsing, listener ring buffer throttled 5–10 Hz, DB write-backlog indicator. Spec §11.9, §12.4, §7.2B, §23 Story 5." },
+    { "key": "M07", "title": "M07: Observation markers & JSON capture export", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "Marker model on the same monotonic base as frames, mark UI with label picker, CaptureExporter JSON, Windows-side correlation script. Spec §23 Story 6." },
+    { "key": "M08", "title": "M08: Disconnect / reconnect resilience", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "Immediate disconnect detection, recovering state with bounded backoff and re-subscription, foreground-only policy: keep-awake + background warning. Spec §11.5, §11.11, §19.3." },
+    { "key": "M09", "title": "M09: Dual-tracker concurrent connections", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "TrackerCoordinator with independent L/R state machines, aggregate state, frames tagged with device/hand, disconnecting one leaves the other untouched. Spec §11.5, §23 Story 7." },
+    { "key": "M10", "title": "M10: First repeatable punch frame captured (go/no-go)", "phase": 1, "due_on": "2026-09-04T00:00:00Z", "description": "≥3 identical single-punch tests per hand vs no-motion baseline; repeatable frame/sequence identified; saved as a replay fixture; third-party feasibility go/no-go recorded. Spec §23 Story 8, §24." },
+    { "key": "M11", "title": "M11: Initialization plan from observed traffic", "phase": 2, "description": "Only observed writes implemented; ProtocolAdapter + ProtocolRegistry contracts. Spec §12.3, §22 Phase 2 tasks 1–2." },
+    { "key": "M12", "title": "M12: FightCampV1Adapter skeleton & device status decoding", "phase": 2, "description": "Versioned adapter; device status decoding drives capability detection; endianness/fixed-point unit tests. Spec §12.3, §21.1, §22 Phase 2 tasks 3–4." },
+    { "key": "M13", "title": "M13: Punch-event decoding: boundaries, hand, sequence, timestamp", "phase": 2, "description": "Deterministic TrackerPunchEvent (§12.5) for controlled L/R punches; sequence wraparound vs reset. Spec §12.5, §22 Phase 2 tasks 5–7." },
+    { "key": "M14", "title": "M14: Velocity & punch-type field analysis, capability detection", "phase": 2, "description": "Slow/normal/fast set analysis, punch-type field analysis, tracker_capabilities populated with confidence, tracker-units labeling. Spec §4.2, §4.3, §22 Phase 2 tasks 8–9, 13." },
+    { "key": "M15", "title": "M15: Session start/stop, offline sync, dedup & gap handling", "phase": 2, "description": "Observed session commands, offline-sync path with recovered flag and last-synced sequence, sequence-based dedup with heuristic fallback that never deletes raw frames. Spec §12.6, §22 Phase 2 tasks 10–11." },
+    { "key": "M16", "title": "M16: Replay harness & fixture test suite", "phase": 2, "description": "ReplayRunner on Windows without BLE hardware; every confirmed capture a fixture with expected messages; malformed/truncated/unknown-field fixtures included. Spec §12.7, §21.2, §22 Phase 2 task 12." },
+    { "key": "M17", "title": "M17: Calibration session & guided punch sets", "phase": 3, "description": "State machine and guided flow (10 s idle → 10 low → 10 normal → 10 fast per hand), sample accept/reject, distribution + L/R comparison. Spec §10.1 Layer 3, §22 Phase 3 tasks 1–3." },
+    { "key": "M18", "title": "M18: Versioned calibration profiles & stale detection", "phase": 3, "description": "CalibrationProfile model + repository, robust percentile computation, zone thresholds, activation/revert, staleness rules. Spec §10.2, §10.3, §10.4, §22 Phase 3 tasks 4–7." },
+    { "key": "M19", "title": "M19: Live validation round & calibration report", "phase": 3, "description": "30-s validation with active profile; calibration report export. Spec §22 Phase 3 tasks 8–9." },
+    { "key": "M20", "title": "M20: Session/timer engine", "phase": 4, "description": "§18.1 state machine with monotonic clock, pause semantics (duringPause flag), timer/acceptance/pause/clock-change tests. Spec §18, §22 Phase 4 tasks 1–2, 7." },
+    { "key": "M21", "title": "M21: Readiness gate & live metric tiles", "phase": 4, "description": "Pre-session readiness with explicit degraded warnings; large glanceable tiles and pop-out tile customization. Spec §8.2, §8.3, §22 Phase 4 tasks 3–4, 12." },
+    { "key": "M22", "title": "M22: Session persistence & deterministic metrics", "phase": 4, "description": "sessions/rounds/punch_events/session_metrics; MetricsEngine confirmed + velocity-dependent metrics with calculation_version; in-session reconnect updates completeness. Spec §9, §17, §22 Phase 4 tasks 8–9." },
+    { "key": "M23", "title": "M23: Summary, history, recalculation & export", "phase": 4, "description": "Session summary discloses velocity representation; history with filter/detail/compare/delete; recalculation with newer decoder/profile; CSV + JSON export. Spec §8.5, §8.6, §22 Phase 4 tasks 10–11." },
+    { "key": "M24", "title": "M24: Program model & editor", "phase": 5, "description": "PunchProgram/Round/Cue tables + repositories; program editor; seeded Three-Round Fundamentals example. Spec §13.4, §17.1, §22 Phase 5 tasks 1–2." },
+    { "key": "M25", "title": "M25: Stance mapping & cue runner", "phase": 5, "description": "StanceMapper for orthodox/southpaw × switch with tests; ProgramEngine cue timer with visual + haptic presentation and next-cue preview. Spec §13.2, §13.5, §22 Phase 5 tasks 3–4." },
+    { "key": "M26", "title": "M26: Cue matching & capability-aware scoring", "phase": 5, "description": "CueMatcher (windows, one-event-one-slot, hand vs type mismatch, extras) with tests; cue_results; hand-sequence-match labeling. Spec §13.3, §13.6, §22 Phase 5 tasks 5–9." },
+    { "key": "M27", "title": "M27: Spotify PKCE authorization & secure tokens", "phase": 6, "description": "Dev app registered; redirect URI + Android package configured; SpotifyAuthService PKCE via expo-auth-session; SpotifyTokenStore in SecureStore; minimum scopes; 401/403/429 handling. Spec §14.2, §14.3, §14.8, §22 Phase 6 tasks 1–6." },
+    { "key": "M28", "title": "M28: Playlist selection, caching & deep link", "phase": 6, "description": "Paginated fetch tolerating unavailable playlist items; playlist picker + local metadata cache; Android content deep link into Spotify app; disconnect/erase; log redaction. Spec §14.4, §14.7, §22 Phase 6 tasks 7–11." },
+    { "key": "M29", "title": "M29: Endurance, reliability & storage retention", "phase": 7, "description": "1-hour endurance runs; retention controls with pin-capture + storage-usage display; crash-reporting decision; log field classification; anonymized export. Spec §17.2, §19, §20.4, §22 Phase 7 tasks 1–4." },
+    { "key": "M30", "title": "M30: Release readiness", "phase": 7, "description": "Release signing + backup APK; dependency lock + SBOM; accessibility + landscape pass; in-app safety/privacy disclosures; protocol-compatibility report; user documentation; Spotify policy/legal decision; MVP release gate met. Spec §19.4, §19.5, §20, §21.6, §22 Phase 7 tasks 5–11." }
+  ]
+}

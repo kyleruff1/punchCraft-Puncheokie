@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native projects are generated (Continuous Native Generation) — do not commit
+android/
+ios/
+
+# Build outputs and signing material
+*.apk
+*.aab
+*.ipa
+*.keystore
+*.jks
+!debug.keystore
+artifacts/
+
+# Caches
+.metro-health-check*
+*.tsbuildinfo
+.cache/
+coverage/
+
+# Environment and secrets (a Spotify client secret must never exist in this repo)
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Raw BLE captures and official-app logs stay local unless deliberately exported.
+# Curated replay fixtures are committed under src/protocol/**/fixtures/ instead.
+captures/
+*.btsnoop
+*.btsnoop.log
+btsnoop_hci.log
+*.pcap
+*.pcapng
+*.bugreport.zip
