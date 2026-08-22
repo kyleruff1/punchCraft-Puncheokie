@@ -123,12 +123,30 @@ export interface SpikeReport {
     }>
   }
   connect: { ok: boolean; deviceId?: string; durationMs: number; errorMessage?: string }
-  discover: { ok: boolean; serviceCount: number; characteristicCount: number; durationMs: number; errorMessage?: string }
+  discover: {
+    ok: boolean
+    serviceCount: number
+    characteristicCount: number
+    durationMs: number
+    errorMessage?: string
+    /** Full GATT inventory so a reviewer can pick out the notify
+     * characteristic that carries punch events without another run. */
+    services?: Array<{
+      uuid: string
+      characteristics: Array<{
+        uuid: string
+        properties: { read: boolean; write: boolean; writeWithoutResponse: boolean; notify: boolean; indicate: boolean }
+      }>
+    }>
+  }
   subscribe: {
     ok: boolean
     subscribed: number
     firstFrameWithinMs?: number
     subscriptions: SubscriptionResult[]
+    /** Every raw frame the spike captured, in receive order. Truncated to
+     * the first N to keep the report copy-pasteable. */
+    frames?: Array<{ serviceUuid: string; characteristicUuid: string; monotonicTimeMs: number; valueHex: string }>
     errorMessage?: string
   }
   startedAtIso: string

@@ -61,7 +61,10 @@ function base64ToHex(b64: string): string {
 
 const SCAN_TIMEOUT_MS = 12_000
 const CONNECT_TIMEOUT_MS = 15_000
-const FIRST_FRAME_TIMEOUT_MS = 10_000
+/** Longer than a single 10 s wait: gives the athlete real time to punch. */
+const FIRST_FRAME_TIMEOUT_MS = 20_000
+/** Cap frames captured in the report so the JSON stays copy-pasteable. */
+const MAX_REPORT_FRAMES = 8
 /** Devices whose advertised name matches this pattern are auto-picked.
  * The FightCamp v1 trackers advertise with the truncated name "FightCam"
  * (BLE 31-byte advertising limit), so `/fightcam/i` deliberately catches
@@ -133,19 +136,19 @@ export default function SpikeScreen() {
   })
   const cancelledRef = useRef(false)
   const subscriptionRef = useRef<SubscriptionHandle | null>(null)
+  const allHandlesRef = useRef<SubscriptionHandle[]>([])
   const deviceIdRef = useRef<string | null>(null)
   const pickResolverRef = useRef<((ad: AdvertisementSnapshot | null) => void) | null>(null)
 
   useEffect(() => {
     return () => {
       cancelledRef.current = true
-      const handle = subscriptionRef.current
+      const handles = allHandlesRef.current
+      allHandlesRef.current = []
       subscriptionRef.current = null
-      if (handle) {
-        try { handle.unsubscribe() } catch { /* best-effort */ }
+      for (const h of handles) {
+        try { h.unsubscribe() } catch { /* best-effort */ }
       }
-      // Fire-and-forget disconnect via facade destroy is intentionally not
-      // called here — the facade is a shared singleton owned by app bootstrap.
     }
   }, [])
 
@@ -326,8 +329,12 @@ export default function SpikeScreen() {
       if (cancelledRef.current) return
       const durationMs = Math.round(performance.now() - discoverStart)
       const charCount = snapshot.services.reduce((n, s) => n + s.characteristics.length, 0)
+      const services = snapshot.services.map((svc) => ({
+        uuid: svc.uuid,
+        characteristics: svc.characteristics.map((c) => ({ uuid: c.uuid, properties: c.properties })),
+      }))
       patchReport((r) => {
-        r.discover = { ok: true, serviceCount: snapshot.services.length, characteristicCount: charCount, durationMs }
+        r.discover = { ok: true, serviceCount: snapshot.services.length, characteristicCount: charCount, durationMs, services }
       })
       logger.info('spike.discover.ok', 'Discover finished', {
         durationMs: safe(durationMs),
@@ -345,20 +352,21 @@ export default function SpikeScreen() {
       return
     }
 
-    // Stage 6 — pick FIRST notify/indicate characteristic and subscribe.
-    safeSetState((s) => ({ ...s, phase: 'subscribing', message: 'Subscribing to first notify characteristic…' }))
-    let firstNotify: { serviceUuid: string; characteristicUuid: string } | null = null
+    // Stage 6 — subscribe to EVERY notify/indicate characteristic so a
+    // real punch fires on whichever channel the tracker uses. The report
+    // records every subscription attempt + every frame observed so a
+    // reviewer can identify which characteristic carries punch events.
+    safeSetState((s) => ({ ...s, phase: 'subscribing', message: 'Subscribing to every notify/indicate characteristic…' }))
+    const notifiables: Array<{ serviceUuid: string; characteristicUuid: string }> = []
     for (const svc of snapshot.services) {
       for (const c of svc.characteristics) {
         if (c.properties.notify || c.properties.indicate) {
-          firstNotify = { serviceUuid: svc.uuid, characteristicUuid: c.uuid }
-          break
+          notifiables.push({ serviceUuid: svc.uuid, characteristicUuid: c.uuid })
         }
       }
-      if (firstNotify) break
     }
 
-    if (!firstNotify) {
+    if (notifiables.length === 0) {
       const missing: SubscriptionResult = {
         serviceUuid: '',
         characteristicUuid: '',
@@ -380,75 +388,106 @@ export default function SpikeScreen() {
       return
     }
 
-    // Stage 7 — subscribe, then wait for first frame.
-    // `subReady` gates onFrame so any frame that lands before we've
-    // sampled subStart is dropped — otherwise firstFrameWithinMs would
-    // be negative and misleading.
+    // Stage 7 — subscribe to all, then wait for the first frame from any of them.
     let firstFrameAt: number | null = null
     let firstFrameHex: string | undefined
-    let handle: SubscriptionHandle | null = null
-    let subResult: SubscriptionResult
+    const capturedFrames: Array<{ serviceUuid: string; characteristicUuid: string; monotonicTimeMs: number; valueHex: string }> = []
+    const handles: SubscriptionHandle[] = []
     let subReady = false
-    try {
-      handle = await facade.monitorCharacteristic(
-        picked.deviceId,
-        firstNotify.serviceUuid,
-        firstNotify.characteristicUuid,
-        (frame: RawBleFrame) => {
-          if (!subReady) return
-          if (firstFrameAt === null) {
-            firstFrameAt = performance.now()
-            firstFrameHex = frame.valueHex
-            logger.info('spike.frame.first', 'First frame received', {
-              serviceUuid: safe(frame.serviceUuid),
-              characteristicUuid: safe(frame.characteristicUuid),
-              bytes: safe(frame.valueBase64.length),
-            })
-          }
-        },
-      )
-      // Wait for the definitive setup outcome — this is what tells us
-      // whether the CCCD write succeeded, not just whether the library's
-      // synchronous setup call threw.
-      subResult = await handle.setupOutcome
-    } catch (e) {
-      subResult = {
-        serviceUuid: firstNotify.serviceUuid,
-        characteristicUuid: firstNotify.characteristicUuid,
-        direction: 'notification',
-        success: false,
-        errorMessage: errMessage(e),
+    const onFrame = (frame: RawBleFrame) => {
+      if (!subReady) return
+      if (firstFrameAt === null) {
+        firstFrameAt = performance.now()
+        firstFrameHex = frame.valueHex
+        logger.info('spike.frame.first', 'First frame received', {
+          serviceUuid: safe(frame.serviceUuid),
+          characteristicUuid: safe(frame.characteristicUuid),
+          bytes: safe(frame.valueBase64.length),
+        })
       }
+      if (capturedFrames.length < MAX_REPORT_FRAMES) {
+        capturedFrames.push({
+          serviceUuid: frame.serviceUuid,
+          characteristicUuid: frame.characteristicUuid,
+          monotonicTimeMs: Math.round(frame.monotonicTimeMs),
+          valueHex: frame.valueHex,
+        })
+      }
+    }
+
+    try {
+      for (const target of notifiables) {
+        if (cancelledRef.current) break
+        try {
+          const h = await facade.monitorCharacteristic(
+            picked.deviceId,
+            target.serviceUuid,
+            target.characteristicUuid,
+            onFrame,
+          )
+          handles.push(h)
+        } catch (e) {
+          handles.push({
+            result: {
+              serviceUuid: target.serviceUuid,
+              characteristicUuid: target.characteristicUuid,
+              direction: 'notification',
+              success: false,
+              errorMessage: errMessage(e),
+            },
+            setupOutcome: Promise.resolve({
+              serviceUuid: target.serviceUuid,
+              characteristicUuid: target.characteristicUuid,
+              direction: 'notification' as const,
+              success: false,
+              errorMessage: errMessage(e),
+            }),
+            unsubscribe: () => { /* no-op */ },
+          })
+        }
+      }
+    } catch (e) {
+      logger.error('spike.subscribe.unexpected', 'Subscribe loop threw', { error: safe(errMessage(e)) })
     }
 
     if (cancelledRef.current) {
-      if (handle) {
-        try { handle.unsubscribe() } catch { /* best-effort */ }
-      }
+      for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
       return
     }
 
-    if (!handle || !subResult.success) {
+    // Wait for every handle's setupOutcome so we know which subs really took.
+    const setupResults = await Promise.all(handles.map((h) => h.setupOutcome))
+    if (cancelledRef.current) {
+      for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
+      return
+    }
+    const subscribedCount = setupResults.filter((r) => r.success).length
+
+    if (subscribedCount === 0) {
       patchReport((r) => {
         r.subscribe = {
           ok: false,
           subscribed: 0,
-          subscriptions: [subResult],
-          errorMessage: subResult.errorMessage ?? 'subscribe failed',
+          subscriptions: setupResults,
+          errorMessage: 'every subscribe attempt failed',
         }
         r.finishedAtIso = new Date().toISOString()
       })
-      logger.error('spike.subscribe.error', 'Subscribe failed', { error: safe(subResult.errorMessage ?? 'unknown') })
-      safeSetState((s) => ({ ...s, phase: 'done', message: `Subscribe failed: ${subResult.errorMessage ?? 'unknown'}` }))
+      logger.error('spike.subscribe.allFailed', 'Every subscribe attempt failed')
+      safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — every subscribe failed.' }))
       return
     }
 
-    subscriptionRef.current = handle
-    safeSetState((s) => ({ ...s, phase: 'awaiting-frame', message: `Awaiting first frame (up to ${FIRST_FRAME_TIMEOUT_MS / 1000}s)…` }))
+    // Track the union of live handles so Reset can tear them all down.
+    subscriptionRef.current = handles.length > 0 ? handles[0] ?? null : null
+    allHandlesRef.current = handles
+    safeSetState((s) => ({
+      ...s,
+      phase: 'awaiting-frame',
+      message: `Subscribed to ${subscribedCount}/${handles.length} chars — throw a punch (up to ${FIRST_FRAME_TIMEOUT_MS / 1000}s)…`,
+    }))
 
-    // subStart AFTER the CCCD-confirmed subscription — measures device→app
-    // frame latency, not CCCD-write latency. Flip subReady so the onFrame
-    // callback stops dropping frames.
+    // subStart AFTER the CCCD-confirmed subscriptions — measures device→app latency.
     const subStart = performance.now()
     subReady = true
     const deadline = subStart + FIRST_FRAME_TIMEOUT_MS
@@ -462,26 +501,28 @@ export default function SpikeScreen() {
     patchReport((r) => {
       r.subscribe = {
         ok: gotFrame,
-        subscribed: 1,
+        subscribed: subscribedCount,
         firstFrameWithinMs,
-        subscriptions: [subResult],
-        errorMessage: gotFrame ? undefined : `no frame received within ${FIRST_FRAME_TIMEOUT_MS}ms`,
+        subscriptions: setupResults,
+        frames: capturedFrames,
+        errorMessage: gotFrame ? undefined : `no frame received within ${FIRST_FRAME_TIMEOUT_MS}ms across ${subscribedCount} channels`,
       }
       r.finishedAtIso = new Date().toISOString()
     })
     if (gotFrame) {
       logger.info('spike.done.ok', 'Spike completed with first frame', {
         firstFrameWithinMs: safe(firstFrameWithinMs ?? -1),
+        totalFrames: safe(capturedFrames.length),
       })
       safeSetState((s) => ({
         ...s,
         phase: 'done',
-        message: `Done — first frame within ${firstFrameWithinMs}ms.`,
+        message: `Done — first frame within ${firstFrameWithinMs}ms across ${subscribedCount} channel(s); captured ${capturedFrames.length} frame(s).`,
         firstFrameHex,
       }))
     } else {
       logger.warn('spike.done.noframe', 'Subscribed but no frame observed within timeout')
-      safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — subscribed but no frame observed.' }))
+      safeSetState((s) => ({ ...s, phase: 'done', message: `Done — subscribed to ${subscribedCount} channel(s) but no frame observed. Try punching harder or waking the tracker.` }))
     }
   }, [info.appVersion, info.gitSha, patchReport, safeSetState])
 
@@ -511,10 +552,11 @@ export default function SpikeScreen() {
       pickResolverRef.current(null)
       pickResolverRef.current = null
     }
-    const handle = subscriptionRef.current
+    const handles = allHandlesRef.current
+    allHandlesRef.current = []
     subscriptionRef.current = null
-    if (handle) {
-      try { handle.unsubscribe() } catch { /* best-effort */ }
+    for (const h of handles) {
+      try { h.unsubscribe() } catch { /* best-effort */ }
     }
     const deviceId = deviceIdRef.current
     deviceIdRef.current = null
