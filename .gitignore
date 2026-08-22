@@ -51,3 +51,6 @@ btsnoop_hci.log
 *.pcap
 *.pcapng
 *.bugreport.zip
+
+# Local Claude Code session state
+.claude/

@@ -20,7 +20,7 @@
  *   --dry-run         print planned actions; do not mutate
  */
 import { spawnSync } from 'node:child_process'
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
@@ -35,7 +35,8 @@ for (let i = 2; i < process.argv.length; i++) {
   if (a === '--dry-run') args.set('dry-run', true)
   else if (a.startsWith('--')) args.set(a.slice(2), process.argv[++i])
 }
-const OWNER = args.get('owner') || '@me'
+let OWNER = args.get('owner') || '@me'
+let OWNER_LOGIN = OWNER === '@me' ? null : OWNER
 const DRY_RUN = !!args.get('dry-run')
 let REPO = args.get('repo')
 if (!REPO) {
@@ -65,19 +66,28 @@ function ghJson(argv, opts = {}) {
 }
 
 function graphql(query, variables = {}) {
-  const argv = ['api', 'graphql', '-f', `query=${query}`]
-  for (const [k, v] of Object.entries(variables)) {
-    if (typeof v === 'string') argv.push('-f', `${k}=${v}`)
-    else if (typeof v === 'number' && Number.isInteger(v)) argv.push('-F', `${k}=${v}`)
-    else argv.push('-f', `${k}=${JSON.stringify(v)}`)
+  // Pass query + variables as a single JSON body on stdin so that nested objects
+  // (e.g. ProjectV2IterationFieldConfigurationInput) reach the API as objects,
+  // not stringified via -f.
+  const body = JSON.stringify({ query, variables })
+  const r = spawnSync('gh', ['api', 'graphql', '--input', '-'], {
+    encoding: 'utf8', input: body, stdio: ['pipe', 'pipe', 'pipe'],
+  })
+  if (r.status !== 0) {
+    console.error(`\n$ gh api graphql --input -\nBODY: ${body}\nEXIT ${r.status}\n${r.stderr || r.stdout}`)
+    return null
   }
-  return ghJson(argv)
+  try { return JSON.parse(r.stdout) } catch { return null }
 }
 
 function log(...a) { console.log('[setup-project]', ...a) }
 
 async function main() {
-  log(`Owner: ${OWNER}   Repo: ${REPO}   Dry-run: ${DRY_RUN}`)
+  if (!OWNER_LOGIN) {
+    const me = ghJson(['api', 'user', '--jq', '{login}'])
+    OWNER_LOGIN = me?.login || 'kyleruff1'
+  }
+  log(`Owner: ${OWNER} (login ${OWNER_LOGIN})   Repo: ${REPO}   Dry-run: ${DRY_RUN}`)
 
   const title = STATIC.project.title
   const projects = ghJson(['project', 'list', '--owner', OWNER, '--limit', '100', '--format', 'json'])
@@ -93,9 +103,10 @@ async function main() {
     log(`Project ${title} already exists (number ${project.number})`)
   }
 
-  // Link to repo (idempotent — gh reports success even if already linked)
+  // Link to repo (idempotent — gh reports success even if already linked).
+  // gh's --repo here is repo name only; owner is taken from --owner (must be a login).
   if (!DRY_RUN) {
-    const link = gh(['project', 'link', String(project.number), '--owner', OWNER, '--repo', REPO_NAME], { allowFail: true })
+    const link = gh(['project', 'link', String(project.number), '--owner', OWNER_LOGIN, '--repo', REPO_NAME], { allowFail: true })
     if (link.status === 0) log(`Linked project to repo ${REPO_NAME}`)
     else log(`Link warning (may already be linked): ${(link.stderr || link.stdout).trim()}`)
   }
