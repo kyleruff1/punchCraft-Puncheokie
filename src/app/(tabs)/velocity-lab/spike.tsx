@@ -62,8 +62,11 @@ function base64ToHex(b64: string): string {
 const SCAN_TIMEOUT_MS = 12_000
 const CONNECT_TIMEOUT_MS = 15_000
 const FIRST_FRAME_TIMEOUT_MS = 10_000
-/** Devices whose advertised name matches this pattern are auto-picked. */
-const CANDIDATE_NAME = /hykso|fightcamp|punch/i
+/** Devices whose advertised name matches this pattern are auto-picked.
+ * The FightCamp v1 trackers advertise with the truncated name "FightCam"
+ * (BLE 31-byte advertising limit), so `/fightcam/i` deliberately catches
+ * both "FightCam" and "FightCamp". */
+const CANDIDATE_NAME = /hykso|fightcam|punch/i
 /** How many advertisements to attach to the report so a reviewer can see
  * what was in range even without a pick. */
 const REPORT_TOP_DEVICES = 15
