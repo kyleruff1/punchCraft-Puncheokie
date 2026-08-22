@@ -59,3 +59,21 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 - **Consequence if false:** Ignore the LED as a signal; use the BLE-visible state exclusively.
 - **Next test:** Force a disconnect on the currently-connected tracker and observe its LED transition; connect the other tracker and see whether its LED transitions to steady.
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H04 — Multiple redundant connect / subscribe attempts wedge the tablet's BLE stack
+
+- **Status:** proposed
+- **Confidence:** medium
+- **Claim:** Successive spike runs and/or overlapping coordinator + spike connect attempts against the same v1 tracker cause the tablet's Bluetooth stack to reach a state where BOTH trackers become unresponsive to further connects — recovery requires toggling Bluetooth on the tablet AND power-cycling both trackers via the charging harness.
+- **Evidence:** Kyle 2026-08-22: "they both dropped multiple times, i even had to turn bluetooth off on the tablet and put both back on the harness". Logcat around 13:55:29 shows a `GATT_CONN_TERMINATE_LOCAL_HOST` disconnect on `D7:34:B4:27:D5:84` followed by six simultaneous `att_id` teardowns (att_id:3..8), consistent with multiple live subscriptions being torn down at once.
+- **Contributing factors identified in the spike screen:**
+  - `runSpike()` did not tear down handles from a prior run before starting a new one → every Run→Reset→Run cycle piled additional CCCD writes on the same characteristics.
+  - `facade.connect()` was issued unconditionally in the spike, even when the coordinator had already established a connection to the same tracker.
+  - The subscribe stage attempts CCCD writes on **every** notify/indicate characteristic (6+ per tracker) with no throttling.
+- **Consequence if true:** Any live-session or reconnection flow (M06 / M08 / M09) must serialize connects, deduplicate subscriptions per (device, service, characteristic), and avoid re-connecting to devices already `ready` / `streaming`.
+- **Consequence if false:** The observed lockup was coincidental (low battery, radio interference, tablet BT firmware bug) and does not need application-side mitigation.
+- **Mitigations applied 2026-08-22:**
+  - `runSpike()` unsubscribes prior handles and disconnects prior deviceId before starting.
+  - Spike now short-circuits the connect stage when the coordinator's TrackerStore reports the device already in `ready` / `streaming`.
+- **Next test:** After stability fixes, run Run→Reset→Run a few times without a tablet BT restart and confirm the tablet still sees the trackers advertising.
+- **Owner / date:** Kyle + Claude, 2026-08-22.

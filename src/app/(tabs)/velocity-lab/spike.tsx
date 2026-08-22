@@ -29,6 +29,7 @@ import type {
 } from '@ble/bleTypes'
 import { getBuildInfo } from '@/diagnostics/buildInfo'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
+import { getTrackerSlots } from '@/state/useTrackerStore'
 
 /** Pure-JS base64 → hex used to attach manufacturer-data hex to the report.
  * Duplicates the impl in BleManagerBlePlxImpl to keep the spike screen from
@@ -168,6 +169,19 @@ export default function SpikeScreen() {
   }, [])
 
   const runSpike = useCallback(async () => {
+    // Tear down anything left over from a prior run BEFORE starting a new
+    // one — otherwise every Run→Reset→Run cycle leaks native subscriptions
+    // and eventually the tracker (or the tablet's BLE stack) drops the
+    // whole connection under the pressure of stale CCCD writes.
+    {
+      const prev = allHandlesRef.current
+      allHandlesRef.current = []
+      for (const h of prev) { try { h.unsubscribe() } catch { /* best-effort */ } }
+      const prevDeviceId = deviceIdRef.current
+      if (prevDeviceId) {
+        try { await getBleManager().disconnect(prevDeviceId) } catch { /* best-effort */ }
+      }
+    }
     cancelledRef.current = false
     subscriptionRef.current = null
     deviceIdRef.current = null
@@ -294,21 +308,39 @@ export default function SpikeScreen() {
       rssi: safe(picked.rssi ?? null),
     })
 
-    // Stage 4 — connect.
+    // Stage 4 — connect. If the coordinator has already established a
+    // connection on this device we treat that as a no-op success rather
+    // than issuing a second connect (which the underlying stack may
+    // reject with GATT_CONN_TERMINATE_LOCAL_HOST or, worse, silently
+    // rewire and drop subscriptions).
     safeSetState((s) => ({ ...s, phase: 'connecting', message: `Connecting (timeout ${CONNECT_TIMEOUT_MS / 1000}s)…` }))
     const connectStart = performance.now()
     try {
-      await withTimeout(
-        facade.connect(picked.deviceId, { timeoutMs: CONNECT_TIMEOUT_MS }),
-        CONNECT_TIMEOUT_MS + 500,
-        'connect',
-      )
-      if (cancelledRef.current) return
-      const durationMs = Math.round(performance.now() - connectStart)
-      patchReport((r) => {
-        r.connect = { ok: true, deviceId: picked!.deviceId, durationMs }
-      })
-      logger.info('spike.connect.ok', 'Connected', { durationMs: safe(durationMs) })
+      const slots = getTrackerSlots()
+      const alreadyConnected =
+        (slots.left?.deviceId === picked.deviceId && (slots.left.state === 'ready' || slots.left.state === 'streaming')) ||
+        (slots.right?.deviceId === picked.deviceId && (slots.right.state === 'ready' || slots.right.state === 'streaming'))
+      if (alreadyConnected) {
+        const durationMs = Math.round(performance.now() - connectStart)
+        patchReport((r) => {
+          r.connect = { ok: true, deviceId: picked!.deviceId, durationMs }
+        })
+        logger.info('spike.connect.reused', 'Reused existing coordinator connection', {
+          durationMs: safe(durationMs),
+        })
+      } else {
+        await withTimeout(
+          facade.connect(picked.deviceId, { timeoutMs: CONNECT_TIMEOUT_MS }),
+          CONNECT_TIMEOUT_MS + 500,
+          'connect',
+        )
+        if (cancelledRef.current) return
+        const durationMs = Math.round(performance.now() - connectStart)
+        patchReport((r) => {
+          r.connect = { ok: true, deviceId: picked!.deviceId, durationMs }
+        })
+        logger.info('spike.connect.ok', 'Connected', { durationMs: safe(durationMs) })
+      }
     } catch (e) {
       if (cancelledRef.current) return
       const durationMs = Math.round(performance.now() - connectStart)
