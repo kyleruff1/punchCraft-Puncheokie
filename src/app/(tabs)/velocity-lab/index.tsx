@@ -57,11 +57,14 @@ export default function VelocityLabLanding() {
   }
 
   async function pickDevice(hand: TrackerSlotHand, snap: AdvertisementSnapshot) {
-    const deviceName = snap.name ?? 'Unnamed tracker'
-    setPicker({ status: 'connecting', hand, deviceName })
+    // Show the friendly slot name in the badge / buttons rather than the
+    // raw advertised BLE name ("FightCam"). The underlying deviceId still
+    // uniquely identifies the tracker for the storage layer.
+    const friendlyName = hand === 'left' ? 'L Punch' : 'R Punch'
+    setPicker({ status: 'connecting', hand, deviceName: friendlyName })
     try {
       const coordinator = getTrackerCoordinator()
-      await coordinator.connectSlot(hand, snap.deviceId, snap.name)
+      await coordinator.connectSlot(hand, snap.deviceId, friendlyName)
       setPicker({ status: 'idle' })
     } catch (err) {
       setPicker({
