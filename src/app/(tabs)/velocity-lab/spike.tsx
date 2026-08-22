@@ -30,10 +30,43 @@ import type {
 import { getBuildInfo } from '@/diagnostics/buildInfo'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 
+/** Pure-JS base64 → hex used to attach manufacturer-data hex to the report.
+ * Duplicates the impl in BleManagerBlePlxImpl to keep the spike screen from
+ * importing library-specific code. */
+const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+const BASE64_LOOKUP: Record<string, number> = (() => {
+  const map: Record<string, number> = {}
+  for (let i = 0; i < BASE64_ALPHABET.length; i++) map[BASE64_ALPHABET.charAt(i)] = i
+  return map
+})()
+function base64ToHex(b64: string): string {
+  let hex = ''
+  let buffer = 0
+  let bits = 0
+  for (let i = 0; i < b64.length; i++) {
+    const ch = b64.charAt(i)
+    if (ch === '=') continue
+    const val = BASE64_LOOKUP[ch]
+    if (val === undefined) return ''
+    buffer = (buffer << 6) | val
+    bits += 6
+    if (bits >= 8) {
+      bits -= 8
+      const byte = (buffer >> bits) & 0xff
+      hex += byte.toString(16).padStart(2, '0')
+    }
+  }
+  return hex
+}
+
 const SCAN_TIMEOUT_MS = 12_000
 const CONNECT_TIMEOUT_MS = 15_000
 const FIRST_FRAME_TIMEOUT_MS = 10_000
-const CANDIDATE_NAME = /hykso|fightcamp/i
+/** Devices whose advertised name matches this pattern are auto-picked. */
+const CANDIDATE_NAME = /hykso|fightcamp|punch/i
+/** How many advertisements to attach to the report so a reviewer can see
+ * what was in range even without a pick. */
+const REPORT_TOP_DEVICES = 15
 
 type Phase =
   | 'idle'
@@ -189,15 +222,30 @@ export default function SpikeScreen() {
     safeSetState((s) => ({ ...s, phase: 'scanning', message: `Scanning for up to ${SCAN_TIMEOUT_MS / 1000}s…` }))
     const scanStart = performance.now()
     let discovered: AdvertisementSnapshot[] = []
+    let sortedForUi: AdvertisementSnapshot[] = []
     try {
       const scanner = new TrackerScanner(facade)
       discovered = await scanner.run({ timeoutMs: SCAN_TIMEOUT_MS })
       if (cancelledRef.current) return
       const durationMs = Math.round(performance.now() - scanStart)
-      patchReport((r) => {
-        r.scan = { ok: discovered.length > 0, devicesFound: discovered.length, durationMs }
+      // Sort: named devices first, then by strongest RSSI descending.
+      sortedForUi = [...discovered].sort((a, b) => {
+        const an = a.name ? 0 : 1
+        const bn = b.name ? 0 : 1
+        if (an !== bn) return an - bn
+        return (b.rssi ?? -128) - (a.rssi ?? -128)
       })
-      safeSetState((s) => ({ ...s, candidates: discovered }))
+      const topDevices = sortedForUi.slice(0, REPORT_TOP_DEVICES).map((d) => ({
+        deviceId: d.deviceId,
+        name: d.name,
+        rssi: d.rssi,
+        serviceUuids: d.serviceUuids,
+        manufacturerDataHex: d.manufacturerDataBase64 ? base64ToHex(d.manufacturerDataBase64) : undefined,
+      }))
+      patchReport((r) => {
+        r.scan = { ok: discovered.length > 0, devicesFound: discovered.length, durationMs, topDevices }
+      })
+      safeSetState((s) => ({ ...s, candidates: sortedForUi }))
       if (discovered.length === 0) {
         logger.warn('spike.scan.empty', 'No advertisements observed', { durationMs: safe(durationMs) })
         safeSetState((s) => ({ ...s, phase: 'idle', message: 'Scan finished with no devices.' }))
@@ -220,16 +268,16 @@ export default function SpikeScreen() {
 
     // Stage 3 — user picks (or we auto-pick a strong name match).
     let picked: AdvertisementSnapshot | null =
-      discovered.find((ad) => ad.name != null && CANDIDATE_NAME.test(ad.name)) ?? null
+      sortedForUi.find((ad) => ad.name != null && CANDIDATE_NAME.test(ad.name)) ?? null
     if (!picked) {
-      safeSetState((s) => ({ ...s, phase: 'awaiting-pick', message: 'Pick a device to continue.' }))
+      safeSetState((s) => ({ ...s, phase: 'awaiting-pick', message: `Pick one of ${sortedForUi.length} devices (named first, then by RSSI).` }))
       picked = await new Promise<AdvertisementSnapshot | null>((resolve) => {
         pickResolverRef.current = resolve
       })
       pickResolverRef.current = null
       if (cancelledRef.current) return
       if (!picked) {
-        safeSetState((s) => ({ ...s, phase: 'idle', message: 'Cancelled.' }))
+        safeSetState((s) => ({ ...s, phase: 'idle', message: 'Cancelled — copy the report to see the 15 nearest devices scanned.' }))
         return
       }
     }
@@ -506,10 +554,15 @@ export default function SpikeScreen() {
       {state.phase === 'awaiting-pick' ? (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pick a device ({state.candidates.length})</Text>
+          <Text style={styles.sectionHint}>Named devices are listed first, then by RSSI (strongest signal at top). If neither tracker appears, wake them (rub / tap them) — many BLE trackers only advertise briefly after motion.</Text>
           {state.candidates.map((ad) => (
             <Pressable key={ad.deviceId} style={styles.deviceRow} onPress={() => onPickDevice(ad)}>
-              <Text style={styles.deviceName}>{ad.name ?? '(no name)'}</Text>
-              <Text style={styles.deviceMeta}>{ad.deviceId} · rssi {ad.rssi ?? '?'}</Text>
+              <Text style={[styles.deviceName, !ad.name && styles.deviceNameFaint]}>{ad.name ?? '(no name)'}</Text>
+              <Text style={styles.deviceMeta}>
+                {ad.deviceId} · rssi {ad.rssi ?? '?'}
+                {ad.serviceUuids.length ? ` · ${ad.serviceUuids.length} svc` : ''}
+                {ad.manufacturerDataBase64 ? ` · mfg ${base64ToHex(ad.manufacturerDataBase64).slice(0, 16)}` : ''}
+              </Text>
             </Pressable>
           ))}
         </View>
@@ -566,8 +619,10 @@ const styles = StyleSheet.create({
   btnText: { color: '#fff', fontWeight: '600' },
   section: { marginTop: 20 },
   sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  sectionHint: { color: '#8f8f8f', fontSize: 12, marginBottom: 8 },
   deviceRow: { paddingVertical: 10, borderBottomColor: '#1f1f22', borderBottomWidth: 1 },
   deviceName: { color: '#fff', fontSize: 15 },
+  deviceNameFaint: { color: '#8f8f8f', fontStyle: 'italic' },
   deviceMeta: { color: '#8f8f8f', fontSize: 12, marginTop: 2 },
   stageRow: { paddingVertical: 6, borderBottomColor: '#1f1f22', borderBottomWidth: 1 },
   stageLabel: { fontWeight: '700', fontFamily: 'monospace' },

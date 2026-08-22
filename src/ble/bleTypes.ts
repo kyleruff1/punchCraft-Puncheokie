@@ -106,7 +106,22 @@ export interface SubscriptionResult {
 export interface SpikeReport {
   runId: string
   stackLabel: string
-  scan: { ok: boolean; devicesFound: number; durationMs: number; errorMessage?: string }
+  scan: {
+    ok: boolean
+    devicesFound: number
+    durationMs: number
+    errorMessage?: string
+    /** Up to N advertisements captured during the scan, most-recent-first
+     * after dedup. Included so a report copied without a pick still lets a
+     * reviewer see what was in range. */
+    topDevices?: Array<{
+      deviceId: string
+      name?: string
+      rssi?: number
+      serviceUuids: string[]
+      manufacturerDataHex?: string
+    }>
+  }
   connect: { ok: boolean; deviceId?: string; durationMs: number; errorMessage?: string }
   discover: { ok: boolean; serviceCount: number; characteristicCount: number; durationMs: number; errorMessage?: string }
   subscribe: {
