@@ -186,6 +186,142 @@ export default function SpikeScreen() {
     subscriptionRef.current = null
     deviceIdRef.current = null
     const runId = newRunId()
+
+    // Shared subscribe-stage runner used by both the normal flow
+    // (scan→pick→connect→discover→subscribe) and the "coordinator already
+    // has this device connected" shortcut. Populates report.subscribe and
+    // the awaiting-frame UI; leaves handles live in allHandlesRef so
+    // Reset can tear them down. Returns after the frame-wait window
+    // closes or a frame arrives.
+    const runSubscribeStage = async (snapshot: GattSnapshot, deviceId: string): Promise<void> => {
+      safeSetState((s) => ({ ...s, phase: 'subscribing', message: 'Subscribing to every notify/indicate characteristic…' }))
+      const notifiables: Array<{ serviceUuid: string; characteristicUuid: string }> = []
+      for (const svc of snapshot.services) {
+        for (const c of svc.characteristics) {
+          if (c.properties.notify || c.properties.indicate) {
+            notifiables.push({ serviceUuid: svc.uuid, characteristicUuid: c.uuid })
+          }
+        }
+      }
+      if (notifiables.length === 0) {
+        const missing: SubscriptionResult = {
+          serviceUuid: '', characteristicUuid: '', direction: 'notification',
+          success: false, errorMessage: 'no notify characteristic on this device',
+        }
+        patchReport((r) => {
+          r.subscribe = { ok: false, subscribed: 0, subscriptions: [missing], errorMessage: 'no notify characteristic on this device' }
+          r.finishedAtIso = new Date().toISOString()
+        })
+        safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — subscribe skipped (no notifiables).' }))
+        return
+      }
+
+      let firstFrameAt: number | null = null
+      let firstFrameHex: string | undefined
+      const capturedFrames: Array<{ serviceUuid: string; characteristicUuid: string; monotonicTimeMs: number; valueHex: string }> = []
+      const handles: SubscriptionHandle[] = []
+      let subReady = false
+      const onFrame = (frame: RawBleFrame) => {
+        if (!subReady) return
+        if (firstFrameAt === null) {
+          firstFrameAt = performance.now()
+          firstFrameHex = frame.valueHex
+          logger.info('spike.frame.first', 'First frame received', {
+            serviceUuid: safe(frame.serviceUuid),
+            characteristicUuid: safe(frame.characteristicUuid),
+            bytes: safe(frame.valueBase64.length),
+          })
+        }
+        if (capturedFrames.length < MAX_REPORT_FRAMES) {
+          capturedFrames.push({
+            serviceUuid: frame.serviceUuid,
+            characteristicUuid: frame.characteristicUuid,
+            monotonicTimeMs: Math.round(frame.monotonicTimeMs),
+            valueHex: frame.valueHex,
+          })
+        }
+      }
+
+      try {
+        for (const target of notifiables) {
+          if (cancelledRef.current) break
+          try {
+            const h = await facade.monitorCharacteristic(deviceId, target.serviceUuid, target.characteristicUuid, onFrame)
+            handles.push(h)
+          } catch (e) {
+            handles.push({
+              result: { serviceUuid: target.serviceUuid, characteristicUuid: target.characteristicUuid, direction: 'notification', success: false, errorMessage: errMessage(e) },
+              setupOutcome: Promise.resolve({ serviceUuid: target.serviceUuid, characteristicUuid: target.characteristicUuid, direction: 'notification' as const, success: false, errorMessage: errMessage(e) }),
+              unsubscribe: () => { /* no-op */ },
+            })
+          }
+        }
+      } catch (e) {
+        logger.error('spike.subscribe.unexpected', 'Subscribe loop threw', { error: safe(errMessage(e)) })
+      }
+
+      if (cancelledRef.current) {
+        for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
+        return
+      }
+      const setupResults = await Promise.all(handles.map((h) => h.setupOutcome))
+      if (cancelledRef.current) {
+        for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
+        return
+      }
+      const subscribedCount = setupResults.filter((r) => r.success).length
+      if (subscribedCount === 0) {
+        patchReport((r) => {
+          r.subscribe = { ok: false, subscribed: 0, subscriptions: setupResults, errorMessage: 'every subscribe attempt failed' }
+          r.finishedAtIso = new Date().toISOString()
+        })
+        safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — every subscribe failed.' }))
+        return
+      }
+
+      subscriptionRef.current = handles.length > 0 ? handles[0] ?? null : null
+      allHandlesRef.current = handles
+      safeSetState((s) => ({
+        ...s,
+        phase: 'awaiting-frame',
+        message: `Subscribed to ${subscribedCount}/${handles.length} chars — throw a punch (up to ${FIRST_FRAME_TIMEOUT_MS / 1000}s)…`,
+      }))
+      const subStart = performance.now()
+      subReady = true
+      const deadline = subStart + FIRST_FRAME_TIMEOUT_MS
+      while (firstFrameAt === null && performance.now() < deadline && !cancelledRef.current) {
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      if (cancelledRef.current) return
+      const firstFrameWithinMs = firstFrameAt !== null ? Math.round(firstFrameAt - subStart) : undefined
+      const gotFrame = firstFrameAt !== null
+      patchReport((r) => {
+        r.subscribe = {
+          ok: gotFrame,
+          subscribed: subscribedCount,
+          firstFrameWithinMs,
+          subscriptions: setupResults,
+          frames: capturedFrames,
+          errorMessage: gotFrame ? undefined : `no frame received within ${FIRST_FRAME_TIMEOUT_MS}ms across ${subscribedCount} channels`,
+        }
+        r.finishedAtIso = new Date().toISOString()
+      })
+      if (gotFrame) {
+        logger.info('spike.done.ok', 'Spike completed with first frame', {
+          firstFrameWithinMs: safe(firstFrameWithinMs ?? -1),
+          totalFrames: safe(capturedFrames.length),
+        })
+        safeSetState((s) => ({
+          ...s,
+          phase: 'done',
+          message: `Done — first frame within ${firstFrameWithinMs}ms across ${subscribedCount} channel(s); captured ${capturedFrames.length} frame(s).`,
+          firstFrameHex,
+        }))
+      } else {
+        safeSetState((s) => ({ ...s, phase: 'done', message: `Done — subscribed to ${subscribedCount} channel(s) but no frame observed. Try punching harder or waking the tracker.` }))
+      }
+    }
+
     const stackLabel = `${info.appVersion}@${info.gitSha}`
     const report = emptyReport(runId, stackLabel)
     setState({ phase: 'permissions', message: 'Requesting permissions…', candidates: [], report })
@@ -234,6 +370,57 @@ export default function SpikeScreen() {
       logger.error('spike.adapter.error', 'isReady threw', { error: safe(errMessage(e)) })
       safeSetState((s) => ({ ...s, phase: 'idle', message: `Adapter check failed: ${errMessage(e)}` }))
       return
+    }
+
+    // Short-circuit: if the coordinator already has a FightCam connected
+    // (badges show green), the tracker is committed to that connection and
+    // will NOT advertise anymore, so a scan cannot find it. Reuse the
+    // existing connection: skip scan entirely and go straight to
+    // discover + subscribe using that deviceId.
+    {
+      const slots = getTrackerSlots()
+      const readyOf = (s: (typeof slots)['left']) =>
+        s && (s.state === 'ready' || s.state === 'streaming') ? s : null
+      const reused = readyOf(slots.right) ?? readyOf(slots.left)
+      if (reused) {
+        deviceIdRef.current = reused.deviceId
+        patchReport((r) => {
+          r.scan = { ok: true, devicesFound: 0, durationMs: 0, topDevices: [] }
+          r.connect = { ok: true, deviceId: reused.deviceId, durationMs: 0 }
+        })
+        logger.info('spike.reuseCoordinator', 'Reusing coordinator connection; skipping scan+connect', {
+          deviceId: deviceSensitive(reused.deviceId),
+          slotName: safe(reused.name ?? null),
+        })
+        safeSetState((s) => ({
+          ...s,
+          phase: 'discovering',
+          message: `Reusing existing connection to ${reused.name ?? reused.deviceId} — discovering services…`,
+        }))
+        try {
+          const discoverStart = performance.now()
+          const snapshot = await facade.discoverAllServicesAndCharacteristics(reused.deviceId)
+          if (cancelledRef.current) return
+          const durationMs = Math.round(performance.now() - discoverStart)
+          const charCount = snapshot.services.reduce((n, s) => n + s.characteristics.length, 0)
+          const services = snapshot.services.map((svc) => ({
+            uuid: svc.uuid,
+            characteristics: svc.characteristics.map((c) => ({ uuid: c.uuid, properties: c.properties })),
+          }))
+          patchReport((r) => {
+            r.discover = { ok: true, serviceCount: snapshot.services.length, characteristicCount: charCount, durationMs, services }
+          })
+          await runSubscribeStage(snapshot, reused.deviceId)
+        } catch (e) {
+          if (cancelledRef.current) return
+          patchReport((r) => {
+            r.discover = { ok: false, serviceCount: 0, characteristicCount: 0, durationMs: 0, errorMessage: errMessage(e) }
+            r.finishedAtIso = new Date().toISOString()
+          })
+          safeSetState((s) => ({ ...s, phase: 'done', message: `Discover failed on reused connection: ${errMessage(e)}` }))
+        }
+        return
+      }
     }
 
     // Stage 2 — scan. Discovery mode: no service filter.
@@ -384,178 +571,10 @@ export default function SpikeScreen() {
       return
     }
 
-    // Stage 6 — subscribe to EVERY notify/indicate characteristic so a
-    // real punch fires on whichever channel the tracker uses. The report
-    // records every subscription attempt + every frame observed so a
-    // reviewer can identify which characteristic carries punch events.
-    safeSetState((s) => ({ ...s, phase: 'subscribing', message: 'Subscribing to every notify/indicate characteristic…' }))
-    const notifiables: Array<{ serviceUuid: string; characteristicUuid: string }> = []
-    for (const svc of snapshot.services) {
-      for (const c of svc.characteristics) {
-        if (c.properties.notify || c.properties.indicate) {
-          notifiables.push({ serviceUuid: svc.uuid, characteristicUuid: c.uuid })
-        }
-      }
-    }
-
-    if (notifiables.length === 0) {
-      const missing: SubscriptionResult = {
-        serviceUuid: '',
-        characteristicUuid: '',
-        direction: 'notification',
-        success: false,
-        errorMessage: 'no notify characteristic on this device',
-      }
-      patchReport((r) => {
-        r.subscribe = {
-          ok: false,
-          subscribed: 0,
-          subscriptions: [missing],
-          errorMessage: 'no notify characteristic on this device',
-        }
-        r.finishedAtIso = new Date().toISOString()
-      })
-      logger.warn('spike.subscribe.skipped', 'No notify characteristic present')
-      safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — subscribe skipped (no notifiables).' }))
-      return
-    }
-
-    // Stage 7 — subscribe to all, then wait for the first frame from any of them.
-    let firstFrameAt: number | null = null
-    let firstFrameHex: string | undefined
-    const capturedFrames: Array<{ serviceUuid: string; characteristicUuid: string; monotonicTimeMs: number; valueHex: string }> = []
-    const handles: SubscriptionHandle[] = []
-    let subReady = false
-    const onFrame = (frame: RawBleFrame) => {
-      if (!subReady) return
-      if (firstFrameAt === null) {
-        firstFrameAt = performance.now()
-        firstFrameHex = frame.valueHex
-        logger.info('spike.frame.first', 'First frame received', {
-          serviceUuid: safe(frame.serviceUuid),
-          characteristicUuid: safe(frame.characteristicUuid),
-          bytes: safe(frame.valueBase64.length),
-        })
-      }
-      if (capturedFrames.length < MAX_REPORT_FRAMES) {
-        capturedFrames.push({
-          serviceUuid: frame.serviceUuid,
-          characteristicUuid: frame.characteristicUuid,
-          monotonicTimeMs: Math.round(frame.monotonicTimeMs),
-          valueHex: frame.valueHex,
-        })
-      }
-    }
-
-    try {
-      for (const target of notifiables) {
-        if (cancelledRef.current) break
-        try {
-          const h = await facade.monitorCharacteristic(
-            picked.deviceId,
-            target.serviceUuid,
-            target.characteristicUuid,
-            onFrame,
-          )
-          handles.push(h)
-        } catch (e) {
-          handles.push({
-            result: {
-              serviceUuid: target.serviceUuid,
-              characteristicUuid: target.characteristicUuid,
-              direction: 'notification',
-              success: false,
-              errorMessage: errMessage(e),
-            },
-            setupOutcome: Promise.resolve({
-              serviceUuid: target.serviceUuid,
-              characteristicUuid: target.characteristicUuid,
-              direction: 'notification' as const,
-              success: false,
-              errorMessage: errMessage(e),
-            }),
-            unsubscribe: () => { /* no-op */ },
-          })
-        }
-      }
-    } catch (e) {
-      logger.error('spike.subscribe.unexpected', 'Subscribe loop threw', { error: safe(errMessage(e)) })
-    }
-
-    if (cancelledRef.current) {
-      for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
-      return
-    }
-
-    // Wait for every handle's setupOutcome so we know which subs really took.
-    const setupResults = await Promise.all(handles.map((h) => h.setupOutcome))
-    if (cancelledRef.current) {
-      for (const h of handles) { try { h.unsubscribe() } catch { /* best-effort */ } }
-      return
-    }
-    const subscribedCount = setupResults.filter((r) => r.success).length
-
-    if (subscribedCount === 0) {
-      patchReport((r) => {
-        r.subscribe = {
-          ok: false,
-          subscribed: 0,
-          subscriptions: setupResults,
-          errorMessage: 'every subscribe attempt failed',
-        }
-        r.finishedAtIso = new Date().toISOString()
-      })
-      logger.error('spike.subscribe.allFailed', 'Every subscribe attempt failed')
-      safeSetState((s) => ({ ...s, phase: 'done', message: 'Done — every subscribe failed.' }))
-      return
-    }
-
-    // Track the union of live handles so Reset can tear them all down.
-    subscriptionRef.current = handles.length > 0 ? handles[0] ?? null : null
-    allHandlesRef.current = handles
-    safeSetState((s) => ({
-      ...s,
-      phase: 'awaiting-frame',
-      message: `Subscribed to ${subscribedCount}/${handles.length} chars — throw a punch (up to ${FIRST_FRAME_TIMEOUT_MS / 1000}s)…`,
-    }))
-
-    // subStart AFTER the CCCD-confirmed subscriptions — measures device→app latency.
-    const subStart = performance.now()
-    subReady = true
-    const deadline = subStart + FIRST_FRAME_TIMEOUT_MS
-    while (firstFrameAt === null && performance.now() < deadline && !cancelledRef.current) {
-      await new Promise((r) => setTimeout(r, 50))
-    }
-    if (cancelledRef.current) return
-
-    const firstFrameWithinMs = firstFrameAt !== null ? Math.round(firstFrameAt - subStart) : undefined
-    const gotFrame = firstFrameAt !== null
-    patchReport((r) => {
-      r.subscribe = {
-        ok: gotFrame,
-        subscribed: subscribedCount,
-        firstFrameWithinMs,
-        subscriptions: setupResults,
-        frames: capturedFrames,
-        errorMessage: gotFrame ? undefined : `no frame received within ${FIRST_FRAME_TIMEOUT_MS}ms across ${subscribedCount} channels`,
-      }
-      r.finishedAtIso = new Date().toISOString()
-    })
-    if (gotFrame) {
-      logger.info('spike.done.ok', 'Spike completed with first frame', {
-        firstFrameWithinMs: safe(firstFrameWithinMs ?? -1),
-        totalFrames: safe(capturedFrames.length),
-      })
-      safeSetState((s) => ({
-        ...s,
-        phase: 'done',
-        message: `Done — first frame within ${firstFrameWithinMs}ms across ${subscribedCount} channel(s); captured ${capturedFrames.length} frame(s).`,
-        firstFrameHex,
-      }))
-    } else {
-      logger.warn('spike.done.noframe', 'Subscribed but no frame observed within timeout')
-      safeSetState((s) => ({ ...s, phase: 'done', message: `Done — subscribed to ${subscribedCount} channel(s) but no frame observed. Try punching harder or waking the tracker.` }))
-    }
+    // Stage 6 + 7 — subscribe to every notify/indicate characteristic and
+    // wait for the first frame. Extracted into runSubscribeStage so the
+    // "coordinator already connected" shortcut above can reuse it.
+    await runSubscribeStage(snapshot, picked.deviceId)
   }, [info.appVersion, info.gitSha, patchReport, safeSetState])
 
   const onPickDevice = useCallback((ad: AdvertisementSnapshot) => {
