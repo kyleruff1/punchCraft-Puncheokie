@@ -18,7 +18,7 @@ const config: ExpoConfig = {
   version: '0.1.0',
   scheme: 'punchlab',
   orientation: 'portrait',
-  userInterfaceStyle: 'automatic',
+  userInterfaceStyle: 'dark',
   // New Architecture is always enabled from Expo SDK 55 onward (§11.2 note);
   // no config key exists to toggle it.
   extra: {

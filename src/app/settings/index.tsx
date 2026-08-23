@@ -1,6 +1,7 @@
 import { Link } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { getBuildInfo } from '@diagnostics/buildInfo'
+import { colors } from '@/theme/colors'
 
 export default function SettingsLanding() {
   const info = getBuildInfo()
@@ -20,7 +21,7 @@ export default function SettingsLanding() {
   ]
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.container}>
       <Text style={styles.title}>Diagnostics</Text>
       <View style={styles.list}>
         {rows.map(([label, value]) => (
@@ -42,26 +43,34 @@ export default function SettingsLanding() {
 }
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
-  title: { fontSize: 24, fontWeight: '700' },
-  list: { borderWidth: 1, borderColor: '#333', borderRadius: 8, overflow: 'hidden' },
+  title: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
+  list: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#666',
+    borderBottomColor: colors.border,
     gap: 12,
   },
-  rowLabel: { fontSize: 14, fontWeight: '600', flexShrink: 0 },
-  rowValue: { fontSize: 14, flexShrink: 1, textAlign: 'right' },
+  rowLabel: { fontSize: 14, fontWeight: '600', flexShrink: 0, color: colors.textPrimary },
+  rowValue: { fontSize: 14, flexShrink: 1, textAlign: 'right', color: colors.textSecondary },
   linkButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: colors.surface,
   },
-  linkButtonText: { fontSize: 16, fontWeight: '600' },
+  linkButtonText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 })

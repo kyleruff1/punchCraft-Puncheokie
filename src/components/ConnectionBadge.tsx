@@ -2,6 +2,7 @@ import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
 import type { SlotState } from '@/state/useTrackerStore'
+import { colors, stateColors } from '@/theme/colors'
 
 export interface ConnectionBadgeProps {
   hand: 'left' | 'right'
@@ -16,22 +17,22 @@ type Visual = {
 
 function resolveVisual(slot: SlotState | null): Visual {
   if (!slot) {
-    return { color: colors.gray, label: '(unassigned)' }
+    return { color: stateColors.unassigned, label: '(unassigned)' }
   }
   switch (slot.state) {
     case 'ready':
     case 'streaming':
-      return { color: colors.green, label: 'Connected' }
+      return { color: stateColors.connected, label: 'Connected' }
     case 'connecting':
     case 'bonding':
     case 'discovering':
     case 'initializing':
-      return { color: colors.amber, label: 'Connecting…' }
+      return { color: stateColors.connecting, label: 'Connecting…' }
     case 'recovering':
-      return { color: colors.amber, label: 'Reconnecting…' }
+      return { color: stateColors.connecting, label: 'Reconnecting…' }
     case 'error':
       return {
-        color: colors.red,
+        color: stateColors.disconnected,
         label: slot.errorMessage ? `Error: ${slot.errorMessage}` : 'Error',
       }
     case 'dormant':
@@ -41,7 +42,7 @@ function resolveVisual(slot: SlotState | null): Visual {
       // 'dormant' is the §11.5 terminal state after a graceful disconnect,
       // and also the initial state after assignSlot. Show it as
       // "Disconnected" — the user-facing meaning is the same.
-      return { color: colors.red, label: 'Disconnected' }
+      return { color: stateColors.disconnected, label: 'Disconnected' }
   }
 }
 
@@ -71,16 +72,6 @@ export function ConnectionBadge(props: ConnectionBadgeProps): React.ReactElement
   )
 }
 
-const colors = {
-  green: '#2E7D32',
-  amber: '#ED6C02',
-  red: '#C62828',
-  gray: '#9E9E9E',
-  bg: '#F5F5F5',
-  border: '#E0E0E0',
-  text: '#212121',
-}
-
 const styles = StyleSheet.create({
   pill: {
     width: 120,
@@ -89,7 +80,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     borderRadius: 18,
-    backgroundColor: colors.bg,
+    backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
@@ -103,6 +94,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
 })

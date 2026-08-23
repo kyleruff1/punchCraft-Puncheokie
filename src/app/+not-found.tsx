@@ -1,6 +1,8 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { colors } from '@/theme/colors'
+
 export default function NotFound() {
   return (
     <View style={styles.container}>
@@ -16,14 +18,22 @@ export default function NotFound() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, gap: 16, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '700' },
+  container: {
+    flex: 1,
+    padding: 20,
+    gap: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+  title: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
   linkButton: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.borderStrong,
     borderRadius: 8,
+    backgroundColor: colors.surface,
   },
-  linkButtonText: { fontSize: 16, fontWeight: '600' },
+  linkButtonText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
 })
