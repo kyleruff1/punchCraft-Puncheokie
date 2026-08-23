@@ -24,6 +24,7 @@ import type {
   TrackerProtocolAdapter,
 } from '@protocol/TrackerProtocolAdapter'
 import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
+import type { CaptureSink } from '@capture/CaptureSink'
 import { deviceSensitive, logger, safe } from '@diagnostics/logger'
 
 export interface PunchStreamOptions {
@@ -38,6 +39,18 @@ export interface PunchStreamOptions {
     unknown?: boolean
     notes?: string[]
   }) => void
+  /**
+   * Durable sink for raw frames. Every frame is handed to `sink.capture()`
+   * BEFORE the adapter parses it, so a malformed payload is already stored
+   * by the time the decoder rejects it (CLAUDE.md §1, §11.9, §12.4).
+   *
+   * Optional only so that unit tests and the replay harness can run without
+   * a database; in the app this should always be a real BleCaptureService.
+   * When omitted, frames are decoded but NOT retained.
+   */
+  sink?: CaptureSink
+  /** Optional durable sink for decoded events. */
+  onEventPersist?: (event: TrackerPunchEvent) => void
 }
 
 export interface PunchStreamController {
@@ -53,7 +66,7 @@ export interface PunchStreamController {
 export async function startPunchStream(
   opts: PunchStreamOptions,
 ): Promise<PunchStreamController> {
-  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta } = opts
+  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta, sink, onEventPersist } = opts
 
   const handles: SubscriptionHandle[] = []
   const subscribedChars: string[] = []
@@ -64,9 +77,19 @@ export async function startPunchStream(
 
   const onFrame = (frame: RawBleFrame): void => {
     const stampedFrame: RawBleFrame = { ...frame, handAtCapture: hand as Hand }
+
+    // PERSIST BEFORE PARSE (CLAUDE.md §1, spec §11.9 / §12.4). This must stay
+    // the first thing that touches the frame, and must stay outside the
+    // try/catch below — a decoder throw can never be allowed to skip it, and
+    // the sink's own contract is that it does not throw.
+    sink?.capture(stampedFrame)
+
     try {
       const result = adapter.decodeFrame(stampedFrame, state)
-      for (const ev of result.events) onEvent(ev)
+      for (const ev of result.events) {
+        onEventPersist?.(ev)
+        onEvent(ev)
+      }
       if (onDecodeMeta && (result.malformed || result.unknown || result.notes)) {
         onDecodeMeta({
           frameId: frame.id,

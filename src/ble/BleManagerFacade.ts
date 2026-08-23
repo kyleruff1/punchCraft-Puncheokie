@@ -61,6 +61,19 @@ export interface ConnectOptions {
 }
 
 export interface BleManagerFacade {
+  /**
+   * Install the provider used to tag emitted frames with the capture they
+   * belong to. `RawBleFrame.id` is derived as `<captureId>-<seq>` and is the
+   * PRIMARY KEY of `ble_frames`, so the id must be unique across app runs —
+   * not just within one. Until a capture opens, frames are tagged
+   * 'ephemeral', whose sequence restarts at 0 on every launch and therefore
+   * MUST NOT be persisted.
+   *
+   * The capture pipeline calls this when it opens a capture and again with a
+   * provider returning 'ephemeral' when it closes.
+   */
+  setCaptureIdProvider(provider: () => string): void
+
   /** True once the underlying manager reports powered-on Bluetooth. */
   isReady(): Promise<boolean>
 

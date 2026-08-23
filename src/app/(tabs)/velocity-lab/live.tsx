@@ -34,6 +34,8 @@ import {
   startPunchStream as startPunchStreamModule,
   type PunchStreamController,
 } from '@protocol/PunchStream'
+import type { BleCaptureService } from '@capture/BleCaptureService'
+import { startCapture, stopCapture } from '@capture/getCaptureService'
 import type { TrackerPunchEvent } from '@/domain/punch/PunchEvent'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
 import type { SlotState } from '@/state/useTrackerStore'
@@ -77,6 +79,8 @@ interface StartPunchStreamArgs {
   hand: Hand
   onEvent: (event: TrackerPunchEvent) => void
   onDecodeMeta: (meta: { kind: MetaKind; text: string }) => void
+  /** Durable capture sink; frames are persisted before the decoder runs. */
+  capture: BleCaptureService | null
 }
 
 /**
@@ -93,7 +97,7 @@ interface StartPunchStreamArgs {
  * adapter.buildInitializationPlan (§12.1).
  */
 function startPunchStream(args: StartPunchStreamArgs): StreamController {
-  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta } = args
+  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta, capture } = args
   let real: PunchStreamController | null = null
   let stopped = false
   let lastReportedInitErrors = 0
@@ -113,6 +117,7 @@ function startPunchStream(args: StartPunchStreamArgs): StreamController {
     deviceId,
     adapter,
     hand,
+    ...(capture ? { sink: capture, onEventPersist: (e) => capture.recordEvent(e) } : {}),
     onEvent,
     onDecodeMeta: (m) => {
       if (m.malformed) {
@@ -255,6 +260,22 @@ export default function LiveDecodeScreen(): React.ReactElement {
   useEffect(() => {
     if (!active || !adapter) return
     const facade = getBleManager()
+
+    // Open a capture BEFORE the stream starts, so the very first frame is
+    // already covered and carries a capture-scoped id (§11.9, §12.4). A
+    // storage failure must not block live decode — we fall back to running
+    // without persistence and say so in the meta log.
+    let capture: BleCaptureService | null = null
+    try {
+      capture = startCapture(`live-${active.hand}-${active.slot.deviceId}`)
+    } catch (err) {
+      capture = null
+      onDecodeMeta({
+        kind: 'init-error',
+        text: `capture unavailable, frames will NOT be persisted: ${(err as Error)?.message ?? String(err)}`,
+      })
+    }
+
     const controller = startPunchStream({
       facade,
       deviceId: active.slot.deviceId,
@@ -262,11 +283,14 @@ export default function LiveDecodeScreen(): React.ReactElement {
       hand: active.hand,
       onEvent,
       onDecodeMeta,
+      capture,
     })
     controllerRef.current = controller
     return () => {
       controller.stop()
       controllerRef.current = null
+      // Flush the tail of the session before the capture closes.
+      void stopCapture()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.slot.deviceId, active?.hand, adapter])

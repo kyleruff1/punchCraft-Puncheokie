@@ -1,22 +1,15 @@
 /**
- * Migration runner + the initial Phase 1 schema (spec §17.1).
+ * Migration 001 — initial Phase 1 schema (spec §17.1).
  *
- * The runner is intentionally tiny: a schema_migrations table records applied
- * ids, and pending migrations are executed in ascending id order within a
- * transaction. Add new migrations by appending to MIGRATIONS.
+ * Tables: tracker_devices, ble_captures, ble_frames, gatt_inventory.
+ * The runner and the migration registry live in ./index.ts.
+ *
+ * SHIPPED — do not edit. Correct anything here with a new migration.
  */
 
-import type { SQLiteDatabase } from 'expo-sqlite'
+import type { Migration } from '@/storage/migrations'
 
-import { logger, safe } from '@/diagnostics/logger'
-
-interface Migration {
-  id: number
-  name: string
-  up: (db: SQLiteDatabase) => void
-}
-
-const MIGRATION_001: Migration = {
+export const MIGRATION_001: Migration = {
   id: 1,
   name: '001_initial',
   up(db) {
@@ -78,51 +71,4 @@ const MIGRATION_001: Migration = {
       );
     `)
   },
-}
-
-const MIGRATIONS: readonly Migration[] = [MIGRATION_001]
-
-/** Apply any migrations whose id is not yet recorded in schema_migrations. */
-export function runMigrations(db: SQLiteDatabase): void {
-  db.execSync(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      id INTEGER PRIMARY KEY,
-      applied_at TEXT NOT NULL
-    );
-  `)
-
-  const appliedStmt = db.prepareSync('SELECT id FROM schema_migrations')
-  const applied = new Set<number>()
-  try {
-    const rows = appliedStmt.executeSync<{ id: number }>().getAllSync()
-    for (const r of rows) applied.add(r.id)
-  } finally {
-    appliedStmt.finalizeSync()
-  }
-
-  const pending = [...MIGRATIONS].sort((a, b) => a.id - b.id).filter((m) => !applied.has(m.id))
-  if (pending.length === 0) return
-
-  for (const m of pending) {
-    db.execSync('BEGIN')
-    try {
-      m.up(db)
-      const insert = db.prepareSync('INSERT INTO schema_migrations (id, applied_at) VALUES (?, ?)')
-      try {
-        insert.executeSync([m.id, new Date().toISOString()])
-      } finally {
-        insert.finalizeSync()
-      }
-      db.execSync('COMMIT')
-      logger.info('storage.migrate', 'migration applied', { id: safe(m.id), name: safe(m.name) })
-    } catch (err) {
-      db.execSync('ROLLBACK')
-      logger.error('storage.migrate.failed', 'migration failed', {
-        id: safe(m.id),
-        name: safe(m.name),
-        error: safe(String(err)),
-      })
-      throw err
-    }
-  }
 }

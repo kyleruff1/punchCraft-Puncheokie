@@ -167,6 +167,10 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
    * capture opens; until then frames are tagged 'ephemeral'. */
   getCaptureId: () => string = () => 'ephemeral'
 
+  setCaptureIdProvider(provider: () => string): void {
+    this.getCaptureId = provider
+  }
+
   private ensure(): PlxBleManager {
     if (!this.manager) this.manager = new PlxBleManager()
     return this.manager
