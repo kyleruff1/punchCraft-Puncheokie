@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native'
 
 import { ConnectionBadge } from '@components/ConnectionBadge'
 import { useTrackerStore } from '@/state/useTrackerStore'
+import { colors } from '@/theme/colors'
 
 /**
  * Top-of-screen banner showing both tracker slots (left + right).
@@ -28,7 +29,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: '#FFFFFF',
+    borderBottomColor: colors.border,
+    backgroundColor: colors.surface,
   },
 })
