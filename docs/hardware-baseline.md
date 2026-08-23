@@ -5,7 +5,7 @@ Fill-in for the development tablet and the two FightCamp v1 punch trackers. Task
 ## Tablet identity
 
 - Manufacturer: **LENOVO**
-- Model number: **Lenovo TB125FU** (Lenovo Tab M11 5G / Lenovo Tab P11 5G — 11.5" MediaTek variant, `TB125FU`)
+- Model number: **Lenovo TB125FU** (Lenovo Tab M10 Plus 3rd Gen (`TB125FU`))
 - Marketing name: (not exposed via getprop)
 - Android release: **13**
 - API level: **33**

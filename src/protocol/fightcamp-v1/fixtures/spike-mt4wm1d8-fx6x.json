@@ -1,0 +1,31 @@
+{
+  "runId": "spike-mt4wm1d8-fx6x",
+  "capturedAt": "2026-08-23T01:50:07.652Z",
+  "deviceId": "EA:69:2D:9C:FD:53",
+  "notes": "First full probe capture where notifications flowed on ca281069 (H07-REVISED). Byte payloads verbatim from the operator's JSON export.",
+  "serviceUuid": "ca280069-5470-4e34-94dd-caf160200b29",
+  "characteristicUuid": "ca281069-5470-4e34-94dd-caf160200b29",
+  "records": [
+    { "seq": 0,  "elapsedMs": 0,     "valueHex": "05bd006f518a6a86040570006f518a6abc04", "notes": "18-byte payload = 2 records" },
+    { "seq": 1,  "elapsedMs": 286,   "valueHex": "0584006f518a6af20402f5009f518a6a9d0c" },
+    { "seq": 2,  "elapsedMs": 680,   "valueHex": "011001a0518a6a530a" },
+    { "seq": 3,  "elapsedMs": 1459,  "valueHex": "03d400a1518a6a1609" },
+    { "seq": 4,  "elapsedMs": 2045,  "valueHex": "01b500a1518a6aaf08" },
+    { "seq": 5,  "elapsedMs": 3360,  "valueHex": "05c200a2518a6af208" },
+    { "seq": 6,  "elapsedMs": 3608,  "valueHex": "013f02a3518a6a4109" },
+    { "seq": 7,  "elapsedMs": 4044,  "valueHex": "059300a3518a6abc06" },
+    { "seq": 9,  "elapsedMs": 13891, "valueHex": "03fa000300c2a89409" },
+    { "seq": 10, "elapsedMs": 14523, "valueHex": "042d010400c2a83c09" },
+    { "seq": 11, "elapsedMs": 15109, "valueHex": "0310010400c2a8ce09" },
+    { "seq": 12, "elapsedMs": 15841, "valueHex": "0328010500c2a8820a" },
+    { "seq": 13, "elapsedMs": 16232, "valueHex": "01d0010500c2a8f10a" },
+    { "seq": 15, "elapsedMs": 28224, "valueHex": "055e010d00c2a8cf0b" },
+    { "seq": 17, "elapsedMs": 40703, "valueHex": "03d6000f00c2a88c09" },
+    { "seq": 18, "elapsedMs": 41092, "valueHex": "03d8000f00c2a8fa08" },
+    { "seq": 19, "elapsedMs": 42313, "valueHex": "01bd001100c2a81a08" },
+    { "seq": 20, "elapsedMs": 42749, "valueHex": "03cb001100c2a8a008" },
+    { "seq": 21, "elapsedMs": 43141, "valueHex": "0348011100c2a8fd08" },
+    { "seq": 22, "elapsedMs": 44653, "valueHex": "03a4001300c2a87e0a" },
+    { "seq": 23, "elapsedMs": 45190, "valueHex": "03c8001400c2a8c008" }
+  ]
+}

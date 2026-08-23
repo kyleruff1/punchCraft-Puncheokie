@@ -129,3 +129,120 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
   2. Read 0x1070, 0x1071, 0x1073, 0x1074 in a diagnostic pass and log the raw bytes.
   3. Once M01-04 official-app HCI captures land, correlate the first writes the vendor app sends to 0x1079 with what appears on 0x1077 in response.
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H08 — Lenovo TB125FU (Tab M10 Plus 3rd Gen) blocks HCI snoop logging
+
+- **Status:** confirmed
+- **Confidence:** high
+- **Claim:** On this Lenovo build (Android 13 / API 33 / MediaTek), the Bluetooth HCI snoop-log toggle in Developer options does not persist to `persist.bluetooth.btsnoopenable` and Lenovo's BluetoothManagerService does not honor the AOSP-standard `settings put secure bluetooth_hci_log 1` fallback. Without root or a system-UID app, HCI snoop capture is not achievable on this tablet.
+- **Evidence:** 2026-08-22. After confirming Developer options enabled (`development_settings_enabled = 1`) and cycling Bluetooth off/on, `getprop persist.bluetooth.btsnoopenable` returns empty; `dumpsys bluetooth_manager` shows `mSnoopLogSettingAtEnable = empty`; writing both `secure.bluetooth_hci_log = 1` and `global.bluetooth_hci_log = 1` via `settings put` succeeds but does not affect the persist prop; the `/data/misc/bluetooth/logs/` directory is not readable without root.
+- **Consequence:** HCI snoop capture for §12.2 controlled scenarios must either (a) use a different Android tablet whose Dev options toggle works, (b) use a rooted device, or (c) skip HCI capture entirely and reverse-engineer via active probing (writing byte sequences to the tracker's command channel and observing notification responses on our own BLE stack).
+- **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H09 — FightCamp v1 = Hykso hardware; Hykso app works; hardware is TI-SensorTag-class
+
+- **Status:** supported (multi-source community reports)
+- **Confidence:** high
+- **Claim:** The FightCamp v1 trackers are structurally identical to the (pre-rebrand) Hykso punch trackers — FightCamp and Hykso were the same company. The physical hardware is a small BLE peripheral in the TI SensorTag lineage: MCU + BLE radio + 3-axis accelerometer + gyroscope. The free Hykso Android app natively pairs the FightCamp v1 trackers and streams live punch metrics ("Freestyle Mode") without any subscription.
+- **Evidence:** User-reported 2026-08-22 sourced from r/androiddev discussions + FightCamp Facebook community + Reddit "V1 tracker" threads. Cross-references our own H01 finding that the custom service UUID `ca280069-…-caf160200b29` starts with the "ca28" prefix (Hykso-style vendor ID), and H05 that the tracker exposes standard Nordic Legacy DFU (Hykso used nRF-family SoCs).
+- **Consequence — big:**
+  1. The **Hykso app's Android APK is a working reference implementation** of the punch-tracker protocol. We can decompile it (`jadx`) and read the exact init sequence written to `ca281079`, the packet format on `ca281077`, and any config bytes on the read/write chars 0x1071–0x1076. Replaces trial-and-error probing with source-of-truth extraction.
+  2. If the tracker really is a **TI-SensorTag-class device**, the underlying data model is very likely raw IMU (accel + gyro) samples plus event flags — either the tracker streams IMU + we compute punch metrics on-device (spec §9.4-style algorithm), or the tracker's firmware detects punch events and emits them as pre-processed frames. The Hykso app decoder will confirm which.
+  3. **A "Freestyle Mode" client already exists** and can be recommended as a fallback for users if our own app slips. Not our shipping product but reassuring re Sprint 1 go/no-go on M10.
+- **Counter-evidence:** Community reports may over-generalize — different hardware SKUs may exist in the FightCamp lifecycle. Verify by pairing a tracker with the Hykso app and confirming full functionality.
+- **Next tests:**
+  1. Install Hykso Android app on the tablet; pair one of the FightCam trackers; confirm live punch count + velocity data.
+  2. `adb pull /data/app/.../com.hykso/base.apk` and decompile with jadx-gui. Grep the Java for `ca281079` / `ca281077` / `caf160200b29` to find the protocol constants.
+  3. Compare the decompiled init sequence with what our probe UI reveals via active byte-write experimentation — if we can reproduce their init and then decode their notification format, Phase 2's FightCampV1Adapter is essentially half-written from the decompilation.
+- **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H07-REVISED — Punch data stream is ca281069 (indication), not ca281077
+
+- **Status:** confirmed (channel + auto-emit); proposed (payload structure)
+- **Confidence:** high (channel), medium (structure)
+- **Claim:** On the FightCamp v1 custom service, the primary event stream is characteristic `ca281069-5470-4e34-94dd-caf160200b29` (indicate direction), not `ca281077` as I guessed in H07. The tracker begins emitting on `ca281069` as soon as the central enables its CCCD — no initialization write to `ca281079` is required. Two writes of `01` to `ca281079` during the probe run had no visible effect on the frame format or rate.
+- **Evidence:** Probe run 2026-08-23T01:50:07Z against tracker `EA:69:2D:9C:FD:53`. All 22 notification entries in the event log landed on `ca281069/indication`; zero landed on `ca281077` or any other notify/indicate channel. Full JSON export saved by the operator; sequence + payload references below in H10.
+- **Consequence:** The Phase 2 `FightCampV1Adapter` needs to subscribe to `ca281069` on connect and skip the initialization write entirely — the "start punch session" step H07 anticipated does not exist, or is a no-op on this firmware. `buildInitializationPlan` can be an empty list.
+- **Counter-evidence to watch:** the write may enable additional channels or unlock the writable config chars (0x1071-0x1076). Worth re-running the probe and comparing frame rate / structure with vs. without the write, on a rested tracker.
+- **Owner / date:** Kyle + Claude, 2026-08-23.
+
+### H10 — FightCamp v1 stream frame format: 9-byte records, byte-0 discriminant
+
+- **Status:** proposed
+- **Confidence:** medium (record boundary), low (field semantics)
+- **Claim:** The `ca281069` payload is a whole number of 9-byte records concatenated with no delimiter. Byte 0 of each record is a small enum discriminator (values 01, 02, 03, 04, 05 observed) — plausible interpretations: event type, hand, sensor id, or a rolling counter. Bytes 1-8 carry the structured payload of that record and their meaning depends on byte 0.
+- **Evidence (raw hex, probe run 2026-08-23):**
+  - 9-byte payloads (single record): `011001a0518a6a530a`, `03d400a1518a6a1609`, `01b500a1518a6aaf08`, `05c200a2518a6af208`, `013f02a3518a6a4109`, `059300a3518a6abc06`, `03fa000300c2a89409`, `042d010400c2a83c09`, `0310010400c2a8ce09`, `0328010500c2a8820a`, `01d0010500c2a8f10a`, `055e010d00c2a8cf0b`, `03d6000f00c2a88c09`, `03d8000f00c2a8fa08`, `01bd001100c2a81a08`, `03cb001100c2a8a008`, `0348011100c2a8fd08`, `03a4001300c2a87e0a`, `03c8001400c2a8c008`.
+  - 18-byte payloads (two records concatenated): `05bd006f518a6a86040570006f518a6abc04`, `0584006f518a6af20402f5009f518a6a9d0c`.
+- **Structural observations:**
+  - All observed payload lengths are multiples of 9. Splitting 18-byte payloads on the 9-byte boundary yields records that begin with the same small-enum discriminator range as single-record frames — strong evidence that 9 is the record width.
+  - Frame arrival is bursty and correlates with punch timing: initial connect burst (seq 0-7), quiescence, then two burst clusters around the operator's two punches (seq 9-13 and seq 17-23).
+  - Two of the fields might be little-endian 16-bit counters — e.g. bytes 3-4 in the post-first-write frames step through `03 00`, `04 00`, `05 00`, `0d 00`, `0f 00` (twice), `11 00` (three times), `13 00`, `14 00` in monotonically-increasing order — consistent with a per-record counter or per-punch id.
+  - A subset of the frames after the operator's writes have a stable `c2 a8` pair at bytes 5-6 that the pre-write frames do not — worth investigating whether the write actually did latch some state we haven't visualized yet.
+- **Consequence if true:** Phase 2 `FightCampV1Decoder` walks the payload in 9-byte strides, switches on byte 0, and materializes one `TrackerPunchEvent` per record. Sixteen more probe runs correlated to specific punch actions (single L, single R, slow, fast, hooks vs straights) will let us pin field semantics without decompiling anything.
+- **Counter-evidence to watch:** longer captures may reveal record widths other than 9 for different event types (config-changed, low-battery, etc.). The 9-byte assumption is only as strong as the sample.
+- **Owner / date:** Kyle + Claude, 2026-08-23.
+
+### H11 — FightCamp v1 punch decoder — CONFIRMED via Hykso APK decompilation
+
+- **Status:** confirmed
+- **Confidence:** high (source-of-truth from vendor implementation)
+- **Source:** Hykso app APK v11.35+ (`com.hykso.hyksofit`) pulled from tablet 2026-08-22, decompiled with `jadx 1.5.2`. Key files:
+  - `com/hykso/hyksofit/session/d.java` — the `Punch` class constructor is the decoder.
+  - `X/a0.java` — the BroadcastReceiver that splits BLE notification payloads into 9-byte (v>=4) or 13-byte (v<4) punch records and dispatches per record.
+  - `m1/C0477c.java` — all custom-service characteristic UUIDs.
+  - `m1/AbstractC0475a.java` — the mode command bytes for the tracker.
+
+**Command channel (H07 was wrong on the UUID):**
+- Write mode bytes to `ca281071` (NOT `ca281079`). Modes:
+  - `0` = Idle · `1` = Normal (enables punch stream) · `2` = Gym · `3` = Fetch · `4` = Test · `5` = Normal Kick · `15` = Shutdown · `16` / `17` / `18` = unnamed
+- Second command channel `ca281072` accepts bytes 0/1/2 for a separate mode.
+- `ca281079` and `ca281077` are not used by the vendor for punch commands or the punch stream — Hykso reads/writes chars 0x1071/0x1072 and consumes notifications on 0x1069.
+
+**Data channel:**
+- Punch stream is `ca281069` (indication), auto-enabled on CCCD subscribe.
+
+**Frame packaging (from `X/a0.java`):**
+- Notification payload is 9 or 18 bytes for version >= 4. If 18 bytes: first 9 bytes = punch 1, next 9 = punch 2.
+- Legacy version < 4 uses 12- or 13-byte records; older firmware only.
+- The "version" is a `C0451a` field `f5812b` populated from a `com.hykso.EXTRA_VERSION` string that comes from device metadata read on connect (likely the Software Revision String on the Device Information service, 0x180a).
+
+**Per-record decoder — version >= 4, 9 bytes:**
+
+| Byte | Field | Interpretation |
+|---|---|---|
+| `0` | `punchType : uint8` | Small enum. `Punch.a()` returns "is a real punch" iff `type != 0 && type != 5`. `Punch.b()` returns "is power" iff `type == 1 || type == 2` (velocity is scaled ×1.7 for these). |
+| `1..2` (LE) | `accelerationRaw : uint16` | `acceleration = raw / 100.0` — unit not labeled in source but consistent with g-force (typical values 1-50 g). |
+| `3..6` (LE) | `epochSeconds : uint32` | Unix time in seconds. |
+| `7` | `subSecond256 : uint8` | Millisecond fraction = `byte7 * 1000 / 256`. Combined timestamp (ms) = `epochSeconds * 1000 + subSecond256 * 1000 / 256`. |
+| `8` | `velocityRaw : uint8` | Piecewise-scaled to `velocity`: `v = raw / 2.0`; if `v <= 4.0`: `velocity = v * 0.5`; elif `v <= 8.0`: `velocity = (v - 4.0) * 3.0 + 2.0`; else: `velocity = (v - 8.0) * 6.0 + 14.0`. If `type in {1, 2}`: `velocity *= 1.7`. Unit not labeled — could be m/s, mph, or a proprietary tracker unit; §4.3 says we label it "tracker-reported velocity" until externally validated. |
+
+**Per-record decoder — version < 4, 13 bytes (legacy):**
+
+| Byte | Field |
+|---|---|
+| `0` | `punchType : uint8` |
+| `2..3` (LE) | `accelerationRaw : uint16` → `raw / 100.0` |
+| `4..7` (LE) | `epochSeconds : uint32` |
+| `8` | `subSecond256 : uint8` |
+| `11` | `velocityRaw : uint8` → simple `raw / 2.0`, no piecewise scaling |
+
+**Hand identity is NOT in the payload.** Hykso tracks left/right by MAC address stored in SharedPreferences (`PairingInfo` → `left_device_addr` / `right_device_addr`) and injects it as `EXTRA_POSITION` when the notification fires. So the `hand` field on our `TrackerPunchEvent` must come from the `TrackerConnection` metadata (which slot the device is assigned to), NOT from the frame.
+
+**Verification against probe capture `spike-mt4wm1d8-fx6x` sample `011001a0518a6a530a`:**
+- `type = 0x01` → is a power punch (velocity ×1.7)
+- `acceleration = 0x0110 / 100 = 2.72` (g, presumed)
+- `epochSeconds = 0x6a8a51a0 = 1787449760` → **2026-08-23 01:49:20 UTC** (~4 hours after the probe run at 21:50 UTC — plausible clock drift on the tracker; a previous draft of this note miscomputed as 19:29:20 UTC before the FightCampV1Decoder test locked the value in)
+- `subSecondMs = 0x53 * 1000 / 256 = 324 ms`
+- `velocityRaw = 0x0a = 10 → v = 5.0`. `v > 4 && v <= 8` → `velocity = (5-4)*3 + 2 = 5.0`. Type is power → `velocity = 5.0 * 1.7 = 8.5` (units unlabeled).
+
+Result: a decoded punch at 2026-08-22 19:29:20.324 UTC, power-type, 2.72g accel, 8.5 tracker-units velocity. Realistic for a controlled punch.
+
+**Implications for Phase 2:**
+- `FightCampV1Adapter.buildInitializationPlan` should optionally write `01` to `ca281071` to force Normal Mode. Testing shows the tracker also auto-streams without this write, so it's a "nice to have" not "required".
+- `FightCampV1Decoder.decodeFrame` implements the version >= 4 table above; per-frame loop covers 1-2 records.
+- Set `TrackerPunchEvent.velocityUnit = 'tracker-unit'` (§4.3), `velocityRaw = raw / 2.0` (pre-piecewise), `velocityCalibrated = post-piecewise-with-power-boost`.
+- Read the tracker's Software Revision String on connect to populate `C0451a`-equivalent version field.
+- Legacy 13-byte path only needed for firmware versions < 4 — we can build v>=4 first, add legacy later if any of our physical trackers report v<4.
+
+- **Owner / date:** Kyle + Claude, 2026-08-22.

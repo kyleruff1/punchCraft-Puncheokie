@@ -93,6 +93,21 @@ export interface RawBleFrame {
   connectionGeneration: number
 }
 
+export interface WriteResult {
+  success: boolean
+  bytesWritten: number
+  durationMs: number
+  errorMessage?: string
+}
+
+export interface ReadResult {
+  success: boolean
+  valueBase64?: string
+  valueHex?: string
+  durationMs: number
+  errorMessage?: string
+}
+
 /** Result of subscribing to a single notify/indicate characteristic. */
 export interface SubscriptionResult {
   serviceUuid: string

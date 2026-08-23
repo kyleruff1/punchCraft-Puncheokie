@@ -28,6 +28,17 @@ export default [
         performance: 'readonly',
         require: 'readonly',
         Buffer: 'readonly',
+        // Jest globals (test files) — narrow the impact by only listing what
+        // our tests actually use.
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        jest: 'readonly',
       },
     },
     plugins: {
