@@ -39,6 +39,7 @@ import { getCaptureService } from '@capture/getCaptureService'
 import { useCaptureSession } from '@capture/useCaptureSession'
 import type { TrackerPunchEvent } from '@/domain/punch/PunchEvent'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
+import { colors } from '@/theme/colors'
 import type { SlotState } from '@/state/useTrackerStore'
 
 const MAX_EVENTS = 50
@@ -118,7 +119,12 @@ function startPunchStream(args: StartPunchStreamArgs): StreamController {
     deviceId,
     adapter,
     hand,
-    ...(capture ? { sink: capture, onEventPersist: (e) => capture.recordEvent(e) } : {}),
+    // Raw frames are persisted by the TRANSPORT before they ever reach
+    // PunchStream (BleManagerFacade.setFrameSink), so only decoded events are
+    // this screen's concern. There is deliberately no `sink` option here —
+    // PunchStreamOptions has none, and passing one inside a spread would
+    // typecheck silently while doing nothing.
+    ...(capture ? { onEventPersist: (e: TrackerPunchEvent) => capture.recordEvent(e) } : {}),
     onEvent,
     onDecodeMeta: (m) => {
       if (m.malformed) {
@@ -524,29 +530,45 @@ export default function LiveDecodeScreen(): React.ReactElement {
   )
 }
 
+/**
+ * Dev-screen-only tints. These carry no product meaning and have no theme
+ * token: `boostedRow` marks frames whose type byte triggered the vendor's
+ * x1.7 velocity multiplier (an arithmetic fact about the frame, not a claim
+ * about the punch), and the rest are readability shades for a dense
+ * monospace log. Everything with a semantic equivalent uses `colors`.
+ */
+const dev = {
+  boostedRow: '#241a12',
+  logText: '#e6e6e6',
+  logDetail: '#5a5a5f',
+  typeLabel: '#f0b76a',
+  velocityLabel: '#8fbcff',
+  errorText: '#ff9b9b',
+} as const
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0b0b0d' },
+  root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  title: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  subtitle: { color: '#c6c6c6', marginTop: 4 },
-  phase: { color: '#8f8f8f', marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
+  title: { color: colors.textPrimary, fontSize: 20, fontWeight: '600' },
+  subtitle: { color: colors.textSecondary, marginTop: 4 },
+  phase: { color: colors.textMuted, marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   section: { marginTop: 20 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  hint: { color: '#8f8f8f', fontSize: 12, fontStyle: 'italic', marginBottom: 8 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  hint: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginBottom: 8 },
   smallBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   smallBtnAlt: {
-    backgroundColor: '#33333a',
+    backgroundColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
-  smallBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  smallBtnText: { color: colors.textOnAccent, fontSize: 12, fontWeight: '600' },
   toggleRow: {
     flexDirection: 'row',
     gap: 8,
@@ -557,45 +579,45 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#33333a',
-    backgroundColor: '#1f1f22',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     alignItems: 'center',
   },
   toggleBtnActive: {
-    borderColor: '#2c6bed',
-    backgroundColor: '#141a2b',
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSurface,
   },
-  toggleText: { color: '#a8a8b3', fontSize: 14, fontWeight: '600' },
-  toggleTextActive: { color: '#f2f2f5' },
+  toggleText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  toggleTextActive: { color: colors.textPrimary },
   eventRow: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderBottomColor: '#1f1f22',
+    borderBottomColor: colors.surface,
     borderBottomWidth: 1,
   },
-  eventRowBoosted: { backgroundColor: '#241a12' },
-  eventLine: { fontFamily: 'monospace', fontSize: 12, color: '#e6e6e6' },
-  deltaText: { color: '#8f8f8f' },
-  typeText: { color: '#f0b76a', fontWeight: '700' },
-  handText: { color: '#3ecf8e', fontWeight: '700' },
+  eventRowBoosted: { backgroundColor: dev.boostedRow },
+  eventLine: { fontFamily: 'monospace', fontSize: 12, color: dev.logText },
+  deltaText: { color: colors.textMuted },
+  typeText: { color: dev.typeLabel, fontWeight: '700' },
+  handText: { color: colors.success, fontWeight: '700' },
   // Match the physical trackers: blue is the left glove, red the right.
-  handLeft: { color: '#5aa9ff', fontWeight: '700' },
-  handRight: { color: '#ff6b6b', fontWeight: '700' },
-  velocityText: { color: '#8fbcff' },
-  trackerTs: { color: '#8f8f8f' },
-  eventDetail: { fontFamily: 'monospace', fontSize: 10, color: '#5a5a5f', marginTop: 2 },
+  handLeft: { color: colors.trackerLeft, fontWeight: '700' },
+  handRight: { color: colors.trackerRight, fontWeight: '700' },
+  velocityText: { color: dev.velocityLabel },
+  trackerTs: { color: colors.textMuted },
+  eventDetail: { fontFamily: 'monospace', fontSize: 10, color: dev.logDetail, marginTop: 2 },
   metaLine: { fontFamily: 'monospace', fontSize: 11, paddingVertical: 1 },
-  metaInfo: { color: '#8f8f8f' },
-  metaWarn: { color: '#f0b76a' },
-  metaError: { color: '#ff9b9b' },
-  errorText: { color: '#ff9b9b', fontSize: 13, marginTop: 8 },
+  metaInfo: { color: colors.textMuted },
+  metaWarn: { color: colors.warning },
+  metaError: { color: dev.errorText },
+  errorText: { color: dev.errorText, fontSize: 13, marginTop: 8 },
   linkBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    color: '#fff',
+    color: colors.textOnAccent,
   },
-  btnText: { color: '#fff', fontWeight: '600' },
-  footnote: { color: '#5a5a5f', fontSize: 11, marginTop: 24, fontStyle: 'italic' },
+  btnText: { color: colors.textOnAccent, fontWeight: '600' },
+  footnote: { color: dev.logDetail, fontSize: 11, marginTop: 24, fontStyle: 'italic' },
 })
