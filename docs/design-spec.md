@@ -1424,9 +1424,16 @@ src/
       VoiceOutputPort.ts
       VoiceCoachPolicy.ts
       CueAnnouncer.ts
+    feedback/
+      ConfirmationTypes.ts
+      ComboPlausibility.ts
+      HapticPort.ts
+      gratification.ts
   audio/
     VoiceOutputExpo.ts
     voiceAssets/
+  haptics/
+    HapticsExpo.ts
   simulation/
     SimulatedPunchSource.ts
     scripts.ts
@@ -1619,6 +1626,23 @@ Stores normalized events and retains source frame references, raw values, calibr
 - `capability_tier`
 - `decoder_version`
 - `calculation_version`
+
+**`combo_results`** (one row per combination instance; see [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) §28)
+
+- `id`
+- `session_id`
+- `generated_workout_id`
+- `block_id`
+- `repeat_index`
+- `expected_punch_count`
+- `confirmed_count`
+- `extra_count`
+- `confidence` (0..1)
+- `confidence_tier`: `confirmed`, `likely`, `partial`, or `unconfirmed`
+- `signals_json` (the per-signal values that produced `confidence`, and which signals the capability tier omitted)
+- `confidence_version`
+- `started_at_monotonic_ms`
+- `window_close_monotonic_ms`
 
 > `punch_programs`, `program_rounds`, and `punch_cues` (spec v1.0) are superseded by the tables above and are not created. See [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) D8.
 
@@ -2037,6 +2061,7 @@ Specified in detail by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-e
 12. Implement adaptive / goal-seeking adjustments with every decision recorded for deterministic recalculation (D8).
 13. Implement the deterministic seeded `WorkoutGenerator`, versioned by `generator_version`, with golden-output tests.
 14. Build the workout summary: completion over punch tokens, hand-sequence match, tracker-reported velocity when available, extras always visible.
+15. Implement strike confirmation and gratification (Puncheokie doc §28): per-strike node flash with a four-cue haptic vocabulary, the progressive combo affirmation border, the capability-aware five-signal plausibility model with four confidence tiers, bounded celebration levels with a Focus mode, and `combo_results` persistence versioned by `CONFIDENCE_VERSION` (D11).
 
 **Definition of done:** The user can pick a preset or tune a recipe, run the generated workout in landscape on the tablet with visual, haptic, and — when no third-party audio is playing, or after an explicit opt-in — spoken cues, switch stance, pause and resume, and receive capability-appropriate, hand-sequence-match-labeled results that can be regenerated from the stored recipe, seed, generator version, and realized token stream, all without Spotify.
 
@@ -2205,6 +2230,7 @@ Acceptance criteria:
 | Puncheokie live screen is landscape-first | Accepted 2026-08-23 | Target device is the tablet (§5.1); phone-width follows in Phase 7 (D7) |
 | Adaptive plans persist the realized token stream and decisions | Accepted 2026-08-23 | Required for deterministic recalculation (§8.6, §19.1) (D8) |
 | Recipe + generator + seed replace editable programs and the editor | Accepted 2026-08-23 | Deterministic regeneration, smaller UI surface; persistence is parameters + version + seed (D9, D10) |
+| Strike confirmation is graded, capability-aware and never punitive | Accepted 2026-08-23 | The tracker cannot prove technique, so confirmation reports a confidence tier; signals the tier cannot supply are omitted, never zeroed, so a missing capability never reads as athlete failure (D11) |
 
 ## 26. Open technical questions
 
@@ -2334,3 +2360,4 @@ Do not begin punchCraft metric polish, Puncheokie workout generation, or Spotify
 |---|---|---|
 | 2026-08-22 | 1.0 | Initial specification (as PunchLab). |
 | 2026-08-23 | 1.1 | Product renamed punchCraft (PR #166). Puncheokie v0.2 design landed ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md)): §13 banner added; §13.3, §13.5, §14.1, §14.6, §19.4 amended; §6, §15.2, §16, §17.1, §18.1 updated; §22 Phase 5 rewritten; §25 and §26 entries added; this section added. |
+| 2026-08-23 | 1.2 | Puncheokie v0.3 (doc §28 strike confirmation, combo plausibility and gratification): `combo_results` added to §17.1; `domain/feedback/` and `haptics/` added to §16; §22 Phase 5 task 15 added; §25 gains the D11 decision. |

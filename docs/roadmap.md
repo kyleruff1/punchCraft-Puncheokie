@@ -1,6 +1,6 @@
 # Roadmap
 
-The roadmap is 36 GitHub Milestones — `M01`…`M30` from the original plan plus `M31`…`M36` added for the Puncheokie v0.2 design (`M24`–`M26` are retained but superseded) — grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
+The roadmap is 37 GitHub Milestones — `M01`…`M30` from the original plan plus `M31`…`M37` added for the Puncheokie v0.2/v0.3 design (`M24`–`M26` are retained but superseded) — grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
 
 - Board: https://github.com/users/kyleruff1/projects/5
 - Milestones: https://github.com/kyleruff1/punchCraft-Puncheokie/milestones
@@ -59,6 +59,7 @@ Specified by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) 
 - **M34** — Voice Coach. Tablet spike on playback latency and audio focus, domain `VoiceOutputPort` + `VoiceCoachPolicy` + `CueAnnouncer` scheduled by the cue clock, Expo audio infrastructure, and settings with the third-party-playback opt-in defaulting OFF. (Doc §5, §18, §25; spec §13.5, §14.6, §15.1.)
 - **M35** — Combo library & procedural generator. `ComboTemplate` contract, seeded PRNG, starter and expanded (40–60) libraries with rule validation, round-theme planner, constraint-based `WorkoutGenerator` with determinism guarantees, wired into the Recipe screen with Surprise Me. (Doc §7, §11, §15–§17; spec §14.6.)
 - **M36** — Presets, replay & bag validation. Saved recipe presets and Run This Exact Workout Again (seed + generator version reuse), the audio/visual sync test with Spotify in the background, and the bag-testing protocol that tunes graces, windows, cadence, and density ceilings. (Doc §8, §16, §24, §27 steps 13–15; spec §21.4, §14.6.)
+- **M37** — Strike confirmation, combo plausibility & gratification. Per-strike node flash driven by the tracker slot with a four-cue haptic vocabulary; the progressive combo affirmation border; the capability-aware five-signal plausibility model (`handOrder`, `timing`, `separation`, `intensity`, `exclusivity`) producing `confirmed`/`likely`/`partial`/`unconfirmed`; bounded gratification levels with a Focus mode; `combo_results` versioned by `CONFIDENCE_VERSION`. Signals the tracker cannot supply are omitted from the mean, never zeroed. (Doc §28; spec §13.3, §17.1, §19.4, §22 Phase 5 task 15.)
 
 ## Phase 6 — Spotify playlist connection
 
@@ -79,6 +80,6 @@ Specified by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) 
 | 2 | M11–M16 | no (Sprint 2+) |
 | 3 | M17–M19 | no |
 | 4 | M20–M23 | no |
-| 5 | M24–M26 (superseded), M31–M36 | no |
+| 5 | M24–M26 (superseded), M31–M37 | no |
 | 6 | M27–M28 | no |
 | 7 | M29–M30 | no |

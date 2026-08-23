@@ -1,6 +1,6 @@
 # punchCraft — Puncheokie UX and Workout Engine Design
 
-> **Version 0.2 — authored 2026-08-22, landed 2026-08-23.** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §31 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§27` are stable and may be cited from issues as "doc §n".
+> **Version 0.3 — authored 2026-08-22 (v0.2), landed and extended 2026-08-23.** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §31 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§28` are stable and may be cited from issues as "doc §n"; §29 records the landing decisions and §30 the revision history.
 
 ## Status and supersession
 
@@ -918,7 +918,97 @@ export interface GeneratedWorkout {
 
 The live screen and cue engine should be built against simulated events before the BLE protocol work is complete. This lets the UX mature independently while the tracker adapter is being mapped.
 
-## 28. Resolved decisions (landing, 2026-08-23)
+## 28. Strike confirmation, combo plausibility, and gratification
+
+Added in v0.3 (2026-08-23). This section defines what happens on the screen and in the athlete's hands the instant a strike lands, how the app decides that a displayed combination was *probably* thrown, and what it does to acknowledge that. It sits on top of §6 matching and §21 feedback and is bound by §3 and D4: nothing here may claim technique recognition the tracker cannot support.
+
+### 28.1 Why plausibility rather than proof
+
+The confirmed tracker (H11) reports which slot fired, a two-value vendor type flag, a tracker timestamp, and tracker-reported velocity. It cannot report that a strike was a hook rather than a cross. When the screen shows `1-2-3` in orthodox — left, right, left — the tracker can only establish that a left, a right, and a left arrived, in that order, inside the window.
+
+Confirmation is therefore **evidential, not definitive**: the app grades how consistent the observed strikes are with the displayed combination and says so in those words. Every label remains **hand-sequence match** (D4). A high-confidence result means "the strikes you threw are consistent with this combination", never "your technique was correct".
+
+### 28.2 Per-strike confirmation: node flash and haptic
+
+Each accepted punch event resolves to a hand from its tracker slot — hand is never in the payload (H11), it comes from the `deviceId` → slot assignment. The engine then looks for the token that strike most plausibly fills: the earliest unfilled expected punch whose hand equals the event hand and whose acceptance window contains the event time.
+
+- **Filled.** The node flashes a confirming state — brightens, gains an accent ring, and takes a check glyph — and a `confirm` haptic pulse fires. The node is now filled and cannot be filled again (§6: one event, at most one expected punch).
+- **Unmatched.** The strike still counts. Counters and the extras readout increment and a dimmer, non-accent acknowledgement pulse fires. There is **no red flash and no failure animation mid-combination** (§13); a mismatch is reported in the cue result and the round summary, not thrown at the athlete between punches.
+
+The haptic vocabulary is deliberately small, because the athlete is mid-round and cannot parse subtlety through a wrap:
+
+| Cue | Pattern | Meaning |
+|---|---|---|
+| `confirm` | one light pulse | a strike filled its expected node |
+| `extra` | one very short, lighter pulse | counted, but filled no expected node |
+| `combo-complete` | medium double pulse | a combination closed at `confirmed` or `likely` |
+| `streak` | medium triple pulse | a streak threshold was reached |
+
+Nothing longer or more elaborate is used. Intensity is user-adjustable and the whole haptic channel can be switched off (§25); the visual state never depends on haptics being available.
+
+### 28.3 The combo affirmation border
+
+The row of tokens for the active combination carries a border that expresses progress:
+
+- As nodes are confirmed, the border **fills progressively** — after *k* of *n* expected nodes, it is drawn *k/n* of the way around the strip.
+- When the last expected node is confirmed, the border **completes and sweeps once**, carrying the confidence tier's glyph and label.
+- If the window closes with *k < n*, the border **stops where it is and fades**. No red, no shake, no failure sound. The shortfall belongs to the cue result and the round summary.
+
+Under reduced motion the border steps between states instead of animating, and the sweep is replaced by a single state change. The border is never the only signal: tier glyph, text label, and border thickness all carry the same information (§19.4).
+
+### 28.4 The plausibility model
+
+For each combination instance the engine computes signals in the range 0..1:
+
+| Signal | What it measures |
+|---|---|
+| `handOrder` | ordered agreement between the expected hand sequence and the hands observed inside the window |
+| `timing` | fraction of confirmed nodes whose strike landed inside its token window, weighted by how centred it was |
+| `separation` | whether inter-strike intervals are consistent with the block's cadence — guards against one flail registering as three |
+| `intensity` | agreement between the emphasis a combination implies and the observed vendor type flag and tracker-reported velocity |
+| `exclusivity` | whether extra strikes were interleaved between confirmed nodes |
+
+`confidence` is the weighted mean of the signals **that the connected tracker can actually supply**. This is the load-bearing rule: a signal the capability tier cannot produce is **omitted from the mean, never scored as zero**. An absent capability must never look like athlete failure. Weights are constants, tuned on the bag (M36-03).
+
+Confidence tiers:
+
+| Tier | Confidence | Meaning |
+|---|---|---|
+| `confirmed` | ≥ 0.85 | every expected node filled; order, timing and separation all clean |
+| `likely` | ≥ 0.60 | order clean; timing, separation or intensity partly inconsistent |
+| `partial` | ≥ 0.30 | some expected nodes filled |
+| `unconfirmed` | < 0.30 | the window closed without a usable match |
+
+The computation is pure and versioned (`CONFIDENCE_VERSION`). The tier, the confidence, and every input signal are persisted so an improved decoder or a retuned weight set can recompute historical sessions without touching raw events (D8, spec §8.6).
+
+### 28.5 Gratification
+
+Acknowledgement escalates, but stays bounded — this is a training instrument, not a slot machine.
+
+| Level | Trigger | Response |
+|---|---|---|
+| Node | a strike fills an expected node | micro flash + `confirm` haptic |
+| Combination | closes at `confirmed` or `likely` | affirmation border sweep + tier label + `combo-complete` haptic + optional short tone |
+| Streak | consecutive combinations at `likely` or better | streak counter increments; the badge pulses at 3, 5 and 10 |
+| Round | the bell | existing count badge (§23) plus confirmed-combination count and best streak |
+| Session | the summary | breakdown by tier and longest streak (§24) |
+
+Four rules govern all of it:
+
+1. **Never celebrate what did not happen.** A combination that closes `partial` shows progress, not celebration.
+2. **Never punish.** There is no red state, no buzz, no failure sound anywhere in this system.
+3. **Always optional.** A Focus mode disables celebration entirely and leaves counters and the timer.
+4. **Never used to push pace.** Gratification never escalates to drive the athlete toward an unreachable target (§25).
+
+The optional tone obeys the Voice Coach gate: it does not play over third-party playback unless the athlete has explicitly opted in (D1).
+
+### 28.6 Honesty, accessibility, and determinism
+
+- Labels read "combination confirmed — hand-sequence match" or "combination likely — hand-sequence match". Never "perfect technique", never a claim about which punch was thrown.
+- Every state is carried by glyph, text, and shape as well as colour (§19.4), with reduced-motion and haptics-off variants.
+- Confidence, tier, signals and `CONFIDENCE_VERSION` persist with each combination result so results are recalculable (D8).
+
+## 29. Resolved decisions (landing, 2026-08-23)
 
 These decisions were taken when this document was landed against spec v1.0. They are mirrored in spec §25 and are versioned with this document.
 
@@ -942,9 +1032,12 @@ These decisions were taken when this document was landed against spec v1.0. They
 
 **D10 — Combo notation.** The data model uses `body: boolean` on punch tokens. Authored and serialized string notation uses a lowercase `b` suffix (`1-2b-3-2`), matching the athlete-facing combo notation; the rendered token shows an uppercase **B** badge per §13. Parsing and formatting helpers live beside the token contracts so every module agrees on one notation.
 
-## 29. Revision history
+**D11 — Confirmation is graded, capability-aware, and never punitive.** Strike confirmation (§28) grades how consistent observed strikes are with the displayed combination and reports a tier — `confirmed` / `likely` / `partial` / `unconfirmed` — rather than a pass or fail. Signals the connected tracker cannot supply are omitted from the confidence mean, never scored as zero, so an absent capability never reads as athlete failure. Every label stays **hand-sequence match** (D4); no surface claims which punch was thrown. Nothing in the system is punitive: no red state, no failure sound, no buzz, and celebration never fires for a combination that closed `partial` or worse. The confidence, its input signals and `CONFIDENCE_VERSION` persist with each combination result so a better decoder or a retuned weight set recomputes history without touching raw events (D8).
+
+## 30. Revision history
 
 | Date | Version | Change |
 |---|---|---|
 | 2026-08-22 | 0.2 | Authored against the PunchLab Technical Design Document. |
-| 2026-08-23 | 0.2 (landed) | Committed as `docs/puncheokie-ux-workout-engine.md`; branded punchCraft; Markdown structure restored; "Status and supersession" table and §28 Resolved decisions added; spec §13 banner and amendments landed in the same PR. |
+| 2026-08-23 | 0.2 (landed) | Committed as `docs/puncheokie-ux-workout-engine.md`; branded punchCraft; Markdown structure restored; "Status and supersession" table and Resolved decisions added; spec §13 banner and amendments landed in the same PR. |
+| 2026-08-23 | 0.3 | Added §28 Strike confirmation, combo plausibility, and gratification (node flash and haptic vocabulary, progressive affirmation border, the five-signal capability-aware plausibility model with four confidence tiers, bounded gratification levels) and decision D11. Resolved decisions moved to §29 and this history to §30; §1–§27 are unchanged. |
