@@ -28,6 +28,7 @@ import type {
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 import { useCaptureSession } from '@capture/useCaptureSession'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
+import { colors } from '@/theme/colors'
 
 /** FightCamp v1 custom service (H05). */
 const FIGHTCAMP_SERVICE_UUID = 'ca280069-5470-4e34-94dd-caf160200b29'
@@ -684,7 +685,7 @@ export default function ProtocolProbeScreen(): React.ReactElement {
             autoCapitalize='none'
             autoCorrect={false}
             placeholder='hex bytes e.g. 01 or aa 55 03'
-            placeholderTextColor='#5a5a5f'
+            placeholderTextColor={colors.textMuted}
           />
           <Pressable
             style={[styles.btn, (!targetWritable || !parseHexInput(hexInput)) && styles.btnDisabled]}
@@ -755,83 +756,83 @@ export default function ProtocolProbeScreen(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0b0b0d' },
+  root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  title: { color: '#fff', fontSize: 22, fontWeight: '600' },
-  subtitle: { color: '#c6c6c6', marginTop: 4 },
-  phase: { color: '#8f8f8f', marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
+  title: { color: colors.textPrimary, fontSize: 22, fontWeight: '600' },
+  subtitle: { color: colors.textSecondary, marginTop: 4 },
+  phase: { color: colors.textMuted, marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 },
   chip: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 14,
-    backgroundColor: '#1f1f22',
+    backgroundColor: colors.surface,
   },
-  chipActive: { backgroundColor: '#2c6bed' },
-  chipText: { color: '#c6c6c6', fontSize: 12 },
-  chipTextActive: { color: '#fff', fontWeight: '600' },
+  chipActive: { backgroundColor: colors.accent },
+  chipText: { color: colors.textSecondary, fontSize: 12 },
+  chipTextActive: { color: colors.textPrimary, fontWeight: '600' },
   section: { marginTop: 20 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 6 },
-  sectionHint: { color: '#8f8f8f', fontSize: 12, marginBottom: 8 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 6 },
+  sectionHint: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
   charRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 8,
-    borderBottomColor: '#1f1f22',
+    borderBottomColor: colors.surface,
     borderBottomWidth: 1,
     gap: 8,
   },
-  charRowSelected: { backgroundColor: '#141a2b' },
+  charRowSelected: { backgroundColor: colors.accentSurface },
   charInfo: { flex: 1 },
   charHeader: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
-  charUuid: { color: '#fff', fontFamily: 'monospace', fontSize: 13 },
-  charProps: { color: '#8f8f8f', fontFamily: 'monospace', fontSize: 11 },
-  svcHint: { color: '#5a5a5f', fontFamily: 'monospace', fontSize: 10, marginTop: 2 },
+  charUuid: { color: colors.textPrimary, fontFamily: 'monospace', fontSize: 13 },
+  charProps: { color: colors.textMuted, fontFamily: 'monospace', fontSize: 11 },
+  svcHint: { color: colors.textMuted, fontFamily: 'monospace', fontSize: 10, marginTop: 2 },
   badge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
-    backgroundColor: '#3a2a12',
+    backgroundColor: colors.surfaceElevated,
   },
-  badgeText: { color: '#f0b76a', fontSize: 10, fontWeight: '600' },
-  selectMark: { color: '#3ecf8e', fontSize: 10, fontWeight: '600' },
+  badgeText: { color: colors.warning, fontSize: 10, fontWeight: '600' },
+  selectMark: { color: colors.success, fontSize: 10, fontWeight: '600' },
   rowBtns: { flexDirection: 'row', gap: 6 },
   smallBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   smallBtnAlt: {
-    backgroundColor: '#33333a',
+    backgroundColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   smallBtnDanger: {
-    backgroundColor: '#5a2b2b',
+    backgroundColor: colors.dangerSurface,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
-  smallBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  btn: { backgroundColor: '#2c6bed', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+  smallBtnText: { color: colors.textPrimary, fontSize: 12, fontWeight: '600' },
+  btn: { backgroundColor: colors.accent, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   btnDisabled: { opacity: 0.4 },
-  btnText: { color: '#fff', fontWeight: '600' },
+  btnText: { color: colors.textPrimary, fontWeight: '600' },
   linkBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    color: '#fff',
+    color: colors.textPrimary,
   },
   inputRow: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   input: {
     flex: 1,
-    color: '#fff',
+    color: colors.textPrimary,
     fontFamily: 'monospace',
-    backgroundColor: '#1f1f22',
+    backgroundColor: colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 6,
@@ -839,18 +840,18 @@ const styles = StyleSheet.create({
   },
   presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
   presetBtn: {
-    backgroundColor: '#33333a',
+    backgroundColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
-  presetText: { color: '#fff', fontFamily: 'monospace', fontSize: 12 },
+  presetText: { color: colors.textPrimary, fontFamily: 'monospace', fontSize: 12 },
   logHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   logRow: { fontFamily: 'monospace', fontSize: 11, paddingVertical: 1 },
-  logRowWrite: { color: '#8fbcff' },
-  logRowRead: { color: '#c6c6c6' },
-  logRowNotify: { color: '#3ecf8e' },
-  logRowError: { color: '#ff9b9b' },
-  mutedRow: { color: '#5a5a5f', fontSize: 12, fontStyle: 'italic' },
-  errorText: { color: '#ff9b9b', fontSize: 12, marginTop: 4 },
+  logRowWrite: { color: colors.trackerLeft },
+  logRowRead: { color: colors.textSecondary },
+  logRowNotify: { color: colors.success },
+  logRowError: { color: colors.danger },
+  mutedRow: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic' },
+  errorText: { color: colors.danger, fontSize: 12, marginTop: 4 },
 })
