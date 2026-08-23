@@ -9,8 +9,12 @@
  * malformed / unknown / notes messages.
  *
  * Terminology is strictly §4.3: "tracker-reported velocity" / "tracker
- * units". Never m/s / mph / g / force / power / energy as a label. The
- * literal 'power' appears ONLY as a punchType value from §12.5.
+ * units". Never m/s / mph / g / force / power / energy as a label.
+ *
+ * Event rows show the RAW type byte ("TYPE 3"), never a technique name.
+ * H12 showed the byte is not a device-portable classifier, so the decoder
+ * reports punchType: 'unknown' and this screen must not invent a label
+ * the data does not support.
  */
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -177,11 +181,16 @@ function handInitial(hand: Hand): 'L' | 'R' {
   return hand === 'left' ? 'L' : 'R'
 }
 
-function pickSlot(left: SlotState | null, right: SlotState | null): { slot: SlotState; hand: Hand } | null {
-  const ready = (s: SlotState | null): boolean =>
-    !!s && (s.state === 'ready' || s.state === 'streaming')
-  if (ready(right)) return { slot: right as SlotState, hand: 'right' }
-  if (ready(left)) return { slot: left as SlotState, hand: 'left' }
+const ready = (s: SlotState | null): boolean =>
+  !!s && (s.state === 'ready' || s.state === 'streaming')
+
+function pickSlotForHand(
+  preferred: Hand,
+  left: SlotState | null,
+  right: SlotState | null,
+): { slot: SlotState; hand: Hand } | null {
+  const primary = preferred === 'left' ? left : right
+  if (ready(primary)) return { slot: primary as SlotState, hand: preferred }
   return null
 }
 
@@ -189,7 +198,17 @@ export default function LiveDecodeScreen(): React.ReactElement {
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
 
-  const active = useMemo(() => pickSlot(leftSlot, rightSlot), [leftSlot, rightSlot])
+  // Preferred hand for this screen — user toggles between L / R in the header.
+  // Default to whichever side is ready first (right wins ties, matching the
+  // pre-toggle behavior).
+  const [preferredHand, setPreferredHand] = useState<Hand>(() =>
+    ready(rightSlot) ? 'right' : 'left',
+  )
+
+  const active = useMemo(
+    () => pickSlotForHand(preferredHand, leftSlot, rightSlot),
+    [preferredHand, leftSlot, rightSlot],
+  )
 
   const [events, setEvents] = useState<DecodedEventRow[]>([])
   const [meta, setMeta] = useState<MetaEntry[]>([])
@@ -252,6 +271,17 @@ export default function LiveDecodeScreen(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active?.slot.deviceId, active?.hand, adapter])
 
+  // When the user flips L/R, reset the log so red and blue events do not
+  // interleave in the same view — the picker treats each side as its own
+  // stream.
+  useEffect(() => {
+    setEvents([])
+    setMeta([])
+    seqRef.current = 0
+    metaSeqRef.current = 0
+    prevMonotonicRef.current = null
+  }, [preferredHand])
+
   const onClear = useCallback(() => {
     setEvents([])
     setMeta([])
@@ -298,11 +328,34 @@ export default function LiveDecodeScreen(): React.ReactElement {
     )
   }
 
+  const HandToggle = (
+    <View style={styles.toggleRow}>
+      <Pressable
+        style={[styles.toggleBtn, preferredHand === 'left' && styles.toggleBtnActive]}
+        onPress={() => setPreferredHand('left')}
+        accessibilityRole='button'
+        accessibilityLabel='Show left tracker'
+      >
+        <Text style={[styles.toggleText, preferredHand === 'left' && styles.toggleTextActive]}>L (blue)</Text>
+      </Pressable>
+      <Pressable
+        style={[styles.toggleBtn, preferredHand === 'right' && styles.toggleBtnActive]}
+        onPress={() => setPreferredHand('right')}
+        accessibilityRole='button'
+        accessibilityLabel='Show right tracker'
+      >
+        <Text style={[styles.toggleText, preferredHand === 'right' && styles.toggleTextActive]}>R (red)</Text>
+      </Pressable>
+    </View>
+  )
+
   if (!active) {
+    const sideName = preferredHand === 'left' ? 'left (blue)' : 'right (red)'
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Live decoded events</Text>
-        <Text style={styles.subtitle}>No tracker is ready. Connect one on the Velocity Lab landing first.</Text>
+        {HandToggle}
+        <Text style={styles.subtitle}>The {sideName} tracker isn&apos;t ready. Connect it on the Velocity Lab landing, or flip the toggle to the other side.</Text>
         <View style={styles.row}>
           <Link href='/(tabs)/velocity-lab' style={styles.linkBtn}>
             <Text style={styles.btnText}>Back to Velocity Lab</Text>
@@ -321,6 +374,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
       <Text style={styles.title}>
         Live decoded events — {initial} {slotName} ({shortId})
       </Text>
+      {HandToggle}
       <Text style={styles.subtitle}>
         Subscribed to {streamState.subscribedCount} chars · {streamState.initErrorCount} init errors
       </Text>
@@ -344,9 +398,15 @@ export default function LiveDecodeScreen(): React.ReactElement {
         ) : null}
         {events.map((row) => {
           const e = row.event
-          const isPower = e.punchType === 'power'
+          // Show the RAW type byte, not a technique name. H12 established the
+          // byte is not a device-portable classifier, so punchType is always
+          // 'unknown' and a label like "STRAIGHT" would be a fabrication.
+          // Rows whose byte is 1 or 2 are tinted because those receive the
+          // vendor's x1.7 velocity multiplier — an arithmetic fact about the
+          // frame, not a claim about the technique.
+          const isBoosted = e.punchTypeRaw === 1 || e.punchTypeRaw === 2
           const handLabel = e.hand === 'left' ? 'L' : e.hand === 'right' ? 'R' : '?'
-          const typeLabel = (e.punchType ?? 'unknown').toUpperCase()
+          const typeLabel = e.punchTypeRaw != null ? `TYPE ${e.punchTypeRaw}` : 'TYPE ?'
           const vRaw = e.velocityRaw ?? 0
           const vCal = e.velocityCalibrated
           const vCalStr = typeof vCal === 'number' ? vCal.toFixed(1) : '—'
@@ -354,7 +414,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
           return (
             <View
               key={row.seq}
-              style={[styles.eventRow, isPower && styles.eventRowPower]}
+              style={[styles.eventRow, isBoosted && styles.eventRowBoosted]}
             >
               <Text style={styles.eventLine} selectable>
                 <Text style={styles.deltaText}>[{row.deltaMs.toString().padStart(4, ' ')}ms since prev]</Text>
@@ -424,13 +484,33 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   smallBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#33333a',
+    backgroundColor: '#1f1f22',
+    alignItems: 'center',
+  },
+  toggleBtnActive: {
+    borderColor: '#2c6bed',
+    backgroundColor: '#141a2b',
+  },
+  toggleText: { color: '#a8a8b3', fontSize: 14, fontWeight: '600' },
+  toggleTextActive: { color: '#f2f2f5' },
   eventRow: {
     paddingVertical: 6,
     paddingHorizontal: 8,
     borderBottomColor: '#1f1f22',
     borderBottomWidth: 1,
   },
-  eventRowPower: { backgroundColor: '#241a12' },
+  eventRowBoosted: { backgroundColor: '#241a12' },
   eventLine: { fontFamily: 'monospace', fontSize: 12, color: '#e6e6e6' },
   deltaText: { color: '#8f8f8f' },
   typeText: { color: '#f0b76a', fontWeight: '700' },

@@ -18,8 +18,10 @@
  *     '@ble/bleTypes' and '@/domain/punch/*' are the only cross-package
  *     references.
  *   - velocityUnit is ALWAYS 'tracker-unit' (§4.3). Never claim m/s,
- *     mph, g, force, power, or energy. The literal 'power' can appear
- *     inside punchType — that's a punch classification, not a unit.
+ *     mph, g, force, power, or energy.
+ *   - punchType is ALWAYS 'unknown' on this decoder — the tracker's
+ *     type byte was shown not to be a device-portable technique
+ *     classifier (H12). The raw byte survives as punchTypeRaw.
  *   - Decoder is versioned. decoderId = 'fightcamp-v1',
  *     decoderVersion = '1.0.0'.
  *   - Every emitted event carries sourceFrameId + decoderId +
@@ -220,6 +222,15 @@ function decodeRecordV4Plus(bytes: Uint8Array): DecodedRecord {
   } else {
     velocity = (vRaw - 8) * 6 + 14
   }
+  // Vendor fidelity, NOT a semantic claim. Hykso's Punch.b() applies this
+  // multiplier for bytes {1,2}; we reproduce its arithmetic so our
+  // velocity matches what the official app would have shown for the same
+  // frame. What bytes 1/2 actually MEAN is unresolved (H12) — the
+  // multiplier is kept because it is what the vendor does, not because
+  // we have confirmed these are "power" punches. Note the side effect:
+  // velocities are not directly comparable across type bytes, since two
+  // frames with identical velocityByteRaw differ by 1.7x depending on
+  // the byte. Revisit alongside H12.
   if (punchTypeRaw === 1 || punchTypeRaw === 2) {
     velocity = velocity * 1.7
   }
@@ -280,31 +291,42 @@ function decodeRecordV3(bytes: Uint8Array): DecodedRecord {
 }
 
 /**
- * Map the raw punch-type enum to §12.5 PunchType.
+ * Map the raw punch-type byte to §12.5 PunchType.
  *
- * Hykso source is authoritative only for `type in {1, 2}` = power
- * (Punch.b()) and `type in {0, 5}` = "not a real punch" (Punch.a()).
- * Assignment of types 3 and 4 to specific techniques ('straight',
- * 'uppercut') is a working guess pending an isolated-punch capture;
- * revisit before shipping user-facing technique labels.
+ * ALWAYS RETURNS 'unknown' — deliberately. See H12 in
+ * docs/protocol/hypotheses.md.
+ *
+ * An earlier revision mapped {1,2} -> 'power', 3 -> 'straight' and
+ * 4 -> 'uppercut'. A controlled isolated-punch capture (2026-08-23, ~100
+ * events over 10 sets across BOTH trackers) refuted that mapping:
+ *
+ *   - The same technique yields a different modal byte on each device.
+ *     Hooks were byte 2 on EA:69 (88%) but byte 1 on D7:34 (80%).
+ *     Jabs were byte 4 on EA:69 (50%) but byte 1 on D7:34 (92%).
+ *   - On D7:34 the byte tracks velocity, not shape: every event with
+ *     velocityByteRaw >= 10 landed in {3,4} (13/13) and nearly every
+ *     event <= 9 landed in {1,2} (32/34).
+ *   - On EA:69 no such velocity threshold exists — all four bytes appear
+ *     across its whole velocity range.
+ *
+ * So the byte is not a device-portable technique classifier. Per the
+ * M14-02 acceptance criteria (issue #85): "If not confirmed: ...
+ * `punchType` remains 'unknown' on events. No speculative mapping is
+ * committed on inconclusive evidence."
+ *
+ * `punchTypeRaw` still carries the byte verbatim, so a future
+ * per-device calibration can revisit this without a decoder version
+ * bump being lossy. Consumers that need technique should take it from
+ * the Puncheokie cue, not from the sensor — the tracker's dependable
+ * signal is hand + timing + velocity (doc §21 capability ladder, which
+ * this pins to the "Hand" + "Velocity" tiers for FightCamp v1).
+ *
+ * Hykso's own source only ever asserted {1,2} = "power punch"
+ * (Punch.b(), which is where the x1.7 velocity multiplier comes from)
+ * and {0,5} = "not a real punch" (Punch.a()). It never named 3 or 4.
  */
-function mapType(type: number): PunchType {
-  switch (type) {
-    case 0:
-      return 'unknown'
-    case 1:
-      return 'power'
-    case 2:
-      return 'power'
-    case 3:
-      return 'straight'
-    case 4:
-      return 'uppercut'
-    case 5:
-      return 'unknown'
-    default:
-      return 'unknown'
-  }
+function mapType(_type: number): PunchType {
+  return 'unknown'
 }
 
 // ---------------------------------------------------------------------------
