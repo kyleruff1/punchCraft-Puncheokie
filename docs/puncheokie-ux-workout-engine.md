@@ -1111,6 +1111,24 @@ A hosted synthesis endpoint for *descriptive* lines - higher quality than device
 
 **"Raspy, but firm" is the whole specification, and the second half is the load-bearing one.** Rasp is texture; firmness is projection and authority. Texture alone degrades intelligibility - a low, gravelly, heavily-textured voice is harder to parse than a clean one, and it has to survive the worst case: a fast combination, at workout volume, over the noise of the athlete hitting a bag, from a tablet speaker at arm's length. Firmness is exactly what buys that back, because a firm delivery is clipped, projected and consonant-forward. So the two qualities are not in tension when both are present; they only conflict when rasp is pursued without it. **Where they do conflict, intelligibility wins** - a cue that is not understood mid-flurry is worse than a cue with less personality. §7 already requires the visual grammar to stay "recognizable at arm's length"; this is its audio equivalent.
 
+**Register: abrasive, drill-sergeant.** Commands are barked, imperative and unsoftened - no pleasantries, no hedging, no "great job". Short, hard, flat. That register *is* the product; a polite coach calling a combination sounds like a notification.
+
+**The boundary this must not cross, and it is a real one.** D11 states that nothing in the system is punitive: no red state, no failure sound, no buzz, and no celebration for a combination that closed `partial` or worse. A drill-sergeant register and a non-punitive system are compatible, but only if the line is drawn in the right place:
+
+| | |
+|---|---|
+| **Abrasive delivery of an instruction** | ✅ the persona. "TWO. THREE. MOVE." |
+| **Abrasive judgement of performance** | ❌ forbidden by D11. No berating a miss, no disappointed tone on a `partial`, no "you're falling behind" |
+
+The coach is hard *in how it tells you what to do*, never hard *about how you did*. There is no vocabulary for disapproval anywhere in the phrase set.
+
+Two reasons that line is not merely stylistic squeamishness:
+
+1. **A "miss" may not be the athlete's.** Per D13 the tracker transmits nothing below an acceleration floor, so an unfilled node can mean a strike thrown too softly to exist rather than a strike not thrown. Berating a miss would punish the athlete for a sensor limitation - precisely the failure D11's "an absent capability must never look like athlete failure" exists to prevent.
+2. **§25 forbids pressure toward an impossible target.** "Never encourage the athlete to accelerate solely to recover an impossible target." A drill sergeant pushing pace is exactly the instinct that rule blocks, and §22 already restricts pace commentary to a single cue at periodic boundaries.
+
+Focus mode (§28.5) disables celebration; it does not change the register. The coach still barks - it simply stops congratulating.
+
 Two levers matter beyond timbre:
 
 - **Delivery.** A gym coach *barks* a combination; it is clipped and flat, not narrated. Rendering speed and flatness carry as much of the persona as the voice model does, and both are free to tune per clip because the assets are pre-rendered.
