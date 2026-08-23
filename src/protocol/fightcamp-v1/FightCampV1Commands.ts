@@ -59,8 +59,49 @@ export const CHAR = {
   CONFIG_1075: 'ca281075-5470-4e34-94dd-caf160200b29',
   CONFIG_1076: 'ca281076-5470-4e34-94dd-caf160200b29',
   COMMAND_ACK: 'ca281078-5470-4e34-94dd-caf160200b29',
+  /** Legacy name for CLOCK_SYNC (ca281079). Kept for existing callers;
+   * new code should prefer CLOCK_SYNC. Same UUID, same characteristic. */
   LEGACY_COMMAND: 'ca281079-5470-4e34-94dd-caf160200b29',
+  /**
+   * Clock-sync write channel — 5 bytes: LE uint32 Unix epoch seconds,
+   * followed by one sub-second byte `(millis % 1000) * 256 / 1000`.
+   * Hykso writes to this characteristic FIRST in its start-session
+   * sequence (`j1/e.java` :g() line 262-268); without this write the
+   * tracker sits connected and idle and never emits punch frames.
+   * Supersedes the earlier H07-REVISED reading that this channel was
+   * a no-op on current firmware.
+   */
+  CLOCK_SYNC: 'ca281079-5470-4e34-94dd-caf160200b29',
 } as const
+
+/**
+ * Build the 5-byte clock-sync payload Hykso writes to `CLOCK_SYNC` at the
+ * start of every session. Matches the encoding decoded in
+ * FightCampV1Decoder — writing `now` here means punch frames report
+ * timestamps aligned to `now`.
+ */
+export function buildClockSyncBytes(nowMs: number): Uint8Array {
+  const seconds = Math.floor(nowMs / 1000)
+  const millis = nowMs - seconds * 1000
+  const subSecond = Math.floor((millis * 256) / 1000) & 0xff
+  const bytes = new Uint8Array(5)
+  bytes[0] = seconds & 0xff
+  bytes[1] = (seconds >>> 8) & 0xff
+  bytes[2] = (seconds >>> 16) & 0xff
+  bytes[3] = (seconds >>> 24) & 0xff
+  bytes[4] = subSecond
+  return bytes
+}
+
+/** Uint8Array → lowercase hex string (no separators). */
+export function bytesToHex(bytes: Uint8Array): string {
+  let out = ''
+  for (let i = 0; i < bytes.length; i++) {
+    const b = bytes[i] ?? 0
+    out += b.toString(16).padStart(2, '0')
+  }
+  return out
+}
 
 /**
  * Single-byte payloads accepted by COMMAND1 (ca281071). Named per

@@ -37,6 +37,8 @@ import {
   FIGHTCAMP_SERVICE_UUID,
   MODE_COMMAND_1_BYTES,
   NORDIC_LEGACY_DFU_SERVICE_UUID,
+  buildClockSyncBytes,
+  bytesToHex,
 } from './FightCampV1Commands'
 import { DECODER_ID, DECODER_VERSION, decodeFrame } from './FightCampV1Decoder'
 import type { FightCampV1State } from './FightCampV1State'
@@ -108,13 +110,34 @@ export class FightCampV1Adapter implements TrackerProtocolAdapter {
   }
 
   buildInitializationPlan(_ctx: InitializationContext): GattOperation[] {
+    // Order matches Hykso's start-session sequence
+    // (`sources/j1/e.java` :g()): clock sync FIRST, then notifications,
+    // device-info read, mode-normal. Without the clock-sync write the
+    // tracker stays connected but idle and never emits punch frames
+    // (observed 2026-08-22: subscribe count 2, init errors 0, zero
+    // notify traffic for the full session).
     return [
+      {
+        kind: 'write',
+        serviceUuid: FIGHTCAMP_SERVICE_UUID,
+        characteristicUuid: CHAR.CLOCK_SYNC,
+        hex: bytesToHex(buildClockSyncBytes(Date.now())),
+        withResponse: true,
+        label: 'init-clockSync-ca281079',
+      },
       {
         kind: 'subscribe',
         serviceUuid: FIGHTCAMP_SERVICE_UUID,
         characteristicUuid: CHAR.DATA_STREAM,
         direction: 'indication',
         label: 'subscribe-dataStream-ca281069',
+      },
+      {
+        kind: 'subscribe',
+        serviceUuid: FIGHTCAMP_SERVICE_UUID,
+        characteristicUuid: CHAR.NOTIFY_STATUS,
+        direction: 'notification',
+        label: 'subscribe-notifyStatus-ca281073',
       },
       {
         kind: 'subscribe',
@@ -172,6 +195,14 @@ export class FightCampV1Adapter implements TrackerProtocolAdapter {
 
   buildStartSession(_ctx: SessionCommandContext): GattOperation[] {
     return [
+      {
+        kind: 'write',
+        serviceUuid: FIGHTCAMP_SERVICE_UUID,
+        characteristicUuid: CHAR.CLOCK_SYNC,
+        hex: bytesToHex(buildClockSyncBytes(Date.now())),
+        withResponse: true,
+        label: 'startSession-clockSync',
+      },
       {
         kind: 'write',
         serviceUuid: FIGHTCAMP_SERVICE_UUID,
