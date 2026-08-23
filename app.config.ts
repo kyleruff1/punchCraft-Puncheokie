@@ -17,7 +17,13 @@ const config: ExpoConfig = {
   slug: 'punchcraft-puncheokie',
   version: '0.1.0',
   scheme: 'punchcraft',
-  orientation: 'portrait',
+  // D7: Puncheokie's live screen is landscape-first on the tablet, a
+  // recorded inversion of spec §19.4's phone-first rule for that one route.
+  // The global setting is 'default' so the OS follows the device, and the
+  // live route locks landscape on focus and releases it on blur — every
+  // other route keeps its existing presentation. Verified in the M32-05
+  // spike on the Lenovo TB125FU.
+  orientation: 'default',
   userInterfaceStyle: 'dark',
   // New Architecture is always enabled from Expo SDK 55 onward (§11.2 note);
   // no config key exists to toggle it.
@@ -51,6 +57,7 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-splash-screen',
     'expo-status-bar',
+    'expo-screen-orientation',
     [
       'expo-build-properties',
       {

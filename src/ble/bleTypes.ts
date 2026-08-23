@@ -167,3 +167,24 @@ export interface SpikeReport {
   startedAtIso: string
   finishedAtIso?: string
 }
+
+/**
+ * Durable sink for raw frames, installed on the transport.
+ *
+ * Declared HERE, in the BLE layer, rather than in `src/capture/` so the
+ * transport depends only on an interface it owns — `capture/BleCaptureService`
+ * implements it, and no import cycle is created.
+ *
+ * The transport hands every frame to this sink the moment it is constructed,
+ * BEFORE the frame reaches any subscriber. That makes persist-before-parse a
+ * structural property of the transport rather than something each call site
+ * has to remember: the Live decode screen, the protocol probe, the BLE spike
+ * and anything added later are all covered without touching their code.
+ *
+ * Contract: `capture()` is synchronous and MUST NOT throw. It runs inside the
+ * native notification callback, so anything slow or failure-prone would stall
+ * the BLE stack or break delivery to the real subscriber.
+ */
+export interface RawFrameSink {
+  capture(frame: RawBleFrame): void
+}

@@ -9,8 +9,12 @@
  * malformed / unknown / notes messages.
  *
  * Terminology is strictly §4.3: "tracker-reported velocity" / "tracker
- * units". Never m/s / mph / g / force / power / energy as a label. The
- * literal 'power' appears ONLY as a punchType value from §12.5.
+ * units". Never m/s / mph / g / force / power / energy as a label.
+ *
+ * Event rows show the RAW type byte ("TYPE 3"), never a technique name.
+ * H12 showed the byte is not a device-portable classifier, so the decoder
+ * reports punchType: 'unknown' and this screen must not invent a label
+ * the data does not support.
  */
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -30,8 +34,12 @@ import {
   startPunchStream as startPunchStreamModule,
   type PunchStreamController,
 } from '@protocol/PunchStream'
+import type { BleCaptureService } from '@capture/BleCaptureService'
+import { getCaptureService } from '@capture/getCaptureService'
+import { useCaptureSession } from '@capture/useCaptureSession'
 import type { TrackerPunchEvent } from '@/domain/punch/PunchEvent'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
+import { colors } from '@/theme/colors'
 import type { SlotState } from '@/state/useTrackerStore'
 
 const MAX_EVENTS = 50
@@ -73,6 +81,8 @@ interface StartPunchStreamArgs {
   hand: Hand
   onEvent: (event: TrackerPunchEvent) => void
   onDecodeMeta: (meta: { kind: MetaKind; text: string }) => void
+  /** Durable capture sink; frames are persisted before the decoder runs. */
+  capture: BleCaptureService | null
 }
 
 /**
@@ -89,7 +99,7 @@ interface StartPunchStreamArgs {
  * adapter.buildInitializationPlan (§12.1).
  */
 function startPunchStream(args: StartPunchStreamArgs): StreamController {
-  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta } = args
+  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta, capture } = args
   let real: PunchStreamController | null = null
   let stopped = false
   let lastReportedInitErrors = 0
@@ -109,6 +119,12 @@ function startPunchStream(args: StartPunchStreamArgs): StreamController {
     deviceId,
     adapter,
     hand,
+    // Raw frames are persisted by the TRANSPORT before they ever reach
+    // PunchStream (BleManagerFacade.setFrameSink), so only decoded events are
+    // this screen's concern. There is deliberately no `sink` option here —
+    // PunchStreamOptions has none, and passing one inside a spread would
+    // typecheck silently while doing nothing.
+    ...(capture ? { onEventPersist: (e: TrackerPunchEvent) => capture.recordEvent(e) } : {}),
     onEvent,
     onDecodeMeta: (m) => {
       if (m.malformed) {
@@ -177,25 +193,51 @@ function handInitial(hand: Hand): 'L' | 'R' {
   return hand === 'left' ? 'L' : 'R'
 }
 
-function pickSlot(left: SlotState | null, right: SlotState | null): { slot: SlotState; hand: Hand } | null {
-  const ready = (s: SlotState | null): boolean =>
-    !!s && (s.state === 'ready' || s.state === 'streaming')
-  if (ready(right)) return { slot: right as SlotState, hand: 'right' }
-  if (ready(left)) return { slot: left as SlotState, hand: 'left' }
-  return null
+const ready = (s: SlotState | null): boolean =>
+  !!s && (s.state === 'ready' || s.state === 'streaming')
+
+/** What the screen is watching. 'both' is the default — with auto-connect
+ * binding each tracker to a fixed hand, seeing the whole session interleaved
+ * is the normal case; the single-hand modes are for isolating one glove. */
+type ViewMode = 'both' | 'left' | 'right'
+
+interface ActiveSlot {
+  slot: SlotState
+  hand: Hand
+}
+
+/** Every slot the current mode should stream, in L-then-R order. */
+function activeSlotsFor(
+  mode: ViewMode,
+  left: SlotState | null,
+  right: SlotState | null,
+): ActiveSlot[] {
+  const out: ActiveSlot[] = []
+  if (mode !== 'right' && ready(left)) out.push({ slot: left as SlotState, hand: 'left' })
+  if (mode !== 'left' && ready(right)) out.push({ slot: right as SlotState, hand: 'right' })
+  return out
 }
 
 export default function LiveDecodeScreen(): React.ReactElement {
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
 
-  const active = useMemo(() => pickSlot(leftSlot, rightSlot), [leftSlot, rightSlot])
+  const [viewMode, setViewMode] = useState<ViewMode>('both')
+
+  const activeSlots = useMemo(
+    () => activeSlotsFor(viewMode, leftSlot, rightSlot),
+    [viewMode, leftSlot, rightSlot],
+  )
+
+  // Stable identity for the set of streams, so the effect below re-runs when
+  // a tracker joins or leaves but NOT on every unrelated store update.
+  const activeKey = activeSlots.map((a) => `${a.hand}:${a.slot.deviceId}`).join('|')
 
   const [events, setEvents] = useState<DecodedEventRow[]>([])
   const [meta, setMeta] = useState<MetaEntry[]>([])
   const [streamState, setStreamState] = useState<StreamState>({ subscribedCount: 0, initErrorCount: 0 })
 
-  const controllerRef = useRef<StreamController | null>(null)
+  const controllersRef = useRef<StreamController[]>([])
   const seqRef = useRef(0)
   const metaSeqRef = useRef(0)
   const prevMonotonicRef = useRef<number | null>(null)
@@ -228,29 +270,81 @@ export default function LiveDecodeScreen(): React.ReactElement {
       if (next.length > MAX_META) next.length = MAX_META
       return next
     })
-    // Poll state; getState is cheap.
-    const ctl = controllerRef.current
-    if (ctl) setStreamState(ctl.getState())
+    // Poll aggregate state across every running stream; getState is cheap.
+    const ctls = controllersRef.current
+    if (ctls.length > 0) {
+      setStreamState(
+        ctls.reduce<StreamState>(
+          (acc, c) => {
+            const s = c.getState()
+            return {
+              subscribedCount: acc.subscribedCount + s.subscribedCount,
+              initErrorCount: acc.initErrorCount + s.initErrorCount,
+            }
+          },
+          { subscribedCount: 0, initErrorCount: 0 },
+        ),
+      )
+    }
   }, [])
 
+  // One capture per visit to this screen — see useCaptureSession for why it
+  // must not depend on the selected tracker.
+  const capture = useCaptureSession('live-decode')
+  const captureReady = capture.ready
   useEffect(() => {
-    if (!active || !adapter) return
-    const facade = getBleManager()
-    const controller = startPunchStream({
-      facade,
-      deviceId: active.slot.deviceId,
-      adapter,
-      hand: active.hand,
-      onEvent,
-      onDecodeMeta,
-    })
-    controllerRef.current = controller
-    return () => {
-      controller.stop()
-      controllerRef.current = null
+    if (capture.error) {
+      onDecodeMeta({
+        kind: 'init-error',
+        text: `capture unavailable, frames will NOT be persisted: ${capture.error}`,
+      })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active?.slot.deviceId, active?.hand, adapter])
+  }, [capture.error])
+
+  useEffect(() => {
+    if (activeSlots.length === 0 || !adapter) return
+    // Wait for the capture to exist before subscribing, so the very first
+    // frame is already covered (§11.9, §12.4) rather than racing the open.
+    if (!captureReady) return
+    const facade = getBleManager()
+    const captureService: BleCaptureService = getCaptureService()
+
+    // One independent stream per tracker. They share the capture and the
+    // event list; each stamps its own hand, so the merged view stays
+    // attributable. Left and right are separate GATT connections, so
+    // nothing is shared between the streams themselves.
+    const controllers = activeSlots.map((a) =>
+      startPunchStream({
+        facade,
+        deviceId: a.slot.deviceId,
+        adapter,
+        hand: a.hand,
+        onEvent,
+        onDecodeMeta,
+        capture: captureService,
+      }),
+    )
+    controllersRef.current = controllers
+    return () => {
+      for (const c of controllers) c.stop()
+      controllersRef.current = []
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKey, adapter, captureReady])
+
+  // When the user flips L/R, reset the log so red and blue events do not
+  // interleave in the same view — the picker treats each side as its own
+  // stream.
+  // Switching mode changes which trackers are in view, so the existing rows
+  // no longer describe what is on screen. Reset rather than mixing.
+  useEffect(() => {
+    setEvents([])
+    setMeta([])
+    seqRef.current = 0
+    metaSeqRef.current = 0
+    prevMonotonicRef.current = null
+  }, [viewMode])
 
   const onClear = useCallback(() => {
     setEvents([])
@@ -261,8 +355,8 @@ export default function LiveDecodeScreen(): React.ReactElement {
   const onCopyJson = useCallback(async () => {
     const payload = {
       exportedAtIso: new Date().toISOString(),
-      deviceId: active?.slot.deviceId ?? null,
-      hand: active?.hand ?? null,
+      viewMode,
+      trackers: activeSlots.map((a) => ({ hand: a.hand, deviceId: a.slot.deviceId })),
       adapterId: adapter?.id ?? null,
       adapterVersion: adapter?.version ?? null,
       subscribedCount: streamState.subscribedCount,
@@ -282,7 +376,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
         errorMessage: safe((e as Error)?.message ?? String(e)),
       })
     }
-  }, [active, adapter, events, meta, streamState])
+  }, [viewMode, activeSlots, adapter, events, meta, streamState])
 
   if (!adapter) {
     return (
@@ -298,11 +392,35 @@ export default function LiveDecodeScreen(): React.ReactElement {
     )
   }
 
-  if (!active) {
+  const modeButton = (mode: ViewMode, label: string, a11y: string) => (
+    <Pressable
+      style={[styles.toggleBtn, viewMode === mode && styles.toggleBtnActive]}
+      onPress={() => setViewMode(mode)}
+      accessibilityRole='button'
+      accessibilityLabel={a11y}
+    >
+      <Text style={[styles.toggleText, viewMode === mode && styles.toggleTextActive]}>{label}</Text>
+    </Pressable>
+  )
+
+  const HandToggle = (
+    <View style={styles.toggleRow}>
+      {modeButton('both', 'Both', 'Show both trackers')}
+      {modeButton('left', 'L (blue)', 'Show left tracker only')}
+      {modeButton('right', 'R (red)', 'Show right tracker only')}
+    </View>
+  )
+
+  if (activeSlots.length === 0) {
+    const wanted =
+      viewMode === 'both' ? 'Neither tracker is' :
+      viewMode === 'left' ? 'The left (blue) tracker is not' :
+      'The right (red) tracker is not'
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Live decoded events</Text>
-        <Text style={styles.subtitle}>No tracker is ready. Connect one on the Velocity Lab landing first.</Text>
+        {HandToggle}
+        <Text style={styles.subtitle}>{wanted} ready. Tap a tracker to wake it, then use Connect both on the Velocity Lab landing.</Text>
         <View style={styles.row}>
           <Link href='/(tabs)/velocity-lab' style={styles.linkBtn}>
             <Text style={styles.btnText}>Back to Velocity Lab</Text>
@@ -312,20 +430,19 @@ export default function LiveDecodeScreen(): React.ReactElement {
     )
   }
 
-  const initial = handInitial(active.hand)
-  const shortId = truncateDeviceId(active.slot.deviceId)
-  const slotName = active.slot.name ?? 'Tracker'
+  const headerSuffix = activeSlots
+    .map((a) => `${handInitial(a.hand)} ${a.slot.name ?? 'Tracker'} (${truncateDeviceId(a.slot.deviceId)})`)
+    .join('  +  ')
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>
-        Live decoded events — {initial} {slotName} ({shortId})
-      </Text>
+      <Text style={styles.title}>Live decoded events — {headerSuffix}</Text>
+      {HandToggle}
       <Text style={styles.subtitle}>
         Subscribed to {streamState.subscribedCount} chars · {streamState.initErrorCount} init errors
       </Text>
       <Text style={styles.phase}>
-        adapter {adapter.id}@{adapter.version} · slot {active.hand} · state {active.slot.state}
+        adapter {adapter.id}@{adapter.version} · {activeSlots.map((a) => `${a.hand}:${a.slot.state}`).join(' · ')}
       </Text>
 
       <View style={styles.row}>
@@ -344,9 +461,21 @@ export default function LiveDecodeScreen(): React.ReactElement {
         ) : null}
         {events.map((row) => {
           const e = row.event
-          const isPower = e.punchType === 'power'
+          // Show the RAW type byte, not a technique name. H12 established the
+          // byte is not a device-portable classifier, so punchType is always
+          // 'unknown' and a label like "STRAIGHT" would be a fabrication.
+          // Rows whose byte is 1 or 2 are tinted because those receive the
+          // vendor's x1.7 velocity multiplier — an arithmetic fact about the
+          // frame, not a claim about the technique.
+          const isBoosted = e.punchTypeRaw === 1 || e.punchTypeRaw === 2
+          // Colour the hand marker to match the physical tracker (blue left,
+          // red right) so an interleaved two-tracker stream is readable at a
+          // glance. The letter carries the meaning on its own — colour is
+          // never the only signal (§19.4).
           const handLabel = e.hand === 'left' ? 'L' : e.hand === 'right' ? 'R' : '?'
-          const typeLabel = (e.punchType ?? 'unknown').toUpperCase()
+          const handStyle =
+            e.hand === 'left' ? styles.handLeft : e.hand === 'right' ? styles.handRight : styles.handText
+          const typeLabel = e.punchTypeRaw != null ? `TYPE ${e.punchTypeRaw}` : 'TYPE ?'
           const vRaw = e.velocityRaw ?? 0
           const vCal = e.velocityCalibrated
           const vCalStr = typeof vCal === 'number' ? vCal.toFixed(1) : '—'
@@ -354,14 +483,14 @@ export default function LiveDecodeScreen(): React.ReactElement {
           return (
             <View
               key={row.seq}
-              style={[styles.eventRow, isPower && styles.eventRowPower]}
+              style={[styles.eventRow, isBoosted && styles.eventRowBoosted]}
             >
               <Text style={styles.eventLine} selectable>
                 <Text style={styles.deltaText}>[{row.deltaMs.toString().padStart(4, ' ')}ms since prev]</Text>
                 {'  '}
                 <Text style={styles.typeText}>{typeLabel}</Text>
                 {'  '}
-                <Text style={styles.handText}>{handLabel}</Text>
+                <Text style={handStyle}>{handLabel}</Text>
                 {'  '}
                 <Text style={styles.velocityText}>vRAW({vRaw}) v={vCalStr}</Text>
                 {tStr ? <Text style={styles.trackerTs}>  {tStr}</Text> : null}
@@ -401,55 +530,94 @@ export default function LiveDecodeScreen(): React.ReactElement {
   )
 }
 
+/**
+ * Dev-screen-only tints. These carry no product meaning and have no theme
+ * token: `boostedRow` marks frames whose type byte triggered the vendor's
+ * x1.7 velocity multiplier (an arithmetic fact about the frame, not a claim
+ * about the punch), and the rest are readability shades for a dense
+ * monospace log. Everything with a semantic equivalent uses `colors`.
+ */
+const dev = {
+  boostedRow: '#3A2A10',
+  logText: colors.textPrimary,
+  logDetail: colors.textMuted,
+  typeLabel: colors.warning,
+  velocityLabel: colors.trackerLeft,
+  errorText: colors.danger,
+} as const
+
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0b0b0d' },
+  root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  title: { color: '#fff', fontSize: 20, fontWeight: '600' },
-  subtitle: { color: '#c6c6c6', marginTop: 4 },
-  phase: { color: '#8f8f8f', marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
+  title: { color: colors.textPrimary, fontSize: 20, fontWeight: '600' },
+  subtitle: { color: colors.textSecondary, marginTop: 4 },
+  phase: { color: colors.textMuted, marginTop: 2, fontFamily: 'monospace', fontSize: 12 },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
   section: { marginTop: 20 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  hint: { color: '#8f8f8f', fontSize: 12, fontStyle: 'italic', marginBottom: 8 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  hint: { color: colors.textMuted, fontSize: 12, fontStyle: 'italic', marginBottom: 8 },
   smallBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
   smallBtnAlt: {
-    backgroundColor: '#33333a',
+    backgroundColor: colors.border,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
   },
-  smallBtnText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  smallBtnText: { color: colors.textOnAccent, fontSize: 12, fontWeight: '600' },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+  },
+  toggleBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+  },
+  toggleBtnActive: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSurface,
+  },
+  toggleText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  toggleTextActive: { color: colors.textPrimary },
   eventRow: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderBottomColor: '#1f1f22',
+    borderBottomColor: colors.surface,
     borderBottomWidth: 1,
   },
-  eventRowPower: { backgroundColor: '#241a12' },
-  eventLine: { fontFamily: 'monospace', fontSize: 12, color: '#e6e6e6' },
-  deltaText: { color: '#8f8f8f' },
-  typeText: { color: '#f0b76a', fontWeight: '700' },
-  handText: { color: '#3ecf8e', fontWeight: '700' },
-  velocityText: { color: '#8fbcff' },
-  trackerTs: { color: '#8f8f8f' },
-  eventDetail: { fontFamily: 'monospace', fontSize: 10, color: '#5a5a5f', marginTop: 2 },
+  eventRowBoosted: { backgroundColor: dev.boostedRow },
+  eventLine: { fontFamily: 'monospace', fontSize: 12, color: dev.logText },
+  deltaText: { color: colors.textMuted },
+  typeText: { color: dev.typeLabel, fontWeight: '700' },
+  handText: { color: colors.success, fontWeight: '700' },
+  // Match the physical trackers: blue is the left glove, red the right.
+  handLeft: { color: colors.trackerLeft, fontWeight: '700' },
+  handRight: { color: colors.trackerRight, fontWeight: '700' },
+  velocityText: { color: dev.velocityLabel },
+  trackerTs: { color: colors.textMuted },
+  eventDetail: { fontFamily: 'monospace', fontSize: 10, color: dev.logDetail, marginTop: 2 },
   metaLine: { fontFamily: 'monospace', fontSize: 11, paddingVertical: 1 },
-  metaInfo: { color: '#8f8f8f' },
-  metaWarn: { color: '#f0b76a' },
-  metaError: { color: '#ff9b9b' },
-  errorText: { color: '#ff9b9b', fontSize: 13, marginTop: 8 },
+  metaInfo: { color: colors.textMuted },
+  metaWarn: { color: colors.warning },
+  metaError: { color: dev.errorText },
+  errorText: { color: dev.errorText, fontSize: 13, marginTop: 8 },
   linkBtn: {
-    backgroundColor: '#2c6bed',
+    backgroundColor: colors.accent,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 8,
-    color: '#fff',
+    color: colors.textOnAccent,
   },
-  btnText: { color: '#fff', fontWeight: '600' },
-  footnote: { color: '#5a5a5f', fontSize: 11, marginTop: 24, fontStyle: 'italic' },
+  btnText: { color: colors.textOnAccent, fontWeight: '600' },
+  footnote: { color: dev.logDetail, fontSize: 11, marginTop: 24, fontStyle: 'italic' },
 })

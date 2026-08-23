@@ -1,8 +1,16 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
+/**
+ * Puncheokie — not shipped yet.
+ *
+ * Building and running workouts lives in punchCraft. Puncheokie is a
+ * separate punch-along mode that will reuse the same cue engine; until it
+ * ships this tab is a placeholder and owns no routes of its own.
+ */
 export default function PuncheokieLanding() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
@@ -21,16 +29,13 @@ export default function PuncheokieLanding() {
       <TrackerBadgesRow />
       <Text style={styles.title}>Puncheokie</Text>
       <Text style={styles.paragraph}>
-        Puncheokie is the punch-along workout mode. Numbered combinations run on an independent
-        workout clock: every cue, rest, and round is scheduled by punchCraft on the tablet, never by
-        a song. You can optionally connect Spotify to listen to your own playlist in the background
-        while you train, and an optional Voice Coach can speak the cues; when music is playing it
-        stays off until you switch it on. Scoring uses the same tracker frames Velocity Lab shows
-        raw and is labeled as a hand-sequence match.
+        Puncheokie is the punch-along mode: follow the called combinations the way you would follow
+        the words to a song. It is not ready yet.
       </Text>
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>Coming after Sprint 1.</Text>
+      <View style={styles.placeholder} testID="coming-soon">
+        <Text style={styles.placeholderText}>Coming soon.</Text>
       </View>
+      <Text style={styles.paragraph}>To build or run a workout today, use the punchCraft tab.</Text>
     </ScrollView>
   )
 }
@@ -41,7 +46,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   placeholder: {
-    marginTop: 12,
+    marginTop: 4,
     padding: 16,
     borderWidth: 1,
     borderColor: colors.border,

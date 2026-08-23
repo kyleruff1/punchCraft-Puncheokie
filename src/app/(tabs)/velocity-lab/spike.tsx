@@ -27,9 +27,11 @@ import type {
   SpikeReport,
   SubscriptionResult,
 } from '@ble/bleTypes'
+import { useCaptureSession } from '@capture/useCaptureSession'
 import { getBuildInfo } from '@/diagnostics/buildInfo'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 import { getTrackerSlots } from '@/state/useTrackerStore'
+import { colors } from '@/theme/colors'
 
 /** Pure-JS base64 → hex used to attach manufacturer-data hex to the report.
  * Duplicates the impl in BleManagerBlePlxImpl to keep the spike screen from
@@ -128,6 +130,10 @@ function errMessage(e: unknown): string {
   }
 
 export default function SpikeScreen() {
+  // Opens a capture for this screen so the spike's notification frames are
+  // persisted by the transport rather than living only in the run report.
+  useCaptureSession('ble-spike')
+
   const info = useMemo(() => getBuildInfo(), [])
   const [state, setState] = useState<UiState>({
     phase: 'idle',
@@ -704,28 +710,28 @@ function StageRow(props: { label: string; ok: boolean; durationMs: number; note?
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0b0b0d' },
+  root: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  title: { color: '#fff', fontSize: 22, fontWeight: '600' },
-  subtitle: { color: '#c6c6c6', marginTop: 4 },
-  phase: { color: '#8f8f8f', marginTop: 2, fontFamily: 'monospace' },
+  title: { color: colors.textPrimary, fontSize: 22, fontWeight: '600' },
+  subtitle: { color: colors.textSecondary, marginTop: 4 },
+  phase: { color: colors.textMuted, marginTop: 2, fontFamily: 'monospace' },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 12 },
-  btn: { backgroundColor: '#2c6bed', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
+  btn: { backgroundColor: colors.accent, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8 },
   btnDisabled: { opacity: 0.4 },
-  btnText: { color: '#fff', fontWeight: '600' },
+  btnText: { color: colors.textPrimary, fontWeight: '600' },
   section: { marginTop: 20 },
-  sectionTitle: { color: '#fff', fontSize: 16, fontWeight: '600', marginBottom: 8 },
-  sectionHint: { color: '#8f8f8f', fontSize: 12, marginBottom: 8 },
-  deviceRow: { paddingVertical: 10, borderBottomColor: '#1f1f22', borderBottomWidth: 1 },
-  deviceName: { color: '#fff', fontSize: 15 },
-  deviceNameFaint: { color: '#8f8f8f', fontStyle: 'italic' },
-  deviceMeta: { color: '#8f8f8f', fontSize: 12, marginTop: 2 },
-  stageRow: { paddingVertical: 6, borderBottomColor: '#1f1f22', borderBottomWidth: 1 },
+  sectionTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  sectionHint: { color: colors.textMuted, fontSize: 12, marginBottom: 8 },
+  deviceRow: { paddingVertical: 10, borderBottomColor: colors.surface, borderBottomWidth: 1 },
+  deviceName: { color: colors.textPrimary, fontSize: 15 },
+  deviceNameFaint: { color: colors.textMuted, fontStyle: 'italic' },
+  deviceMeta: { color: colors.textMuted, fontSize: 12, marginTop: 2 },
+  stageRow: { paddingVertical: 6, borderBottomColor: colors.surface, borderBottomWidth: 1 },
   stageLabel: { fontWeight: '700', fontFamily: 'monospace' },
-  stageMeta: { color: '#c6c6c6', fontFamily: 'monospace', fontSize: 12, marginTop: 2 },
-  pass: { color: '#3ecf8e' },
-  fail: { color: '#ff6b6b' },
-  errorText: { color: '#ff9b9b', fontSize: 12, marginTop: 2 },
-  hex: { color: '#c6c6c6', fontFamily: 'monospace', fontSize: 11, marginTop: 8 },
-  json: { color: '#8f8f8f', fontFamily: 'monospace', fontSize: 10, marginTop: 12 },
+  stageMeta: { color: colors.textSecondary, fontFamily: 'monospace', fontSize: 12, marginTop: 2 },
+  pass: { color: colors.success },
+  fail: { color: colors.trackerRight },
+  errorText: { color: colors.danger, fontSize: 12, marginTop: 2 },
+  hex: { color: colors.textSecondary, fontFamily: 'monospace', fontSize: 11, marginTop: 8 },
+  json: { color: colors.textMuted, fontFamily: 'monospace', fontSize: 10, marginTop: 12 },
 })

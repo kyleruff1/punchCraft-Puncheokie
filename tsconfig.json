@@ -22,7 +22,9 @@
       "@storage/*": ["./src/storage/*"],
       "@state/*": ["./src/state/*"],
       "@components/*": ["./src/components/*"],
-      "@diagnostics/*": ["./src/diagnostics/*"]
+      "@diagnostics/*": ["./src/diagnostics/*"],
+      "@simulation/*": ["./src/simulation/*"],
+      "@testing/*": ["./src/testing/*"]
     }
   },
   "include": [

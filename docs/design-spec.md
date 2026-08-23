@@ -1,6 +1,6 @@
 # punchCraft — Product and Engineering Design Specification
 
-> Canonical design specification for punchCraft / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json) (labels, milestones, and the project definition live in [`backlog-static.json`](../tools/backlog/backlog-static.json)). Puncheokie's workout engine and live UX are specified in [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md), which supersedes parts of §13, §17.1, §22 Phase 5, and §27 — see the §13 banner and §31.
+> Canonical design specification for punchCraft / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json) (labels, milestones, and the project definition live in [`backlog-static.json`](../tools/backlog/backlog-static.json)). Puncheokie's workout engine and live UX are specified in [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md), which supersedes parts of §13, §17.1, §22 Phase 5, and §27 — see the §13 banner and §32.
 
 ## 1. Executive summary
 
@@ -2067,7 +2067,7 @@ Specified in detail by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-e
 13. Implement the deterministic seeded `WorkoutGenerator`, versioned by `generator_version`, with golden-output tests.
 14. Build the workout summary: completion over punch tokens, hand-sequence match, tracker-reported velocity when available, extras always visible.
 15. Implement strike confirmation and gratification (Puncheokie doc §28): per-strike node flash with a four-cue haptic vocabulary, the progressive combo affirmation border, the capability-aware five-signal plausibility model with four confidence tiers, bounded celebration levels with a Focus mode, and `combo_results` persistence versioned by `CONFIDENCE_VERSION` (D11).
-16. Implement the workout backdrop and ambience library (§31): `BackdropTheme` contracts and mood taxonomy, the scrim that guarantees foreground contrast, a bundled and licence-recorded starter library, the renderer with its `still`/`subtle`/`active` motion levels and auto-degrade, and recipe-level selection that resolves through the deterministic seed. The backdrop is independent of audio in every respect (D12).
+16. Implement the workout backdrop and ambience library (§31): `BackdropTheme` contracts and mood taxonomy, the scrim that guarantees foreground contrast, a bundled and licence-recorded starter library, the renderer with its `still`/`subtle`/`active` motion levels and auto-degrade, and recipe-level selection that resolves through the deterministic seed. The backdrop is independent of audio in every respect (D17).
 
 **Definition of done:** The user can pick a preset or tune a recipe, run the generated workout in landscape on the tablet with visual, haptic, and — when no third-party audio is playing, or after an explicit opt-in — spoken cues, switch stance, pause and resume, and receive capability-appropriate, hand-sequence-match-labeled results that can be regenerated from the stored recipe, seed, generator version, and realized token stream, all without Spotify.
 
@@ -2237,8 +2237,9 @@ Acceptance criteria:
 | Adaptive plans persist the realized token stream and decisions | Accepted 2026-08-23 | Required for deterministic recalculation (§8.6, §19.1) (D8) |
 | Recipe + generator + seed replace editable programs and the editor | Accepted 2026-08-23 | Deterministic regeneration, smaller UI surface; persistence is parameters + version + seed (D9, D10) |
 | Strike confirmation is graded, capability-aware and never punitive | Accepted 2026-08-23 | The tracker cannot prove technique, so confirmation reports a confidence tier; signals the tier cannot supply are omitted, never zeroed, so a missing capability never reads as athlete failure (D11) |
-| The workout backdrop is fully independent of audio | Accepted 2026-08-23 | An animated visual playing alongside a streaming service is exactly the §14.6 synchronisation question; the backdrop loops on its own clock, is selected before playback, derives nothing from the track, and renders identically in silence. Any playback-to-backdrop coupling needs the §14.6 review first (D12, §31.1) |
+| The workout backdrop is fully independent of audio | Accepted 2026-08-23 | An animated visual playing alongside a streaming service is exactly the §14.6 synchronisation question; the backdrop loops on its own clock, is selected before playback, derives nothing from the track, and renders identically in silence. Any playback-to-backdrop coupling needs the §14.6 review first (D17, §31.1) |
 | Backdrop carries no information and is always defeatable | Accepted 2026-08-23 | It sits under a contrast scrim with a measurable floor (§31.3), auto-degrades under thermal or frame pressure, honours reduced motion, and can be switched off without affecting the workout (§31.4) |
+| Global orientation is `default`; the Puncheokie live route locks landscape on focus | Accepted 2026-08-23 | Records the mechanism behind D7's landscape-first deviation from §19.4's phone-first rule. `app.config.ts` sets `orientation: 'default'` so the OS follows the device everywhere, and only the live route calls `ScreenOrientation.lockAsync(LANDSCAPE)` in a `useFocusEffect`, releasing with `unlockAsync()` on blur — so no other route changes presentation. Prebuild emits `android:screenOrientation="unspecified"` with `configChanges` covering `orientation\|screenSize\|screenLayout\|smallestScreenSize`, so rotation delivers a configuration change to the existing activity rather than recreating it, and both React and Zustand state survive. Verified on the Lenovo TB125FU in the M32-05 spike (#182) |
 
 ## 26. Open technical questions
 
@@ -2379,7 +2380,7 @@ This subsection is binding and exists because an animated visual that plays whil
 - is chosen by the athlete or by the workout recipe **before** playback begins and does not change in response to it; and
 - renders identically whether music is playing or silent.
 
-Any coupling at all between playback and the backdrop — including the seemingly innocuous "suggest a mood from the connected playlist" — is a synchronisation feature and requires the §14.6 policy review before it is designed, not after. Recorded as decision D12.
+Any coupling at all between playback and the backdrop — including the seemingly innocuous "suggest a mood from the connected playlist" — is a synchronisation feature and requires the §14.6 policy review before it is designed, not after. Recorded as decision D17.
 
 ### 31.2 Model
 
@@ -2441,4 +2442,4 @@ The starter library ships bundled with the application; there is no backend and 
 | 2026-08-22 | 1.0 | Initial specification (as PunchLab). |
 | 2026-08-23 | 1.1 | Product renamed punchCraft (PR #166). Puncheokie v0.2 design landed ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md)): §13 banner added; §13.3, §13.5, §14.1, §14.6, §19.4 amended; §6, §15.2, §16, §17.1, §18.1 updated; §22 Phase 5 rewritten; §25 and §26 entries added; this section added. |
 | 2026-08-23 | 1.2 | Puncheokie v0.3 (doc §28 strike confirmation, combo plausibility and gratification): `combo_results` added to §17.1; `domain/feedback/` and `haptics/` added to §16; §22 Phase 5 task 15 added; §25 gains the D11 decision. |
-| 2026-08-23 | 1.3 | New §31 Workout backdrop and ambience (selectable animated loops, audio independence, contrast scrim, motion and battery budget, seed-stable selection, bundled licensed library); `presentation/backdrops/` added to §16; §22 Phase 5 task 16 added; §25 gains D12; §26 gains questions 26–28; revision history renumbered to §32. |
+| 2026-08-23 | 1.3 | New §31 Workout backdrop and ambience (selectable animated loops, audio independence, contrast scrim, motion and battery budget, seed-stable selection, bundled licensed library); `presentation/backdrops/` added to §16; §22 Phase 5 task 16 added; §25 gains D17; §26 gains questions 26–28; revision history renumbered to §32. |

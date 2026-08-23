@@ -6,6 +6,8 @@ import { getTrackerCoordinator, type TrackerSlotHand } from '@/ble/TrackerCoordi
 import type { AdvertisementSnapshot } from '@/ble/bleTypes'
 import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
+import type { SlotState } from '@/state/useTrackerStore'
+import { autoConnectKnownTrackers } from '@ble/autoConnectTrackers'
 import { colors } from '@/theme/colors'
 
 type PickerState =
@@ -41,6 +43,40 @@ export default function VelocityLabLanding() {
   const rightSlot = useRightSlot()
   const [picker, setPicker] = useState<PickerState>({ status: 'idle' })
   const [fightCamOnly, setFightCamOnly] = useState(true)
+  const [autoConnect, setAutoConnect] = useState<{ busy: boolean; message: string | null }>({
+    busy: false,
+    message: null,
+  })
+
+  // Both trackers have a permanent slot (blue -> left, red -> right), so
+  // there is nothing to choose — one scan binds whichever are advertising.
+  // This is the manual retry for the pass that already ran at launch.
+  async function connectBoth() {
+    setAutoConnect({ busy: true, message: null })
+    const result = await autoConnectKnownTrackers({ timeoutMs: 12_000 })
+    if (result.scanError) {
+      setAutoConnect({ busy: false, message: `Scan failed: ${result.scanError}` })
+      return
+    }
+    const missing = result.outcomes.filter((o) => o.status === 'not-found')
+    const failed = result.outcomes.filter((o) => o.status === 'failed')
+    if (failed.length > 0) {
+      setAutoConnect({
+        busy: false,
+        message: `Could not connect ${failed.map((f) => f.hand).join(' + ')}: ${failed[0]?.errorMessage ?? 'unknown error'}`,
+      })
+      return
+    }
+    if (missing.length > 0) {
+      // Almost always means the tracker is asleep — they need a firm tap.
+      setAutoConnect({
+        busy: false,
+        message: `Not advertising: ${missing.map((m) => m.hand).join(' + ')}. Tap the tracker to wake it, then retry.`,
+      })
+      return
+    }
+    setAutoConnect({ busy: false, message: null })
+  }
 
   async function startScan(hand: TrackerSlotHand) {
     setPicker({ status: 'scanning', hand })
@@ -82,6 +118,12 @@ export default function VelocityLabLanding() {
 
   const activeHand: TrackerSlotHand | null = picker.status === 'idle' ? null : picker.hand
 
+  // The "Connect both" affordance disappears once both slots hold a usable
+  // connection; per-hand buttons remain for reassigning an individual slot.
+  const isUsable = (s: SlotState | null): boolean =>
+    !!s && (s.state === 'ready' || s.state === 'streaming')
+  const bothConnected = isUsable(leftSlot) && isUsable(rightSlot)
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Stack.Screen
@@ -107,6 +149,29 @@ export default function VelocityLabLanding() {
         No workout, no scoring, no interpretation — just the transport, the parser, and the
         capture sink that persists every frame before anything else touches it.
       </Text>
+
+      {!bothConnected ? (
+        <View style={styles.autoConnectBlock}>
+          <Pressable
+            style={[styles.primaryButton, autoConnect.busy && styles.primaryButtonBusy]}
+            onPress={() => { void connectBoth() }}
+            disabled={autoConnect.busy || picker.status !== 'idle'}
+            accessibilityRole="button"
+            accessibilityLabel="Connect both trackers"
+          >
+            <Text style={styles.primaryButtonText}>
+              {autoConnect.busy ? 'Scanning for trackers…' : 'Connect both trackers'}
+            </Text>
+          </Pressable>
+          {autoConnect.message ? (
+            <Text style={styles.autoConnectNote}>{autoConnect.message}</Text>
+          ) : (
+            <Text style={styles.autoConnectHint}>
+              Blue is always left, red is always right — no need to pick.
+            </Text>
+          )}
+        </View>
+      ) : null}
 
       <View style={styles.buttonRow}>
         <Pressable
@@ -240,6 +305,18 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   buttonRow: { flexDirection: 'row', gap: 12 },
+  autoConnectBlock: { gap: 8 },
+  primaryButton: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+  },
+  primaryButtonBusy: { backgroundColor: colors.surfaceElevated },
+  primaryButtonText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
+  autoConnectHint: { fontSize: 13, color: colors.textSecondary },
+  autoConnectNote: { fontSize: 13, color: colors.warning },
   connectButton: {
     flex: 1,
     paddingVertical: 12,

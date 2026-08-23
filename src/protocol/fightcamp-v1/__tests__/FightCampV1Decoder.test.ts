@@ -54,7 +54,10 @@ describe('FightCampV1Decoder', () => {
     expect(result.events).toHaveLength(1)
     const event = result.events[0]!
     expect(event.punchTypeRaw).toBe(1)
-    expect(event.punchType).toBe('power')
+    // H12: the type byte is not a device-portable technique classifier, so
+    // punchType is deliberately 'unknown' for every byte. punchTypeRaw is
+    // the honest datum and is asserted above.
+    expect(event.punchType).toBe('unknown')
     // H11 had a math error: the LE uint32 0xa0518a6a is 1787449760, which is
     // 2026-08-23T01:49:20 UTC (not 2026-08-22T19:29:20 as first written up).
     // Recomputed and locked in here; H11 note corrected in the same commit.
@@ -101,7 +104,21 @@ describe('FightCampV1Decoder', () => {
     expect(result.unknown).toBe(true)
   })
 
-  it('applies power ×1.7 for type 1 and type 2 but not type 3', () => {
+  it('never claims a technique — punchType is "unknown" for every type byte (H12)', () => {
+    // The type byte is not a device-portable classifier: the same technique
+    // yields different bytes on different trackers. punchTypeRaw is the
+    // honest datum; punchType must not invent a label from it.
+    for (const byte of [0, 1, 2, 3, 4, 5, 6, 7, 255]) {
+      const hex = `${byte.toString(16).padStart(2, '0')}1001a0518a6a530a`
+      const result = decodeFrame(buildFrame({ hex, id: `t-${byte}` }), v4State())
+      expect(result.events).toHaveLength(1)
+      const event = result.events[0]!
+      expect(event.punchTypeRaw).toBe(byte)
+      expect(event.punchType).toBe('unknown')
+    }
+  })
+
+  it('applies the vendor ×1.7 multiplier for type bytes 1 and 2 but not 3', () => {
     // velocityRaw byte = 10 → v = 5.0 → piecewise = 5.0
     // type in {1,2} → *= 1.7 → 8.5; type 3 → stays 5.0
     const mkHex = (t: string) => `${t}1001a0518a6a530a`

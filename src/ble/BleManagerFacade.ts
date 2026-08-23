@@ -16,6 +16,7 @@ import type {
   ConnectionStatus,
   GattSnapshot,
   RawBleFrame,
+  RawFrameSink,
   ReadResult,
   SubscriptionResult,
   WriteResult,
@@ -61,6 +62,29 @@ export interface ConnectOptions {
 }
 
 export interface BleManagerFacade {
+  /**
+   * Install the provider used to tag emitted frames with the capture they
+   * belong to. `RawBleFrame.id` is derived as `<captureId>-<seq>` and is the
+   * PRIMARY KEY of `ble_frames`, so the id must be unique across app runs —
+   * not just within one. Until a capture opens, frames are tagged
+   * 'ephemeral', whose sequence restarts at 0 on every launch and therefore
+   * MUST NOT be persisted.
+   *
+   * The capture pipeline calls this when it opens a capture and again with a
+   * provider returning 'ephemeral' when it closes.
+   */
+  setCaptureIdProvider(provider: () => string): void
+
+  /**
+   * Install (or clear, with null) the durable sink for raw frames.
+   *
+   * Every frame the transport produces is handed to this sink BEFORE it
+   * reaches the subscriber that asked for it, which is what makes
+   * persist-before-parse (CLAUDE.md §1, §11.9, §12.4) a property of the
+   * transport rather than of each individual screen.
+   */
+  setFrameSink(sink: RawFrameSink | null): void
+
   /** True once the underlying manager reports powered-on Bluetooth. */
   isReady(): Promise<boolean>
 
