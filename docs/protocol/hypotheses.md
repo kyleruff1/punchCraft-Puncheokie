@@ -41,7 +41,7 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 - **Claim:** The blue tracker enters a low-power / advertising-only state after approximately 10 seconds without motion, requiring a physical tap to resume emitting notification frames over an established BLE connection. The red tracker stayed engaged through the same observation window without needing a tap.
 - **Evidence:** Kyle observed on 2026-08-22 during Velocity Lab spike runs: "left keeps falling asleep, I have to tap it after 10 seconds; red seems engaged and turned on."
 - **Counter-evidence:** Single session, only two trackers, no controlled variable isolation. Difference could be battery state, firmware revision, or bond state rather than an inherent left/right asymmetry.
-- **Consequence if true:** PunchLab / Puncheokie live sessions must tolerate quiet-then-noisy notification streams. Latency to first frame after a punch may include a wake-up delay. UI should surface "Tracker awake — punch to keep it awake" hint.
+- **Consequence if true:** punchCraft / Puncheokie live sessions must tolerate quiet-then-noisy notification streams. Latency to first frame after a punch may include a wake-up delay. UI should surface "Tracker awake — punch to keep it awake" hint.
 - **Consequence if false:** No behavior change; the "sleep" was actually a lost connection or a coincidence.
 - **Next test:** Repeat with (a) both trackers at similar battery level, (b) both trackers on the same wrist strap sequentially, (c) longer observation windows. Note whether idle-sleep triggers a BLE disconnect or is purely a notification-silence.
 - **Owner / date:** Kyle + Claude, 2026-08-22.

@@ -1,5 +1,5 @@
 /**
- * SQLite bootstrap for punchlab.
+ * SQLite bootstrap for punchcraft.
  *
  * Opens the shared on-device database (expo-sqlite) with WAL journaling and
  * foreign keys enabled, then applies pending migrations. Storage is
@@ -12,12 +12,12 @@ import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite'
 import { logger, safe } from '@/diagnostics/logger'
 import { runMigrations } from '@/storage/migrations/001_initial'
 
-const DB_NAME = 'punchlab.db'
+const DB_NAME = 'punchcraft.db'
 
 let dbInstance: SQLiteDatabase | null = null
 
 /**
- * Open the punchlab database (idempotent within the process). Configures
+ * Open the punchcraft database (idempotent within the process). Configures
  * PRAGMAs and runs migrations on first open.
  */
 export function openDatabase(): SQLiteDatabase {
@@ -29,7 +29,7 @@ export function openDatabase(): SQLiteDatabase {
   db.execSync('PRAGMA foreign_keys = ON;')
   runMigrations(db)
   dbInstance = db
-  logger.info('storage.open', 'punchlab.db opened', { name: safe(DB_NAME) })
+  logger.info('storage.open', 'punchcraft.db opened', { name: safe(DB_NAME) })
   return db
 }
 

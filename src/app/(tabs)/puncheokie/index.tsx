@@ -23,7 +23,7 @@ export default function PuncheokieLanding() {
       <Text style={styles.paragraph}>
         Puncheokie is punch-along-to-the-song mode: a Spotify-authenticated experience where
         combos are choreographed to a track and the tracker stream scores your timing against
-        the beat. It sits on top of PunchLab combos and the same tracker frames Velocity Lab
+        the beat. It sits on top of punchCraft combos and the same tracker frames Velocity Lab
         surfaces raw.
       </Text>
       <View style={styles.placeholder}>

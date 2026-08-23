@@ -1,13 +1,13 @@
-# PunchLab — Product and Engineering Design Specification
+# punchCraft — Product and Engineering Design Specification
 
-> Canonical design specification for PunchLab / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog.json`](../tools/backlog/backlog.json).
+> Canonical design specification for punchCraft / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog.json`](../tools/backlog/backlog.json).
 
 ## 1. Executive summary
 
-PunchLab is an Android-first mobile application that restores useful life to a pair of unsupported FightCamp first-generation Bluetooth punch trackers. The application will connect to the left- and right-hand trackers, receive their Bluetooth Low Energy data, preserve raw device frames, decode punch events, calculate session metrics, and support three distinct training workflows:
+punchCraft is an Android-first mobile application that restores useful life to a pair of unsupported FightCamp first-generation Bluetooth punch trackers. The application will connect to the left- and right-hand trackers, receive their Bluetooth Low Energy data, preserve raw device frames, decode punch events, calculate session metrics, and support three distinct training workflows:
 
 - **Velocity Lab** — device connection, protocol diagnostics, live Bluetooth listening, calibration, and data export.
-- **PunchLab** — configurable timed or free-form bag sessions with left/right punch counts, tracker-reported velocity, round metrics, and session history.
+- **punchCraft** — configurable timed or free-form bag sessions with left/right punch counts, tracker-reported velocity, round metrics, and session history.
 - **Puncheokie** — programmable punch-sequence workouts using numbered boxing combinations, regular or switch stance, and an optional user-connected Spotify playlist for background listening.
 
 The first engineering milestone is not a polished workout interface. It is a reliable Bluetooth listener inside Velocity Lab that can:
@@ -70,7 +70,7 @@ The first product version shall:
 - calculate stable, reproducible metrics from the stored event stream;
 - execute programmed numbered combinations in regular and switch stances;
 - optionally retrieve a user's Spotify playlists through OAuth; and
-- continue to run PunchLab and non-Spotify Puncheokie workouts without internet access.
+- continue to run punchCraft and non-Spotify Puncheokie workouts without internet access.
 
 ### 3.2 Engineering goals
 
@@ -158,7 +158,7 @@ flowchart LR
       S[Session and metrics engine]
       W[Workout cue engine]
       DB[(SQLite)]
-      UI[Velocity Lab / PunchLab / Puncheokie]
+      UI[Velocity Lab / punchCraft / Puncheokie]
     end
     A --> B --> P --> E
     E --> C --> S
@@ -187,7 +187,7 @@ flowchart LR
 The app will expose three primary bottom tabs:
 
 1. Velocity Lab
-2. PunchLab
+2. punchCraft
 3. Puncheokie
 
 Settings, history, data export, and developer diagnostics should be presented as nested screens or a top-level menu rather than adding more permanent tabs during the first release.
@@ -205,7 +205,7 @@ src/app/
       listener.tsx
       calibration.tsx
       captures.tsx
-    punchlab/
+    punchcraft/
       index.tsx
       configure.tsx
       live.tsx
@@ -345,13 +345,13 @@ Velocity Lab is complete for the first milestone when:
 - disconnecting either tracker does not terminate the other connection; and
 - the app can restore a ready state after a normal disconnect/reconnect cycle.
 
-## 8. PunchLab functional design
+## 8. punchCraft functional design
 
-PunchLab is the general-purpose bag-session mode. It consumes the same normalized events produced by Velocity Lab but hides protocol details.
+punchCraft is the general-purpose bag-session mode. It consumes the same normalized events produced by Velocity Lab but hides protocol details.
 
 ### 8.1 Session types
 
-PunchLab shall support:
+punchCraft shall support:
 
 - **Free session:** count-up timer until the user stops.
 - **Single timer:** one configurable work interval.
@@ -372,7 +372,7 @@ Initial timer fields:
 
 ### 8.2 Pre-session readiness gate
 
-Before starting, PunchLab shall display:
+Before starting, punchCraft shall display:
 
 - left tracker readiness;
 - right tracker readiness;
@@ -505,7 +505,7 @@ Averages shall exclude events marked malformed, duplicate, clipped, outside the 
 
 ### 9.4 Custom output index
 
-A future PunchLab Output Index may combine punch volume and normalized velocity, but it must be explicitly described as a dimensionless product metric. It must not be presented as joules, watts, force, or transferred energy.
+A future punchCraft Output Index may combine punch volume and normalized velocity, but it must be explicitly described as a dimensionless product metric. It must not be presented as joules, watts, force, or transferred energy.
 
 A provisional calculation can be evaluated after calibration data exists:
 
@@ -1195,7 +1195,7 @@ As of 2026-08-22, Spotify Development Mode has material constraints:
 
 The February 2026 Development Mode changes also restrict playlist contents for playlists the user does not own or collaborate on. The UI must therefore handle a followed playlist whose metadata is visible but whose items are unavailable. See references R16 and R17.
 
-Design consequence: Spotify support is an experimental/personal feature for the first product version. It must not be a hard dependency for PunchLab or Puncheokie.
+Design consequence: Spotify support is an experimental/personal feature for the first product version. It must not be a hard dependency for punchCraft or Puncheokie.
 
 ### 14.4 MVP playback option: content link
 
@@ -1204,7 +1204,7 @@ The safest initial playback path is:
 1. retrieve the selected playlist's Spotify URI;
 2. deep-link to the installed Spotify Android app;
 3. let the user start playback in Spotify;
-4. return to PunchLab; and
+4. return to punchCraft; and
 5. run the Puncheokie program on its independent timer.
 
 Spotify documents content linking into the installed Android app. See reference R18.
@@ -1238,7 +1238,7 @@ The initial design therefore imposes these constraints:
 - no audio analysis;
 - no overlay of app-generated audio on Spotify playback by default;
 - no commercial launch of integrated streaming functionality without policy/legal review; and
-- clear separation between Spotify metadata and PunchLab-owned workout data.
+- clear separation between Spotify metadata and punchCraft-owned workout data.
 
 Before public distribution, review the current Spotify Developer Policy and obtain clarification or approval if the intended Puncheokie behavior could be treated as synchronization.
 
@@ -1494,7 +1494,7 @@ Contains the fields described in Section 10 plus activation and invalidation met
 **`sessions`**
 
 - `id`
-- `mode`: `velocity-test`, `punchlab`, or `puncheokie`
+- `mode`: `velocity-test`, `punchcraft`, or `puncheokie`
 - `status`
 - `started_at`
 - `ended_at`
@@ -1911,7 +1911,7 @@ This is the first functional product milestone.
 
 **Definition of done:** The user can calibrate left and right separately, repeat the procedure, compare distributions, and test an active profile in a live run.
 
-### Phase 4 — PunchLab sessions
+### Phase 4 — punchCraft sessions
 
 **Objectives**
 
@@ -2149,7 +2149,7 @@ The MVP includes:
 - relative calibration profiles; and
 - connection diagnostics.
 
-**PunchLab**
+**punchCraft**
 
 - free and round timers;
 - left/right/total counts;
@@ -2182,7 +2182,7 @@ Potential future adapters:
 - `ReplayFileAdapter`
 - `MockTrainingAdapter`
 
-This preserves the value of PunchLab, calibration, metrics, and Puncheokie even after the legacy trackers fail physically.
+This preserves the value of punchCraft, calibration, metrics, and Puncheokie even after the legacy trackers fail physically.
 
 ## 29. Reference sources and current platform constraints
 
@@ -2226,4 +2226,4 @@ Begin Phase 1 by creating the smallest possible installable Velocity Lab develop
 - raw frame persistence; and
 - JSON export.
 
-Do not begin PunchLab metric polish, Puncheokie program authoring, or Spotify authorization until the app can capture a repeatable tracker frame for one controlled punch.
+Do not begin punchCraft metric polish, Puncheokie program authoring, or Spotify authorization until the app can capture a repeatable tracker frame for one controlled punch.

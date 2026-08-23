@@ -3,7 +3,7 @@
 The roadmap is 30 GitHub Milestones (`M01`…`M30`) grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
 
 - Board: https://github.com/users/kyleruff1/projects/5
-- Milestones: https://github.com/kyleruff1/PunchLab-Puncheokie/milestones
+- Milestones: https://github.com/kyleruff1/punchCraft-Puncheokie/milestones
 - Backlog source: [`tools/backlog/backlog.json`](../tools/backlog/backlog.json) → seeded by [`tools/backlog/seed.mjs`](../tools/backlog/seed.mjs)
 
 ## Phase 0 — Preserve the baseline and establish the repository
@@ -39,7 +39,7 @@ The first functional product milestone; everything below runs in Sprint 1.
 - **M18** — Versioned calibration profiles & stale detection. CalibrationProfile model + repository, robust percentile computation, zone thresholds, activation/revert, staleness rules (§10.4), raw values untouched. (§10.2, §10.3, §22 Phase 3 tasks 4–7.)
 - **M19** — Live validation round & calibration report. 30-s validation with active profile; calibration report export. (§22 Phase 3 tasks 8–9.)
 
-## Phase 4 — PunchLab sessions
+## Phase 4 — punchCraft sessions
 
 - **M20** — Session/timer engine. §18.1 state machine with monotonic clock, pause semantics (`duringPause` flag), timer/acceptance/pause/clock-change tests. (§18, §22 Phase 4 tasks 1–2, 7.)
 - **M21** — Readiness gate & live metric tiles. Pre-session readiness (§8.2) with explicit degraded warnings; large glanceable tiles (§8.3) and pop-out tile customization. (§8.2, §8.3, §22 Phase 4 tasks 3–4, 12.)

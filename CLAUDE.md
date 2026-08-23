@@ -1,4 +1,4 @@
-# CLAUDE.md — working conventions for PunchLab · Puncheokie
+# CLAUDE.md — working conventions for punchCraft · Puncheokie
 
 Read [docs/design-spec.md](docs/design-spec.md) before changing architecture, protocol, metrics, calibration, or Spotify behavior. Section numbers below (§) refer to it.
 

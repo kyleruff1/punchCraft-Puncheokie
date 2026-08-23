@@ -3,12 +3,12 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
-export default function PunchLabLanding() {
+export default function PunchCraftLanding() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
       <Stack.Screen
         options={{
-          title: 'PunchLab',
+          title: 'punchCraft',
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -19,9 +19,9 @@ export default function PunchLabLanding() {
         }}
       />
       <TrackerBadgesRow />
-      <Text style={styles.title}>PunchLab</Text>
+      <Text style={styles.title}>punchCraft</Text>
       <Text style={styles.paragraph}>
-        PunchLab is the studio surface for building freeform combos, drills, and structured
+        punchCraft is the studio surface for building freeform combos, drills, and structured
         workouts on top of the tracker stream. Sessions here layer combos, timing, and history
         on top of raw tracker frames while the capture sink continues to persist everything.
       </Text>

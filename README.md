@@ -1,4 +1,4 @@
-# PunchLab · Puncheokie
+# punchCraft · Puncheokie
 
 Android-first mobile app that restores useful life to a pair of unsupported **FightCamp first-generation Bluetooth punch trackers**. It connects to the left- and right-hand trackers over Bluetooth Low Energy, preserves every raw frame, decodes punch events, calculates session metrics, and powers three training workflows.
 
@@ -9,7 +9,7 @@ Android-first mobile app that restores useful life to a pair of unsupported **Fi
 | Mode | What it is |
 |---|---|
 | **Velocity Lab** | Device connection, protocol diagnostics, live Bluetooth listening, calibration, and data export. The engineering surface and the first milestone. |
-| **PunchLab** | Configurable timed or free-form bag sessions with left/right punch counts, tracker-reported velocity, round metrics, and session history. |
+| **punchCraft** | Configurable timed or free-form bag sessions with left/right punch counts, tracker-reported velocity, round metrics, and session history. |
 | **Puncheokie** | Programmable punch-sequence workouts using numbered boxing combinations, regular or switch stance, and an optional user-connected Spotify playlist for background listening. |
 
 ## Principles
@@ -24,7 +24,7 @@ Android-first mobile app that restores useful life to a pair of unsupported **Fi
 ## Roadmap and tracking
 
 - **Project board:** https://github.com/users/kyleruff1/projects/5
-- **Milestones (the 30-step roadmap):** https://github.com/kyleruff1/PunchLab-Puncheokie/milestones
+- **Milestones (the 30-step roadmap):** https://github.com/kyleruff1/punchCraft-Puncheokie/milestones
 - **Epics (one per phase, 8):** issues labeled `epic`; every task is a sub-issue of its phase epic.
 - Definitions of done for every milestone: [docs/roadmap.md](docs/roadmap.md).
 
