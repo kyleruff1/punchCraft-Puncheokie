@@ -31,5 +31,6 @@ module.exports = {
     '^@diagnostics/(.*)$': '<rootDir>/src/diagnostics/$1',
     '^@simulation/(.*)$': '<rootDir>/src/simulation/$1',
     '^@testing/(.*)$': '<rootDir>/src/testing/$1',
+    '^@audio/(.*)$': '<rootDir>/src/audio/$1',
   },
 }

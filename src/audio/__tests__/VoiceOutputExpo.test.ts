@@ -1,0 +1,413 @@
+/**
+ * VoiceOutputExpo (M34-04, doc §18, §25, D3, D16).
+ *
+ * The behaviours worth guarding are the ones with a wrong-but-plausible
+ * alternative:
+ *
+ * - A deadline already past is played **late, not dropped**. Silence is a
+ *   worse answer than lateness for a punch the athlete is being asked to
+ *   throw.
+ * - `cancel` drops what is *queued*, never what is already sounding. Chopping
+ *   a word mid-syllable is not what the priority order is for.
+ * - With audio unavailable, every call is a no-op and the workout still runs
+ *   (doc §25).
+ *
+ * Everything native is injected, so this suite needs no binding — which is
+ * the whole reason the constructor takes seams (spec §21).
+ */
+// The native modules are never exercised — every seam is injected — but the
+// import still has to resolve, and the real ones need a binding this
+// workstation does not have (spec §21.1).
+import { existsSync, readFileSync } from 'node:fs'
+
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: () => {
+    throw new Error('expo-audio is not available in tests; inject createPlayer')
+  },
+  setAudioModeAsync: async () => undefined,
+}))
+jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
+
+import { VoiceOutputExpo } from '../VoiceOutputExpo'
+import { missingAssetIds, voiceAssetManifest, type VoiceAssetManifest } from '../voiceAssets/manifest'
+import {
+  AUDIO_PRIORITY,
+  VOICE_ASSET_IDS,
+  type VoiceAssetId,
+} from '@domain/coach/VoiceOutputPort'
+
+/* ----------------------------------------------------------------- fakes */
+
+interface PlayEvent {
+  source: number
+  volume: number
+}
+
+function harness(
+  opts: { failMode?: boolean; failPlayers?: boolean } = {},
+): {
+  output: VoiceOutputExpo
+  plays: PlayEvent[]
+  spoken: string[]
+  stops: number
+  now: () => number
+  advance(ms: number): void
+  modes: string[]
+} {
+  const plays: PlayEvent[] = []
+  const spoken: string[] = []
+  const modes: string[] = []
+  let stops = 0
+  let clock = 1_000
+  const timers: Array<{ at: number; fn: () => void; id: number }> = []
+  let nextId = 1
+
+  const output = new VoiceOutputExpo({
+    clock: () => clock,
+    schedule: (fn, delayMs) => {
+      const id = nextId++
+      timers.push({ at: clock + delayMs, fn, id })
+      return id
+    },
+    cancelScheduled: (handle) => {
+      const i = timers.findIndex((t) => t.id === handle)
+      if (i >= 0) timers.splice(i, 1)
+    },
+    createPlayer: (source) => {
+      if (opts.failPlayers) throw new Error('no binding')
+      let volume = 1
+      return {
+        get volume() {
+          return volume
+        },
+        set volume(v: number) {
+          volume = v
+        },
+        seekTo: () => {},
+        play: () => plays.push({ source, volume }),
+        remove: () => {},
+      } as never
+    },
+    speaker: {
+      speak: (text: string) => {
+        spoken.push(text)
+      },
+      stop: () => {
+        stops += 1
+      },
+    } as never,
+    setAudioMode: (async (mode: { interruptionMode?: string }) => {
+      if (opts.failMode) throw new Error('audio init failed')
+      if (mode.interruptionMode) modes.push(mode.interruptionMode)
+    }) as never,
+  })
+
+  return {
+    output,
+    plays,
+    spoken,
+    get stops() {
+      return stops
+    },
+    modes,
+    now: () => clock,
+    advance(ms: number) {
+      clock += ms
+      for (const t of [...timers]) {
+        if (t.at <= clock) {
+          const i = timers.indexOf(t)
+          if (i >= 0) timers.splice(i, 1)
+          t.fn()
+        }
+      }
+    },
+  }
+}
+
+const sourceOf = (id: VoiceAssetId, vocabulary: 'numbers' | 'names' = 'numbers'): number =>
+  voiceAssetManifest.assets[vocabulary][id]
+
+// ---------------------------------------------------------------------------
+
+describe('the manifest covers the whole vocabulary', () => {
+  it.each(['numbers', 'names'] as const)('has a clip for every id in %s', (vocabulary) => {
+    // Derived from the id union rather than a hand-copied list — a copied
+    // list drifts and quietly stops catching anything.
+    expect(missingAssetIds(voiceAssetManifest, vocabulary)).toEqual([])
+  })
+
+  it('fails when an id is missing', () => {
+    const broken = {
+      ...voiceAssetManifest,
+      assets: {
+        ...voiceAssetManifest.assets,
+        numbers: { ...voiceAssetManifest.assets.numbers, body: undefined as never },
+      },
+    } as VoiceAssetManifest
+    expect(missingAssetIds(broken, 'numbers')).toEqual(['body'])
+  })
+
+  it('points each vocabulary at its own directory', () => {
+    // The failure this guards is a copy-pasted block whose paths still say
+    // `numbers/` — which would make choosing `names` silently keep saying
+    // "one". It is checked in the source rather than through the module ids,
+    // because jest-expo maps every `.wav` require to one stub value and the
+    // ids therefore collide in tests but not in Metro.
+    const source = readFileSync('src/audio/voiceAssets/manifest.ts', 'utf8')
+    const numbersBlock = source.slice(source.indexOf('numbers: {'), source.indexOf('names: {'))
+    const namesBlock = source.slice(source.indexOf('names: {'))
+
+    expect(numbersBlock.match(/assets\/voice\/numbers\//g)).toHaveLength(VOICE_ASSET_IDS.length)
+    expect(namesBlock.match(/assets\/voice\/names\//g)).toHaveLength(VOICE_ASSET_IDS.length)
+    expect(namesBlock).not.toContain('assets/voice/numbers/')
+  })
+
+  it('has a real file behind every path it names', () => {
+    // A require of a missing asset resolves to nothing at runtime and shows
+    // up as a clip that silently never plays.
+    const source = readFileSync('src/audio/voiceAssets/manifest.ts', 'utf8')
+    const paths = source.match(/assets\/voice\/[a-z]+\/[^']+\.wav/g) ?? []
+    expect(paths).toHaveLength(VOICE_ASSET_IDS.length * 2)
+    for (const path of paths) {
+      expect([path, existsSync(path)]).toEqual([path, true])
+    }
+  })
+
+  it('is uncompressed, per the M34-01 decision', () => {
+    expect(voiceAssetManifest.format).toBe('wav')
+  })
+})
+
+describe('a deadline is honoured, and a missed one is not thrown away', () => {
+  it('holds a clip until its deadline', async () => {
+    const h = harness()
+    await h.output.preload()
+
+    h.output.playAsset('1', h.now() + 300)
+    expect(h.plays).toEqual([])
+
+    h.advance(299)
+    expect(h.plays).toEqual([])
+
+    h.advance(1)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1')])
+  })
+
+  it('plays a deadline already past immediately, rather than dropping it', async () => {
+    // The punch is still being asked for. Silence would be the worse answer.
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('2', h.now() - 40)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('2')])
+  })
+
+  it('plays with no deadline at all straight away', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('3')
+    expect(h.plays).toHaveLength(1)
+  })
+
+  it('keeps several deadlines in flight and fires them in order', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1', h.now() + 100)
+    h.output.playAsset('2', h.now() + 200)
+    h.output.playAsset('3', h.now() + 50)
+
+    h.advance(250)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('3'), sourceOf('1'), sourceOf('2')])
+  })
+})
+
+describe('cancel drops what is queued, not what is sounding', () => {
+  it('removes lower-priority pending clips', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1', h.now() + 100) // punchCommand
+    h.output.playAsset('slip', h.now() + 100) // defenseFootwork
+
+    h.output.cancel(AUDIO_PRIORITY.punchCommand)
+    h.advance(200)
+
+    // The punch command survives; the lower-ranked footwork call does not.
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1')])
+  })
+
+  it('clears everything below safety on a pause', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1', h.now() + 100)
+    h.output.playAsset('bell', h.now() + 100)
+
+    h.output.cancel(AUDIO_PRIORITY.safety)
+    h.advance(200)
+    expect(h.plays).toEqual([])
+  })
+
+  it('leaves an already-played clip alone', async () => {
+    // Nothing can un-play it, and the test states the intent: cancel is about
+    // the queue.
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1')
+    h.output.cancel(AUDIO_PRIORITY.safety)
+    expect(h.plays).toHaveLength(1)
+  })
+
+  it('stops descriptive speech when cancelling at metric or above', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.speak('Average velocity six', AUDIO_PRIORITY.metric)
+    h.output.cancel(AUDIO_PRIORITY.safety)
+    expect(h.stops).toBe(1)
+  })
+})
+
+describe('volumes are independent (doc §25)', () => {
+  it('carries bells and tones on the bells volume', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.setVolumes({ voice: 0.4, bells: 0.9, haptics: 1 })
+
+    h.output.playAsset('1')
+    h.output.playAsset('bell')
+    h.output.tone('ready')
+
+    expect(h.plays.map((p) => p.volume)).toEqual([0.4, 0.9, 0.9])
+  })
+
+  it('applies a change to clips played afterwards', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1')
+    h.output.setVolumes({ voice: 0.2, bells: 1, haptics: 1 })
+    h.output.playAsset('1')
+    expect(h.plays.map((p) => p.volume)).toEqual([1, 0.2])
+  })
+
+  it('never touches music volume — there is no music channel to touch', () => {
+    // Ducking is the OS's business (spec §14.6). A music level here would be
+    // the app reaching into someone else's playback.
+    const h = harness()
+    expect(Object.keys({ voice: 0, bells: 0, haptics: 0 })).not.toContain('music')
+    expect(h.output.available).toBe(true)
+  })
+})
+
+describe('tones map to their clips', () => {
+  it('plays the right asset for each kind', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.tone('ready')
+    h.output.tone('repeat')
+    h.output.tone('warning')
+    expect(h.plays.map((p) => p.source)).toEqual([
+      sourceOf('tone-ready'),
+      sourceOf('tone-repeat'),
+      sourceOf('tone-warning'),
+    ])
+  })
+})
+
+describe('audio focus (spec §14.6)', () => {
+  it('stays out of the way until something is actually audible', async () => {
+    // Asking for focus while silent would duck the athlete's music for
+    // nothing.
+    const h = harness()
+    await h.output.preload()
+    expect(h.modes).toEqual(['mixWithOthers'])
+  })
+
+  it('asks for may-duck focus on the first sound, once', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1')
+    h.output.playAsset('2')
+    expect(h.modes).toEqual(['mixWithOthers', 'duckOthers'])
+  })
+
+  it('never requests exclusive focus', async () => {
+    // `doNotMix` pauses the athlete's music instead of dipping it.
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1')
+    h.output.speak('Round three', AUDIO_PRIORITY.metric)
+    expect(h.modes).not.toContain('doNotMix')
+  })
+})
+
+describe('no-audio mode is first class (doc §25)', () => {
+  it('reports unavailable when the audio stack will not start', async () => {
+    const h = harness({ failMode: true })
+    await h.output.preload()
+    expect(h.output.available).toBe(false)
+  })
+
+  it('turns every call into a no-op rather than throwing', async () => {
+    // The workout has to keep running on visuals and haptics.
+    const h = harness({ failMode: true })
+    await h.output.preload()
+
+    expect(() => {
+      h.output.playAsset('1')
+      h.output.playAsset('2', h.now() + 100)
+      h.output.tone('ready')
+      h.output.speak('anything', AUDIO_PRIORITY.metric)
+      h.output.cancel(AUDIO_PRIORITY.safety)
+      h.output.setVolumes({ voice: 1, bells: 1, haptics: 1 })
+    }).not.toThrow()
+
+    h.advance(500)
+    expect(h.plays).toEqual([])
+    expect(h.spoken).toEqual([])
+  })
+
+  it('goes unavailable when no clip loads at all', async () => {
+    const h = harness({ failPlayers: true })
+    await h.output.preload()
+    expect(h.output.available).toBe(false)
+  })
+})
+
+describe('descriptive speech', () => {
+  it('goes through the speech engine, never the clip path', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.speak('Average velocity six point eight', AUDIO_PRIORITY.metric)
+    expect(h.spoken).toEqual(['Average velocity six point eight'])
+    expect(h.plays).toEqual([])
+  })
+})
+
+describe('the vocabulary decides which recording plays', () => {
+  it('loads the names clips when asked for names', async () => {
+    const h = harness()
+    h.output.setVocabulary('names')
+    await h.output.preload()
+    h.output.playAsset('1')
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1', 'names')])
+  })
+})
+
+describe('release', () => {
+  it('drops pending clips so nothing fires after teardown', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1', h.now() + 100)
+    h.output.release()
+    h.advance(200)
+    expect(h.plays).toEqual([])
+  })
+})
+
+describe('every id the announcer can emit is playable', () => {
+  it('plays all 24 without a miss', async () => {
+    // The announcer resolves tokens to ids; a gap here would be a word the
+    // coach silently never says.
+    const h = harness()
+    await h.output.preload()
+    for (const id of VOICE_ASSET_IDS) h.output.playAsset(id)
+    expect(h.plays).toHaveLength(VOICE_ASSET_IDS.length)
+  })
+})
