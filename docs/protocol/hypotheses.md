@@ -138,3 +138,20 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 - **Evidence:** 2026-08-22. After confirming Developer options enabled (`development_settings_enabled = 1`) and cycling Bluetooth off/on, `getprop persist.bluetooth.btsnoopenable` returns empty; `dumpsys bluetooth_manager` shows `mSnoopLogSettingAtEnable = empty`; writing both `secure.bluetooth_hci_log = 1` and `global.bluetooth_hci_log = 1` via `settings put` succeeds but does not affect the persist prop; the `/data/misc/bluetooth/logs/` directory is not readable without root.
 - **Consequence:** HCI snoop capture for §12.2 controlled scenarios must either (a) use a different Android tablet whose Dev options toggle works, (b) use a rooted device, or (c) skip HCI capture entirely and reverse-engineer via active probing (writing byte sequences to the tracker's command channel and observing notification responses on our own BLE stack).
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H09 — FightCamp v1 = Hykso hardware; Hykso app works; hardware is TI-SensorTag-class
+
+- **Status:** supported (multi-source community reports)
+- **Confidence:** high
+- **Claim:** The FightCamp v1 trackers are structurally identical to the (pre-rebrand) Hykso punch trackers — FightCamp and Hykso were the same company. The physical hardware is a small BLE peripheral in the TI SensorTag lineage: MCU + BLE radio + 3-axis accelerometer + gyroscope. The free Hykso Android app natively pairs the FightCamp v1 trackers and streams live punch metrics ("Freestyle Mode") without any subscription.
+- **Evidence:** User-reported 2026-08-22 sourced from r/androiddev discussions + FightCamp Facebook community + Reddit "V1 tracker" threads. Cross-references our own H01 finding that the custom service UUID `ca280069-…-caf160200b29` starts with the "ca28" prefix (Hykso-style vendor ID), and H05 that the tracker exposes standard Nordic Legacy DFU (Hykso used nRF-family SoCs).
+- **Consequence — big:**
+  1. The **Hykso app's Android APK is a working reference implementation** of the punch-tracker protocol. We can decompile it (`jadx`) and read the exact init sequence written to `ca281079`, the packet format on `ca281077`, and any config bytes on the read/write chars 0x1071–0x1076. Replaces trial-and-error probing with source-of-truth extraction.
+  2. If the tracker really is a **TI-SensorTag-class device**, the underlying data model is very likely raw IMU (accel + gyro) samples plus event flags — either the tracker streams IMU + we compute punch metrics on-device (spec §9.4-style algorithm), or the tracker's firmware detects punch events and emits them as pre-processed frames. The Hykso app decoder will confirm which.
+  3. **A "Freestyle Mode" client already exists** and can be recommended as a fallback for users if our own app slips. Not our shipping product but reassuring re Sprint 1 go/no-go on M10.
+- **Counter-evidence:** Community reports may over-generalize — different hardware SKUs may exist in the FightCamp lifecycle. Verify by pairing a tracker with the Hykso app and confirming full functionality.
+- **Next tests:**
+  1. Install Hykso Android app on the tablet; pair one of the FightCam trackers; confirm live punch count + velocity data.
+  2. `adb pull /data/app/.../com.hykso/base.apk` and decompile with jadx-gui. Grep the Java for `ca281079` / `ca281077` / `caf160200b29` to find the protocol constants.
+  3. Compare the decompiled init sequence with what our probe UI reveals via active byte-write experimentation — if we can reproduce their init and then decode their notification format, Phase 2's FightCampV1Adapter is essentially half-written from the decompilation.
+- **Owner / date:** Kyle + Claude, 2026-08-22.
