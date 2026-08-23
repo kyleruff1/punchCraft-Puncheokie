@@ -21,10 +21,12 @@ export default function PuncheokieLanding() {
       <TrackerBadgesRow />
       <Text style={styles.title}>Puncheokie</Text>
       <Text style={styles.paragraph}>
-        Puncheokie is punch-along-to-the-song mode: a Spotify-authenticated experience where
-        combos are choreographed to a track and the tracker stream scores your timing against
-        the beat. It sits on top of punchCraft combos and the same tracker frames Velocity Lab
-        surfaces raw.
+        Puncheokie is the punch-along workout mode. Numbered combinations run on an independent
+        workout clock: every cue, rest, and round is scheduled by punchCraft on the tablet, never by
+        a song. You can optionally connect Spotify to listen to your own playlist in the background
+        while you train, and an optional Voice Coach can speak the cues; when music is playing it
+        stays off until you switch it on. Scoring uses the same tracker frames Velocity Lab shows
+        raw and is labeled as a hand-sequence match.
       </Text>
       <View style={styles.placeholder}>
         <Text style={styles.placeholderText}>Coming after Sprint 1.</Text>
