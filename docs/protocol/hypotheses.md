@@ -185,8 +185,17 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 
 ### H11 — FightCamp v1 punch decoder — CONFIRMED via Hykso APK decompilation
 
-- **Status:** confirmed
+- **Status:** confirmed for the byte layout; **the punch-type interpretation is superseded by H12**
 - **Confidence:** high (source-of-truth from vendor implementation)
+- **⚠️ Amendment (2026-08-23):** The field offsets, timestamp math, and velocity
+  scaling below are all confirmed and unchanged. What did **not** survive
+  on-device testing is the meaning of byte 0. This entry describes it as a
+  punch *type* and a later revision mapped `3 → 'straight'` and
+  `4 → 'uppercut'`; a controlled capture across both trackers refuted that —
+  see **H12**. The decoder now emits `punchType: 'unknown'` for every byte
+  while preserving `punchTypeRaw`. Note also that the `type ∈ {1,2} → ×1.7`
+  velocity rule is retained for vendor arithmetic fidelity, not because
+  "power punch" is a confirmed reading of those bytes.
 - **Source:** Hykso app APK v11.35+ (`com.hykso.hyksofit`) pulled from tablet 2026-08-22, decompiled with `jadx 1.5.2`. Key files:
   - `com/hykso/hyksofit/session/d.java` — the `Punch` class constructor is the decoder.
   - `X/a0.java` — the BroadcastReceiver that splits BLE notification payloads into 9-byte (v>=4) or 13-byte (v<4) punch records and dispatches per record.
@@ -246,3 +255,39 @@ Result: a decoded punch at 2026-08-22 19:29:20.324 UTC, power-type, 2.72g accel,
 - Legacy 13-byte path only needed for firmware versions < 4 — we can build v>=4 first, add legacy later if any of our physical trackers report v<4.
 
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H12 — The punch-type byte is NOT a device-portable technique classifier
+
+- **Status:** supported (refutes the technique mapping asserted in H11)
+- **Confidence:** high
+- **Claim:** Byte 0 of the 9-byte punch record does not identify the technique thrown (jab / cross / hook / uppercut) in any way that survives a change of tracker, so it cannot be mapped to `PunchType` labels.
+- **Evidence:** Controlled isolated-punch capture, 2026-08-23, ~100 decoded events across 10 sets, both physical trackers, single athlete, one sitting. Sets were thrown one technique at a time with the log cleared between sets. Modal byte per set:
+
+  | Set | `EA:69:2D:9C:FD:53` ("red") | `D7:34:B4:27:D5:84` ("blue") |
+  |---|---|---|
+  | Jabs | `4` (5/10) | `1` (11/12) |
+  | Straights / crosses | `3` (6/12) | `1` (10/12) |
+  | Hooks | `2` (7/8) | `1` (8/10) |
+  | Uppercuts | `4` (6/8) | `3` (9/13) |
+
+  Two independent contradictions:
+
+  1. **Cross-device disagreement on identical technique.** Hooks are byte `2` on red (88%) and byte `1` on blue (80%) — zero byte-`2` events in blue's hook set. Jabs are byte `4` on red and byte `1` on blue. Same athlete, same session, minutes apart.
+  2. **Blue's byte is a velocity gate, red's is not.** Partitioning every event by `velocityByteRaw`:
+
+     | `D7:34` (blue), 47 events | byte ∈ {1,2} | byte ∈ {3,4} |
+     |---|---|---|
+     | `velocityByteRaw` ≤ 9 | 32 | 2 |
+     | `velocityByteRaw` ≥ 10 | **0** | **13** |
+
+     No exceptions above the threshold. The same partition on red (42 events) puts all four byte values on both sides of any cut — no threshold exists.
+
+  Supporting observation: on blue, `velocityByteRaw` is dominated by *which motion* is thrown, not by effort. Max-effort jabs reached only `7–8`, barely above normal jabs (`4–7`), while uppercuts reached `11–15` without special effort. A jab on that device is therefore physically incapable of entering the `{3,4}` band, which makes shape and velocity inseparable by experiment on this hardware.
+
+- **Counter-evidence:** Within a single device the byte is *not* random — blue separates uppercuts from everything else at 92%, and red's hooks are 88% byte `2`. Something real drives it. The claim here is narrowly that whatever it encodes is device-local, not that the byte is noise.
+- **Consequence if true:** `FightCampV1Decoder.mapType()` must return `'unknown'` for every byte, and `TrackerPunchEvent.punchType` is always `'unknown'` on this decoder. `punchTypeRaw` continues to carry the byte verbatim so a future per-device calibration can revisit without a lossy decoder-version bump. This pins FightCamp v1 to the **Hand** and **Velocity** tiers of the capability ladder (Puncheokie doc §21) — "Broad type" and "Detailed type" matching are unavailable, and cue scoring must rest on hand + timing + velocity. Matches the M14-02 acceptance criteria in issue #85: *"No speculative mapping is committed on inconclusive evidence."*
+- **Consequence if false:** If a per-device calibration step were found that normalizes the byte, broad-type matching could be re-enabled. `punchTypeRaw` is preserved specifically to keep that door open.
+- **Open question — the ×1.7 multiplier.** H11 sourced the `type ∈ {1,2} → velocity *= 1.7` rule from Hykso's `Punch.b()`, reading those bytes as "power punches". H12 removes the semantic justification but the decoder still applies the multiplier, because reproducing the vendor's arithmetic is what makes our velocity comparable to what the official app showed. Side effect: two frames with identical `velocityByteRaw` differ by 1.7× depending on a byte we cannot interpret, so `velocityCalibrated` is not directly comparable across type bytes. Revisit if velocity is ever externally validated (§10.1 Layer 4).
+- **Also observed — transmit floor.** A set of 10 deliberately soft uppercuts produced exactly 1 event (and that one at `velocityByteRaw = 11`, thrown harder by the athlete's own account). The tracker does not transmit a frame at all below some acceleration threshold — it is not classifying-then-rejecting, since bytes `0` and `5` ("not a real punch" per Hykso's `Punch.a()`) never appeared. Consequence for Puncheokie: light technique punches will not score, so cue matching must distinguish "dropped because soft" from "missed the window". Confidence medium — one set, and the blue tracker disconnected shortly afterward, so a repeat on a charged tracker is worth doing.
+- **Next test:** Re-run the four-technique protocol on a third tracker, or on the same two after a full charge, to check whether the per-device mapping is stable over time (which would suggest fixed mounting/orientation or a factory calibration constant) or drifts between sessions (which would suggest per-connection state). Also worth reading and parsing the `ca281070` device-info blob — currently read during init but never decoded — to see whether the two units report different firmware or hardware revisions.
+- **Owner / date:** Kyle + Claude, 2026-08-23.
