@@ -297,10 +297,14 @@ export class CueAnnouncer {
     }
 
     const assets = this.prepared.get(cue.id) ?? comboPhraseAssets(cue.tokens)
-    if (assets.length > 0 && this.fits(cue, assets)) {
-      // One deadline for the whole phrase: it is a single utterance made of
-      // clips, and the output plays them back to back from there.
-      for (const asset of assets) this.output.playAsset(asset, cue.announceAt)
+    if (assets.length > 0) {
+      const startAt = this.phraseStartMs(cue, assets)
+      if (startAt !== null) {
+        // One deadline for the whole phrase: the clips share it, and the
+        // output treats a shared deadline as one utterance and plays them
+        // back to back.
+        for (const asset of assets) this.output.playAsset(asset, startAt)
+      }
     }
     this.emitReadyTone(readyAt)
   }
@@ -313,23 +317,50 @@ export class CueAnnouncer {
   }
 
   /**
-   * Whether the phrase can finish before the combination starts.
+   * The measured length of a phrase, or `null` if anything in it is unknown.
    *
-   * Without measured durations there is nothing to compare, so the check
-   * passes — guessing a duration would produce skips nobody could explain.
+   * Durations come from the output port when it can measure them, falling
+   * back to an injected table. Never guessed: a made-up length would place
+   * the phrase wrongly and produce skips nobody could explain from the data.
    */
-  private fits(cue: CueInstance, assets: readonly VoiceAssetId[]): boolean {
-    if (!this.durations) return true
-    let phraseMs = 0
+  private phraseMs(assets: readonly VoiceAssetId[]): number | null {
+    let total = 0
     for (const asset of assets) {
-      const ms = this.durations[asset]
-      if (ms === undefined) return true // unmeasured clip: do not guess
-      phraseMs += ms
+      const measured = this.output.assetDurationMs?.(asset) ?? this.durations?.[asset]
+      if (measured === undefined) return null
+      total += measured
     }
-    const availableMs = cue.scheduledStartMs - this.leadTimes.readyToneMs - cue.announceAt
-    if (phraseMs <= availableMs) return true
-    this.onSkip?.({ cueId: cue.id, reason: 'phrase-too-long', phraseMs, availableMs })
-    return false
+    return total
+  }
+
+  /**
+   * When to begin the phrase so that it *ends* just before the combination.
+   *
+   * This is what "in sync" means for a coach: the call finishes and then you
+   * throw. Starting at a fixed T−0.75 s lead and hoping the words fit is what
+   * makes a three-punch call still be talking while the first punch is due.
+   *
+   * Returns `null` when the phrase cannot finish in time even if it started
+   * at the preview — the skip case, reported rather than silently queued.
+   * With no measured durations it falls back to the fixed announce moment,
+   * which is the honest behaviour when nothing has measured the clips.
+   */
+  private phraseStartMs(cue: CueInstance, assets: readonly VoiceAssetId[]): number | null {
+    const lengthMs = this.phraseMs(assets)
+    if (lengthMs === null) return cue.announceAt
+
+    // Finish by the ready tone, which is itself the last thing before the
+    // combination starts.
+    const finishBy = cue.scheduledStartMs - this.leadTimes.readyToneMs
+    const startAt = finishBy - lengthMs
+
+    // Never before the cue is on screen: hearing a combination that is not
+    // yet visible is its own kind of out of sync.
+    if (startAt >= cue.previewAt) return startAt
+
+    const availableMs = finishBy - cue.previewAt
+    this.onSkip?.({ cueId: cue.id, reason: 'phrase-too-long', phraseMs: lengthMs, availableMs })
+    return null
   }
 
   private onTokenDue(cue: CueInstance, tokenIndex: number): void {

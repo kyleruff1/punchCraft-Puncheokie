@@ -141,4 +141,13 @@ export interface VoiceOutputPort {
   /** Drop anything queued that is less urgent than `belowPriority`. */
   cancel(belowPriority: AudioPriority): void
   setVolumes(v: Volumes): void
+  /**
+   * How long a clip takes to say, if the implementation knows.
+   *
+   * Optional because only a real audio backend can measure it, and a domain
+   * consumer must work without one. `CueAnnouncer` uses it to place a phrase
+   * so it *finishes* before the combination starts — a coach calls the
+   * combination and then you throw it, rather than being narrated over.
+   */
+  assetDurationMs?(id: VoiceAssetId): number | undefined
 }

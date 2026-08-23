@@ -75,11 +75,35 @@ export interface VoiceOutputExpoOptions {
   setAudioMode?: typeof setAudioModeAsync
 }
 
-interface Pending {
-  id: VoiceAssetId
+/**
+ * Clips sharing one deadline — a phrase.
+ *
+ * Grouped rather than scheduled individually because a combination is one
+ * utterance made of several files. Emitting them separately at the same
+ * instant plays them all at once: "one, one, two" becomes a single overlapped
+ * noise, and the repeated "one" restarts its own player mid-word so only one
+ * of them is ever heard.
+ */
+interface PendingGroup {
+  atMs: number
+  ids: VoiceAssetId[]
   priority: AudioPriority
   handle: unknown
 }
+
+/** A clip waiting its turn inside a phrase that is already sounding. */
+interface SequenceStep {
+  id: VoiceAssetId
+  priority: AudioPriority
+}
+
+/**
+ * Assumed clip length when the player has not reported one.
+ *
+ * Only reached if `duration` is still zero after load. Short enough that a
+ * wrong guess runs the phrase slightly fast rather than stalling it.
+ */
+export const FALLBACK_CLIP_MS = 320
 
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
@@ -92,7 +116,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly setAudioMode: typeof setAudioModeAsync
 
   private readonly players = new Map<string, AudioPlayer>()
-  private pending: Pending[] = []
+  private readonly durations = new Map<string, number>()
+  private pending: PendingGroup[] = []
+  /** Clips still to play in the phrase currently sounding. */
+  private sequence: SequenceStep[] = []
+  private sequenceHandle: unknown = null
   private volumes: Volumes = { ...DEFAULT_VOLUMES }
   private failed = false
   private focusHeld = false
@@ -144,7 +172,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       if (this.players.has(key)) continue
       const source = this.manifest.assets[this.vocabulary][id]
       try {
-        this.players.set(key, this.makePlayer(source))
+        const player = this.makePlayer(source)
+        this.players.set(key, player)
+        // `duration` is in seconds and is only meaningful once loaded; a zero
+        // here falls back rather than producing a zero-length hold that would
+        // collapse the sequence back into simultaneous playback.
+        const seconds = player.duration
+        if (typeof seconds === 'number' && seconds > 0) {
+          this.durations.set(key, Math.round(seconds * 1000))
+        }
       } catch {
         missing.push(id)
       }
@@ -178,12 +214,33 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       return
     }
 
-    const entry: Pending = { id, priority, handle: undefined }
-    entry.handle = this.schedule(() => {
-      this.pending = this.pending.filter((p) => p !== entry)
-      this.emit(id, priority)
+    // Same deadline as something already waiting means the same phrase, so it
+    // joins that group rather than becoming a second thing that fires at the
+    // identical instant.
+    const existing = this.pending.find((g) => g.atMs === atMs)
+    if (existing) {
+      existing.ids.push(id)
+      if (priority < existing.priority) existing.priority = priority
+      return
+    }
+
+    const group: PendingGroup = { atMs, ids: [id], priority, handle: undefined }
+    group.handle = this.schedule(() => {
+      this.pending = this.pending.filter((g) => g !== group)
+      this.playSequence(group.ids.map((each) => ({ id: each, priority: assetPriority(each) })))
     }, delay)
-    this.pending.push(entry)
+    this.pending.push(group)
+  }
+
+  /**
+   * How long a clip takes to say, once it has been loaded.
+   *
+   * Measured from the file rather than estimated. `CueAnnouncer` uses this to
+   * decide whether a phrase fits before the combination starts, and a guessed
+   * number there would produce skips nobody could explain from the data.
+   */
+  assetDurationMs(id: VoiceAssetId): number | undefined {
+    return this.durations.get(this.keyFor(id))
   }
 
   speak(text: string, priority: AudioPriority): void {
@@ -199,6 +256,44 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   /**
+   * Play clips back to back, each starting when the previous finishes.
+   *
+   * The whole point of grouping: a combination is one utterance. Starting the
+   * next clip on a timer set from the current clip's measured length is what
+   * makes "one, one, two" three audible words instead of one overlapped
+   * noise — and it is what lets the same asset be said twice in a row, since
+   * the second play no longer interrupts the first on the shared player.
+   */
+  private playSequence(steps: SequenceStep[]): void {
+    if (steps.length === 0) return
+    this.sequence = [...steps]
+    this.advanceSequence()
+  }
+
+  private advanceSequence(): void {
+    const next = this.sequence.shift()
+    if (!next) {
+      this.sequenceHandle = null
+      return
+    }
+    this.emit(next.id, next.priority)
+    if (this.sequence.length === 0) {
+      this.sequenceHandle = null
+      return
+    }
+    const holdMs = this.assetDurationMs(next.id) ?? FALLBACK_CLIP_MS
+    this.sequenceHandle = this.schedule(() => {
+      this.advanceSequence()
+    }, holdMs)
+  }
+
+  private clearSequence(): void {
+    if (this.sequenceHandle !== null) this.cancelScheduled(this.sequenceHandle)
+    this.sequenceHandle = null
+    this.sequence = []
+  }
+
+  /**
    * Drop anything queued that is less urgent than `belowPriority`.
    *
    * Only queued items — a clip already sounding is left alone. Cutting a word
@@ -207,12 +302,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * to chop audio.
    */
   cancel(belowPriority: AudioPriority): void {
-    const kept: Pending[] = []
+    const kept: PendingGroup[] = []
     for (const entry of this.pending) {
       if (entry.priority > belowPriority) this.cancelScheduled(entry.handle)
       else kept.push(entry)
     }
     this.pending = kept
+    // A phrase mid-flight is a queue as much as a sound: the clips not yet
+    // started are exactly what `cancel` is for.
+    if (this.sequence.some((step) => step.priority > belowPriority)) this.clearSequence()
     if (belowPriority <= AUDIO_PRIORITY.metric) {
       try {
         this.speaker.stop()
@@ -232,8 +330,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   /** Release players and any held focus. */
   release(): void {
-    for (const entry of this.pending) this.cancelScheduled(entry.handle)
+    for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
+    this.clearSequence()
     for (const player of this.players.values()) {
       try {
         player.remove()

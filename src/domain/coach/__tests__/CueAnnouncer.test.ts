@@ -461,17 +461,67 @@ describe('a metric never interrupts a combination (doc §18)', () => {
   })
 })
 
-describe('a phrase that will not fit is skipped, not queued (D15)', () => {
-  it('drops the phrase and reports why', () => {
-    // Queuing it anyway is the failure the master-clock rule exists to
-    // prevent: the queue drifts and the coach calls the wrong punch.
+describe('a phrase is placed so it finishes before the combination (D15)', () => {
+  it('starts early enough that the last word lands before the ready tone', () => {
+    // This is what being in sync means for a coach: the call finishes and
+    // then you throw. A fixed lead that hopes the words fit is what leaves a
+    // three-punch call still talking while the first punch is due.
     const h = harness({ style: 'call-and-go' }, { durations: true })
     const c = cue({ tokens: [punch(1), punch(2)] })
     runCue(h, c)
 
+    const words = h.port.calls.filter((x) => x.kind === 'asset' && x.id !== 'tone-ready')
+    const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+    // 400 ms a clip, two clips: it must begin 800 ms before the ready tone.
+    expect(words).toEqual([
+      { kind: 'asset', id: '1', atMs: finishBy - 800 },
+      { kind: 'asset', id: '2', atMs: finishBy - 800 },
+    ])
+  })
+
+  it('gives every clip in the phrase one shared deadline', () => {
+    // The output treats a shared deadline as a single utterance and plays the
+    // clips back to back. Separate deadlines play them all at once, and a
+    // repeated word restarts its own player mid-syllable — which is how
+    // 1-1-2 came out as a single noise on the tablet.
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({ tokens: [punch(1), punch(1), punch(2)] })
+    runCue(h, c)
+
+    const deadlines = h.port.calls
+      .filter((x) => x.kind === 'asset' && x.id !== 'tone-ready')
+      .map((x) => (x.kind === 'asset' ? x.atMs : undefined))
+    expect(deadlines).toHaveLength(3)
+    expect(new Set(deadlines).size).toBe(1)
+  })
+
+  it('shifts a short phrase later, closer to the combination', () => {
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({ tokens: [punch(1)], tokenOffsetsMs: [0] })
+    runCue(h, c)
+    const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+    expect(h.port.calls).toContainEqual({ kind: 'asset', id: '1', atMs: finishBy - 400 })
+  })
+
+  it('never begins before the cue is on screen', () => {
+    // Hearing a combination that is not yet visible is its own kind of out
+    // of sync.
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({ tokens: [punch(1), punch(2)] })
+    runCue(h, c)
+    const first = h.port.calls.find((x) => x.kind === 'asset' && x.id !== 'tone-ready')
+    expect(first?.kind === 'asset' && (first.atMs ?? 0) >= c.previewAt).toBe(true)
+  })
+
+  it('skips only when it cannot finish even starting at the preview', () => {
+    // Queuing it anyway is the drift the master-clock rule exists to prevent.
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] })
+    runCue(h, c)
+
     expect(h.port.assets()).toEqual(['tone-ready'])
     expect(h.skips).toEqual([
-      { cueId: c.id, reason: 'phrase-too-long', phraseMs: 800, availableMs: 650 },
+      { cueId: c.id, reason: 'phrase-too-long', phraseMs: 2_000, availableMs: 1_400 },
     ])
   })
 
@@ -479,14 +529,8 @@ describe('a phrase that will not fit is skipped, not queued (D15)', () => {
     // The tone is what tells the athlete the combination is starting; it is
     // short, and it matters more than the words.
     const h = harness({ style: 'call-and-go' }, { durations: true })
-    runCue(h)
+    runCue(h, cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] }))
     expect(h.port.assets()).toContain('tone-ready')
-  })
-
-  it('speaks a phrase that does fit', () => {
-    const h = harness({ style: 'call-and-go' }, { durations: true })
-    runCue(h, cue({ tokens: [punch(1)], tokenOffsetsMs: [0] }))
-    expect(h.port.assets()).toEqual(['1', 'tone-ready'])
   })
 
   it('does not guess at an unmeasured clip', () => {
@@ -500,13 +544,35 @@ describe('a phrase that will not fit is skipped, not queued (D15)', () => {
     runCue(h, c)
     expect(h.port.assets()).toContain('slip')
     expect(h.skips).toEqual([])
+    // One unknown length makes the whole phrase unplaceable, so it falls back
+    // to the fixed lead rather than inventing a number for the rest.
+    expect(h.port.calls[0]).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
   })
 
-  it('checks nothing at all when no durations were measured', () => {
+  it('falls back to the fixed announce moment when nothing measured the clips', () => {
+    // The honest default: with no durations there is nothing to place the
+    // phrase against, so it uses the doc §18.3 lead and never skips.
     const h = harness({ style: 'call-and-go' })
-    runCue(h, cue({ tokens: [punch(1), punch(2), punch(3)], tokenOffsetsMs: [0, 300, 600] }))
+    const c = cue({ tokens: [punch(1), punch(2), punch(3)], tokenOffsetsMs: [0, 300, 600] })
+    runCue(h, c)
     expect(h.port.assets()).toEqual(['1', '2', '3', 'tone-ready'])
     expect(h.skips).toEqual([])
+    expect(h.port.calls[0]).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
+  })
+
+  it('prefers a duration the output measured over the injected table', () => {
+    // The port knows the real file; the table is a fallback for tests and for
+    // a build whose clips have not loaded yet.
+    const port = new RecordingPort()
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, { assetDurationMs: () => 100 }),
+      assetDurationsMs: { '1': 400, '2': 400 },
+    })
+    const c = cue({ tokens: [punch(1), punch(2)] })
+    announcer.onCueEvent(cueEvent('cue-announcing', c))
+    const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+    expect(port.calls).toContainEqual({ kind: 'asset', id: '1', atMs: finishBy - 200 })
   })
 })
 

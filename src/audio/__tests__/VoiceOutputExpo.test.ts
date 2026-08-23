@@ -28,7 +28,7 @@ jest.mock('expo-audio', () => ({
 }))
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
-import { VoiceOutputExpo } from '../VoiceOutputExpo'
+import { FALLBACK_CLIP_MS, VoiceOutputExpo } from '../VoiceOutputExpo'
 import { missingAssetIds, voiceAssetManifest, type VoiceAssetManifest } from '../voiceAssets/manifest'
 import {
   AUDIO_PRIORITY,
@@ -112,14 +112,19 @@ function harness(
     modes,
     now: () => clock,
     advance(ms: number) {
-      clock += ms
-      for (const t of [...timers]) {
-        if (t.at <= clock) {
-          const i = timers.indexOf(t)
-          if (i >= 0) timers.splice(i, 1)
-          t.fn()
-        }
+      const target = clock + ms
+      // Step the clock to each timer's own moment before firing it, and keep
+      // looping while more come due. Jumping the clock to `target` first and
+      // then firing would schedule a chained timer from the wrong "now" —
+      // which made a working sequence look like it stopped after one clip.
+      for (;;) {
+        const due = timers.filter((t) => t.at <= target).sort((a, b) => a.at - b.at)[0]
+        if (!due) break
+        timers.splice(timers.indexOf(due), 1)
+        clock = Math.max(clock, due.at)
+        due.fn()
       }
+      clock = target
     },
   }
 }
@@ -217,6 +222,74 @@ describe('a deadline is honoured, and a missed one is not thrown away', () => {
 
     h.advance(250)
     expect(h.plays.map((p) => p.source)).toEqual([sourceOf('3'), sourceOf('1'), sourceOf('2')])
+  })
+})
+
+describe('a phrase plays as a sequence, not all at once', () => {
+  it('plays clips sharing a deadline back to back', async () => {
+    // Found on the tablet: 1-1-2 was audible as a single brief noise. Every
+    // clip fired at the same instant, so they overlapped — and the repeated
+    // "1" restarted its own player mid-word, so only one "1" ever sounded.
+    const h = harness()
+    await h.output.preload()
+
+    const at = h.now() + 100
+    h.output.playAsset('1', at)
+    h.output.playAsset('1', at)
+    h.output.playAsset('2', at)
+
+    h.advance(100)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1')])
+
+    // Nothing measured these clips, so the fallback hold applies.
+    h.advance(FALLBACK_CLIP_MS)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1'), sourceOf('1')])
+
+    h.advance(FALLBACK_CLIP_MS)
+    expect(h.plays.map((p) => p.source)).toEqual([
+      sourceOf('1'),
+      sourceOf('1'),
+      sourceOf('2'),
+    ])
+  })
+
+  it('says a repeated word once for each time it was called', async () => {
+    const h = harness()
+    await h.output.preload()
+    const at = h.now() + 50
+    h.output.playAsset('1', at)
+    h.output.playAsset('1', at)
+
+    h.advance(50 + FALLBACK_CLIP_MS * 2)
+    expect(h.plays).toHaveLength(2)
+  })
+
+  it('keeps a different deadline independent of the phrase', async () => {
+    // The ready tone has its own moment and must not queue behind the words.
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('1', h.now() + 100)
+    h.output.playAsset('2', h.now() + 100)
+    h.output.playAsset('tone-ready', h.now() + 150)
+
+    h.advance(150)
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1'), sourceOf('tone-ready')])
+  })
+
+  it('stops a phrase mid-flight when cancelled', async () => {
+    const h = harness()
+    await h.output.preload()
+    const at = h.now() + 50
+    h.output.playAsset('1', at)
+    h.output.playAsset('2', at)
+
+    h.advance(50)
+    expect(h.plays).toHaveLength(1)
+
+    h.output.cancel(AUDIO_PRIORITY.safety)
+    h.advance(FALLBACK_CLIP_MS * 2)
+    // The word already sounding is left alone; the rest never starts.
+    expect(h.plays).toHaveLength(1)
   })
 })
 
