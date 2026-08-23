@@ -45,12 +45,25 @@ import type { CueEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
+import { getWorkoutPersistence, type WorkoutPersistence } from '@storage/getWorkoutPersistence'
+import { persistWorkoutSession, type PersistedWorkoutSession } from '@storage/persistWorkoutSession'
+import { toCueResultRows, type PendingCueResultRow } from '@storage/cueResultRows'
+import type {
+  AdaptationRecord,
+  RealizedTokenStream,
+} from '@storage/repositories/WorkoutRepository'
 import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkoutStore'
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
 export const TICK_INTERVAL_MS = 50
 /** Store write ceiling (spec §15.3). The UI cannot use more than 10 Hz. */
 export const STORE_THROTTLE_MS = 100
+/**
+ * How many recent punch events stay resolvable when a cue settles. A cue's
+ * window closes within a couple of seconds of its punches, so this is far
+ * more than needed even at flurry cadence.
+ */
+export const RECENT_EVENT_WINDOW = 256
 
 export interface WorkoutRunner {
   start(): void
@@ -72,7 +85,31 @@ export interface UseWorkoutRunnerArgs {
   source: PunchEventSource
   stance: Stance
   clock?: MonotonicClock
+  /**
+   * Repositories to write the finished session into. Defaults to the shared
+   * app database; pass `null` to run without persisting, which is what the
+   * component tests do — they have no native SQLite binding.
+   */
+  persistence?: WorkoutPersistence | null
+  /**
+   * Called once when the workout ends, after the write attempt. It fires on
+   * failure too: a lost write must not also leave the athlete with no ending.
+   *
+   * Must be stable across renders — the engine wiring depends on it, so a
+   * fresh closure each render would tear down and rebuild the cue engine
+   * mid-workout.
+   */
+  onSessionEnded?: (outcome: SessionEndOutcome) => void
 }
+
+/** What the runner reports when a workout ends. */
+export type SessionEndOutcome =
+  | { status: 'persisted'; cancelled: boolean; session: PersistedWorkoutSession }
+  /** Ended before any cue was presented — there is no session to record. */
+  | { status: 'nothing-to-persist'; cancelled: boolean }
+  /** Persistence was not configured for this run. */
+  | { status: 'skipped'; cancelled: boolean }
+  | { status: 'failed'; cancelled: boolean; error: unknown }
 
 export interface WorkoutRunnerResults {
   /** Settled per-cue matches, in cue order — M33-08 persists these. */
@@ -89,7 +126,7 @@ interface CueRenderState {
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
-  const { workout, source, stance } = args
+  const { workout, source, stance, persistence, onSessionEnded } = args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
@@ -109,6 +146,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     return totals
   }, [timeline])
 
+  /**
+   * Every cue by id. A cue settles after its window closes, by which time
+   * the engine has usually moved on, so the settled result is looked up
+   * here rather than read off whatever happens to be current.
+   */
+  const cuesById = useMemo(() => {
+    const byId = new Map<string, CueInstance>()
+    for (const round of timeline) for (const cue of round.cues) byId.set(cue.id, cue)
+    return byId
+  }, [timeline])
+
   const engineRef = useRef<CueEngine | null>(null)
   const sessionRef = useRef<WorkoutSessionClock | null>(null)
   const currentRef = useRef<CueRenderState | null>(null)
@@ -125,6 +173,26 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const matcherRef = useRef<LiveCueMatcher | null>(null)
   const pacingRef = useRef<PacingEngine | null>(null)
   const pacingCueRef = useRef<PacingCueText | undefined>(undefined)
+  /** Rows accumulated per settled cue, written in one transaction at the end. */
+  const cueRowsRef = useRef<PendingCueResultRow[]>([])
+  /**
+   * A bounded window of recent events, so a settling cue can read the
+   * velocity of the punch that answered it. Bounded because a full workout's
+   * events would grow without limit in memory for no benefit — a cue settles
+   * within a second or two of its punches.
+   */
+  const recentEventsRef = useRef(new Map<string, TrackerPunchEvent>())
+  /** Adaptations the plan actually made, in the order it made them. */
+  const adaptationsRef = useRef<Array<Omit<AdaptationRecord, 'generatedWorkoutId'>>>([])
+  /**
+   * Blocks the athlete was actually shown. This is the realized stream D8
+   * requires — recalculation replays what ran, so a block the workout never
+   * reached must not appear as though it did.
+   */
+  const realizedBlocksRef = useRef(new Set<string>())
+  const startedAtRef = useRef(0)
+  /** The end is written once; a cancel after a completion must not double it. */
+  const persistedRef = useRef(false)
   /** Token indexes affirmed in the cue currently on the stage. */
   const affirmedRef = useRef<number[]>([])
   const extrasRef = useRef(0)
@@ -236,6 +304,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // The matcher needs the window lifecycle to know which cue is open.
       matcherRef.current?.onCueEvent(event)
       if (event.type === 'cue-active') {
+        // Shown, therefore realized — regardless of what the athlete threw.
+        realizedBlocksRef.current.add(event.cue.blockId)
         // A new combination: the per-cue credit resets. A burst's target is
         // its punch count; a sequence cue's is its expectation count.
         countsRef.current.inCue = 0
@@ -280,6 +350,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // Pacing counts every accepted punch, matched or not: doc §22's
       // required pace is about volume, not sequence accuracy.
       pacingRef.current?.recordAccepted(1)
+      recentEventsRef.current.set(event.id, event)
+      if (recentEventsRef.current.size > RECENT_EVENT_WINDOW) {
+        // Map iterates in insertion order, so the first key is the oldest.
+        const oldest = recentEventsRef.current.keys().next()
+        if (!oldest.done) recentEventsRef.current.delete(oldest.value)
+      }
 
       // The matcher decides what this punch answered; the runner only
       // counts. Its callback drives notifyMatch and the in-cue tally.
@@ -326,8 +402,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           extrasRef.current += 1
           break
 
-        case 'cue-settled':
+        case 'cue-settled': {
           lastScoreRef.current = event.score
+          // One row per expectation, including the unanswered ones — a
+          // missing row could not be told from a cue never reached.
+          const settled = cuesById.get(event.result.cueId)
+          if (settled) {
+            cueRowsRef.current.push(
+              ...toCueResultRows({
+                cue: settled,
+                result: event.result,
+                events: recentEventsRef.current.values(),
+              }),
+            )
+          }
           if (event.corrections.length > 0) {
             // A late or recovered event reordered a cue the athlete already
             // saw feedback for. Worth a log: it is rare and it means the
@@ -338,11 +426,78 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             })
           }
           break
+        }
       }
       syncFromEngine()
       pushStore(true)
     },
-    [pushStore, syncFromEngine],
+    [cuesById, pushStore, syncFromEngine],
+  )
+
+  /**
+   * Write the finished session, once.
+   *
+   * Everything here is best-effort from the athlete's point of view: the
+   * workout is over either way, so a failed write is logged and reported
+   * rather than thrown. `persistWorkoutSession` guarantees a failure leaves
+   * the database untouched, so there is nothing half-written to repair.
+   */
+  const endSession = useCallback(
+    (cancelled: boolean): void => {
+      if (persistedRef.current) return
+      persistedRef.current = true
+
+      const realized: RealizedTokenStream = []
+      for (const round of workout.schedule) {
+        for (const block of round.blocks) {
+          if (realizedBlocksRef.current.has(block.id)) {
+            realized.push({ blockId: block.id, tokens: block.tokens })
+          }
+        }
+      }
+
+      const report = (outcome: SessionEndOutcome): void => {
+        onSessionEnded?.(outcome)
+      }
+
+      if (realized.length === 0) {
+        // Stopped before a single cue reached the stage. There is no
+        // realized stream, and D8 makes one mandatory — a session that could
+        // never be recalculated must not be stored as if it could.
+        report({ status: 'nothing-to-persist', cancelled })
+        return
+      }
+      if (persistence === null) {
+        report({ status: 'skipped', cancelled })
+        return
+      }
+
+      try {
+        const repos = persistence ?? getWorkoutPersistence()
+        const session = persistWorkoutSession({
+          db: repos.db,
+          sessions: repos.sessions,
+          workouts: repos.workouts,
+          workout,
+          realized,
+          cueResults: cueRowsRef.current,
+          adaptations: adaptationsRef.current,
+          startedMonotonicMs: startedAtRef.current,
+          endedMonotonicMs: clock.now(),
+          // Work time only — rests and pauses are not the workout.
+          activeDurationMs: Math.round(activeElapsedSecondsRef.current * 1000),
+          cancelled,
+        })
+        report({ status: 'persisted', cancelled, session })
+      } catch (error) {
+        logger.error('puncheokie.session.endWriteFailed', 'finished workout was not written', {
+          error: safe(String(error)),
+          cueResults: safe(cueRowsRef.current.length),
+        })
+        report({ status: 'failed', cancelled, error })
+      }
+    },
+    [clock, onSessionEnded, persistence, workout],
   )
 
   const applyTransitions = useCallback((transitions: SessionTransition[]): void => {
@@ -386,6 +541,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             activeElapsedSeconds: activeElapsedSecondsRef.current,
           })
           pacingCueRef.current = decision?.cueText
+          if (decision && decision.action.kind !== 'none') {
+            // Only real changes are recorded. A decision to leave the plan
+            // alone is not an adaptation, and counting it would tell the
+            // athlete the workout adapted when it did not.
+            adaptationsRef.current.push({
+              decidedAtMonotonicMs: clock.now(),
+              boundary: 'rest',
+              inputs: decision.inputs,
+              decision: decision.action,
+            })
+          }
           break
         }
         case 'paused':
@@ -396,15 +562,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           break
         case 'completed':
           engine.onSessionPhase({ type: 'finishing', nowMs: clock.now() })
+          // After the engine, so the last cue has settled and its rows are
+          // in hand before the transaction opens.
+          endSession(false)
           break
         case 'cancelled':
           engine.onSessionPhase({ type: 'cancelled', nowMs: clock.now() })
+          // A cancelled workout is still a workout that happened; it is
+          // written with status 'cancelled' rather than discarded.
+          endSession(true)
           break
         default:
           break
       }
     }
-  }, [clock, workout])
+  }, [clock, endSession, workout])
 
   // -------------------------------------------------------------------------
   // Wiring. Keyed on the timeline + source so a recipe change rebuilds
@@ -490,6 +662,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   return useMemo<WorkoutRunner>(
     () => ({
       start: () => {
+        startedAtRef.current = clock.now()
         applyTransitions(sessionRef.current?.start() ?? [])
         pushStore(true)
       },
@@ -534,6 +707,6 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         ...(lastScoreRef.current ? { lastScore: lastScoreRef.current } : {}),
       }),
     }),
-    [applyTransitions, pushStore, source, syncFromEngine],
+    [applyTransitions, clock, pushStore, source, syncFromEngine],
   )
 }

@@ -89,6 +89,12 @@ export interface CueResultRow {
   sessionId: string
   generatedWorkoutId: string
   blockId: string
+  /**
+   * Which pass through a repeated block this row belongs to; 0 for a block
+   * that runs once. Part of the key — a `repeat: 2` block expands into two
+   * cues naming the same token indexes (migration 005).
+   */
+  repeatIndex: number
   tokenIndex: number
   expectedHand: 'left' | 'right'
   /**
@@ -460,15 +466,16 @@ export class WorkoutRepository {
       for (const row of rows) {
         this.run(
           `INSERT INTO cue_results
-             (session_id, generated_workout_id, block_id, token_index,
+             (session_id, generated_workout_id, block_id, repeat_index, token_index,
               expected_hand, expected_type, observed_event_id, outcome, offset_ms,
               velocity_raw, velocity_calibrated, velocity_unit,
               capability_tier, decoder_version, calculation_version)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             row.sessionId,
             row.generatedWorkoutId,
             row.blockId,
+            row.repeatIndex,
             row.tokenIndex,
             row.expectedHand,
             row.expectedType,
@@ -505,6 +512,7 @@ export class WorkoutRepository {
       session_id: string
       generated_workout_id: string
       block_id: string
+      repeat_index: number
       token_index: number
       expected_hand: 'left' | 'right'
       expected_type: string | null
@@ -520,12 +528,13 @@ export class WorkoutRepository {
     }
     return this.select<RawCueResult>(
       `SELECT * FROM cue_results WHERE session_id = ?
-        ORDER BY generated_workout_id ASC, block_id ASC, token_index ASC`,
+        ORDER BY generated_workout_id ASC, block_id ASC, repeat_index ASC, token_index ASC`,
       [sessionId],
     ).map((r) => ({
       sessionId: r.session_id,
       generatedWorkoutId: r.generated_workout_id,
       blockId: r.block_id,
+      repeatIndex: r.repeat_index,
       tokenIndex: r.token_index,
       expectedHand: r.expected_hand,
       expectedType: r.expected_type,

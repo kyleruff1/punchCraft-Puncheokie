@@ -23,6 +23,7 @@ export default function PunchCraftLayout() {
       {/* The live screen draws its own chrome: a nav bar would eat the width
           the cue stage needs (doc §19). */}
       <Stack.Screen name="live" options={{ headerShown: false }} />
+      <Stack.Screen name="summary" options={{ headerShown: true, title: 'Workout summary' }} />
       {/* Throwaway M32-05 spike route (#182); removed when the spike closes. */}
       <Stack.Screen
         name="orientation-spike"
