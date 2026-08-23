@@ -26,6 +26,21 @@ import { summarizeRecipe, type RecipeSummary } from '@domain/workout/recipeSumma
 import { validateRecipe, type RecipeConflict } from '@domain/workout/recipeValidation'
 import { defaultRecipe, type WorkoutRecipe } from '@domain/workout/WorkoutRecipe'
 import type { SampleWorkoutKey } from '@domain/workout/samples'
+import type { CapabilityTier } from '@domain/workout/capabilityTier'
+import type { SessionPhase } from '@domain/session/WorkoutSessionClock'
+import type { Stance } from '@domain/workout/WorkoutTokens'
+import type { TileId } from '@components/workout/MetricsRail'
+
+/**
+ * Default optional tiles — four, the D9 cap, chosen to be the ones that
+ * mean something before any scoring exists (M33-02).
+ */
+export const DEFAULT_TILES: TileId[] = [
+  'left-right-balance',
+  'punches-last-15s',
+  'combo-completion',
+  'projected-final',
+]
 
 export interface WorkoutStoreState {
   recipe: WorkoutRecipe
@@ -122,4 +137,94 @@ export function getRecipe(): WorkoutRecipe {
 
 export function patchRecipe(patch: Partial<WorkoutRecipe>): void {
   useWorkoutStore.getState().setRecipe(patch)
+}
+
+// ---------------------------------------------------------------------------
+// Live slice (M32-08)
+//
+// Written from outside React: the session clock and cue engine tick on a
+// monotonic clock, not in a render. The `setLive` helper below is how they
+// drive the store, mirroring `useTrackerStore`'s module-level helpers.
+//
+// Everything here stays plain and serializable (spec §15.3). In particular
+// no raw event array is held — only counts and the two velocity readings a
+// surface actually shows.
+// ---------------------------------------------------------------------------
+
+export interface LiveCounts {
+  total: number
+  left: number
+  right: number
+  /** Landed so far against the current cue's expectations. */
+  inCue: number
+  inCueExpected: number
+}
+
+export interface LiveVelocity {
+  value: number
+  unit: 'tracker-unit'
+  label: 'tracker-reported velocity'
+}
+
+export interface LiveState {
+  phase: SessionPhase
+  roundIndex: number
+  roundCount: number
+  roundRemainingMs: number
+  stance: Stance
+  currentCueId?: string
+  nextCueId?: string
+  counts: LiveCounts
+  /** Absent when the source reports no velocity — never rendered as zero. */
+  lastVelocity?: LiveVelocity
+  avgVelocity?: LiveVelocity
+  velocityAvailable: boolean
+  capabilityTier: CapabilityTier
+  tiles: TileId[]
+  sourceKind: 'simulated' | 'tracker'
+  degraded?: string
+}
+
+export const INITIAL_LIVE: LiveState = {
+  phase: 'idle',
+  roundIndex: -1,
+  roundCount: 0,
+  roundRemainingMs: 0,
+  stance: 'orthodox',
+  counts: { total: 0, left: 0, right: 0, inCue: 0, inCueExpected: 0 },
+  velocityAvailable: false,
+  capabilityTier: 'hand-only',
+  tiles: DEFAULT_TILES,
+  sourceKind: 'simulated',
+}
+
+export interface LiveStoreState {
+  live: LiveState
+  setLive: (patch: Partial<LiveState>) => void
+  resetLive: () => void
+}
+
+export const useLiveStore = create<LiveStoreState>((set) => ({
+  live: INITIAL_LIVE,
+  setLive: (patch) => {
+    set((prev) => ({ live: { ...prev.live, ...patch } }))
+  },
+  resetLive: () => {
+    set({ live: INITIAL_LIVE })
+  },
+}))
+
+export const useLive = (): LiveState => useLiveStore((s) => s.live)
+
+/** Driver for non-React callers (the session clock and cue engine). */
+export function setLive(patch: Partial<LiveState>): void {
+  useLiveStore.getState().setLive(patch)
+}
+
+export function getLive(): LiveState {
+  return useLiveStore.getState().live
+}
+
+export function resetLive(): void {
+  useLiveStore.getState().resetLive()
 }

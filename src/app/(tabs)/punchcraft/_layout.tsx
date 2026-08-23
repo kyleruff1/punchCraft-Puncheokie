@@ -20,6 +20,9 @@ export default function PunchCraftLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="recipe" options={{ headerShown: true, title: 'Workout recipe' }} />
+      {/* The live screen draws its own chrome: a nav bar would eat the width
+          the cue stage needs (doc §19). */}
+      <Stack.Screen name="live" options={{ headerShown: false }} />
       {/* Throwaway M32-05 spike route (#182); removed when the spike closes. */}
       <Stack.Screen
         name="orientation-spike"

@@ -216,10 +216,12 @@ describe('scoring language (D4)', () => {
     expect(text).not.toMatch(/technique (accuracy|recognition)/i)
   })
 
-  it('gates Start until the live screen exists (M32-08)', () => {
+  it('offers Start now that the live screen exists (M32-08)', () => {
     const tree = render(<RecipeScreen />)
-    expect(tree.root.findByProps({ testID: 'start-button' }).props.disabled).toBe(true)
-    expect(allText(tree)).toContain('The live screen arrives in M32.')
+    expect(tree.root.findByProps({ testID: 'start-button' }).props.disabled).toBeUndefined()
+    // Honest about what it runs on: simulated punches until M33-01 wires
+    // the trackers in.
+    expect(allText(tree)).toContain('simulated punches')
   })
 })
 
