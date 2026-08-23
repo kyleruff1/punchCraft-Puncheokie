@@ -20,6 +20,11 @@ export default function PuncheokieLayout() {
     <Stack screenOptions={screenOptions}>
       <Stack.Screen name="index" />
       <Stack.Screen name="recipe" options={{ headerShown: true, title: 'Workout recipe' }} />
+      {/* Throwaway M32-05 spike route (#182); removed when the spike closes. */}
+      <Stack.Screen
+        name="orientation-spike"
+        options={{ headerShown: true, title: 'M32-05 spike' }}
+      />
     </Stack>
   )
 }
