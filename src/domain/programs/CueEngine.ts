@@ -323,6 +323,9 @@ export class CueEngine {
           this.emit('cue-ready', runtime, t)
         }
         if (t >= cue.scheduledStartMs) {
+          // A new combination being called ends the previous one's window,
+          // whatever the timeline's geometry says (see `closeOverlapping`).
+          this.closeOverlapping(runtime, t)
           runtime.status = 'active'
           runtime.timestamps.executionActualMs = this.clock.now()
           this.emit('cue-active', runtime, t)
@@ -332,21 +335,19 @@ export class CueEngine {
 
       case 'active':
         this.fireDueTokens(runtime, t)
+        // A window truncated at the next cue's start (see CueTimeline's
+        // `truncateWindowsAtNextCue`) can close before the combination has
+        // finished being called, so `active` has to be able to close too —
+        // otherwise the cue would sit in flight past its own window.
+        if (t >= cue.windowEndMs) this.closeWindow(runtime, t)
         // Every token has been called; the cue is now only waiting for
         // punches to land inside the window.
-        if (t >= cue.scheduledEndMs) runtime.status = 'accepting'
+        else if (t >= cue.scheduledEndMs) runtime.status = 'accepting'
         return
 
       case 'accepting':
         this.fireDueTokens(runtime, t)
-        if (t >= cue.windowEndMs) {
-          this.emit('cue-window-closed', runtime, t)
-          const complete = runtime.matched.size >= cue.expectedPunches.length
-          // Partial completion is not failure (doc §21) — `expired` records
-          // what landed, and nothing anywhere renders it as a red state.
-          this.finish(runtime, complete ? 'completed' : 'expired',
-            complete ? 'cue-completed' : 'cue-expired', t)
-        }
+        if (t >= cue.windowEndMs) this.closeWindow(runtime, t)
         return
 
       default:
@@ -354,11 +355,58 @@ export class CueEngine {
     }
   }
 
+  /**
+   * Close a cue's acceptance window and settle its outcome.
+   *
+   * Partial completion is not failure (doc §21) — `expired` records what
+   * landed, and nothing anywhere renders it as a red state.
+   */
+  private closeWindow(runtime: CueRuntime, t: number): void {
+    this.emit('cue-window-closed', runtime, t)
+    const complete = runtime.matched.size >= runtime.cue.expectedPunches.length
+    this.finish(
+      runtime,
+      complete ? 'completed' : 'expired',
+      complete ? 'cue-completed' : 'cue-expired',
+      t,
+    )
+  }
+
+  /**
+   * End any cue still in flight when the next one starts being thrown.
+   *
+   * Acceptance windows are *not* guaranteed to be disjoint. `graceAfterMs`
+   * is added to a cue's end without regard to how soon the next cue begins,
+   * so any block whose `gapBeats` converts to less than the grace produces
+   * an overlap — and the shipped samples do exactly that once the cadence
+   * differs from the one they were authored at, which is precisely what
+   * PacingEngine's ±10–15% adjustment (M33-05) will do.
+   *
+   * The engine used to rely on the overlap never happening and threw from
+   * `tick()` when it did, which killed the round. Ending the earlier cue
+   * instead keeps the doc §20 "one cue in flight" model true by
+   * construction and keeps a punch creditable to exactly one cue: the
+   * athlete is being told the next combination, so the previous one's
+   * window is over whatever the arithmetic says.
+   */
+  private closeOverlapping(entering: CueRuntime, t: number): void {
+    for (const other of this.runtimes) {
+      if (other === entering) continue
+      if (other.status !== 'active' && other.status !== 'accepting') continue
+      this.closeWindow(other, t)
+    }
+  }
+
   private fireDueTokens(runtime: CueRuntime, t: number): void {
     const { cue } = runtime
+    // Capped at the window end so a coarse tick calls exactly the tokens a
+    // fine one would: without the cap, a single large tick would fire the
+    // tokens of a truncated cue that a 10ms tick never reaches, and the
+    // event stream would depend on frame rate.
+    const until = Math.min(t, cue.windowEndMs)
     cue.tokenOffsetsMs.forEach((offset, tokenIndex) => {
       if (runtime.firedTokens.has(tokenIndex)) return
-      if (t < cue.scheduledStartMs + offset) return
+      if (until < cue.scheduledStartMs + offset) return
       runtime.firedTokens.add(tokenIndex)
       this.publish({
         type: 'token-due',

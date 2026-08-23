@@ -190,6 +190,7 @@ export function expandTimeline(
     }
 
     cues.sort((a, b) => a.scheduledStartMs - b.scheduledStartMs)
+    truncateWindowsAtNextCue(cues)
 
     return {
       roundIndex,
@@ -199,6 +200,39 @@ export function expandTimeline(
       deferredBlockIds,
     }
   })
+}
+
+/**
+ * A cue's acceptance window ends no later than the next cue begins.
+ *
+ * `graceAfterMs` is added to a cue's end without any knowledge of how soon
+ * the next one starts, so a block whose `gapBeats` converts to less than the
+ * grace produces overlapping windows. That is not hypothetical: block
+ * `startOffsetMs` values are authored in milliseconds at one cadence while
+ * everything inside a block is derived from beats, so re-expanding a sample
+ * below its authoring BPM stretches the combos into the following block.
+ * PacingEngine's ±10–15% adjustment (M33-05) does exactly that, and the
+ * shipped samples overlap at 85 BPM today.
+ *
+ * Two consequences made this worth clamping here rather than tolerating
+ * downstream: a punch inside the overlap would be creditable to two cues at
+ * once (spec §28.2 needs exactly one), and the engine's "one cue in flight"
+ * model (doc §20) would be violated while the athlete is already being told
+ * the next combination.
+ *
+ * The floor is the cue's own start, so a window is never inverted. Note the
+ * truncated end can precede `scheduledEndMs` when the overlap is severe —
+ * the engine closes such a cue out of `active` rather than waiting for it to
+ * reach `accepting`.
+ *
+ * Expects `cues` sorted by `scheduledStartMs`.
+ */
+function truncateWindowsAtNextCue(cues: CueInstance[]): void {
+  for (let i = 0; i < cues.length - 1; i++) {
+    const cue = cues[i] as CueInstance
+    const next = cues[i + 1] as CueInstance
+    cue.windowEndMs = Math.max(cue.windowStartMs, Math.min(cue.windowEndMs, next.scheduledStartMs))
+  }
 }
 
 interface BlockContext {
@@ -256,10 +290,23 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       announceAt: Math.max(0, scheduledStartMs - ctx.leadTimes.announceMs),
       scheduledStartMs,
       scheduledEndMs,
-      // Clamped to the work interval: a window never precedes the bell or
-      // outlives the round, so an event in rest or pause can never be
-      // accepted (doc §6, spec §18.2).
-      windowStartMs: Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
+      // Clamped to the work interval at *both* ends: a window never precedes
+      // the bell or outlives the round, so an event in rest or pause can
+      // never be accepted (doc §6, spec §18.2).
+      //
+      // The upper clamp on the start is not redundant. `repeat` lays
+      // instances at a beat-derived stride that expansion never checks
+      // against the round length, so a repeated combo can be scheduled
+      // wholly past the bell — most easily by re-expanding a workout below
+      // its authoring cadence, which is what PacingEngine (M33-05) does.
+      // Without it such a cue gets `windowStartMs > windowEndMs`: an
+      // inverted window that no clamp assertion downstream is looking for.
+      // Clamped, it becomes an empty window at the bell, which is the
+      // truthful description of a cue the round never reaches.
+      windowStartMs: Math.min(
+        ctx.workDurationMs,
+        Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
+      ),
       windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
       ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
     })
