@@ -17,6 +17,7 @@ import { logger, safe } from '@/diagnostics/logger'
 import { MIGRATION_001 } from '@/storage/migrations/001_initial'
 import { MIGRATION_002 } from '@/storage/migrations/002_punch_events'
 import { MIGRATION_003 } from '@/storage/migrations/003_sessions'
+import { MIGRATION_004 } from '@/storage/migrations/004_workouts'
 
 export interface Migration {
   id: number
@@ -25,9 +26,14 @@ export interface Migration {
 }
 
 // Ids are permanent: never renumber a migration that has landed, and never
-// reuse an id another branch has already claimed (004 belongs to the workouts
-// migration, #176).
-const MIGRATIONS: readonly Migration[] = [MIGRATION_001, MIGRATION_002, MIGRATION_003]
+// reuse an id another branch has already claimed. 004 is the workouts
+// migration (#176); the next branch to add one takes 005.
+const MIGRATIONS: readonly Migration[] = [
+  MIGRATION_001,
+  MIGRATION_002,
+  MIGRATION_003,
+  MIGRATION_004,
+]
 
 /**
  * The registry, exposed so tests can assert ids are unique, ascending, and
