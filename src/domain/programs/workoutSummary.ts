@@ -97,6 +97,12 @@ export interface WorkoutSummaryData {
   handSequenceMatchPercent?: number
   /** What that figure may be called (D4). */
   sequenceScoreLabel: 'hand-sequence match' | 'technique match'
+  /**
+   * The tier the figures were produced at. Carried so a surface can resolve
+   * its own label rather than being handed a pre-baked string it might
+   * then contradict.
+   */
+  capabilityTier: CapabilityTier
   extraPunches: number
   adaptationCount: number
   perRound: RoundSummary[]
@@ -238,6 +244,7 @@ export function computeWorkoutSummary(args: ComputeSummaryArgs): WorkoutSummaryD
       ? { handSequenceMatchPercent: round1((matchedCount / expectedCount) * 100) }
       : {}),
     sequenceScoreLabel: sequenceScoreLabel(tier),
+    capabilityTier: tier,
     extraPunches,
     adaptationCount: adaptations.length,
     perRound,
