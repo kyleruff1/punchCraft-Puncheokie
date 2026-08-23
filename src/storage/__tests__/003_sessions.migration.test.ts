@@ -34,11 +34,11 @@ afterEach(() => {
 describe('migration registry', () => {
   it('registers 003_sessions with a unique, never-renumbered id', () => {
     const ids = MIGRATIONS_FOR_TESTS.map((m) => m.id)
-    expect(ids).toEqual([1, 2, 3])
+    expect(ids).toEqual([1, 2, 3, 4])
     expect(new Set(ids).size).toBe(ids.length)
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 3)?.name).toBe('003_sessions')
-    // 004 belongs to the workouts migration (#176) and must stay free here.
-    expect(ids).not.toContain(4)
+    // 004 was claimed by the workouts migration (#176); 003 keeps its id.
+    expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 4)?.name).toBe('004_workouts')
   })
 })
 

@@ -21,6 +21,7 @@ import type { SQLiteDatabase } from 'expo-sqlite'
 import { MIGRATION_001 } from '@/storage/migrations/001_initial'
 import { MIGRATION_002 } from '@/storage/migrations/002_punch_events'
 import { MIGRATION_003 } from '@/storage/migrations/003_sessions'
+import { MIGRATION_004 } from '@/storage/migrations/004_workouts'
 import type { SqlBindValue, SqlPort, SqlStatement } from '@/storage/SqlPort'
 
 type NodeBind = string | number | bigint | null | Uint8Array
@@ -48,7 +49,11 @@ export class MemoryDb implements SqlPort {
   prepareSync(sql: string): SqlStatement {
     const stmt = this.raw.prepare(sql)
     return {
-      executeSync: <TRow = unknown>(params: SqlBindValue[]) => {
+      // `SqlPort` types params as required because expo-sqlite's own signature
+      // is non-optional, but the real driver still accepts a bare call — and
+      // `runMigrations` makes one. Defaulting here keeps the fake honest to
+      // the driver rather than to the type.
+      executeSync: <TRow = unknown>(params: SqlBindValue[] = []) => {
         const rows = stmt.all(...params.map(toNodeBind)) as TRow[]
         return { getAllSync: () => rows }
       },
@@ -75,7 +80,7 @@ export class MemoryDb implements SqlPort {
 }
 
 /**
- * A fresh database with migrations 001–003 applied, exactly as the runner
+ * A fresh database with migrations 001–004 applied, exactly as the runner
  * applies them on device.
  */
 export function createMigratedDb(): MemoryDb {
@@ -84,5 +89,6 @@ export function createMigratedDb(): MemoryDb {
   MIGRATION_001.up(asSqliteDatabase)
   MIGRATION_002.up(asSqliteDatabase)
   MIGRATION_003.up(asSqliteDatabase)
+  MIGRATION_004.up(asSqliteDatabase)
   return db
 }
