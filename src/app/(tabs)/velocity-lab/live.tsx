@@ -190,37 +190,48 @@ function handInitial(hand: Hand): 'L' | 'R' {
 const ready = (s: SlotState | null): boolean =>
   !!s && (s.state === 'ready' || s.state === 'streaming')
 
-function pickSlotForHand(
-  preferred: Hand,
+/** What the screen is watching. 'both' is the default — with auto-connect
+ * binding each tracker to a fixed hand, seeing the whole session interleaved
+ * is the normal case; the single-hand modes are for isolating one glove. */
+type ViewMode = 'both' | 'left' | 'right'
+
+interface ActiveSlot {
+  slot: SlotState
+  hand: Hand
+}
+
+/** Every slot the current mode should stream, in L-then-R order. */
+function activeSlotsFor(
+  mode: ViewMode,
   left: SlotState | null,
   right: SlotState | null,
-): { slot: SlotState; hand: Hand } | null {
-  const primary = preferred === 'left' ? left : right
-  if (ready(primary)) return { slot: primary as SlotState, hand: preferred }
-  return null
+): ActiveSlot[] {
+  const out: ActiveSlot[] = []
+  if (mode !== 'right' && ready(left)) out.push({ slot: left as SlotState, hand: 'left' })
+  if (mode !== 'left' && ready(right)) out.push({ slot: right as SlotState, hand: 'right' })
+  return out
 }
 
 export default function LiveDecodeScreen(): React.ReactElement {
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
 
-  // Preferred hand for this screen — user toggles between L / R in the header.
-  // Default to whichever side is ready first (right wins ties, matching the
-  // pre-toggle behavior).
-  const [preferredHand, setPreferredHand] = useState<Hand>(() =>
-    ready(rightSlot) ? 'right' : 'left',
+  const [viewMode, setViewMode] = useState<ViewMode>('both')
+
+  const activeSlots = useMemo(
+    () => activeSlotsFor(viewMode, leftSlot, rightSlot),
+    [viewMode, leftSlot, rightSlot],
   )
 
-  const active = useMemo(
-    () => pickSlotForHand(preferredHand, leftSlot, rightSlot),
-    [preferredHand, leftSlot, rightSlot],
-  )
+  // Stable identity for the set of streams, so the effect below re-runs when
+  // a tracker joins or leaves but NOT on every unrelated store update.
+  const activeKey = activeSlots.map((a) => `${a.hand}:${a.slot.deviceId}`).join('|')
 
   const [events, setEvents] = useState<DecodedEventRow[]>([])
   const [meta, setMeta] = useState<MetaEntry[]>([])
   const [streamState, setStreamState] = useState<StreamState>({ subscribedCount: 0, initErrorCount: 0 })
 
-  const controllerRef = useRef<StreamController | null>(null)
+  const controllersRef = useRef<StreamController[]>([])
   const seqRef = useRef(0)
   const metaSeqRef = useRef(0)
   const prevMonotonicRef = useRef<number | null>(null)
@@ -253,9 +264,22 @@ export default function LiveDecodeScreen(): React.ReactElement {
       if (next.length > MAX_META) next.length = MAX_META
       return next
     })
-    // Poll state; getState is cheap.
-    const ctl = controllerRef.current
-    if (ctl) setStreamState(ctl.getState())
+    // Poll aggregate state across every running stream; getState is cheap.
+    const ctls = controllersRef.current
+    if (ctls.length > 0) {
+      setStreamState(
+        ctls.reduce<StreamState>(
+          (acc, c) => {
+            const s = c.getState()
+            return {
+              subscribedCount: acc.subscribedCount + s.subscribedCount,
+              initErrorCount: acc.initErrorCount + s.initErrorCount,
+            }
+          },
+          { subscribedCount: 0, initErrorCount: 0 },
+        ),
+      )
+    }
   }, [])
 
   // One capture per visit to this screen — see useCaptureSession for why it
@@ -273,40 +297,48 @@ export default function LiveDecodeScreen(): React.ReactElement {
   }, [capture.error])
 
   useEffect(() => {
-    if (!active || !adapter) return
+    if (activeSlots.length === 0 || !adapter) return
     // Wait for the capture to exist before subscribing, so the very first
     // frame is already covered (§11.9, §12.4) rather than racing the open.
     if (!captureReady) return
     const facade = getBleManager()
-    const capture: BleCaptureService = getCaptureService()
+    const captureService: BleCaptureService = getCaptureService()
 
-    const controller = startPunchStream({
-      facade,
-      deviceId: active.slot.deviceId,
-      adapter,
-      hand: active.hand,
-      onEvent,
-      onDecodeMeta,
-      capture,
-    })
-    controllerRef.current = controller
+    // One independent stream per tracker. They share the capture and the
+    // event list; each stamps its own hand, so the merged view stays
+    // attributable. Left and right are separate GATT connections, so
+    // nothing is shared between the streams themselves.
+    const controllers = activeSlots.map((a) =>
+      startPunchStream({
+        facade,
+        deviceId: a.slot.deviceId,
+        adapter,
+        hand: a.hand,
+        onEvent,
+        onDecodeMeta,
+        capture: captureService,
+      }),
+    )
+    controllersRef.current = controllers
     return () => {
-      controller.stop()
-      controllerRef.current = null
+      for (const c of controllers) c.stop()
+      controllersRef.current = []
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active?.slot.deviceId, active?.hand, adapter, captureReady])
+  }, [activeKey, adapter, captureReady])
 
   // When the user flips L/R, reset the log so red and blue events do not
   // interleave in the same view — the picker treats each side as its own
   // stream.
+  // Switching mode changes which trackers are in view, so the existing rows
+  // no longer describe what is on screen. Reset rather than mixing.
   useEffect(() => {
     setEvents([])
     setMeta([])
     seqRef.current = 0
     metaSeqRef.current = 0
     prevMonotonicRef.current = null
-  }, [preferredHand])
+  }, [viewMode])
 
   const onClear = useCallback(() => {
     setEvents([])
@@ -317,8 +349,8 @@ export default function LiveDecodeScreen(): React.ReactElement {
   const onCopyJson = useCallback(async () => {
     const payload = {
       exportedAtIso: new Date().toISOString(),
-      deviceId: active?.slot.deviceId ?? null,
-      hand: active?.hand ?? null,
+      viewMode,
+      trackers: activeSlots.map((a) => ({ hand: a.hand, deviceId: a.slot.deviceId })),
       adapterId: adapter?.id ?? null,
       adapterVersion: adapter?.version ?? null,
       subscribedCount: streamState.subscribedCount,
@@ -338,7 +370,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
         errorMessage: safe((e as Error)?.message ?? String(e)),
       })
     }
-  }, [active, adapter, events, meta, streamState])
+  }, [viewMode, activeSlots, adapter, events, meta, streamState])
 
   if (!adapter) {
     return (
@@ -354,34 +386,35 @@ export default function LiveDecodeScreen(): React.ReactElement {
     )
   }
 
+  const modeButton = (mode: ViewMode, label: string, a11y: string) => (
+    <Pressable
+      style={[styles.toggleBtn, viewMode === mode && styles.toggleBtnActive]}
+      onPress={() => setViewMode(mode)}
+      accessibilityRole='button'
+      accessibilityLabel={a11y}
+    >
+      <Text style={[styles.toggleText, viewMode === mode && styles.toggleTextActive]}>{label}</Text>
+    </Pressable>
+  )
+
   const HandToggle = (
     <View style={styles.toggleRow}>
-      <Pressable
-        style={[styles.toggleBtn, preferredHand === 'left' && styles.toggleBtnActive]}
-        onPress={() => setPreferredHand('left')}
-        accessibilityRole='button'
-        accessibilityLabel='Show left tracker'
-      >
-        <Text style={[styles.toggleText, preferredHand === 'left' && styles.toggleTextActive]}>L (blue)</Text>
-      </Pressable>
-      <Pressable
-        style={[styles.toggleBtn, preferredHand === 'right' && styles.toggleBtnActive]}
-        onPress={() => setPreferredHand('right')}
-        accessibilityRole='button'
-        accessibilityLabel='Show right tracker'
-      >
-        <Text style={[styles.toggleText, preferredHand === 'right' && styles.toggleTextActive]}>R (red)</Text>
-      </Pressable>
+      {modeButton('both', 'Both', 'Show both trackers')}
+      {modeButton('left', 'L (blue)', 'Show left tracker only')}
+      {modeButton('right', 'R (red)', 'Show right tracker only')}
     </View>
   )
 
-  if (!active) {
-    const sideName = preferredHand === 'left' ? 'left (blue)' : 'right (red)'
+  if (activeSlots.length === 0) {
+    const wanted =
+      viewMode === 'both' ? 'Neither tracker is' :
+      viewMode === 'left' ? 'The left (blue) tracker is not' :
+      'The right (red) tracker is not'
     return (
       <ScrollView style={styles.root} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Live decoded events</Text>
         {HandToggle}
-        <Text style={styles.subtitle}>The {sideName} tracker isn&apos;t ready. Connect it on the Velocity Lab landing, or flip the toggle to the other side.</Text>
+        <Text style={styles.subtitle}>{wanted} ready. Tap a tracker to wake it, then use Connect both on the Velocity Lab landing.</Text>
         <View style={styles.row}>
           <Link href='/(tabs)/velocity-lab' style={styles.linkBtn}>
             <Text style={styles.btnText}>Back to Velocity Lab</Text>
@@ -391,21 +424,19 @@ export default function LiveDecodeScreen(): React.ReactElement {
     )
   }
 
-  const initial = handInitial(active.hand)
-  const shortId = truncateDeviceId(active.slot.deviceId)
-  const slotName = active.slot.name ?? 'Tracker'
+  const headerSuffix = activeSlots
+    .map((a) => `${handInitial(a.hand)} ${a.slot.name ?? 'Tracker'} (${truncateDeviceId(a.slot.deviceId)})`)
+    .join('  +  ')
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>
-        Live decoded events — {initial} {slotName} ({shortId})
-      </Text>
+      <Text style={styles.title}>Live decoded events — {headerSuffix}</Text>
       {HandToggle}
       <Text style={styles.subtitle}>
         Subscribed to {streamState.subscribedCount} chars · {streamState.initErrorCount} init errors
       </Text>
       <Text style={styles.phase}>
-        adapter {adapter.id}@{adapter.version} · slot {active.hand} · state {active.slot.state}
+        adapter {adapter.id}@{adapter.version} · {activeSlots.map((a) => `${a.hand}:${a.slot.state}`).join(' · ')}
       </Text>
 
       <View style={styles.row}>
@@ -431,7 +462,13 @@ export default function LiveDecodeScreen(): React.ReactElement {
           // vendor's x1.7 velocity multiplier — an arithmetic fact about the
           // frame, not a claim about the technique.
           const isBoosted = e.punchTypeRaw === 1 || e.punchTypeRaw === 2
+          // Colour the hand marker to match the physical tracker (blue left,
+          // red right) so an interleaved two-tracker stream is readable at a
+          // glance. The letter carries the meaning on its own — colour is
+          // never the only signal (§19.4).
           const handLabel = e.hand === 'left' ? 'L' : e.hand === 'right' ? 'R' : '?'
+          const handStyle =
+            e.hand === 'left' ? styles.handLeft : e.hand === 'right' ? styles.handRight : styles.handText
           const typeLabel = e.punchTypeRaw != null ? `TYPE ${e.punchTypeRaw}` : 'TYPE ?'
           const vRaw = e.velocityRaw ?? 0
           const vCal = e.velocityCalibrated
@@ -447,7 +484,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
                 {'  '}
                 <Text style={styles.typeText}>{typeLabel}</Text>
                 {'  '}
-                <Text style={styles.handText}>{handLabel}</Text>
+                <Text style={handStyle}>{handLabel}</Text>
                 {'  '}
                 <Text style={styles.velocityText}>vRAW({vRaw}) v={vCalStr}</Text>
                 {tStr ? <Text style={styles.trackerTs}>  {tStr}</Text> : null}
@@ -541,6 +578,9 @@ const styles = StyleSheet.create({
   deltaText: { color: '#8f8f8f' },
   typeText: { color: '#f0b76a', fontWeight: '700' },
   handText: { color: '#3ecf8e', fontWeight: '700' },
+  // Match the physical trackers: blue is the left glove, red the right.
+  handLeft: { color: '#5aa9ff', fontWeight: '700' },
+  handRight: { color: '#ff6b6b', fontWeight: '700' },
   velocityText: { color: '#8fbcff' },
   trackerTs: { color: '#8f8f8f' },
   eventDetail: { fontFamily: 'monospace', fontSize: 10, color: '#5a5a5f', marginTop: 2 },
