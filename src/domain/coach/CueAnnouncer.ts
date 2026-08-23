@@ -16,18 +16,23 @@
  * emits before checking is an app that talks over someone's music, which is
  * the one thing the design says must never happen.
  *
- * ## What it does when a phrase will not fit
+ * ## Every call is made. A tight one, if it has to be.
  *
  * At sprint cadence a spoken phrase can be longer than the gap before the
- * combination starts (D15). Queuing it anyway is the worst option: the queue
- * drifts further behind with every cue until the coach is calling the wrong
- * punch. So a phrase that cannot finish in time is **skipped**, and the skip
- * is reported rather than silent.
+ * combination starts (D15). The obvious remedies are both bad: queuing it
+ * anyway makes the coach drift until it is calling the wrong punch, and
+ * dropping it leaves the athlete with a combination nobody named.
  *
- * D15's other remedy — downgrading `names` to `numbers` — is not
- * implementable from here: both vocabularies share one set of asset ids and
- * the clip set is chosen by the manifest, so the announcer has nothing to
- * switch. That half belongs to M34-04, where vocabulary selection lives.
+ * So the phrase is **compressed instead of dropped**. A combination is
+ * delivered in the `combo` clip form — clipped, quicker renderings — and the
+ * gap between its words is tightened until it fits, down to a floor where
+ * numbers stop being countable. A single command keeps its full `standalone`
+ * delivery, because one punch called at combination speed sounds like a
+ * fragment rather than an order.
+ *
+ * Only if a phrase still cannot finish at maximum tightness does it start at
+ * the preview and run slightly long — reported, never silent. A late word is
+ * recoverable; a combination the coach never named is not.
  *
  * Pure TypeScript (spec §15.1).
  */
@@ -43,6 +48,21 @@ import type { Stance } from '../workout/WorkoutTokens'
 /** Doc §18.3: voice at T−0.75 s, ready tone at T−0.10 s. M36-03 tunes these. */
 export const DEFAULT_ANNOUNCE_LEAD_TIMES = { announceMs: 750, readyToneMs: 100 } as const
 
+/**
+ * How closely the words of a combination run together.
+ *
+ * 1 leaves each clip its full length. Lower values trim the tail so the
+ * numbers flow, which is how a combination is actually called — "one-two-
+ * three", not three announcements.
+ */
+export const COMBO_TIGHTNESS = 0.72
+
+/** A single command is called at its full length, not at combination speed. */
+export const SINGLE_TIGHTNESS = 1
+
+/** The tightest a combination may be squeezed before words stop being countable. */
+export const MIN_TIGHTNESS = 0.45
+
 /** Doc §25's final warning, in milliseconds remaining. */
 export const FINAL_WARNING_AT_MS = 10_000
 
@@ -51,12 +71,20 @@ export interface AnnouncerLeadTimes {
   readyToneMs: number
 }
 
-/** Why a phrase was not spoken. Reported so a skip is never silent. */
+/**
+ * How a phrase had to be adjusted to fit. Reported so it is never silent.
+ *
+ * `compressed` means the words were tightened past the normal combination
+ * cadence. `overruns` means even the tightest delivery runs past the ready
+ * tone — it is still spoken, because a combination nobody named is worse than
+ * one named slightly late.
+ */
 export interface AnnouncerSkip {
   cueId: string
-  reason: 'phrase-too-long'
+  reason: 'compressed' | 'overruns'
   phraseMs: number
   availableMs: number
+  tightness: number
 }
 
 export interface CueAnnouncerOptions {
@@ -298,12 +326,13 @@ export class CueAnnouncer {
 
     const assets = this.prepared.get(cue.id) ?? comboPhraseAssets(cue.tokens)
     if (assets.length > 0) {
-      const startAt = this.phraseStartMs(cue, assets)
-      if (startAt !== null) {
-        // One deadline for the whole phrase: the clips share it, and the
-        // output treats a shared deadline as one utterance and plays them
-        // back to back.
-        for (const asset of assets) this.output.playAsset(asset, startAt)
+      const plan = this.planPhrase(cue, assets)
+      if (this.output.playPhrase) {
+        this.output.playPhrase(assets, plan.startAt, plan.tightness)
+      } else {
+        // Fallback for a port with no phrase support: a shared deadline is
+        // still the signal that these clips are one call.
+        for (const asset of assets) this.output.playAsset(asset, plan.startAt)
       }
     }
     this.emitReadyTone(readyAt)
@@ -317,50 +346,87 @@ export class CueAnnouncer {
   }
 
   /**
-   * The measured length of a phrase, or `null` if anything in it is unknown.
+   * The measured length of a phrase at a given tightness, or `null` if any
+   * clip's length is unknown.
    *
    * Durations come from the output port when it can measure them, falling
-   * back to an injected table. Never guessed: a made-up length would place
-   * the phrase wrongly and produce skips nobody could explain from the data.
+   * back to an injected table. Never guessed: a made-up length would misplace
+   * every call.
+   *
+   * The last clip is never trimmed — tightness closes the gap *between*
+   * words, and the final word gets to finish.
    */
-  private phraseMs(assets: readonly VoiceAssetId[]): number | null {
+  private phraseMs(assets: readonly VoiceAssetId[], tightness: number): number | null {
     let total = 0
-    for (const asset of assets) {
+    for (let i = 0; i < assets.length; i += 1) {
+      const asset = assets[i]
+      if (!asset) continue
       const measured = this.output.assetDurationMs?.(asset) ?? this.durations?.[asset]
       if (measured === undefined) return null
-      total += measured
+      total += i === assets.length - 1 ? measured : measured * tightness
     }
-    return total
+    return Math.round(total)
   }
 
   /**
-   * When to begin the phrase so that it *ends* just before the combination.
+   * When to begin the phrase, and how tightly to deliver it.
    *
-   * This is what "in sync" means for a coach: the call finishes and then you
-   * throw. Starting at a fixed T−0.75 s lead and hoping the words fit is what
-   * makes a three-punch call still be talking while the first punch is due.
+   * The call must **finish** before the combination starts — that is what
+   * being in sync means for a coach: the call ends and then you throw. A
+   * fixed lead that hopes the words fit is what leaves a three-punch call
+   * still talking while the first punch is due.
    *
-   * Returns `null` when the phrase cannot finish in time even if it started
-   * at the preview — the skip case, reported rather than silently queued.
-   * With no measured durations it falls back to the fixed announce moment,
-   * which is the honest behaviour when nothing has measured the clips.
+   * A combination is delivered tight; a single command is not. If the tight
+   * delivery still will not fit, it is squeezed further rather than dropped,
+   * and only past the floor does it start at the preview and run long. Every
+   * adjustment is reported; none of them is silence.
    */
-  private phraseStartMs(cue: CueInstance, assets: readonly VoiceAssetId[]): number | null {
-    const lengthMs = this.phraseMs(assets)
-    if (lengthMs === null) return cue.announceAt
+  private planPhrase(
+    cue: CueInstance,
+    assets: readonly VoiceAssetId[],
+  ): { startAt: number; tightness: number } {
+    const isCombo = assets.length > 1
+    const base = isCombo ? COMBO_TIGHTNESS : SINGLE_TIGHTNESS
 
-    // Finish by the ready tone, which is itself the last thing before the
-    // combination starts.
+    const lengthMs = this.phraseMs(assets, base)
+    // Nothing measured the clips, so there is nothing to place the phrase
+    // against. The doc §18.3 lead is the honest fallback.
+    if (lengthMs === null) return { startAt: cue.announceAt, tightness: base }
+
     const finishBy = cue.scheduledStartMs - this.leadTimes.readyToneMs
-    const startAt = finishBy - lengthMs
+    if (finishBy - lengthMs >= cue.previewAt) {
+      return { startAt: finishBy - lengthMs, tightness: base }
+    }
 
-    // Never before the cue is on screen: hearing a combination that is not
-    // yet visible is its own kind of out of sync.
-    if (startAt >= cue.previewAt) return startAt
-
+    // Too long at the normal cadence. Squeeze rather than drop.
     const availableMs = finishBy - cue.previewAt
-    this.onSkip?.({ cueId: cue.id, reason: 'phrase-too-long', phraseMs: lengthMs, availableMs })
-    return null
+    if (isCombo) {
+      for (let tightness = base - 0.05; tightness >= MIN_TIGHTNESS; tightness -= 0.05) {
+        const squeezed = this.phraseMs(assets, tightness)
+        if (squeezed !== null && squeezed <= availableMs) {
+          this.onSkip?.({
+            cueId: cue.id,
+            reason: 'compressed',
+            phraseMs: squeezed,
+            availableMs,
+            tightness,
+          })
+          return { startAt: finishBy - squeezed, tightness }
+        }
+      }
+    }
+
+    // Even at the floor it overruns. Still called: a combination nobody named
+    // is worse than one named slightly late.
+    const tightest = isCombo ? MIN_TIGHTNESS : base
+    this.onSkip?.({
+      cueId: cue.id,
+      reason: 'overruns',
+      phraseMs: this.phraseMs(assets, tightest) ?? lengthMs,
+      availableMs,
+      tightness: tightest,
+    })
+    return { startAt: cue.previewAt, tightness: tightest }
   }
 
   private onTokenDue(cue: CueInstance, tokenIndex: number): void {
@@ -375,10 +441,9 @@ export class CueAnnouncer {
     if (token.kind === 'coach') return
     if (!shouldSpeak(this.policy, category, false)) return
 
-    const assets = comboPhraseAssets([token])
-    // Played without a deadline: `token-due` fires at the moment the token
-    // becomes active, so the deadline is now.
-    for (const asset of assets) this.output.playAsset(asset)
+    // A per-token call is a single command, so it keeps the full standalone
+    // delivery rather than the clipped one a combination uses.
+    for (const asset of comboPhraseAssets([token])) this.output.playAsset(asset)
   }
 }
 

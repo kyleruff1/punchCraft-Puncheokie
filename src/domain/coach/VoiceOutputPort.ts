@@ -142,6 +142,20 @@ export interface VoiceOutputPort {
   cancel(belowPriority: AudioPriority): void
   setVolumes(v: Volumes): void
   /**
+   * Play several clips as one utterance, starting at `atMs`.
+   *
+   * A combination is one call, not several coincident ones. Sending it as a
+   * phrase is what lets the implementation run the clips back to back — and
+   * what lets the same word be said twice in a row without the second play
+   * cutting off the first on a shared player.
+   *
+   * `tightness` scales the gap between clips: 1 gives each its full length,
+   * lower values run them together the way a coach rattles off a combination.
+   *
+   * Optional so a domain consumer can fall back to repeated `playAsset`.
+   */
+  playPhrase?(ids: readonly VoiceAssetId[], atMs?: number, tightness?: number): void
+  /**
    * How long a clip takes to say, if the implementation knows.
    *
    * Optional because only a real audio backend can measure it, and a domain

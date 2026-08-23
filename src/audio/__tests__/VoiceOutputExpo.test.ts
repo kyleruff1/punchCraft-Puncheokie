@@ -28,8 +28,14 @@ jest.mock('expo-audio', () => ({
 }))
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
-import { FALLBACK_CLIP_MS, VoiceOutputExpo } from '../VoiceOutputExpo'
-import { missingAssetIds, voiceAssetManifest, type VoiceAssetManifest } from '../voiceAssets/manifest'
+import { FALLBACK_CLIP_MS, MIN_CLIP_GAP_MS, VoiceOutputExpo } from '../VoiceOutputExpo'
+import {
+  PHRASE_FORMS,
+  missingAssetIds,
+  voiceAssetManifest,
+  type PhraseForm,
+  type VoiceAssetManifest,
+} from '../voiceAssets/manifest'
 import {
   AUDIO_PRIORITY,
   VOICE_ASSET_IDS,
@@ -129,16 +135,24 @@ function harness(
   }
 }
 
-const sourceOf = (id: VoiceAssetId, vocabulary: 'numbers' | 'names' = 'numbers'): number =>
-  voiceAssetManifest.assets[vocabulary][id]
+const sourceOf = (
+  id: VoiceAssetId,
+  vocabulary: 'numbers' | 'names' = 'numbers',
+  form: PhraseForm = 'standalone',
+): number => voiceAssetManifest.assets[vocabulary][form][id]
 
 // ---------------------------------------------------------------------------
 
 describe('the manifest covers the whole vocabulary', () => {
-  it.each(['numbers', 'names'] as const)('has a clip for every id in %s', (vocabulary) => {
+  it.each([
+    ['numbers', 'standalone'],
+    ['numbers', 'combo'],
+    ['names', 'standalone'],
+    ['names', 'combo'],
+  ] as const)('has a clip for every id in %s/%s', (vocabulary, form) => {
     // Derived from the id union rather than a hand-copied list — a copied
     // list drifts and quietly stops catching anything.
-    expect(missingAssetIds(voiceAssetManifest, vocabulary)).toEqual([])
+    expect(missingAssetIds(voiceAssetManifest, vocabulary, form)).toEqual([])
   })
 
   it('fails when an id is missing', () => {
@@ -146,7 +160,10 @@ describe('the manifest covers the whole vocabulary', () => {
       ...voiceAssetManifest,
       assets: {
         ...voiceAssetManifest.assets,
-        numbers: { ...voiceAssetManifest.assets.numbers, body: undefined as never },
+        numbers: {
+          ...voiceAssetManifest.assets.numbers,
+          standalone: { ...voiceAssetManifest.assets.numbers.standalone, body: undefined as never },
+        },
       },
     } as VoiceAssetManifest
     expect(missingAssetIds(broken, 'numbers')).toEqual(['body'])
@@ -162,8 +179,10 @@ describe('the manifest covers the whole vocabulary', () => {
     const numbersBlock = source.slice(source.indexOf('numbers: {'), source.indexOf('names: {'))
     const namesBlock = source.slice(source.indexOf('names: {'))
 
-    expect(numbersBlock.match(/assets\/voice\/numbers\//g)).toHaveLength(VOICE_ASSET_IDS.length)
-    expect(namesBlock.match(/assets\/voice\/names\//g)).toHaveLength(VOICE_ASSET_IDS.length)
+    // One block per form, so each vocabulary names its ids twice.
+    const perVocabulary = VOICE_ASSET_IDS.length * PHRASE_FORMS.length
+    expect(numbersBlock.match(/assets\/voice\/numbers\//g)).toHaveLength(perVocabulary)
+    expect(namesBlock.match(/assets\/voice\/names\//g)).toHaveLength(perVocabulary)
     expect(namesBlock).not.toContain('assets/voice/numbers/')
   })
 
@@ -171,8 +190,8 @@ describe('the manifest covers the whole vocabulary', () => {
     // A require of a missing asset resolves to nothing at runtime and shows
     // up as a clip that silently never plays.
     const source = readFileSync('src/audio/voiceAssets/manifest.ts', 'utf8')
-    const paths = source.match(/assets\/voice\/[a-z]+\/[^']+\.wav/g) ?? []
-    expect(paths).toHaveLength(VOICE_ASSET_IDS.length * 2)
+    const paths = source.match(/assets\/voice\/[a-z]+\/[a-z]+\/[^']+\.wav/g) ?? []
+    expect(paths).toHaveLength(VOICE_ASSET_IDS.length * 2 * PHRASE_FORMS.length)
     for (const path of paths) {
       expect([path, existsSync(path)]).toEqual([path, true])
     }
@@ -289,6 +308,66 @@ describe('a phrase plays as a sequence, not all at once', () => {
     h.output.cancel(AUDIO_PRIORITY.safety)
     h.advance(FALLBACK_CLIP_MS * 2)
     // The word already sounding is left alone; the rest never starts.
+    expect(h.plays).toHaveLength(1)
+  })
+})
+
+describe('a combination is delivered in the combo form', () => {
+  it('plays the clipped renderings for a multi-word call', async () => {
+    // Not the standalone clip played faster — a separate, quicker recording,
+    // so the consonants stay crisp instead of being smeared.
+    const h = harness()
+    await h.output.preload()
+    h.output.playPhrase(['1', '2'])
+    h.advance(FALLBACK_CLIP_MS * 2)
+
+    expect(h.plays.map((p) => p.source)).toEqual([
+      sourceOf('1', 'numbers', 'combo'),
+      sourceOf('2', 'numbers', 'combo'),
+    ])
+  })
+
+  it('keeps a single command in its standalone form', async () => {
+    // One punch called at combination speed sounds like a fragment.
+    const h = harness()
+    await h.output.preload()
+    h.output.playPhrase(['1'])
+    expect(h.plays.map((p) => p.source)).toEqual([sourceOf('1', 'numbers', 'standalone')])
+  })
+
+  it('runs the words closer together as tightness falls', async () => {
+    const loose = harness()
+    await loose.output.preload()
+    loose.output.playPhrase(['1', '2'], undefined, 1)
+    loose.advance(FALLBACK_CLIP_MS - 1)
+    expect(loose.plays).toHaveLength(1)
+
+    const tight = harness()
+    await tight.output.preload()
+    tight.output.playPhrase(['1', '2'], undefined, 0.5)
+    tight.advance(Math.round(FALLBACK_CLIP_MS * 0.5))
+    expect(tight.plays).toHaveLength(2)
+  })
+
+  it('never closes the gap below the countable floor', async () => {
+    // Past this the words stop being a call and become a stutter.
+    const h = harness()
+    await h.output.preload()
+    h.output.playPhrase(['1', '2'], undefined, 0.01)
+    h.advance(MIN_CLIP_GAP_MS - 1)
+    expect(h.plays).toHaveLength(1)
+
+    h.advance(1)
+    expect(h.plays).toHaveLength(2)
+  })
+
+  it('honours a deadline for the whole phrase', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playPhrase(['1', '2'], h.now() + 200, 1)
+    h.advance(199)
+    expect(h.plays).toEqual([])
+    h.advance(1)
     expect(h.plays).toHaveLength(1)
   })
 })

@@ -17,11 +17,23 @@
  * same word table and dropping the output in the same place. Nothing in
  * `src/audio` knows or cares which one made the file.
  *
- * ## Two vocabularies, one set of ids (D15)
+ * ## Two vocabularies and two forms, one set of ids (D15)
  *
  * `numbers` says "one"; `names` says "jab". Same `VoiceAssetId`, different
  * clip — which is why the vocabulary belongs to the manifest and not to the
  * id.
+ *
+ * Each vocabulary is rendered twice more, as a **form**:
+ *
+ * - `standalone` — a single command, called at a normal, clear pace.
+ * - `combo` — the same word inside a combination, clipped and quicker, the
+ *   way a coach rattles "one-two-three" rather than announcing three separate
+ *   numbers.
+ *
+ * This is not the same word played faster at runtime; it is a different
+ * rendering, so the consonants stay crisp instead of being smeared. Trimming
+ * the gap between clips alone made combinations run together but not sound
+ * any more like a coach calling them.
  *
  * Deliberate deviation from D15's example wording: `3` is **"lead hook"**, not
  * "left hook". A hook thrown with the lead hand is a left hook in orthodox and
@@ -129,12 +141,12 @@ function wavTone({ freqHz, durationMs, fadeOutMs }) {
  * far more than the synthesis, and ~50 separate PowerShell launches would
  * take minutes for no benefit.
  */
-function speakBatch(jobs) {
+function speakBatch(jobs, rate) {
   const lines = [
     'Add-Type -AssemblyName System.Speech',
     '$s = New-Object System.Speech.Synthesis.SpeechSynthesizer',
     // A drill-sergeant call is clipped, not languid (D16 register).
-    '$s.Rate = 2',
+    `$s.Rate = ${rate}`,
     "$s.SelectVoice('Microsoft David Desktop')",
   ]
   for (const { path, text } of jobs) {
@@ -149,32 +161,47 @@ function speakBatch(jobs) {
   })
 }
 
+/**
+ * Speech rate per form.
+ *
+ * `combo` is faster because it is a word inside a run, not an announcement.
+ * Tones are identical in both forms — a bell is a bell.
+ */
+const FORM_RATE = { standalone: 2, combo: 5 }
+
 const cwd = process.cwd()
 let count = 0
 
 for (const vocabulary of ['numbers', 'names']) {
-  const dir = join(OUT_ROOT, vocabulary)
-  mkdirSync(dir, { recursive: true })
+  for (const form of ['standalone', 'combo']) {
+    const dir = join(OUT_ROOT, vocabulary, form)
+    mkdirSync(dir, { recursive: true })
 
-  const jobs = []
-  for (const [id, text] of Object.entries(VOCABULARY_WORDS[vocabulary])) {
-    jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
+    const jobs = []
+    for (const [id, text] of Object.entries(VOCABULARY_WORDS[vocabulary])) {
+      jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
+    }
+    for (const [id, text] of Object.entries(SHARED_WORDS)) {
+      jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
+    }
+
+    speakBatch(jobs, FORM_RATE[form])
+
+    for (const [id, spec] of Object.entries(TONES)) {
+      writeFileSync(join(dir, `${id}.wav`), wavTone(spec))
+    }
+
+    const paths = [
+      ...jobs.map((j) => j.path),
+      ...Object.keys(TONES).map((t) => join(cwd, dir, `${t}.wav`)),
+    ]
+    let bytes = 0
+    for (const path of paths) bytes += statSync(path).size
+    count += paths.length
+    console.log(
+      `${vocabulary.padEnd(8)} ${form.padEnd(10)} ${paths.length} clips  ${(bytes / 1024).toFixed(0)} KB`,
+    )
   }
-  for (const [id, text] of Object.entries(SHARED_WORDS)) {
-    jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
-  }
-
-  speakBatch(jobs)
-
-  for (const [id, spec] of Object.entries(TONES)) {
-    writeFileSync(join(dir, `${id}.wav`), wavTone(spec))
-  }
-
-  const ids = [...jobs.map((j) => j.path), ...Object.keys(TONES).map((t) => join(cwd, dir, `${t}.wav`))]
-  let bytes = 0
-  for (const path of ids) bytes += statSync(path).size
-  count += ids.length
-  console.log(`${vocabulary.padEnd(8)} ${ids.length} clips  ${(bytes / 1024).toFixed(0)} KB`)
 }
 
 console.log(`\nWrote ${count} clips to ${OUT_ROOT}`)

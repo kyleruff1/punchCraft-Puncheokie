@@ -45,7 +45,12 @@ import {
   type Volumes,
 } from '@domain/coach/VoiceOutputPort'
 import type { VoiceVocabulary } from '@domain/coach/VoiceCoachPolicy'
-import { voiceAssetManifest, type VoiceAssetManifest } from './voiceAssets/manifest'
+import {
+  PHRASE_FORMS,
+  voiceAssetManifest,
+  type PhraseForm,
+  type VoiceAssetManifest,
+} from './voiceAssets/manifest'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -88,6 +93,8 @@ interface PendingGroup {
   atMs: number
   ids: VoiceAssetId[]
   priority: AudioPriority
+  form: PhraseForm
+  tightness: number
   handle: unknown
 }
 
@@ -95,7 +102,18 @@ interface PendingGroup {
 interface SequenceStep {
   id: VoiceAssetId
   priority: AudioPriority
+  form: PhraseForm
+  tightness: number
 }
+
+/**
+ * Floor on the gap between clips in a phrase.
+ *
+ * Tightness can compress a combination a long way, but two words need some
+ * separation to stay countable. Below this they stop sounding like a call and
+ * start sounding like a stutter.
+ */
+export const MIN_CLIP_GAP_MS = 130
 
 /**
  * Assumed clip length when the player has not reported one.
@@ -167,10 +185,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
 
     const missing: VoiceAssetId[] = []
-    for (const id of VOICE_ASSET_IDS) {
-      const key = this.keyFor(id)
+    for (const form of PHRASE_FORMS) {
+      for (const id of VOICE_ASSET_IDS) {
+      const key = this.keyFor(id, form)
       if (this.players.has(key)) continue
-      const source = this.manifest.assets[this.vocabulary][id]
+      const source = this.manifest.assets[this.vocabulary][form][id]
       try {
         const player = this.makePlayer(source)
         this.players.set(key, player)
@@ -183,6 +202,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         }
       } catch {
         missing.push(id)
+      }
       }
     }
 
@@ -224,23 +244,61 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       return
     }
 
-    const group: PendingGroup = { atMs, ids: [id], priority, handle: undefined }
-    group.handle = this.schedule(() => {
-      this.pending = this.pending.filter((g) => g !== group)
-      this.playSequence(group.ids.map((each) => ({ id: each, priority: assetPriority(each) })))
-    }, delay)
-    this.pending.push(group)
+    this.queueGroup({ atMs, ids: [id], priority, form: 'standalone', tightness: 1, handle: undefined }, delay)
+  }
+
+  /**
+   * Play several clips as one call.
+   *
+   * A combination is one utterance, so it is delivered in the `combo` form —
+   * clipped, quicker renderings of the same words — and the gap between clips
+   * is scaled by `tightness` so the numbers run together the way a coach
+   * calls them. A single command keeps the `standalone` form and its full
+   * spacing, which is what makes one punch sound like a command rather than
+   * an orphaned fragment of a combination.
+   */
+  playPhrase(ids: readonly VoiceAssetId[], atMs?: number, tightness = 1): void {
+    if (this.failed || ids.length === 0) return
+    const form: PhraseForm = ids.length > 1 ? 'combo' : 'standalone'
+    const priority = ids
+      .map(assetPriority)
+      .reduce((lowest, each) => (each < lowest ? each : lowest), AUDIO_PRIORITY.coachingReminder)
+
+    const steps = ids.map((id) => ({ id, priority: assetPriority(id), form, tightness }))
+    const delay = atMs === undefined ? 0 : atMs - this.clock()
+    if (delay <= 0) {
+      // Late, not dropped. The call is still the call.
+      this.playSequence(steps)
+      return
+    }
+
+    this.queueGroup({ atMs: atMs as number, ids: [...ids], priority, form, tightness, handle: undefined }, delay)
   }
 
   /**
    * How long a clip takes to say, once it has been loaded.
    *
    * Measured from the file rather than estimated. `CueAnnouncer` uses this to
-   * decide whether a phrase fits before the combination starts, and a guessed
-   * number there would produce skips nobody could explain from the data.
+   * place a phrase so it finishes before the combination starts, and a guessed
+   * number there would misplace every call.
    */
-  assetDurationMs(id: VoiceAssetId): number | undefined {
-    return this.durations.get(this.keyFor(id))
+  assetDurationMs(id: VoiceAssetId, form: PhraseForm = 'standalone'): number | undefined {
+    return this.durations.get(this.keyFor(id, form))
+  }
+
+  private queueGroup(group: PendingGroup, delay: number): void {
+    group.handle = this.schedule(() => {
+      this.pending = this.pending.filter((g) => g !== group)
+      this.playSequence(
+        group.ids.map((each) => ({
+          id: each,
+          priority: assetPriority(each),
+          form: group.form,
+          tightness: group.tightness,
+        })),
+      )
+    }, delay)
+    this.pending.push(group)
   }
 
   speak(text: string, priority: AudioPriority): void {
@@ -276,12 +334,16 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.sequenceHandle = null
       return
     }
-    this.emit(next.id, next.priority)
+    this.emit(next.id, next.priority, next.form)
     if (this.sequence.length === 0) {
       this.sequenceHandle = null
       return
     }
-    const holdMs = this.assetDurationMs(next.id) ?? FALLBACK_CLIP_MS
+    // Tightness trims the tail of each clip so the words run together. The
+    // floor keeps two numbers countable — below it a fast call stops being a
+    // call and becomes a stutter.
+    const clipMs = this.assetDurationMs(next.id, next.form) ?? FALLBACK_CLIP_MS
+    const holdMs = Math.max(Math.round(clipMs * next.tightness), MIN_CLIP_GAP_MS)
     this.sequenceHandle = this.schedule(() => {
       this.advanceSequence()
     }, holdMs)
@@ -323,7 +385,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   setVolumes(v: Volumes): void {
     this.volumes = { ...v }
     for (const [key, player] of this.players) {
-      const id = key.split('/')[1] as VoiceAssetId
+      // key is `<vocabulary>/<form>/<id>`.
+      const id = key.split('/')[2] as VoiceAssetId
       player.volume = BELL_ASSETS.has(id) ? this.volumes.bells : this.volumes.voice
     }
   }
@@ -346,12 +409,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   // ------------------------------------------------------------- internals
 
-  private keyFor(id: VoiceAssetId): string {
-    return `${this.vocabulary}/${id}`
+  private keyFor(id: VoiceAssetId, form: PhraseForm = 'standalone'): string {
+    return `${this.vocabulary}/${form}/${id}`
   }
 
-  private emit(id: VoiceAssetId, priority: AudioPriority): void {
-    const player = this.players.get(this.keyFor(id))
+  private emit(id: VoiceAssetId, priority: AudioPriority, form: PhraseForm = 'standalone'): void {
+    const player = this.players.get(this.keyFor(id, form))
     if (!player) return
     this.requestFocus()
     try {

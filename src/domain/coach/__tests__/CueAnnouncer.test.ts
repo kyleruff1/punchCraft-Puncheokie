@@ -14,9 +14,12 @@
 import { readFileSync } from 'node:fs'
 
 import {
+  COMBO_TIGHTNESS,
   CueAnnouncer,
   DEFAULT_ANNOUNCE_LEAD_TIMES,
   FINAL_WARNING_AT_MS,
+  MIN_TIGHTNESS,
+  SINGLE_TIGHTNESS,
   type AnnouncerSkip,
 } from '../CueAnnouncer'
 import { assetPriority } from '../assetPriority'
@@ -36,6 +39,7 @@ import type { WorkoutToken } from '@domain/workout/WorkoutTokens'
 
 type Call =
   | { kind: 'asset'; id: VoiceAssetId; atMs?: number }
+  | { kind: 'phrase'; ids: VoiceAssetId[]; atMs?: number; tightness: number }
   | { kind: 'speak'; text: string; priority: number }
   | { kind: 'tone'; tone: ToneKind }
   | { kind: 'cancel'; below: number }
@@ -45,6 +49,12 @@ class RecordingPort implements VoiceOutputPort {
 
   playAsset(id: VoiceAssetId, atMs?: number): void {
     this.calls.push(atMs === undefined ? { kind: 'asset', id } : { kind: 'asset', id, atMs })
+  }
+  playPhrase(ids: readonly VoiceAssetId[], atMs?: number, tightness = 1): void {
+    this.calls.push({ kind: 'phrase', ids: [...ids], tightness, ...(atMs === undefined ? {} : { atMs }) })
+    // Also recorded per clip so the existing assertions about which words
+    // were said keep working across both call shapes.
+    for (const id of ids) this.calls.push(atMs === undefined ? { kind: 'asset', id } : { kind: 'asset', id, atMs })
   }
   speak(text: string, priority: number): void {
     this.calls.push({ kind: 'speak', text, priority })
@@ -155,6 +165,10 @@ function harness(over: Partial<VoiceCoachPolicy> = {}, opts: { durations?: boole
   })
   return { announcer, port, skips }
 }
+
+/** The first spoken word, skipping the phrase record that precedes it. */
+const firstWord = (port: RecordingPort): Call | undefined =>
+  port.calls.find((c) => c.kind === 'asset' && c.id !== 'tone-ready')
 
 /** Drive a cue from preview through to its window closing. */
 function runCue(h: Harness, c: CueInstance = cue()): void {
@@ -472,11 +486,41 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
 
     const words = h.port.calls.filter((x) => x.kind === 'asset' && x.id !== 'tone-ready')
     const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
-    // 400 ms a clip, two clips: it must begin 800 ms before the ready tone.
+    // 400 ms a clip. The gap before the last word is tightened; the last word
+    // is never trimmed, so the phrase runs 400 × 0.72 + 400.
+    const expected = Math.round(400 * COMBO_TIGHTNESS + 400)
     expect(words).toEqual([
-      { kind: 'asset', id: '1', atMs: finishBy - 800 },
-      { kind: 'asset', id: '2', atMs: finishBy - 800 },
+      { kind: 'asset', id: '1', atMs: finishBy - expected },
+      { kind: 'asset', id: '2', atMs: finishBy - expected },
     ])
+  })
+
+  it('calls a combination tighter than a single command', () => {
+    // A combination is rattled off; one punch is an order. Calling a lone
+    // punch at combination speed makes it sound like a fragment.
+    const combo = harness({ style: 'call-and-go' }, { durations: true })
+    combo.announcer.onCueEvent(cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(2)] })))
+    const comboCall = combo.port.calls.find((x) => x.kind === 'phrase')
+
+    const single = harness({ style: 'call-and-go' }, { durations: true })
+    single.announcer.onCueEvent(
+      cueEvent('cue-announcing', cue({ tokens: [punch(1)], tokenOffsetsMs: [0] })),
+    )
+    const singleCall = single.port.calls.find((x) => x.kind === 'phrase')
+
+    expect(comboCall?.kind === 'phrase' && comboCall.tightness).toBe(COMBO_TIGHTNESS)
+    expect(singleCall?.kind === 'phrase' && singleCall.tightness).toBe(SINGLE_TIGHTNESS)
+  })
+
+  it('sends the combination as one phrase, not as separate clips', () => {
+    // The output needs to know these words belong together; that is what
+    // lets it run them back to back and say a repeated word twice.
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    h.announcer.onCueEvent(
+      cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(1), punch(2)] })),
+    )
+    const phrase = h.port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.ids).toEqual(['1', '1', '2'])
   })
 
   it('gives every clip in the phrase one shared deadline', () => {
@@ -513,21 +557,56 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     expect(first?.kind === 'asset' && (first.atMs ?? 0) >= c.previewAt).toBe(true)
   })
 
-  it('skips only when it cannot finish even starting at the preview', () => {
-    // Queuing it anyway is the drift the master-clock rule exists to prevent.
+  it('compresses a long combination rather than dropping it', () => {
+    // The rule the coach cares about: every combination gets called. A
+    // combination nobody named is worse than one named fast.
     const h = harness({ style: 'call-and-go' }, { durations: true })
     const c = cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] })
     runCue(h, c)
 
-    expect(h.port.assets()).toEqual(['tone-ready'])
-    expect(h.skips).toEqual([
-      { cueId: c.id, reason: 'phrase-too-long', phraseMs: 2_000, availableMs: 1_400 },
-    ])
+    const phrase = h.port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.ids).toEqual(['1', '2', '3', '1', '2'])
+    expect(phrase?.kind === 'phrase' && phrase.tightness).toBeLessThan(COMBO_TIGHTNESS)
+    expect(h.skips[0]?.reason).toBe('compressed')
   })
 
-  it('keeps the ready tone even when the words are dropped', () => {
-    // The tone is what tells the athlete the combination is starting; it is
-    // short, and it matters more than the words.
+  it('reports the compression rather than hiding it', () => {
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] })
+    runCue(h, c)
+    expect(h.skips[0]).toMatchObject({ cueId: c.id, reason: 'compressed' })
+    expect(h.skips[0]?.tightness).toBeGreaterThanOrEqual(MIN_TIGHTNESS)
+  })
+
+  it('still speaks a phrase that overruns even at the tightest delivery', () => {
+    // Past the floor it runs long instead of vanishing. A late word is
+    // recoverable; silence is not.
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    const c = cue({
+      tokens: [punch(1), punch(2), punch(3), punch(1), punch(2), punch(3), punch(1), punch(2)],
+    })
+    runCue(h, c)
+
+    const phrase = h.port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.ids).toHaveLength(8)
+    expect(phrase?.kind === 'phrase' && phrase.tightness).toBe(MIN_TIGHTNESS)
+    expect(h.skips[0]?.reason).toBe('overruns')
+  })
+
+  it('never squeezes past the floor where numbers stop being countable', () => {
+    const h = harness({ style: 'call-and-go' }, { durations: true })
+    runCue(
+      h,
+      cue({
+        tokens: [punch(1), punch(2), punch(3), punch(1), punch(2), punch(3), punch(1), punch(2)],
+      }),
+    )
+    const phrase = h.port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.tightness).toBeGreaterThanOrEqual(MIN_TIGHTNESS)
+  })
+
+  it('keeps the ready tone alongside the words', () => {
+    // The tone is what tells the athlete the combination is starting.
     const h = harness({ style: 'call-and-go' }, { durations: true })
     runCue(h, cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] }))
     expect(h.port.assets()).toContain('tone-ready')
@@ -546,7 +625,7 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     expect(h.skips).toEqual([])
     // One unknown length makes the whole phrase unplaceable, so it falls back
     // to the fixed lead rather than inventing a number for the rest.
-    expect(h.port.calls[0]).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
+    expect(firstWord(h.port)).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
   })
 
   it('falls back to the fixed announce moment when nothing measured the clips', () => {
@@ -557,7 +636,7 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     runCue(h, c)
     expect(h.port.assets()).toEqual(['1', '2', '3', 'tone-ready'])
     expect(h.skips).toEqual([])
-    expect(h.port.calls[0]).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
+    expect(firstWord(h.port)).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
   })
 
   it('prefers a duration the output measured over the injected table', () => {
@@ -572,7 +651,9 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     const c = cue({ tokens: [punch(1), punch(2)] })
     announcer.onCueEvent(cueEvent('cue-announcing', c))
     const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
-    expect(port.calls).toContainEqual({ kind: 'asset', id: '1', atMs: finishBy - 200 })
+    // 100 ms a clip at the combination cadence: 100 × 0.72 + 100.
+    const expected = Math.round(100 * COMBO_TIGHTNESS + 100)
+    expect(port.calls).toContainEqual({ kind: 'asset', id: '1', atMs: finishBy - expected })
   })
 })
 
