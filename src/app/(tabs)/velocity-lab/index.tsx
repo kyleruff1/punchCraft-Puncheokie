@@ -219,6 +219,11 @@ export default function VelocityLabLanding() {
             <Text style={styles.linkButtonText}>Protocol probe (dev)</Text>
           </Pressable>
         </Link>
+        <Link href="/(tabs)/velocity-lab/live" asChild>
+          <Pressable style={styles.linkButton}>
+            <Text style={styles.linkButtonText}>Live decoded events</Text>
+          </Pressable>
+        </Link>
         <Link href="/settings" asChild>
           <Pressable style={styles.linkButton}>
             <Text style={styles.linkButtonText}>Diagnostics</Text>

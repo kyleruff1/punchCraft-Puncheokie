@@ -11,6 +11,7 @@ export default function VelocityLabLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="spike" options={{ headerShown: true, title: 'BLE spike' }} />
       <Stack.Screen name="probe" options={{ headerShown: true, title: 'Protocol probe' }} />
+      <Stack.Screen name="live" options={{ headerShown: true, title: 'Live decoded events' }} />
     </Stack>
   )
 }
