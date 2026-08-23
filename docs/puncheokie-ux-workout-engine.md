@@ -1107,20 +1107,23 @@ A hosted synthesis endpoint for *descriptive* lines - higher quality than device
 
 **Licensing gate.** Baked-in audio assets travel with the application, so the generating model's licence governs distribution. Kokoro-82M is Apache-2.0 and is the default choice for that reason. Any alternative model - XTTS among them - must have its licence verified against the actual licence text before its output is bundled; several community TTS models ship under non-commercial terms that would not permit distribution. When in doubt, Kokoro alone covers the entire closed vocabulary.
 
-**Voice character - a grizzled old trainer: raspy, but firm.** The intended persona is a weathered, older, gym-corner coach. Not an announcer, not an assistant, not encouraging-app-cheerful. This is a product requirement on the Voice Coach, not a stylistic afterthought - the persona is most of what makes a called combination feel like coaching rather than a notification.
+**Voice character - a grizzled old trainer: raspy, but firm.** The intended persona is a weathered, older, gym-corner coach - an encouraging drill sergeant, hard but in your corner. Not an announcer, not an assistant, not app-cheerful. This is a product requirement on the Voice Coach, not a stylistic afterthought - the persona is most of what makes a called combination feel like coaching rather than a notification.
 
 **"Raspy, but firm" is the whole specification, and the second half is the load-bearing one.** Rasp is texture; firmness is projection and authority. Texture alone degrades intelligibility - a low, gravelly, heavily-textured voice is harder to parse than a clean one, and it has to survive the worst case: a fast combination, at workout volume, over the noise of the athlete hitting a bag, from a tablet speaker at arm's length. Firmness is exactly what buys that back, because a firm delivery is clipped, projected and consonant-forward. So the two qualities are not in tension when both are present; they only conflict when rasp is pursued without it. **Where they do conflict, intelligibility wins** - a cue that is not understood mid-flurry is worse than a cue with less personality. §7 already requires the visual grammar to stay "recognizable at arm's length"; this is its audio equivalent.
 
-**Register: abrasive, drill-sergeant.** Commands are barked, imperative and unsoftened - no pleasantries, no hedging, no "great job". Short, hard, flat. That register *is* the product; a polite coach calling a combination sounds like a notification.
+**Register: an encouraging drill sergeant.** Commands are barked, imperative and unsoftened - short, hard, flat, no hedging. But the coach is *in the athlete's corner*, not opposed to them: this is the hard-but-fair trainer who demands more because they think you have it, not a hazing instructor. Both halves are required. Abrasive alone is unpleasant to train with for thirty minutes; encouraging alone sounds like a notification.
 
-**The boundary this must not cross, and it is a real one.** D11 states that nothing in the system is punitive: no red state, no failure sound, no buzz, and no celebration for a combination that closed `partial` or worse. A drill-sergeant register and a non-punitive system are compatible, but only if the line is drawn in the right place:
+The practical consequence is that **affirmation exists, and is delivered in-register**. "THAT'S IT." "AGAIN." "GOOD - KEEP THE HANDS UP." Hard, clipped, earned. What is excluded is the app-cheerful vocabulary - no "Great job!", no exclamation-mark enthusiasm, no congratulating an athlete for existing. Encouragement is a bark, not a badge.
+
+**The boundary this must not cross, and it is a real one.** D11 states that nothing in the system is punitive: no red state, no failure sound, no buzz, and no celebration for a combination that closed `partial` or worse. An encouraging-drill-sergeant register sits comfortably inside that, but the line still has to be drawn explicitly:
 
 | | |
 |---|---|
-| **Abrasive delivery of an instruction** | ✅ the persona. "TWO. THREE. MOVE." |
-| **Abrasive judgement of performance** | ❌ forbidden by D11. No berating a miss, no disappointed tone on a `partial`, no "you're falling behind" |
+| **Hard delivery of an instruction** | ✅ the persona. "TWO. THREE. MOVE." |
+| **Hard-edged affirmation** | ✅ the persona. "THAT'S IT. AGAIN." |
+| **Judgement of performance** | ❌ forbidden by D11. No berating a miss, no disappointed tone on a `partial`, no "you're falling behind" |
 
-The coach is hard *in how it tells you what to do*, never hard *about how you did*. There is no vocabulary for disapproval anywhere in the phrase set.
+The coach is hard *in how it tells you what to do*, never hard *about how you did*. There is no vocabulary for disapproval anywhere in the phrase set - the intensity is always pointed at the next punch, never back at the last one.
 
 Two reasons that line is not merely stylistic squeamishness:
 
