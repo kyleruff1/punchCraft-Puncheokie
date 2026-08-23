@@ -38,7 +38,7 @@ const recipe: WorkoutRecipe = {
   metricAnnouncementFrequency: 'round',
   visualLeadTimeMs: 1500,
   commandVocabularyStyle: 'numbers',
-  extrasPolicy: 'neutral',
+  extraPunchPolicy: 'neutral',
   voiceMode: 'standard',
   voiceVocabulary: 'numbers',
   generatorVersion: 'test-1',

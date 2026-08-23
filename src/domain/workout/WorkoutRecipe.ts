@@ -47,7 +47,7 @@ export type VoiceMode = 'off' | 'minimal' | 'standard' | 'full'
 export type VoiceVocabulary = 'numbers' | 'names'
 
 /** Whether extras are encouraged, ignored, or counted against precision (§8.2). */
-export type ExtrasPolicy = 'encouraged' | 'neutral' | 'discouraged'
+export type ExtraPunchPolicy = 'encouraged' | 'neutral' | 'discouraged'
 
 export interface WorkoutRecipe {
   // -- §8.1 primary controls -------------------------------------------------
@@ -83,7 +83,7 @@ export interface WorkoutRecipe {
   metricAnnouncementFrequency: 'off' | 'round' | 'periodic'
   visualLeadTimeMs: number
   commandVocabularyStyle: 'numbers' | 'names' | 'mixed'
-  extrasPolicy: ExtrasPolicy
+  extraPunchPolicy: ExtraPunchPolicy
 
   // -- voice (D15) -----------------------------------------------------------
   voiceMode: VoiceMode
@@ -142,7 +142,7 @@ export function defaultRecipe(): WorkoutRecipe {
     metricAnnouncementFrequency: 'round',
     visualLeadTimeMs: 1_500,
     commandVocabularyStyle: 'numbers',
-    extrasPolicy: 'neutral',
+    extraPunchPolicy: 'neutral',
 
     voiceMode: 'standard',
     voiceVocabulary: 'numbers',

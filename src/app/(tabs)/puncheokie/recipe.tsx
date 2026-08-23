@@ -15,6 +15,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack } from 'expo-router'
 
 import { ConflictNotice } from '@components/puncheokie/ConflictNotice'
+import { EnablementMenu } from '@components/puncheokie/EnablementMenu'
 import { RecipeSummaryCard } from '@components/puncheokie/RecipeSummaryCard'
 import {
   ControlGroup,
@@ -25,6 +26,7 @@ import {
 import { colors } from '@/theme/colors'
 import {
   conflictsForField,
+  useAdvancedOpen,
   useConflicts,
   useRecipe,
   useRecipeSummary,
@@ -125,8 +127,10 @@ export default function RecipeScreen(): React.JSX.Element {
   const conflicts = useConflicts()
   const summary = useRecipeSummary()
   const selectedSampleKey = useSelectedSampleKey()
+  const advancedOpen = useAdvancedOpen()
   const setRecipe = useWorkoutStore((s) => s.setRecipe)
   const selectSample = useWorkoutStore((s) => s.selectSample)
+  const setAdvancedOpen = useWorkoutStore((s) => s.setAdvancedOpen)
   const resetRecipe = useWorkoutStore((s) => s.resetRecipe)
 
   const samples = useMemo(() => listSampleWorkouts(), [])
@@ -275,17 +279,28 @@ export default function RecipeScreen(): React.JSX.Element {
         />
       </ControlGroup>
 
-      {/* Advanced — owned by M31-07 */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ disabled: true }}
-        disabled
-        style={styles.advanced}
-        testID="advanced-affordance"
-      >
-        <Text style={styles.advancedText}>Advanced</Text>
-        <Text style={styles.advancedCaption}>Combination and command controls arrive in M31-07.</Text>
-      </Pressable>
+      {/* Advanced — progressive disclosure (doc §8). Collapsed by default;
+          expanding never mutates a value. */}
+      <View style={styles.advanced}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: advancedOpen }}
+          onPress={() => setAdvancedOpen(!advancedOpen)}
+          style={styles.advancedHeader}
+          testID="advanced-affordance"
+        >
+          <Text style={styles.advancedText}>Advanced</Text>
+          <Text style={styles.advancedToggle}>{advancedOpen ? 'Hide' : 'Show'}</Text>
+        </Pressable>
+        <Text style={styles.advancedCaption}>
+          Which punches, defense, footwork and coaching calls the workout may use.
+        </Text>
+        {advancedOpen ? (
+          <View style={styles.advancedBody}>
+            <EnablementMenu recipe={recipe} conflicts={conflicts} onChange={setRecipe} />
+          </View>
+        ) : null}
+      </View>
 
       {/* Start with a sample */}
       <ControlGroup label="Start with a sample">
@@ -376,15 +391,21 @@ const styles = StyleSheet.create({
 
   advanced: {
     borderWidth: 1,
-    borderStyle: 'dashed',
     borderColor: colors.border,
     borderRadius: 8,
     padding: 14,
-    gap: 4,
-    opacity: 0.6,
+    gap: 8,
+  },
+  advancedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 32,
   },
   advancedText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  advancedToggle: { fontSize: 14, fontWeight: '600', color: colors.accent },
   advancedCaption: { fontSize: 13, color: colors.textSecondary },
+  advancedBody: { marginTop: 8 },
 
   sample: {
     borderWidth: 1,

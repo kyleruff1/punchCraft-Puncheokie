@@ -32,9 +32,15 @@ export interface WorkoutStoreState {
   conflicts: RecipeConflict[]
   summary: RecipeSummary
   selectedSampleKey?: SampleWorkoutKey
+  /**
+   * Whether the Advanced panel is expanded. Held here rather than in
+   * component state so it survives in-tab navigation (M31-07).
+   */
+  advancedOpen: boolean
   /** Patch the recipe; validation and summary are recomputed from the result. */
   setRecipe: (patch: Partial<WorkoutRecipe>) => void
   selectSample: (key: SampleWorkoutKey | undefined) => void
+  setAdvancedOpen: (open: boolean) => void
   resetRecipe: () => void
 }
 
@@ -59,6 +65,7 @@ function derive(recipe: WorkoutRecipe): {
 export const useWorkoutStore = create<WorkoutStoreState>((set) => ({
   ...derive(defaultRecipe()),
   selectedSampleKey: undefined,
+  advancedOpen: false,
 
   setRecipe: (patch) => {
     set((prev) => derive({ ...prev.recipe, ...patch }))
@@ -68,7 +75,13 @@ export const useWorkoutStore = create<WorkoutStoreState>((set) => ({
     set({ selectedSampleKey: key })
   },
 
+  setAdvancedOpen: (open) => {
+    set({ advancedOpen: open })
+  },
+
   resetRecipe: () => {
+    // Values reset; the panel's open state does not. Collapsing a panel the
+    // athlete deliberately opened would hide the controls they were using.
     set({ ...derive(defaultRecipe()), selectedSampleKey: undefined })
   },
 }))
@@ -86,6 +99,7 @@ export const useConflicts = (): RecipeConflict[] => useWorkoutStore(selectConfli
 export const useRecipeSummary = (): RecipeSummary => useWorkoutStore(selectSummary)
 export const useSelectedSampleKey = (): SampleWorkoutKey | undefined =>
   useWorkoutStore((s) => s.selectedSampleKey)
+export const useAdvancedOpen = (): boolean => useWorkoutStore((s) => s.advancedOpen)
 
 /**
  * Conflicts for one control, so a control can render its own inline message

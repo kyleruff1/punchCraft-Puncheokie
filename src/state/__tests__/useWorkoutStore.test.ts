@@ -28,6 +28,10 @@ describe('initial state', () => {
     expect(store().selectedSampleKey).toBeUndefined()
   })
 
+  it('starts with the Advanced panel collapsed (doc §8 progressive disclosure)', () => {
+    expect(useWorkoutStore.getInitialState().advancedOpen).toBe(false)
+  })
+
   it('starts clean — the default recipe raises no conflicts', () => {
     // defaultRecipe() exists to put the athlete into a usable workout
     // immediately; if it validated with errors that promise would be broken.
@@ -104,6 +108,22 @@ describe('sample selection', () => {
     store().selectSample('establish-the-jab-20')
     store().resetRecipe()
     expect(store().selectedSampleKey).toBeUndefined()
+  })
+})
+
+describe('advanced panel state', () => {
+  it('opens and closes', () => {
+    store().setAdvancedOpen(true)
+    expect(store().advancedOpen).toBe(true)
+    store().setAdvancedOpen(false)
+    expect(store().advancedOpen).toBe(false)
+  })
+
+  it('survives resetRecipe — collapsing a panel the athlete opened would hide their controls', () => {
+    store().setAdvancedOpen(true)
+    store().resetRecipe()
+    expect(store().advancedOpen).toBe(true)
+    store().setAdvancedOpen(false)
   })
 })
 

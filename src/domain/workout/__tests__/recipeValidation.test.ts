@@ -166,6 +166,50 @@ describe('(e) goal unreachable at the chosen combo length', () => {
   })
 })
 
+describe('body-shot share (M31-07)', () => {
+  it('treats 0 as a normal value — head shots only, not a conflict', () => {
+    // The advanced panel gates the share behind a Body variations switch,
+    // so switching it off must not raise an error.
+    expect(codes(recipe({ bodyShotPercent: 0 }))).not.toContain('body-shot-percent-out-of-range')
+    expect(codes(recipe({ bodyShotPercent: 0 }))).not.toContain('body-shots-only')
+  })
+
+  it('rejects a share outside 0-100 as an error', () => {
+    for (const value of [-1, 101, 250]) {
+      const conflicts = validateRecipe(recipe({ bodyShotPercent: value }))
+      const conflict = conflicts.find((c) => c.code === 'body-shot-percent-out-of-range')
+      expect(conflict?.severity).toBe('error')
+      expect(conflict?.fields).toEqual(['bodyShotPercent'])
+      expect(conflict?.resolution).toBeTruthy()
+    }
+  })
+
+  it('warns rather than blocks at 100 percent — a body-only drill is legitimate', () => {
+    const conflicts = validateRecipe(recipe({ bodyShotPercent: 100 }))
+    const conflict = conflicts.find((c) => c.code === 'body-shots-only')
+    expect(conflict?.severity).toBe('warning')
+    expect(canGenerate(conflicts)).toBe(true)
+  })
+
+  it('raises nothing for ordinary shares', () => {
+    for (const value of [5, 20, 50, 95]) {
+      expect(codes(recipe({ bodyShotPercent: value }))).toEqual([])
+    }
+  })
+})
+
+describe('extraPunchPolicy (M31-07)', () => {
+  it('defaults to neutral', () => {
+    expect(defaultRecipe().extraPunchPolicy).toBe('neutral')
+  })
+
+  it('never raises a conflict on its own — every value is valid', () => {
+    for (const policy of ['encouraged', 'neutral', 'discouraged'] as const) {
+      expect(validateRecipe(recipe({ extraPunchPolicy: policy }))).toEqual([])
+    }
+  })
+})
+
 describe('canGenerate', () => {
   it('is blocked by errors but not by warnings', () => {
     const warningOnly: RecipeConflict[] = [

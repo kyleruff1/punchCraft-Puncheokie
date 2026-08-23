@@ -36,13 +36,28 @@ import { GOAL_TIERS } from '@domain/workout/punchGoals'
 
 const store = () => useWorkoutStore.getState()
 
+/**
+ * Rendered trees are tracked and unmounted after each test. A tree left
+ * mounted keeps subscribing to the store, so the next test's setup writes
+ * would re-render it outside act() and emit warnings that have nothing to
+ * do with the test being run.
+ */
+const mounted: ReactTestRenderer[] = []
+
 function render(element: React.JSX.Element): ReactTestRenderer {
   let tree!: ReactTestRenderer
   act(() => {
     tree = create(element)
   })
+  mounted.push(tree)
   return tree
 }
+
+afterEach(() => {
+  act(() => {
+    for (const tree of mounted.splice(0)) tree.unmount()
+  })
+})
 
 /**
  * Every string rendered under a node, concatenated in render order.
@@ -68,7 +83,13 @@ function press(tree: ReactTestRenderer, testID: string): void {
 }
 
 beforeEach(() => {
-  store().resetRecipe()
+  act(() => {
+    store().resetRecipe()
+    // resetRecipe deliberately leaves the panel as the athlete left it, so
+    // each test collapses it explicitly rather than inheriting the previous
+    // test's state.
+    store().setAdvancedOpen(false)
+  })
 })
 
 describe('primary controls dispatch the right patch', () => {
@@ -198,6 +219,42 @@ describe('scoring language (D4)', () => {
     const tree = render(<RecipeScreen />)
     expect(tree.root.findByProps({ testID: 'start-button' }).props.disabled).toBe(true)
     expect(allText(tree)).toContain('The live screen arrives in M32.')
+  })
+})
+
+describe('advanced panel (M31-07)', () => {
+  it('renders nothing from the menu while collapsed', () => {
+    const tree = render(<RecipeScreen />)
+    expect(tree.root.findAllByProps({ testID: 'enablement-menu' })).toHaveLength(0)
+  })
+
+  it('expands without mutating any value (doc §8)', () => {
+    const tree = render(<RecipeScreen />)
+    const before = store().recipe
+    press(tree, 'advanced-affordance')
+    expect(store().advancedOpen).toBe(true)
+    expect(store().recipe).toEqual(before)
+    expect(() => tree.root.findByProps({ testID: 'enablement-menu' })).not.toThrow()
+  })
+
+  it('keeps its open state in the store, so it survives a remount', () => {
+    const first = render(<RecipeScreen />)
+    press(first, 'advanced-affordance')
+    // A fresh render stands in for navigating away and back inside the tab.
+    const second = render(<RecipeScreen />)
+    expect(() => second.root.findByProps({ testID: 'enablement-menu' })).not.toThrow()
+  })
+
+  it('updates the summary card in the same interaction as a menu change', () => {
+    const tree = render(<RecipeScreen />)
+    press(tree, 'advanced-affordance')
+    const before = textOf(tree.root.findByProps({ testID: 'recipe-summary-card' }))
+    act(() => {
+      const node = tree.root.findByProps({ testID: 'punch-5' })
+      node.props.onValueChange(!node.props.value)
+    })
+    expect(store().recipe.enabledPunches).not.toContain(5)
+    expect(textOf(tree.root.findByProps({ testID: 'recipe-summary-card' }))).not.toEqual(before)
   })
 })
 

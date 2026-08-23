@@ -138,6 +138,36 @@ export function validateRecipe(recipe: WorkoutRecipe): RecipeConflict[] {
     }
   }
 
+  // (f) Body-shot share out of range.
+  //
+  // The advanced panel (M31-07) gates this behind a Body variations switch,
+  // so 0 is a normal value meaning "head shots only". Anything outside 0-100
+  // is not a preference, it is a broken recipe.
+  if (recipe.bodyShotPercent < 0 || recipe.bodyShotPercent > 100) {
+    conflicts.push({
+      code: 'body-shot-percent-out-of-range',
+      fields: ['bodyShotPercent'],
+      severity: 'error',
+      message: `A body-shot share of ${recipe.bodyShotPercent}% is not a valid proportion.`,
+      resolution: 'Set the body-shot share between 0 and 100 percent.',
+    })
+  }
+
+  // (g) Every enabled punch would be thrown to the body.
+  //
+  // A warning rather than an error: a body-only round is a legitimate drill,
+  // but at 100% the head-shot variety doc §15 asks for disappears entirely,
+  // and the athlete should know that is what they chose.
+  if (recipe.bodyShotPercent === 100) {
+    conflicts.push({
+      code: 'body-shots-only',
+      fields: ['bodyShotPercent'],
+      severity: 'warning',
+      message: 'Every punch will be called to the body, so no head-shot variety remains.',
+      resolution: 'Lower the body-shot share, or continue if a body-only drill is intended.',
+    })
+  }
+
   return conflicts
 }
 
