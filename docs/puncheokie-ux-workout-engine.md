@@ -1,6 +1,6 @@
 # punchCraft — Puncheokie UX and Workout Engine Design
 
-> **Version 0.4 — authored 2026-08-22 (v0.2), landed and extended 2026-08-23 (v0.3), reconciled against on-device evidence 2026-08-23 (v0.4).** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §31 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§28` are stable and may be cited from issues as "doc §n"; §29 records the landing decisions and §30 the revision history.
+> **Version 0.4 — authored 2026-08-22 (v0.2), landed and extended 2026-08-23 (v0.3), reconciled against on-device evidence 2026-08-23 (v0.4).** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §32 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§28` are stable and may be cited from issues as "doc §n"; §29 records the landing decisions and §30 the revision history.
 
 ## Status and supersession
 
@@ -670,6 +670,16 @@ Only large controls belong on the active screen:
 
 All other settings are locked until rest or pause.
 
+### Backdrop
+
+The four zones are composited over a selectable animated backdrop specified in spec §31 — a looping ambience chosen by mood from a bundled library. Three properties of it matter to this screen:
+
+- **It carries no information.** Every state the athlete needs is in the zones above; the backdrop can be switched off entirely without losing anything.
+- **It never wins a contrast fight.** A scrim sized from the backdrop's measured peak luminance keeps cue tokens, the round timer and the count badge above their contrast floor (spec §31.3), so the visual grammar of §13 reads identically on the brightest loop and the darkest.
+- **It never reacts to the music.** The loop runs on its own presentation clock and derives nothing from playback (spec §31.1, decision D17) — the same rule that governs cadence in §17 (D3).
+
+Under reduced motion, or when the device is throttling or on battery saver, the backdrop degrades to a still frame without interrupting the workout (spec §31.4).
+
 ## 20. Cue lifecycle and state machine
 
 ```mermaid
@@ -1143,6 +1153,8 @@ If no stock voice reaches the bar, voice **cloning** from a reference recording 
 
 **Asset manifest.** The manifest carries, per clip: vocabulary (`numbers` | `names`), token or phrase key, file reference, **measured duration in milliseconds**, sample rate, and the model plus voice identifier used to generate it. The model/voice identifier is recorded so a re-render is reproducible and so a voice change is a visible, versioned event rather than a silent asset swap.
 
+**D17 — The workout backdrop is ambience, never a signal, and never audio-reactive.** Workout presentations composite over a selectable animated backdrop (spec §31). It is chosen by the athlete or the recipe before playback and derives nothing whatsoever from a playing track — not tempo, beats, structure, loudness, genre, mood, artwork, metadata or position — performs no audio analysis, uses no microphone, and renders identically in silence. This keeps it clear of the §14.6 synchronisation prohibition, on the same principle as authored cadence (D3): any coupling between playback and the backdrop, including suggesting a mood from a connected playlist, requires the §14.6 policy review before it is designed. There is a product reason as well as a policy one, and it is the stronger of the two: audio in punchCraft is an entirely independent feature, and the athlete may well be playing a podcast rather than music. A backdrop that reacted to playback would have nothing to react to for a large share of real sessions, so reactivity is not a feature being deferred — it is a feature that would not work. Reactive behaviour belongs to the punch nodes, which respond to what the tracker actually measured. The backdrop carries no state, sits beneath a contrast scrim with a measurable floor, honours reduced motion, auto-degrades under thermal or frame pressure, and can be switched off without affecting the workout.
+
 ## 30. Revision history
 
 | Date | Version | Change |
@@ -1152,3 +1164,4 @@ If no stock voice reaches the bar, voice **cloning** from a reference recording 
 | 2026-08-23 | 0.4 | Reconciled against on-device evidence (H12). D12 corrects the capability tier to hand + timestamp + velocity and retires the vendor type flag; D13 records the transmit floor and its effect on `missed`; D14 resolves five §4/§17/§26 contract inconsistencies and fixes the versioned constants; D15 separates voice mode from voice vocabulary. C6 and D4 annotated; the H11 tracker-facts paragraph rewritten. §1-§28 otherwise unchanged. |
 | 2026-08-23 | 0.4 | (cont.) D16 fixes time-critical speech as pre-rendered offline assets generated by a self-hosted open-source TTS model, with measured per-clip durations in the manifest; descriptive lines keep on-device TTS, and a hosted endpoint is permitted only at rest boundaries behind a flag. §18.2 annotated. |
 | 2026-08-23 | 0.3 | Added §28 Strike confirmation, combo plausibility, and gratification (node flash and haptic vocabulary, progressive affirmation border, the five-signal capability-aware plausibility model with four confidence tiers, bounded gratification levels) and decision D11. Resolved decisions moved to §29 and this history to §30; §1–§27 are unchanged. |
+| 2026-08-23 | 0.4 | §19 gains a Backdrop subsection and §29 gains decision D17, covering the selectable animated ambience specified in spec §31. Section numbering is unchanged. |
