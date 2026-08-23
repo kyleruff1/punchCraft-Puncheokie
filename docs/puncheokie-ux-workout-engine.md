@@ -1107,6 +1107,19 @@ A hosted synthesis endpoint for *descriptive* lines - higher quality than device
 
 **Licensing gate.** Baked-in audio assets travel with the application, so the generating model's licence governs distribution. Kokoro-82M is Apache-2.0 and is the default choice for that reason. Any alternative model - XTTS among them - must have its licence verified against the actual licence text before its output is bundled; several community TTS models ship under non-commercial terms that would not permit distribution. When in doubt, Kokoro alone covers the entire closed vocabulary.
 
+**Voice character - a grizzled old trainer: raspy, but firm.** The intended persona is a weathered, older, gym-corner coach. Not an announcer, not an assistant, not encouraging-app-cheerful. This is a product requirement on the Voice Coach, not a stylistic afterthought - the persona is most of what makes a called combination feel like coaching rather than a notification.
+
+**"Raspy, but firm" is the whole specification, and the second half is the load-bearing one.** Rasp is texture; firmness is projection and authority. Texture alone degrades intelligibility - a low, gravelly, heavily-textured voice is harder to parse than a clean one, and it has to survive the worst case: a fast combination, at workout volume, over the noise of the athlete hitting a bag, from a tablet speaker at arm's length. Firmness is exactly what buys that back, because a firm delivery is clipped, projected and consonant-forward. So the two qualities are not in tension when both are present; they only conflict when rasp is pursued without it. **Where they do conflict, intelligibility wins** - a cue that is not understood mid-flurry is worse than a cue with less personality. §7 already requires the visual grammar to stay "recognizable at arm's length"; this is its audio equivalent.
+
+Two levers matter beyond timbre:
+
+- **Delivery.** A gym coach *barks* a combination; it is clipped and flat, not narrated. Rendering speed and flatness carry as much of the persona as the voice model does, and both are free to tune per clip because the assets are pre-rendered.
+- **Consistency.** Because the vocabulary is closed and rendered once, every "two" sounds identical every time. That repetition is what makes a voice read as a person rather than a synthesizer.
+
+**Selection is an audition, not a decision made on paper.** The whole time-critical vocabulary is rendered with each candidate voice and compared on the tablet, at the bag, at workout volume, against actual punching - not in headphones at a desk. Scoring criteria, in priority order: intelligibility of 1-6 mid-flurry; distinctness of the confusable pairs (notably "four"/"more" and the body-suffix forms); persona fit; and pleasantness over a 30-minute session, which is where an over-processed voice becomes fatiguing. This audition is part of M36-03 bag testing, alongside grace and cadence tuning.
+
+If no stock voice reaches the bar, voice **cloning** from a reference recording is a technical option but carries a rights constraint independent of the model licence: the reference speaker must have consented to that use. Cloning a recognizable person's voice - a well-known trainer, for instance - is not available regardless of which model produces it. A consented recording of a willing speaker is fine.
+
 **Asset manifest.** The manifest carries, per clip: vocabulary (`numbers` | `names`), token or phrase key, file reference, **measured duration in milliseconds**, sample rate, and the model plus voice identifier used to generate it. The model/voice identifier is recorded so a re-render is reproducible and so a voice change is a visible, versioned event rather than a silent asset swap.
 
 ## 30. Revision history
