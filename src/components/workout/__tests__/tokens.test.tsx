@@ -38,6 +38,11 @@ const COACH: CoachCommand[] = [
 
 const mounted: ReactTestRenderer[] = []
 
+/** testID lookups counted once each; findAllByProps defaults to deep. */
+function nodes(tree: ReactTestRenderer, testID: string): ReactTestInstance[] {
+  return tree.root.findAllByProps({ testID }, { deep: false })
+}
+
 function render(element: React.JSX.Element): ReactTestRenderer {
   let tree!: ReactTestRenderer
   act(() => {
@@ -368,6 +373,76 @@ describe('reduced motion (doc §25)', () => {
     expect(textOf(tree.root.findByProps({ testID: 'state-marker' }))).toBe(
       STATE_VISUALS.active.marker,
     )
+  })
+})
+
+describe('the form affirmation (reward only)', () => {
+  it('renders nothing extra when not affirmed', () => {
+    // Absence is never rendered: the signal behind this is too device-local
+    // to accuse anyone with, so a non-agreement must look like an ordinary
+    // punch.
+    const tree = render(<PunchToken number={3} body={false} state="completed" />)
+    expect(nodes(tree, 'affirmation-ring')).toHaveLength(0)
+    expect(nodes(tree, 'affirmation-ring-static')).toHaveLength(0)
+    expect(nodes(tree, 'affirmed-marker')).toHaveLength(0)
+  })
+
+  it('renders the bulging ring when affirmed', () => {
+    const tree = render(<PunchToken number={3} body={false} state="completed" affirmed />)
+    expect(() => tree.root.findByProps({ testID: 'affirmation-ring' })).not.toThrow()
+  })
+
+  it('replaces the bulge with a static ring under reduced motion (doc §25)', () => {
+    const tree = render(
+      <PunchToken number={3} body={false} state="completed" affirmed reducedMotion />,
+    )
+    expect(() => tree.root.findByProps({ testID: 'affirmation-ring-static' })).not.toThrow()
+    expect(nodes(tree, 'affirmation-ring')).toHaveLength(0)
+  })
+
+  it('carries a glyph as well as the gold, so colour is never the only signal', () => {
+    const tree = render(<PunchToken number={3} body={false} state="completed" affirmed />)
+    expect(textOf(tree.root.findByProps({ testID: 'affirmed-marker' })).length).toBeGreaterThan(0)
+  })
+
+  it('names the reward in the accessibility label', () => {
+    const tree = render(<PunchToken number={3} body={false} state="completed" affirmed />)
+    expect(
+      tree.root.findByProps({ testID: 'punch-token-3' }).props.accessibilityLabel,
+    ).toContain('good form')
+  })
+
+  it('uses gold, never red', () => {
+    // A reward may not borrow the one colour reserved for results.
+    const tree = render(<PunchToken number={3} body={false} state="completed" affirmed />)
+    const found = colorsIn(tree)
+    expect(found).toContain(colors.gold)
+    expect(found).not.toContain(colors.danger)
+  })
+
+  it('rides on top of the token state rather than replacing it', () => {
+    // A completed-and-affirmed token is still completed.
+    const tree = render(<PunchToken number={3} body={false} state="completed" affirmed />)
+    expect(() => tree.root.findByProps({ testID: 'punch-token-3' })).not.toThrow()
+    expect(colorsIn(tree)).toContain(colors.gold)
+  })
+
+  it('affirms across every state and both motion modes without error', () => {
+    for (const state of STATES) {
+      for (const reducedMotion of [false, true]) {
+        expect(() =>
+          render(
+            <PunchToken
+              number={1}
+              body={false}
+              state={state}
+              affirmed
+              reducedMotion={reducedMotion}
+            />,
+          ),
+        ).not.toThrow()
+      }
+    }
   })
 })
 

@@ -394,7 +394,14 @@ describe('case 5 — display-only defense, footwork, and coach tokens are unscor
           all: cue.tokens.map((_, i) => i),
         })
         expect(scored.filter((i) => shown.includes(i))).toEqual([])
-        for (const index of shown) expect(cue.tokens[index]!.kind).not.toBe('punch')
+        // A punch token is display-only ONLY in a count-scored burst, where
+        // it is the pattern to repeat rather than a command to answer once
+        // (doc §14). In a sequence cue every punch must be an expectation.
+        if (cue.scoring === 'sequence') {
+          for (const index of shown) expect(cue.tokens[index]!.kind).not.toBe('punch')
+        } else {
+          expect(scored).toEqual([])
+        }
       }
     }
   })

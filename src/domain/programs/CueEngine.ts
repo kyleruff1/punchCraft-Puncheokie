@@ -71,11 +71,15 @@ export interface CueResult {
   matchedCount: number
   expectedCount: number
   timestamps: CueTimestamps
+  /** Punches counted during a count-scored cue; 0 for sequence cues. */
+  countedPunches: number
 }
 
 interface CueRuntime {
   cue: CueInstance
   status: CueStatus
+  /** Tracker punches seen during a count-scored cue (doc §14). */
+  counted: number
   /** Status to restore when a suspension clears. */
   priorStatus?: CueStatus
   timestamps: CueTimestamps
@@ -258,8 +262,12 @@ export class CueEngine {
         cue: r.cue,
         outcome: r.outcome as CueOutcome,
         matchedCount: r.matched.size,
-        expectedCount: r.cue.expectedPunches.length,
+        expectedCount:
+          r.cue.scoring === 'count'
+            ? (r.cue.countScored?.targetPunches ?? 0)
+            : r.cue.expectedPunches.length,
         timestamps: r.timestamps,
+        countedPunches: r.counted,
       }))
   }
 
@@ -334,7 +342,9 @@ export class CueEngine {
       }
 
       case 'active':
-        this.fireDueTokens(runtime, t)
+        // A count-scored cue calls no tokens: the pattern is shown once and
+        // repeated, so there is nothing to schedule (doc §14).
+        if (cue.scoring !== 'count') this.fireDueTokens(runtime, t)
         // A window truncated at the next cue's start (see CueTimeline's
         // `truncateWindowsAtNextCue`) can close before the combination has
         // finished being called, so `active` has to be able to close too —
@@ -346,7 +356,7 @@ export class CueEngine {
         return
 
       case 'accepting':
-        this.fireDueTokens(runtime, t)
+        if (cue.scoring !== 'count') this.fireDueTokens(runtime, t)
         if (t >= cue.windowEndMs) this.closeWindow(runtime, t)
         return
 
@@ -361,9 +371,23 @@ export class CueEngine {
    * Partial completion is not failure (doc §21) — `expired` records what
    * landed, and nothing anywhere renders it as a red state.
    */
+  /**
+   * Credit a punch to a count-scored cue.
+   *
+   * Separate from `notifyMatch` because there is nothing to match: a burst
+   * has no expectations, only a target. The runner calls this for every
+   * punch that lands during one.
+   */
+  notifyCount(cueId: string, eventTimeMs: number): void {
+    const runtime = this.runtimes.find((r) => r.cue.id === cueId)
+    if (!runtime || runtime.cue.scoring !== 'count') return
+    runtime.counted += 1
+    runtime.timestamps.trackerEventTimesMs.push(eventTimeMs)
+  }
+
   private closeWindow(runtime: CueRuntime, t: number): void {
     this.emit('cue-window-closed', runtime, t)
-    const complete = runtime.matched.size >= runtime.cue.expectedPunches.length
+    const complete = this.isComplete(runtime)
     this.finish(
       runtime,
       complete ? 'completed' : 'expired',
@@ -395,6 +419,23 @@ export class CueEngine {
       if (other.status !== 'active' && other.status !== 'accepting') continue
       this.closeWindow(other, t)
     }
+  }
+
+  /**
+   * Did this cue meet what it asked for?
+   *
+   * A count-scored cue is judged on output against its target; a sequence
+   * cue on whether every expectation was answered. Either way falling short
+   * is `expired` with the numbers recorded, never a failure state — nothing
+   * renders it red (doc §21).
+   */
+  private isComplete(runtime: CueRuntime): boolean {
+    if (runtime.cue.scoring === 'count') {
+      const target = runtime.cue.countScored?.targetPunches ?? 0
+      // A burst with no target cannot be fallen short of.
+      return target <= 0 || runtime.counted >= target
+    }
+    return runtime.matched.size >= runtime.cue.expectedPunches.length
   }
 
   private fireDueTokens(runtime: CueRuntime, t: number): void {
@@ -550,6 +591,7 @@ function newRuntime(cue: CueInstance): CueRuntime {
     },
     firedTokens: new Set(),
     matched: new Set(),
+    counted: 0,
     windowOpened: false,
     readyFired: false,
   }

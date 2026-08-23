@@ -42,6 +42,7 @@ import type { CueInstance } from './CueTimeline'
 import type { CapabilityTier } from '../workout/capabilityTier'
 import type { ExtraPunchPolicy } from '../workout/WorkoutRecipe'
 import type { TrackerPunchEvent } from '../punch/PunchEvent'
+import { typeConcordance, type Concordance, type DeviceTypeProfile } from '../punch/typeConcordance'
 
 export interface LiveMatch {
   cueId: string
@@ -51,6 +52,14 @@ export interface LiveMatch {
   outcome: MatchOutcome
   /** Tracker-reported velocity in tracker units, when the source has it. */
   velocityRaw?: number
+  /**
+   * Whether the device-local type byte agreed with the prescribed
+   * technique. `'agree'` is the only actionable value — it earns the gold
+   * affirmation. `'disagree'` is never shown and never subtracts.
+   */
+  concordance: Concordance
+  /** True only on `'agree'`: the surface's cue to celebrate this punch. */
+  affirmed: boolean
 }
 
 export interface LiveExtra {
@@ -62,8 +71,16 @@ export interface LiveExtra {
   policy: ExtraPunchPolicy
 }
 
+export interface LiveCount {
+  cueId: string
+  eventId: string
+  eventTimeMs: number
+  velocityRaw?: number
+}
+
 export type LiveMatcherEvent =
   | { type: 'match'; match: LiveMatch }
+  | { type: 'count'; count: LiveCount }
   | { type: 'extra'; extra: LiveExtra }
   | {
       type: 'cue-settled'
@@ -79,6 +96,8 @@ export type LiveMatcherEvent =
 export interface LiveCueMatcherOptions {
   tier: CapabilityTier
   extraPunchPolicy: ExtraPunchPolicy
+  /** Device profiles for the form bonus; defaults to the H12-derived set. */
+  typeProfiles?: readonly DeviceTypeProfile[]
   /** Passed through to scoring when the recipe asks for a velocity band. */
   targetVelocityRange?: ScoreCueOptions['targetVelocityRange']
 }
@@ -145,6 +164,25 @@ export class LiveCueMatcher {
 
     open.events.push(event)
 
+    // A count-scored cue has no expectations to fill: every punch during a
+    // burst is output, and output is what it is judged on (doc §14). It is
+    // reported as a count, never as an extra — calling a burst punch an
+    // "extra" would be exactly backwards.
+    if (open.cue.scoring === 'count') {
+      this.publish({
+        type: 'count',
+        count: {
+          cueId: open.cue.id,
+          eventId: event.id,
+          eventTimeMs: event.receivedMonotonicTimeMs,
+          ...(typeof event.velocityRaw === 'number' && event.velocityUnit !== 'unknown'
+            ? { velocityRaw: event.velocityRaw }
+            : {}),
+        },
+      })
+      return
+    }
+
     // A recovered event cannot be placed provisionally — its position
     // depends on a tracker timestamp the settled pass will order properly.
     // Buffer it and say nothing yet rather than crediting the wrong slot.
@@ -170,6 +208,20 @@ export class LiveCueMatcher {
     const expected = open.cue.expectedPunches[expectedIndex]!
     open.filled.add(expectedIndex)
 
+    const outcome: MatchOutcome = event.hand === expected.hand ? 'matched' : 'hand-mismatch'
+
+    // Only a correct hand can earn the flourish: congratulating the type
+    // byte on a punch thrown with the wrong glove would celebrate the one
+    // thing that was definitely wrong.
+    const concordance: Concordance =
+      outcome === 'matched'
+        ? typeConcordance(
+            event,
+            expected.type,
+            ...(this.options.typeProfiles ? ([this.options.typeProfiles] as const) : ([] as const)),
+          )
+        : 'unknown'
+
     const match: LiveMatch = {
       cueId: open.cue.id,
       expectedIndex,
@@ -177,7 +229,9 @@ export class LiveCueMatcher {
       eventTimeMs: atMs,
       // Hand is the only thing verifiable at this hardware's tier (D12);
       // the settled pass applies the full rule including technique.
-      outcome: event.hand === expected.hand ? 'matched' : 'hand-mismatch',
+      outcome,
+      concordance,
+      affirmed: concordance === 'agree',
       ...(typeof event.velocityRaw === 'number' && event.velocityUnit !== 'unknown'
         ? { velocityRaw: event.velocityRaw }
         : {}),
@@ -205,11 +259,18 @@ export class LiveCueMatcher {
     this.open = null
     if (!open) return
 
-    const result = this.matcher.match(open.cue, open.events)
+    // A count-scored cue is not matched token by token; the batch matcher
+    // would report every punch as an extra, which is the wrong story.
+    const result =
+      open.cue.scoring === 'count'
+        ? this.countScoredResult(open)
+        : this.matcher.match(open.cue, open.events)
     this.settled.push(result)
 
     const score = scoreCue(result, this.options.tier, {
       events: open.events,
+      expectedPunches: open.cue.expectedPunches,
+      ...(this.options.typeProfiles ? { typeProfiles: this.options.typeProfiles } : {}),
       ...(this.options.targetVelocityRange
         ? { targetVelocityRange: this.options.targetVelocityRange }
         : {}),
@@ -241,6 +302,28 @@ export class LiveCueMatcher {
         settledAssignment.outcome !== p.outcome
       )
     })
+  }
+
+  /**
+   * A settled burst, expressed in the same shape as a matched cue.
+   *
+   * There are no assignments and no misses — the cue asked for output, not
+   * a sequence. Every punch is carried as an extra in the structural sense
+   * (unassigned to a slot), which is what keeps the count visible to
+   * anything aggregating the round without pretending it was a sequence.
+   */
+  private countScoredResult(open: OpenCue): CueMatchResult {
+    return {
+      cueId: open.cue.id,
+      assignments: [],
+      missedExpectedIndexes: [],
+      extras: open.events.map((e) => ({
+        eventId: e.id,
+        eventTimeMs: e.receivedMonotonicTimeMs,
+      })),
+      capabilityTier: this.options.tier,
+      decoderVersions: [...new Set(open.events.map((e) => e.decoderVersion))].sort(),
+    }
   }
 
   private publish(event: LiveMatcherEvent): void {

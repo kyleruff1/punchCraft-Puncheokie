@@ -29,6 +29,8 @@ import { sequenceScoreLabel, tierScoresTechnique, type CapabilityTier } from '..
 import { CALCULATION_VERSION } from '../workout/versions'
 import type { CueMatchResult } from './CueMatcher'
 import type { TrackerPunchEvent } from '../punch/PunchEvent'
+import { TYPE_PROFILE_VERSION, formBonus, type DeviceTypeProfile } from '../punch/typeConcordance'
+import type { ExpectedPunch } from './CueTimeline'
 
 /**
  * How close to the called moment a punch must land to count as on-time.
@@ -63,6 +65,15 @@ export interface CueScore {
   averageVelocity?: number
   extraCount: number
   expectedCount: number
+  /**
+   * Additive form bonus (#formBonus). Never subtracts from anything above
+   * it — the type byte is too device-local to accuse anyone with, so it is
+   * wired so that it can only congratulate.
+   */
+  formBonus: number
+  /** How many punches earned it, for the surface to celebrate individually. */
+  formAgreements: number
+  typeProfileVersion: string
   capabilityTier: CapabilityTier
   decoderVersions: string[]
   calculationVersion: string
@@ -73,6 +84,13 @@ export interface CueScore {
 }
 
 export interface ScoreCueOptions {
+  /**
+   * The cue's expectations, so an event can be paired with the technique it
+   * was asked for. Without this the form bonus is always zero.
+   */
+  expectedPunches?: readonly ExpectedPunch[]
+  /** Override the device profiles; defaults to the H12-derived set. */
+  typeProfiles?: readonly DeviceTypeProfile[]
   /**
    * The events that were matched, for the velocity dimensions.
    *
@@ -106,6 +124,22 @@ export function scoreCue(
   const correctHand = result.assignments.filter((a) => a.outcome !== 'hand-mismatch').length
   const onTime = result.assignments.filter((a) => Math.abs(a.offsetMs) <= TIMING_TIGHT_MS).length
 
+  // Pair each assignment with the technique its slot asked for, so the
+  // bonus can only be earned against something actually prescribed.
+  const byEventId = new Map((options.events ?? []).map((e) => [e.id, e]))
+  const pairs = result.assignments
+    .filter((a) => a.outcome !== 'hand-mismatch')
+    .flatMap((a) => {
+      const event = byEventId.get(a.eventId)
+      const expected = options.expectedPunches?.[a.expectedIndex]
+      if (!event) return []
+      return [{ event, expectedType: expected?.type }]
+    })
+  const agreements = formBonus(
+    pairs,
+    ...(options.typeProfiles ? ([options.typeProfiles] as const) : ([] as const)),
+  )
+
   const score: CueScore = {
     cueId: result.cueId,
     label: sequenceScoreLabel(tier),
@@ -117,6 +151,9 @@ export function scoreCue(
     timingWindowPct: pct(onTime, landed),
     extraCount: result.extras.length,
     expectedCount,
+    formBonus: agreements,
+    formAgreements: agreements,
+    typeProfileVersion: TYPE_PROFILE_VERSION,
     capabilityTier: tier,
     decoderVersions: result.decoderVersions,
     calculationVersion: CALCULATION_VERSION,

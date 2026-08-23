@@ -14,6 +14,7 @@ import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
 import { ActiveRing } from './ActiveRing'
+import { AffirmationRing } from './AffirmationRing'
 import {
   STATE_VISUALS,
   TOKEN_DIAMETER,
@@ -31,10 +32,27 @@ export interface PunchTokenProps {
   handHint?: 'L' | 'R'
   size?: TokenSize
   reducedMotion?: boolean
+  /**
+   * The punch landed AND the device-local type byte agreed with the
+   * technique the cue asked for. Reward only — its absence is never
+   * rendered, because the signal behind it is too inconsistent to accuse
+   * anyone with (see `typeConcordance`).
+   */
+  affirmed?: boolean
+  /** Changing this re-fires the affirmation, so repeat hits each get one. */
+  affirmKey?: string | number
 }
 
 export function PunchToken(props: PunchTokenProps): React.JSX.Element {
-  const { number, body, state, handHint, size = 'stage', reducedMotion = false } = props
+  const {
+    number,
+    body,
+    state,
+    handHint,
+    size = 'stage',
+    reducedMotion = false,
+    affirmed = false,
+  } = props
   const visual = STATE_VISUALS[state]
   const diameter = TOKEN_DIAMETER[size]
 
@@ -43,6 +61,9 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
     body ? 'to the body' : null,
     handHint ? (handHint === 'L' ? 'left hand' : 'right hand') : null,
     visual.label,
+    // Named, not just tinted: the reward has to reach someone who cannot
+    // see the glow (spec §19.4).
+    affirmed ? 'good form' : null,
   ]
     .filter(Boolean)
     .join(', ')
@@ -58,6 +79,13 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
         <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
       ) : null}
 
+      <AffirmationRing
+        diameter={diameter}
+        active={affirmed}
+        reducedMotion={reducedMotion}
+        {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
+      />
+
       <View
         style={[
           styles.circle,
@@ -69,6 +97,9 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
             borderColor: visual.borderColor,
             backgroundColor: visual.backgroundColor,
           },
+          // The glow rides on top of whatever state the token is in, so a
+          // completed token keeps its check and gains the gold.
+          affirmed && styles.affirmedCircle,
         ]}
       >
         <Text
@@ -86,7 +117,13 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
         ) : null}
       </View>
 
-      {visual.marker ? (
+      {/* Colour is never the only signal: the glow always comes with a
+          glyph (spec §19.4). */}
+      {affirmed ? (
+        <Text style={styles.affirmedMarker} testID="affirmed-marker">
+          ★
+        </Text>
+      ) : visual.marker ? (
         <Text style={[styles.marker, { color: visual.textColor }]} testID="state-marker">
           {visual.marker}
         </Text>
@@ -122,5 +159,15 @@ const styles = StyleSheet.create({
   },
   bodyBadgeText: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
   marker: { marginTop: 4, fontSize: 14, fontWeight: '700' },
+  affirmedCircle: {
+    borderColor: colors.gold,
+    // A soft halo rather than a hard edge, so the token reads as lit
+    // rather than merely outlined.
+    shadowColor: colors.gold,
+    shadowOpacity: 0.9,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  affirmedMarker: { marginTop: 4, fontSize: 15, fontWeight: '800', color: colors.gold },
   handHint: { marginTop: 2, fontSize: 13, fontWeight: '700', color: colors.textMuted },
 })
