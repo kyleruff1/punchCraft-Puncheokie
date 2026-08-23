@@ -23,6 +23,8 @@
  */
 
 import type { PunchNumber, Stance, DefenseCommand, FootworkCommand, CoachCommand } from './WorkoutTokens'
+import { suggestGoal } from './punchGoals'
+import { GENERATOR_VERSION } from './versions'
 
 /** Nominal cadence bands from doc §17. Beats become milliseconds via M31-02. */
 export type CadenceProfile = 'technical' | 'steady' | 'pressure' | 'sprint'
@@ -91,4 +93,61 @@ export interface WorkoutRecipe {
   /** Same recipe + generatorVersion + seed must reproduce an identical plan. */
   generatorVersion: string
   seed: string
+}
+
+// ---------------------------------------------------------------------------
+// Defaults (M31-04)
+// ---------------------------------------------------------------------------
+
+
+/**
+ * A clean, useful workout with no further input (doc §8 — the athlete should
+ * be training inside a minute).
+ *
+ * Choices and why: 20 minutes and the Steady tier because that is the
+ * shortest schedule and the middle intensity, so neither dimension biases a
+ * first run; balanced focus and bias so nothing is over-represented; all six
+ * punches and every command enabled so the generator has its full vocabulary
+ * and no enablement conflict fires; `visualLeadTimeMs` 1500 to match doc
+ * §18.3's T−1.50s preview; `maximumComboPunches` 5, the upper end of the
+ * authored combo-length rule.
+ *
+ * `seed` is a fixed placeholder so this function stays pure and testable —
+ * the Recipe screen replaces it with a fresh seed per generated workout, and
+ * the seed is what makes a workout reproducible (R18).
+ */
+export function defaultRecipe(): WorkoutRecipe {
+  return {
+    durationMinutes: 20,
+    totalPunchGoal: suggestGoal(20, 'steady', 'balanced'),
+    focus: 'balanced',
+    defaultStance: 'orthodox',
+    stanceMode: 'fixed',
+    bias: 'balanced',
+    adaptationMode: 'fixed',
+
+    enabledPunches: [1, 2, 3, 4, 5, 6],
+    bodyShotPercent: 18,
+    enabledDefense: ['duck', 'bob-weave', 'slip', 'roll', 'pull'],
+    enabledFootwork: ['pivot', 'step-off', 'circle', 'cut-off-ring', 'reset'],
+    enabledCoachCalls: ['double-up', 'put-it-on-em', 'touch-and-go', 'breathe', 'hands-up'],
+
+    maximumComboPunches: 5,
+    defenseFrequency: 'light',
+    footworkFrequency: 'light',
+    cadenceProfile: 'steady',
+    comboComplexity: 3,
+    cueRhythmProfile: 'even',
+    velocityZoneEmphasis: null,
+    metricAnnouncementFrequency: 'round',
+    visualLeadTimeMs: 1_500,
+    commandVocabularyStyle: 'numbers',
+    extrasPolicy: 'neutral',
+
+    voiceMode: 'standard',
+    voiceVocabulary: 'numbers',
+
+    generatorVersion: GENERATOR_VERSION,
+    seed: 'default-seed',
+  }
 }
