@@ -10,7 +10,7 @@ Android-first mobile app that restores useful life to a pair of unsupported **Fi
 |---|---|
 | **Velocity Lab** | Device connection, protocol diagnostics, live Bluetooth listening, calibration, and data export. The engineering surface and the first milestone. |
 | **punchCraft** | Configurable timed or free-form bag sessions with left/right punch counts, tracker-reported velocity, round metrics, and session history. |
-| **Puncheokie** | Programmable punch-sequence workouts using numbered boxing combinations, regular or switch stance, and an optional user-connected Spotify playlist for background listening. |
+| **Puncheokie** | Recipe-generated punch workouts using numbered boxing combinations, orthodox/southpaw/switch stance, an optional Voice Coach, and an optional user-connected Spotify playlist for background listening. Designed in [docs/puncheokie-ux-workout-engine.md](docs/puncheokie-ux-workout-engine.md). |
 
 ## Principles
 
@@ -32,7 +32,8 @@ Labels: type `epic` / `story` / `task` / `spike`; `phase:0`–`phase:7`; `area:*
 
 ## Documents
 
-- [Design specification](docs/design-spec.md) — the full product and engineering spec (sections 1–30).
+- [Design specification](docs/design-spec.md) — the full product and engineering spec (sections 1–31).
+- [Puncheokie UX and Workout Engine](docs/puncheokie-ux-workout-engine.md) — canonical design for Puncheokie (supersedes spec §13 in part).
 - [Roadmap](docs/roadmap.md) — phases, milestones, definitions of done.
 - [Sprint 1](docs/sprint-1.md) — goal, stories, exit criteria, hardware prerequisites.
 - [Development setup](docs/dev-setup.md) — Windows workstation and Android tablet toolchain.
@@ -46,7 +47,7 @@ Labels: type `epic` / `story` / `task` / `spike`; `phase:0`–`phase:7`; `area:*
 
 ## Backlog as code
 
-`tools/backlog/backlog.json` is the source of truth for labels, milestones, epics, and issues. Both scripts are idempotent and use only the authenticated `gh` CLI:
+`tools/backlog/backlog-static.json` (labels, milestones, project) and `tools/backlog/backlog-issues.json` (epics, issues) are the source of truth. Both scripts are idempotent and use only the authenticated `gh` CLI:
 
 ```bash
 node tools/backlog/setup-project.mjs

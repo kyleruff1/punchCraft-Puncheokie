@@ -1,10 +1,10 @@
 # Roadmap
 
-The roadmap is 30 GitHub Milestones (`M01`…`M30`) grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
+The roadmap is 37 GitHub Milestones — `M01`…`M30` from the original plan plus `M31`…`M37` added for the Puncheokie v0.2/v0.3 design (`M24`–`M26` are retained but superseded) — grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
 
 - Board: https://github.com/users/kyleruff1/projects/5
 - Milestones: https://github.com/kyleruff1/punchCraft-Puncheokie/milestones
-- Backlog source: [`tools/backlog/backlog.json`](../tools/backlog/backlog.json) → seeded by [`tools/backlog/seed.mjs`](../tools/backlog/seed.mjs)
+- Backlog source: [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json) (epics + issues) and [`backlog-static.json`](../tools/backlog/backlog-static.json) (labels, milestones, project) → seeded by [`tools/backlog/seed.mjs`](../tools/backlog/seed.mjs)
 
 ## Phase 0 — Preserve the baseline and establish the repository
 
@@ -46,11 +46,20 @@ The first functional product milestone; everything below runs in Sprint 1.
 - **M22** — Session persistence & deterministic metrics. `sessions`, `rounds`, `punch_events`, `session_metrics`; MetricsEngine confirmed + velocity-dependent metrics (§9.1, §9.2) with `calculation_version`; in-session reconnect updates completeness and `recovered` counts. (§9, §17, §22 Phase 4 tasks 8–9.)
 - **M23** — Summary, history, recalculation & export. Session summary discloses velocity representation (§8.5), history with filter/detail/compare/delete, recalculation using newer decoder/profile without touching raw, CSV + JSON export. (§8.5, §8.6, §22 Phase 4 tasks 10–11.)
 
-## Phase 5 — Puncheokie program engine without Spotify
+## Phase 5 — Puncheokie workout engine without Spotify
 
-- **M24** — Program model & editor. PunchProgram/Round/Cue tables + repositories; program editor; seeded "Three-Round Fundamentals" example. (§13.4, §17.1, §22 Phase 5 tasks 1–2.)
-- **M25** — Stance mapping & cue runner. StanceMapper for orthodox/southpaw × switch with tests; ProgramEngine cue timer with visual + haptic presentation and next-cue preview. (§13.2, §13.5, §22 Phase 5 tasks 3–4.)
-- **M26** — Cue matching & capability-aware scoring. CueMatcher (windows, one-event-one-slot, hand vs type mismatch, extras) with tests; `cue_results`; summary explicitly labeled "hand-sequence match" when technique is unknown. (§13.3, §13.6, §22 Phase 5 tasks 5–9.)
+Specified by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) (v0.2, canonical for Puncheokie; decisions D1–D10). Recipe + deterministic seeded generator replace the original program editor; stance is orthodox/southpaw/switch; the live screen is landscape-first on the tablet; defense/footwork/coach tokens are display-only; the Voice Coach is OFF by default whenever third-party playback is active.
+
+- **M24** — Program model & editor — **superseded** by M31 (milestone closed; its issues were closed as superseded).
+- **M25** — Stance mapping & cue runner — **superseded** by M32; retains only the StanceMapper issues (M25-01, M25-02).
+- **M26** — Cue matching & capability-aware scoring — **superseded** by M33; retains only the CueMatcher/scoring/fixture issues (M26-01, M26-02, M26-04).
+- **M31** — Workout model, recipe & persistence. `WorkoutRecipe`/`WorkoutBlock`/`WorkoutToken`, round schedules and goal tiers, cadence profiles, hand-authored sample workouts, the Workout Recipe screen, and SQLite persistence for recipes, generated workouts, adaptations, and cue results. (Doc §2, §4, §8–§12, §17, §26; spec §13.4, §17.1, §15.1.)
+- **M32** — Cue engine & landscape live screen on simulated events. `PunchEventSource` port + simulated source, capability tier + label, cue-timeline expansion with clamped windows, the doc §20 cue lifecycle composed with the §18.1 SessionEngine, token visual grammar, and the landscape four-zone live screen. (Doc §5, §13, §14, §19–§21; spec §13.2, §13.5, §18, §19.4.)
+- **M33** — Tracker matching, pacing & round results. Real tracker stream wired into the live screen, CueMatcher integration with per-punch feedback, round grading with text + icon badges, three-phase rest, PacingEngine, volume-burst/open-pressure blocks with goal allocation, goal-seeking with persisted adaptations, and the workout summary persisting `cue_results`. (Doc §3, §6, §9, §10, §14, §21–§24; spec §13.3, §13.6, §8.5, §8.6.)
+- **M34** — Voice Coach. Tablet spike on playback latency and audio focus, domain `VoiceOutputPort` + `VoiceCoachPolicy` + `CueAnnouncer` scheduled by the cue clock, Expo audio infrastructure, and settings with the third-party-playback opt-in defaulting OFF. (Doc §5, §18, §25; spec §13.5, §14.6, §15.1.)
+- **M35** — Combo library & procedural generator. `ComboTemplate` contract, seeded PRNG, starter and expanded (40–60) libraries with rule validation, round-theme planner, constraint-based `WorkoutGenerator` with determinism guarantees, wired into the Recipe screen with Surprise Me. (Doc §7, §11, §15–§17; spec §14.6.)
+- **M36** — Presets, replay & bag validation. Saved recipe presets and Run This Exact Workout Again (seed + generator version reuse), the audio/visual sync test with Spotify in the background, and the bag-testing protocol that tunes graces, windows, cadence, and density ceilings. (Doc §8, §16, §24, §27 steps 13–15; spec §21.4, §14.6.)
+- **M37** — Strike confirmation, combo plausibility & gratification. Per-strike node flash driven by the tracker slot with a four-cue haptic vocabulary; the progressive combo affirmation border; the capability-aware five-signal plausibility model (`handOrder`, `timing`, `separation`, `intensity`, `exclusivity`) producing `confirmed`/`likely`/`partial`/`unconfirmed`; bounded gratification levels with a Focus mode; `combo_results` versioned by `CONFIDENCE_VERSION`. Signals the tracker cannot supply are omitted from the mean, never zeroed. (Doc §28; spec §13.3, §17.1, §19.4, §22 Phase 5 task 15.)
 
 ## Phase 6 — Spotify playlist connection
 
@@ -71,6 +80,6 @@ The first functional product milestone; everything below runs in Sprint 1.
 | 2 | M11–M16 | no (Sprint 2+) |
 | 3 | M17–M19 | no |
 | 4 | M20–M23 | no |
-| 5 | M24–M26 | no |
+| 5 | M24–M26 (superseded), M31–M37 | no |
 | 6 | M27–M28 | no |
 | 7 | M29–M30 | no |
