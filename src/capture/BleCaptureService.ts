@@ -49,6 +49,8 @@ export class BleCaptureService implements CaptureSink {
   private captureId: string | null = null
   private timer: ReturnType<typeof setInterval> | null = null
   private readonly deviceIdByAddress = new Map<string, string | null>()
+  /** Frames handed to capture() with no capture open. Should always be 0. */
+  private droppedNoCapture = 0
 
   private readonly frames: FrameBuffer<FrameInsertInput>
   private readonly events: FrameBuffer<PunchEventInsertInput>
@@ -102,15 +104,23 @@ export class BleCaptureService implements CaptureSink {
     return this.captureId
   }
 
-  /** Open a capture and start the flush timer. Returns the capture id. */
+  /**
+   * Open a capture and start the flush timer. Returns the capture id.
+   *
+   * Re-entrant: if a capture is already open this returns the existing id
+   * rather than orphaning it, which keeps a screen that re-runs its effect
+   * from fragmenting one session into many captures.
+   */
   start(input: OpenCaptureInput = {}): string {
     if (this.captureId) return this.captureId
     this.captureId = this.deps.captures.open(input)
     this.deviceIdByAddress.clear()
-    this.timer = setInterval(() => {
-      this.frames.tick()
-      this.events.tick()
-    }, TICK_INTERVAL_MS)
+    if (!this.timer) {
+      this.timer = setInterval(() => {
+        this.frames.tick()
+        this.events.tick()
+      }, TICK_INTERVAL_MS)
+    }
     return this.captureId
   }
 
@@ -118,16 +128,31 @@ export class BleCaptureService implements CaptureSink {
    * Flush everything still buffered, close the capture, and stop the timer.
    * Awaiting this before teardown is what keeps the tail of a session from
    * being lost when the user leaves the screen.
+   *
+   * The capture is released SYNCHRONOUSLY, before the async drain. That
+   * ordering is the whole point: a React effect cleanup fires stop() without
+   * awaiting it and the replacement effect calls start() immediately after.
+   * If we held the id until after the drain, that start() would see a capture
+   * still open, early-return, and then this call would null the id out from
+   * under it — which is exactly how 19 punch events ended up on-device with
+   * no stored source frames. Releasing first means the late start() opens a
+   * fresh capture and nothing here can clobber it.
+   *
+   * Frames already buffered carry their own capture id, so a drain that spans
+   * the handover still writes each row against the capture it belonged to.
    */
   async stop(): Promise<void> {
+    const id = this.captureId
+    this.captureId = null
+
     if (this.timer) {
       clearInterval(this.timer)
       this.timer = null
     }
+
     await this.frames.drain()
     await this.events.drain()
 
-    const id = this.captureId
     if (id) {
       try {
         this.deps.captures.close(id)
@@ -138,7 +163,6 @@ export class BleCaptureService implements CaptureSink {
         })
       }
     }
-    this.captureId = null
   }
 
   // -- CaptureSink -----------------------------------------------------------
@@ -149,7 +173,20 @@ export class BleCaptureService implements CaptureSink {
    */
   capture(frame: RawBleFrame): void {
     const captureId = this.captureId
-    if (!captureId) return
+    if (!captureId) {
+      // Never silent. A frame arriving with no capture open means the
+      // lifecycle is wrong somewhere, and quietly discarding it is exactly
+      // the failure this module exists to prevent (CLAUDE.md §1). Log the
+      // first one loudly, then rate-limit so a stuck stream cannot flood.
+      this.droppedNoCapture += 1
+      if (this.droppedNoCapture === 1 || this.droppedNoCapture % 100 === 0) {
+        logger.error('capture.frame.no_capture', 'frame discarded — no capture open', {
+          totalDropped: safe(this.droppedNoCapture),
+          characteristicUuid: safe(frame.characteristicUuid),
+        })
+      }
+      return
+    }
     try {
       this.frames.add({
         id: frame.id,
@@ -191,6 +228,17 @@ export class BleCaptureService implements CaptureSink {
    */
   recordEvent(event: TrackerPunchEvent): void {
     const captureId = this.captureId
+    if (!captureId) {
+      // Symmetry with capture(). Storing a decoded event whose source frame
+      // was NOT stored inverts the raw-before-parsed rule: we would be
+      // keeping the interpretation while discarding the evidence, and the
+      // event could never be re-derived after a decoder change (§3.2, §8.6).
+      // If the raw frame did not survive, neither does its event.
+      logger.error('capture.event.no_capture', 'punch event discarded — no capture open', {
+        sourceFrameId: safe(event.sourceFrameId),
+      })
+      return
+    }
     try {
       this.events.add({
         id: event.id,

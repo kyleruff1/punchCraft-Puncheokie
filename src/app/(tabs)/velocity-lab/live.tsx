@@ -35,7 +35,7 @@ import {
   type PunchStreamController,
 } from '@protocol/PunchStream'
 import type { BleCaptureService } from '@capture/BleCaptureService'
-import { startCapture, stopCapture } from '@capture/getCaptureService'
+import { getCaptureService, startCapture, stopCapture } from '@capture/getCaptureService'
 import type { TrackerPunchEvent } from '@/domain/punch/PunchEvent'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
 import type { SlotState } from '@/state/useTrackerStore'
@@ -257,24 +257,39 @@ export default function LiveDecodeScreen(): React.ReactElement {
     if (ctl) setStreamState(ctl.getState())
   }, [])
 
+  // Capture lifecycle is tied to the SCREEN, not to the stream. Flipping the
+  // L/R toggle re-runs the stream effect below, and if the capture rode along
+  // with it the async stop() from one cleanup would land after the next
+  // start(), tearing down the capture the new stream had just opened — which
+  // silently dropped every subsequent frame. One visit to this screen is one
+  // capture; switching trackers mid-capture is fine and arguably more correct.
+  const [captureReady, setCaptureReady] = useState(false)
   useEffect(() => {
-    if (!active || !adapter) return
-    const facade = getBleManager()
-
-    // Open a capture BEFORE the stream starts, so the very first frame is
-    // already covered and carries a capture-scoped id (§11.9, §12.4). A
-    // storage failure must not block live decode — we fall back to running
-    // without persistence and say so in the meta log.
-    let capture: BleCaptureService | null = null
     try {
-      capture = startCapture(`live-${active.hand}-${active.slot.deviceId}`)
+      startCapture('live-decode')
+      setCaptureReady(true)
     } catch (err) {
-      capture = null
+      setCaptureReady(false)
       onDecodeMeta({
         kind: 'init-error',
         text: `capture unavailable, frames will NOT be persisted: ${(err as Error)?.message ?? String(err)}`,
       })
     }
+    return () => {
+      setCaptureReady(false)
+      // Flushes the tail of the session, then closes.
+      void stopCapture()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!active || !adapter) return
+    // Wait for the capture to exist before subscribing, so the very first
+    // frame is already covered (§11.9, §12.4) rather than racing the open.
+    if (!captureReady) return
+    const facade = getBleManager()
+    const capture: BleCaptureService = getCaptureService()
 
     const controller = startPunchStream({
       facade,
@@ -289,11 +304,9 @@ export default function LiveDecodeScreen(): React.ReactElement {
     return () => {
       controller.stop()
       controllerRef.current = null
-      // Flush the tail of the session before the capture closes.
-      void stopCapture()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active?.slot.deviceId, active?.hand, adapter])
+  }, [active?.slot.deviceId, active?.hand, adapter, captureReady])
 
   // When the user flips L/R, reset the log so red and blue events do not
   // interleave in the same view — the picker treats each side as its own
