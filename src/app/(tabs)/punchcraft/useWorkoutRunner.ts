@@ -207,10 +207,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // The matcher needs the window lifecycle to know which cue is open.
       matcherRef.current?.onCueEvent(event)
       if (event.type === 'cue-active') {
-        // A new combination: the per-cue credit resets, and the expected
-        // count comes from the cue itself.
+        // A new combination: the per-cue credit resets. A burst's target is
+        // its punch count; a sequence cue's is its expectation count.
         countsRef.current.inCue = 0
-        countsRef.current.inCueExpected = event.cue.expectedPunches.length
+        countsRef.current.inCueExpected =
+          event.cue.scoring === 'count'
+            ? (event.cue.countScored?.targetPunches ?? 0)
+            : event.cue.expectedPunches.length
       }
       syncFromEngine()
       pushStore(true)
@@ -261,6 +264,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             )
           }
           countsRef.current.inCue = event.match.expectedIndex + 1
+          break
+
+        case 'count':
+          // Output during a burst: credited to the cue, not counted as an
+          // extra (doc §14).
+          engineRef.current?.notifyCount(event.count.cueId, event.count.eventTimeMs)
+          countsRef.current.inCue += 1
           break
 
         case 'extra':

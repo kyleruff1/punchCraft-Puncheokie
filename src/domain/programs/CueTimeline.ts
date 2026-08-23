@@ -24,7 +24,7 @@ import { beatsToMs, maxBeatOffset, tokenOffsetsMs } from '../workout/cadence'
 import { resolveEffectiveStance, resolveHand } from './StanceMapper'
 import type { GeneratedWorkout } from '../workout/GeneratedWorkout'
 import type { PunchType } from '../punch/PunchEvent'
-import type { Stance, WorkoutBlock, WorkoutToken } from '../workout/WorkoutTokens'
+import type { PunchNumber, Stance, WorkoutBlock, WorkoutToken } from '../workout/WorkoutTokens'
 
 // ---------------------------------------------------------------------------
 // Tunables. Every one of these is a placeholder until M36-03 tunes them
@@ -73,10 +73,40 @@ export interface ExpectedPunch {
   type?: PunchType
 }
 
+/**
+ * How a cue is judged.
+ *
+ * `sequence` cues name every punch and are matched token by token.
+ * `count` cues (volume-burst, open-pressure) name a pattern and a target
+ * and are judged on how many punches the tracker saw — the athlete is
+ * working, not following a script (doc §14). Mixing the two in one scoring
+ * path would mean either fabricating expectations for a burst or losing the
+ * burst's output entirely.
+ */
+export type CueScoring = 'sequence' | 'count'
+
+export interface CountScoredMeta {
+  targetPunches: number
+  /** Display only: the shape to keep throwing, e.g. `1-2`. */
+  allowedPattern?: string
+  /**
+   * An open-pressure constraint, e.g. finish every exchange with a 2.
+   * Display-only unless the tier can verify it — which on this hardware it
+   * cannot (D12).
+   */
+  constraint?: { finisher?: PunchNumber; hand?: 'lead' | 'rear' }
+  /** Lead-in before the burst starts counting. */
+  countdownMs: number
+}
+
 export interface CueInstance {
   id: string
   blockId: string
   repeatIndex: number
+  /** `sequence` unless this is a count-scored burst. */
+  scoring: CueScoring
+  /** Present only on `scoring: 'count'` cues. */
+  countScored?: CountScoredMeta
   tokens: WorkoutToken[]
   tokenOffsetsMs: number[]
   expectedPunches: ExpectedPunch[]
@@ -108,14 +138,27 @@ export interface RoundTimeline {
   deferredBlockIds: string[]
 }
 
-/** Block kinds this expansion lays out. M33-06 adds the remaining two. */
-const EXPANDABLE_KINDS = new Set<WorkoutBlock['kind']>([
+/** Block kinds laid out as sequence cues, one token at a time. */
+const SEQUENCE_KINDS = new Set<WorkoutBlock['kind']>([
   'exact-combo',
   'repeated-combo',
   'defense-counter',
   'footwork-exit',
   'active-recovery',
 ])
+
+/** Block kinds judged on tracker count rather than a named sequence (doc §14). */
+const COUNT_SCORED_KINDS = new Set<WorkoutBlock['kind']>(['volume-burst', 'open-pressure'])
+
+/**
+ * Lead-in before a burst starts counting.
+ *
+ * Doc §14 asks for a short countdown so the athlete can set their feet
+ * before output is measured — without it the first second of every burst
+ * would be spent reacting rather than punching, and the count would
+ * under-report the work.
+ */
+export const DEFAULT_BURST_COUNTDOWN_MS = 3_000
 
 /**
  * The technique family a cue number implies (doc §2).
@@ -172,7 +215,21 @@ export function expandTimeline(
         previousStance = effectiveStance
       }
 
-      if (!EXPANDABLE_KINDS.has(block.kind)) {
+      if (COUNT_SCORED_KINDS.has(block.kind)) {
+        cues.push(
+          expandCountScoredBlock(block, {
+            bpm,
+            effectiveStance,
+            workDurationMs: round.workDurationMs,
+            leadTimes,
+            graceBeforeMs: block.graceBeforeMs ?? defaultGraceBefore,
+            graceAfterMs: block.graceAfterMs ?? defaultGraceAfter,
+          }),
+        )
+        continue
+      }
+
+      if (!SEQUENCE_KINDS.has(block.kind)) {
         deferredBlockIds.push(block.id)
         continue
       }
@@ -280,6 +337,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       id: `${block.id}#${repeatIndex}`,
       blockId: block.id,
       repeatIndex,
+      scoring: 'sequence',
       tokens: block.tokens,
       tokenOffsetsMs: offsets,
       expectedPunches,
@@ -313,6 +371,84 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
   }
 
   return instances
+}
+
+/**
+ * Lay out a volume-burst or open-pressure block as a single count-scored
+ * cue spanning the whole block.
+ *
+ * One cue, not many: the block's whole point is that it is *not* a sequence
+ * of named commands (doc §14). Slicing it into per-punch cues would
+ * reintroduce exactly the enumeration the block exists to avoid, and would
+ * invent expectations the athlete was never given.
+ *
+ * The tokens are still carried so the stage can show the allowed pattern,
+ * but they produce **no** `expectedPunches` — nothing here is matched token
+ * by token, and nothing in it can be "missed".
+ */
+function expandCountScoredBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance {
+  const offsets = tokenOffsetsMs(block.tokens, ctx.bpm)
+  const scheduledStartMs = block.startOffsetMs
+  const scheduledEndMs = scheduledStartMs + block.durationMs
+
+  // Display-only: every token in a burst is a pattern to repeat, not a
+  // command to answer once (D4).
+  const displayOnlyTokenIndexes = block.tokens.map((_, index) => index)
+
+  const constraint = openPressureConstraint(block)
+
+  return {
+    id: `${block.id}#burst`,
+    blockId: block.id,
+    repeatIndex: 0,
+    scoring: 'count',
+    countScored: {
+      targetPunches: block.targetPunches ?? 0,
+      countdownMs: DEFAULT_BURST_COUNTDOWN_MS,
+      ...(patternFor(block) ? { allowedPattern: patternFor(block)! } : {}),
+      ...(constraint ? { constraint } : {}),
+    },
+    tokens: block.tokens,
+    tokenOffsetsMs: offsets,
+    expectedPunches: [],
+    displayOnlyTokenIndexes,
+    previewAt: Math.max(0, scheduledStartMs - ctx.leadTimes.previewMs),
+    announceAt: Math.max(0, scheduledStartMs - ctx.leadTimes.announceMs),
+    scheduledStartMs,
+    scheduledEndMs,
+    // Graces still apply and still clamp to the work interval: a burst's
+    // window may not outlive the round any more than a combo's may.
+    windowStartMs: Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
+    windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
+    ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
+  }
+}
+
+/** The repeated shape, rendered from the block's own punch tokens. */
+function patternFor(block: WorkoutBlock): string | undefined {
+  const numbers = block.tokens
+    .filter((t): t is Extract<WorkoutToken, { kind: 'punch' }> => t.kind === 'punch')
+    .map((t) => `${t.number}${t.body ? 'b' : ''}`)
+  return numbers.length > 0 ? numbers.join('-') : undefined
+}
+
+/**
+ * An open-pressure block's finishing constraint, taken from its last punch.
+ *
+ * Only `open-pressure` carries one: a volume burst is "keep throwing this",
+ * while open pressure is "punch freely, but finish every exchange with
+ * *this*" (doc §14).
+ */
+function openPressureConstraint(
+  block: WorkoutBlock,
+): { finisher?: PunchNumber; hand?: 'lead' | 'rear' } | undefined {
+  if (block.kind !== 'open-pressure') return undefined
+  const punches = block.tokens.filter(
+    (t): t is Extract<WorkoutToken, { kind: 'punch' }> => t.kind === 'punch',
+  )
+  const last = punches[punches.length - 1]
+  if (!last) return undefined
+  return { finisher: last.number, hand: last.number % 2 === 1 ? 'lead' : 'rear' }
 }
 
 /**

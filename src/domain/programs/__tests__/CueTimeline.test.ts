@@ -123,25 +123,23 @@ describe('structure over the real samples', () => {
     expect(expectedPunchCount(timelines)).toBeGreaterThan(0)
   })
 
-  it('defers volume-burst and open-pressure blocks to M33-06 rather than dropping them', () => {
+  it('expands volume-burst and open-pressure blocks as count-scored cues (#192)', () => {
     // These kinds run for a fixed window and are measured by tracker count
-    // rather than by prescribing every punch, so they need M33-06's
-    // treatment. Recording their ids keeps the gap visible.
-    const deferred = timelines.flatMap((t) => t.deferredBlockIds)
-    expect(deferred.length).toBeGreaterThan(0)
+    // rather than by prescribing every punch (doc §14). They used to be
+    // deferred, which left rounds silent through them.
+    const countScored = allCues(timelines).filter((c) => c.scoring === 'count')
+    expect(countScored.length).toBeGreaterThan(0)
 
-    const deferredKinds = threeRoundFundamentals.schedule
+    const kinds = threeRoundFundamentals.schedule
       .flatMap((r) => r.blocks)
-      .filter((b) => deferred.includes(b.id))
+      .filter((b) => countScored.some((c) => c.blockId === b.id))
       .map((b) => b.kind)
-    expect(new Set(deferredKinds)).toEqual(new Set(['volume-burst', 'open-pressure']))
+    expect(new Set(kinds)).toEqual(new Set(['volume-burst', 'open-pressure']))
   })
 
-  it('emits no cue for a deferred block', () => {
-    const deferred = new Set(timelines.flatMap((t) => t.deferredBlockIds))
-    for (const cue of allCues(timelines)) {
-      expect(deferred.has(cue.blockId)).toBe(false)
-    }
+  it('leaves nothing deferred in the shipped samples', () => {
+    // The gap #192 existed to close: every authored block now produces a cue.
+    expect(timelines.flatMap((t) => t.deferredBlockIds)).toEqual([])
   })
 })
 

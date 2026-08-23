@@ -62,8 +62,16 @@ export interface LiveExtra {
   policy: ExtraPunchPolicy
 }
 
+export interface LiveCount {
+  cueId: string
+  eventId: string
+  eventTimeMs: number
+  velocityRaw?: number
+}
+
 export type LiveMatcherEvent =
   | { type: 'match'; match: LiveMatch }
+  | { type: 'count'; count: LiveCount }
   | { type: 'extra'; extra: LiveExtra }
   | {
       type: 'cue-settled'
@@ -145,6 +153,25 @@ export class LiveCueMatcher {
 
     open.events.push(event)
 
+    // A count-scored cue has no expectations to fill: every punch during a
+    // burst is output, and output is what it is judged on (doc §14). It is
+    // reported as a count, never as an extra — calling a burst punch an
+    // "extra" would be exactly backwards.
+    if (open.cue.scoring === 'count') {
+      this.publish({
+        type: 'count',
+        count: {
+          cueId: open.cue.id,
+          eventId: event.id,
+          eventTimeMs: event.receivedMonotonicTimeMs,
+          ...(typeof event.velocityRaw === 'number' && event.velocityUnit !== 'unknown'
+            ? { velocityRaw: event.velocityRaw }
+            : {}),
+        },
+      })
+      return
+    }
+
     // A recovered event cannot be placed provisionally — its position
     // depends on a tracker timestamp the settled pass will order properly.
     // Buffer it and say nothing yet rather than crediting the wrong slot.
@@ -205,7 +232,12 @@ export class LiveCueMatcher {
     this.open = null
     if (!open) return
 
-    const result = this.matcher.match(open.cue, open.events)
+    // A count-scored cue is not matched token by token; the batch matcher
+    // would report every punch as an extra, which is the wrong story.
+    const result =
+      open.cue.scoring === 'count'
+        ? this.countScoredResult(open)
+        : this.matcher.match(open.cue, open.events)
     this.settled.push(result)
 
     const score = scoreCue(result, this.options.tier, {
@@ -241,6 +273,28 @@ export class LiveCueMatcher {
         settledAssignment.outcome !== p.outcome
       )
     })
+  }
+
+  /**
+   * A settled burst, expressed in the same shape as a matched cue.
+   *
+   * There are no assignments and no misses — the cue asked for output, not
+   * a sequence. Every punch is carried as an extra in the structural sense
+   * (unassigned to a slot), which is what keeps the count visible to
+   * anything aggregating the round without pretending it was a sequence.
+   */
+  private countScoredResult(open: OpenCue): CueMatchResult {
+    return {
+      cueId: open.cue.id,
+      assignments: [],
+      missedExpectedIndexes: [],
+      extras: open.events.map((e) => ({
+        eventId: e.id,
+        eventTimeMs: e.receivedMonotonicTimeMs,
+      })),
+      capabilityTier: this.options.tier,
+      decoderVersions: [...new Set(open.events.map((e) => e.decoderVersion))].sort(),
+    }
   }
 
   private publish(event: LiveMatcherEvent): void {
