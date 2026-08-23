@@ -1,7 +1,16 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
-  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', '/dist/', '/.expo/'],
+  // `__tests__/helpers/` holds shared fixtures/adapters, not suites — without
+  // this jest would treat every helper module as an empty test file.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/android/',
+    '/ios/',
+    '/dist/',
+    '/.expo/',
+    '/__tests__/helpers/',
+  ],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@ble/(.*)$': '<rootDir>/src/ble/$1',
