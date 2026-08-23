@@ -1,7 +1,11 @@
 /**
  * Workout Recipe screen (M31-06, doc §8).
  *
- * The first user-visible Puncheokie surface: the seven primary control
+ * Lives under punchCraft, which owns building and running a workout end to
+ * end. (The design doc calls the workout engine "Puncheokie"; that is now a
+ * separate punch-along mode that has not shipped.)
+ *
+ * The seven primary control
  * groups, live conflict feedback, the pinned Recipe Summary card, and
  * "Start with a sample". It replaces the retired free-form program editor
  * (plan C5) — recipe plus generator, never a hand-built program.
@@ -14,15 +18,15 @@ import React, { useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack } from 'expo-router'
 
-import { ConflictNotice } from '@components/puncheokie/ConflictNotice'
-import { EnablementMenu } from '@components/puncheokie/EnablementMenu'
-import { RecipeSummaryCard } from '@components/puncheokie/RecipeSummaryCard'
+import { ConflictNotice } from '@components/workout/ConflictNotice'
+import { EnablementMenu } from '@components/workout/EnablementMenu'
+import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
 import {
   ControlGroup,
   SegmentedControl,
   Stepper,
   type SegmentOption,
-} from '@components/puncheokie/RecipeControls'
+} from '@components/workout/RecipeControls'
 import { colors } from '@/theme/colors'
 import {
   conflictsForField,

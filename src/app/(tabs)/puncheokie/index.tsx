@@ -1,8 +1,16 @@
 import { Link, Stack } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
+/**
+ * Puncheokie — not shipped yet.
+ *
+ * Building and running workouts lives in punchCraft. Puncheokie is a
+ * separate punch-along mode that will reuse the same cue engine; until it
+ * ships this tab is a placeholder and owns no routes of its own.
+ */
 export default function PuncheokieLanding() {
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
@@ -21,25 +29,13 @@ export default function PuncheokieLanding() {
       <TrackerBadgesRow />
       <Text style={styles.title}>Puncheokie</Text>
       <Text style={styles.paragraph}>
-        Puncheokie is the punch-along workout mode. Numbered combinations run on an independent
-        workout clock: every cue, rest, and round is scheduled by punchCraft on the tablet, never by
-        a song. You can optionally connect Spotify to listen to your own playlist in the background
-        while you train, and an optional Voice Coach can speak the cues; when music is playing it
-        stays off until you switch it on. Scoring uses the same tracker frames Velocity Lab shows
-        raw and is labeled as a hand-sequence match.
+        Puncheokie is the punch-along mode: follow the called combinations the way you would follow
+        the words to a song. It is not ready yet.
       </Text>
-      <Link href="/(tabs)/puncheokie/recipe" asChild>
-        <Pressable accessibilityRole="button" style={styles.primaryAction} testID="setup-workout">
-          <Text style={styles.primaryActionText}>Set up a workout</Text>
-        </Pressable>
-      </Link>
-
-      {/* Throwaway M32-05 spike entry (#182); removed when the spike closes. */}
-      <Link href="/(tabs)/puncheokie/orientation-spike" asChild>
-        <Pressable accessibilityRole="button" style={styles.spikeAction} testID="open-spike">
-          <Text style={styles.spikeActionText}>M32-05 spike: orientation / keep-awake / haptics</Text>
-        </Pressable>
-      </Link>
+      <View style={styles.placeholder} testID="coming-soon">
+        <Text style={styles.placeholderText}>Coming soon.</Text>
+      </View>
+      <Text style={styles.paragraph}>To build or run a workout today, use the punchCraft tab.</Text>
     </ScrollView>
   )
 }
@@ -49,23 +45,16 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 16 },
   title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
-  primaryAction: {
-    marginTop: 12,
-    paddingVertical: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-  },
-  primaryActionText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
-  spikeAction: {
-    paddingVertical: 12,
-    borderRadius: 8,
+  placeholder: {
+    marginTop: 4,
+    padding: 16,
     borderWidth: 1,
+    borderColor: colors.border,
     borderStyle: 'dashed',
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
+    borderRadius: 8,
+    backgroundColor: colors.surface,
   },
-  spikeActionText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  placeholderText: { fontSize: 14, fontStyle: 'italic', color: colors.textSecondary },
   headerLink: { paddingHorizontal: 12 },
   headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
 })

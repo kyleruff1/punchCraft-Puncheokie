@@ -29,7 +29,8 @@ jest.mock('expo-router', () => {
 })
 
 import RecipeScreen from '../recipe'
-import PuncheokieLanding from '../index'
+import PunchCraftLanding from '../index'
+import PuncheokieLanding from '../../puncheokie/index'
 import { useWorkoutStore } from '@state/useWorkoutStore'
 import { listSampleWorkouts } from '@domain/workout/samples'
 import { GOAL_TIERS } from '@domain/workout/punchGoals'
@@ -258,9 +259,9 @@ describe('advanced panel (M31-07)', () => {
   })
 })
 
-describe('landing screen', () => {
+describe('punchCraft landing — the workout home', () => {
   it('carries the approved copy and never mentions beats (D3)', () => {
-    const tree = render(<PuncheokieLanding />)
+    const tree = render(<PunchCraftLanding />)
     const text = allText(tree)
     expect(text).toContain(
       'Numbered combinations run on an independent workout clock: every cue, rest, and round is scheduled by punchCraft on the tablet, never by a song.',
@@ -270,7 +271,30 @@ describe('landing screen', () => {
   })
 
   it('offers the entry point into the recipe screen', () => {
+    const tree = render(<PunchCraftLanding />)
+    expect(allText(tree)).toContain('Build a workout')
+  })
+
+  it('lists the designed-workout library', () => {
+    // punchCraft owns the corpus: a workout is either built here or picked
+    // from the library, and both routes lead to the recipe screen.
+    const tree = render(<PunchCraftLanding />)
+    for (const sample of listSampleWorkouts()) {
+      expect(() => tree.root.findByProps({ testID: `library-${sample.key}` })).not.toThrow()
+      expect(allText(tree)).toContain(sample.name)
+    }
+  })
+})
+
+describe('Puncheokie landing — not shipped', () => {
+  it('is a placeholder and offers no workout routes', () => {
     const tree = render(<PuncheokieLanding />)
-    expect(allText(tree)).toContain('Set up a workout')
+    expect(() => tree.root.findByProps({ testID: 'coming-soon' })).not.toThrow()
+    expect(tree.root.findAllByProps({ testID: 'setup-workout' }, { deep: false })).toHaveLength(0)
+  })
+
+  it('points at punchCraft for building and running a workout', () => {
+    const tree = render(<PuncheokieLanding />)
+    expect(allText(tree)).toContain('use the punchCraft tab')
   })
 })
