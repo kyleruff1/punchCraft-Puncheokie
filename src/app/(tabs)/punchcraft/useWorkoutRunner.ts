@@ -41,10 +41,14 @@ import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
 import type { Stance } from '@domain/workout/WorkoutTokens'
-import type { CueEvent } from '@domain/programs/CueState'
+import type { CueEvent, SessionPhaseEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
+import { CueAnnouncer } from '@domain/coach/CueAnnouncer'
+import type { VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
+import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
+import type { ThirdPartyPlaybackDetector } from '@audio/ThirdPartyPlaybackDetector'
 import { getWorkoutPersistence, type WorkoutPersistence } from '@storage/getWorkoutPersistence'
 import { persistWorkoutSession, type PersistedWorkoutSession } from '@storage/persistWorkoutSession'
 import { toCueResultRows, type PendingCueResultRow } from '@storage/cueResultRows'
@@ -64,6 +68,38 @@ export const STORE_THROTTLE_MS = 100
  * more than needed even at flurry cadence.
  */
 export const RECENT_EVENT_WINDOW = 256
+
+/**
+ * `SessionTransition` → `SessionPhaseEvent`.
+ *
+ * Two unions that overlap but do not match: the clock says `completed`, the
+ * cue side calls it `finishing`, and `countdown-entered` has no audio meaning
+ * at all. Written out so the mismatch is handled rather than cast away.
+ */
+function toSessionPhaseEvent(
+  transition: SessionTransition,
+  nowMs: number,
+): SessionPhaseEvent | null {
+  switch (transition.type) {
+    case 'work-entered':
+      return { type: 'work-entered', roundIndex: transition.roundIndex, nowMs }
+    case 'rest-entered':
+      return { type: 'rest-entered', nowMs }
+    case 'paused':
+      return { type: 'paused', nowMs }
+    case 'resumed':
+      return { type: 'resumed', nowMs }
+    case 'completed':
+      return { type: 'finishing', nowMs }
+    case 'cancelled':
+      return { type: 'cancelled', nowMs }
+    case 'countdown-entered':
+      // The lead-in is visual; there is nothing to say yet.
+      return null
+    default:
+      return null
+  }
+}
 
 export interface WorkoutRunner {
   start(): void
@@ -100,6 +136,15 @@ export interface UseWorkoutRunnerArgs {
    * mid-workout.
    */
   onSessionEnded?: (outcome: SessionEndOutcome) => void
+  /**
+   * The Voice Coach. Omit it and the workout runs silently — which is a
+   * supported way to train, not a degraded one (doc §25).
+   */
+  voice?: {
+    output: VoiceOutputPort
+    policy: VoiceCoachPolicy
+    detector: ThirdPartyPlaybackDetector
+  }
 }
 
 /** What the runner reports when a workout ends. */
@@ -126,7 +171,7 @@ interface CueRenderState {
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
-  const { workout, source, stance, persistence, onSessionEnded } = args
+  const { workout, source, stance, persistence, onSessionEnded, voice } = args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
@@ -190,6 +235,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    * reached must not appear as though it did.
    */
   const realizedBlocksRef = useRef(new Set<string>())
+  const announcerRef = useRef<CueAnnouncer | null>(null)
   const startedAtRef = useRef(0)
   /** The end is written once; a cancel after a completion must not double it. */
   const persistedRef = useRef(false)
@@ -303,6 +349,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (event.type === 'token-due') return
       // The matcher needs the window lifecycle to know which cue is open.
       matcherRef.current?.onCueEvent(event)
+      // The announcer gates itself; the runner never decides what is spoken.
+      announcerRef.current?.onCueEvent(event)
       if (event.type === 'cue-active') {
         // Shown, therefore realized — regardless of what the athlete threw.
         realizedBlocksRef.current.add(event.cue.blockId)
@@ -504,6 +552,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const engine = engineRef.current
     if (!engine) return
     for (const transition of transitions) {
+      // Mapped rather than cast: `SessionTransition` and `SessionPhaseEvent`
+      // are different shapes, and `completed` is `finishing` on the other
+      // side. A cast here would compile and then silently deliver a phase the
+      // announcer does not recognise.
+      const phase = toSessionPhaseEvent(transition, clock.now())
+      if (phase) announcerRef.current?.onSessionPhase(phase)
       switch (transition.type) {
         case 'work-entered': {
           // A new round opens fresh tallies, and the previous round's frozen
@@ -591,6 +645,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     })
     matcherRef.current = matcher
 
+    // The announcer holds the policy and the gate; the runner only feeds it
+    // events. Absent `voice`, nothing is constructed and the workout is
+    // silent by construction rather than by a flag (doc §25).
+    const announcer = voice
+      ? new CueAnnouncer({ policy: voice.policy, output: voice.output })
+      : null
+    announcerRef.current = announcer
+
     const pacing = new PacingEngine({
       totalGoal: workout.recipe.totalPunchGoal,
       schedule: workout.schedule,
@@ -608,6 +670,24 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     engineRef.current = engine
     sessionRef.current = session
 
+    // The D1 input. `available === false` means this build cannot tell, and
+    // the surfaces say so rather than the gate silently assuming silence.
+    let offDetector = (): void => {}
+    if (voice && announcer && voice.detector.available) {
+      // Assume playback until the first answer arrives. `isActive` is async,
+      // so a gate that started open would speak over the athlete's music for
+      // however long the first read took — and that window covers the
+      // countdown and the opening bell. Silence is recoverable; talking over
+      // someone's music is the failure D1 exists to prevent.
+      announcer.setThirdPartyPlayback(true)
+      void voice.detector.isActive().then((active) => {
+        announcer.setThirdPartyPlayback(active)
+      })
+      offDetector = voice.detector.subscribe((active) => {
+        announcer.setThirdPartyPlayback(active)
+      })
+    }
+
     const offEngine = engine.subscribe(onCueEvent)
     const offMatcher = matcher.subscribe(onMatcherEvent)
     const offSource = source.subscribe(onPunch)
@@ -620,7 +700,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (getLive().degraded) freezeRef.current.noteTrackerDropped()
       const transitions = session.advance()
       if (transitions.length > 0) applyTransitions(transitions)
-      engine.tick(session.snapshot().workElapsedMs)
+      const snapshot = session.snapshot()
+      // Doc §25's final warning fires off the round clock, so the announcer
+      // needs the same sample the store gets.
+      if (snapshot.phase === 'work') announcer?.onRoundClock(snapshot.phaseRemainingMs)
+      engine.tick(snapshot.workElapsedMs)
       syncFromEngine()
       pushStore(false)
     }, TICK_INTERVAL_MS)
@@ -633,6 +717,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
     return () => {
       clearInterval(timer)
+      offDetector()
       offEngine()
       offMatcher()
       offSource()
@@ -641,6 +726,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       sessionRef.current = null
       matcherRef.current = null
       pacingRef.current = null
+      announcerRef.current = null
       resetLive()
     }
   }, [
@@ -654,6 +740,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     source,
     syncFromEngine,
     timeline,
+    voice,
     workout,
   ])
 

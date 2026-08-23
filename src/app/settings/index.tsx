@@ -33,6 +33,11 @@ export default function SettingsLanding() {
           </View>
         ))}
       </View>
+      <Link href="/settings/voice" asChild>
+        <Pressable style={styles.linkButton} testID="voice-settings-link">
+          <Text style={styles.linkButtonText}>Voice Coach</Text>
+        </Pressable>
+      </Link>
       <Link href="/(tabs)/velocity-lab" asChild>
         <Pressable style={styles.linkButton}>
           <Text style={styles.linkButtonText}>Back to Velocity Lab</Text>

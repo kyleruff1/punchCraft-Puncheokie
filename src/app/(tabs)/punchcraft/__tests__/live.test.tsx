@@ -15,6 +15,20 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 import { StyleSheet } from 'react-native'
 import { readFileSync } from 'node:fs'
 
+// The screen now builds a `VoiceOutputExpo`, which imports the native audio
+// modules. They are never exercised here — the coach makes no sound in a test
+// renderer — but the import has to resolve without a binding (spec §21.1).
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: () => ({
+    volume: 1,
+    seekTo: () => {},
+    play: () => {},
+    remove: () => {},
+  }),
+  setAudioModeAsync: async () => undefined,
+}))
+jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
+
 jest.mock('expo-router', () => {
   function Stack() {
     return null

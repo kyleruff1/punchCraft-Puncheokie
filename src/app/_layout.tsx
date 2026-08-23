@@ -9,6 +9,7 @@ import { StyleSheet } from 'react-native'
 import '@/ble'
 
 import { useAutoConnectOnLaunch } from '@ble/useAutoConnectOnLaunch'
+import { useVoiceSettingsOnLaunch } from '@state/loadVoiceSettings'
 import { colors } from '@/theme/colors'
 
 const stackScreenOptions = {
@@ -23,6 +24,9 @@ export default function RootLayout() {
   // Bind the known trackers once per launch (blue -> left, red -> right).
   // Non-blocking and non-throwing; Velocity Lab offers a manual retry.
   useAutoConnectOnLaunch()
+  // Voice preferences are read once here, so the live screen never renders
+  // against defaults the athlete has already changed.
+  useVoiceSettingsOnLaunch()
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -31,6 +35,10 @@ export default function RootLayout() {
         <Stack screenOptions={stackScreenOptions}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Settings' }} />
+          <Stack.Screen
+            name="settings/voice"
+            options={{ headerShown: true, title: 'Voice Coach' }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
       </SafeAreaProvider>
