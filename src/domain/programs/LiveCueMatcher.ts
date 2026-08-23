@@ -42,6 +42,7 @@ import type { CueInstance } from './CueTimeline'
 import type { CapabilityTier } from '../workout/capabilityTier'
 import type { ExtraPunchPolicy } from '../workout/WorkoutRecipe'
 import type { TrackerPunchEvent } from '../punch/PunchEvent'
+import { typeConcordance, type Concordance, type DeviceTypeProfile } from '../punch/typeConcordance'
 
 export interface LiveMatch {
   cueId: string
@@ -51,6 +52,14 @@ export interface LiveMatch {
   outcome: MatchOutcome
   /** Tracker-reported velocity in tracker units, when the source has it. */
   velocityRaw?: number
+  /**
+   * Whether the device-local type byte agreed with the prescribed
+   * technique. `'agree'` is the only actionable value — it earns the gold
+   * affirmation. `'disagree'` is never shown and never subtracts.
+   */
+  concordance: Concordance
+  /** True only on `'agree'`: the surface's cue to celebrate this punch. */
+  affirmed: boolean
 }
 
 export interface LiveExtra {
@@ -87,6 +96,8 @@ export type LiveMatcherEvent =
 export interface LiveCueMatcherOptions {
   tier: CapabilityTier
   extraPunchPolicy: ExtraPunchPolicy
+  /** Device profiles for the form bonus; defaults to the H12-derived set. */
+  typeProfiles?: readonly DeviceTypeProfile[]
   /** Passed through to scoring when the recipe asks for a velocity band. */
   targetVelocityRange?: ScoreCueOptions['targetVelocityRange']
 }
@@ -197,6 +208,20 @@ export class LiveCueMatcher {
     const expected = open.cue.expectedPunches[expectedIndex]!
     open.filled.add(expectedIndex)
 
+    const outcome: MatchOutcome = event.hand === expected.hand ? 'matched' : 'hand-mismatch'
+
+    // Only a correct hand can earn the flourish: congratulating the type
+    // byte on a punch thrown with the wrong glove would celebrate the one
+    // thing that was definitely wrong.
+    const concordance: Concordance =
+      outcome === 'matched'
+        ? typeConcordance(
+            event,
+            expected.type,
+            ...(this.options.typeProfiles ? ([this.options.typeProfiles] as const) : ([] as const)),
+          )
+        : 'unknown'
+
     const match: LiveMatch = {
       cueId: open.cue.id,
       expectedIndex,
@@ -204,7 +229,9 @@ export class LiveCueMatcher {
       eventTimeMs: atMs,
       // Hand is the only thing verifiable at this hardware's tier (D12);
       // the settled pass applies the full rule including technique.
-      outcome: event.hand === expected.hand ? 'matched' : 'hand-mismatch',
+      outcome,
+      concordance,
+      affirmed: concordance === 'agree',
       ...(typeof event.velocityRaw === 'number' && event.velocityUnit !== 'unknown'
         ? { velocityRaw: event.velocityRaw }
         : {}),
@@ -242,6 +269,8 @@ export class LiveCueMatcher {
 
     const score = scoreCue(result, this.options.tier, {
       events: open.events,
+      expectedPunches: open.cue.expectedPunches,
+      ...(this.options.typeProfiles ? { typeProfiles: this.options.typeProfiles } : {}),
       ...(this.options.targetVelocityRange
         ? { targetVelocityRange: this.options.targetVelocityRange }
         : {}),

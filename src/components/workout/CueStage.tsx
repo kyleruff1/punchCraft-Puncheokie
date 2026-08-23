@@ -27,6 +27,12 @@ export interface CueView {
   /** One state per entry in `cue.tokens`, same order. */
   tokenStates: TokenVisualState[]
   /**
+   * Token indexes whose punch earned the form affirmation — landed with
+   * the right hand AND a device-local type byte that agreed with the
+   * prescribed technique. Reward only; absence is never rendered.
+   */
+  affirmedTokenIndexes?: number[]
+  /**
    * How many repeats this block prescribes in total.
    *
    * Additive to the binding interface: `CueInstance` carries `repeatIndex`
@@ -56,6 +62,7 @@ function renderToken(
   state: TokenVisualState,
   size: 'stage' | 'preview',
   reducedMotion: boolean,
+  affirmed: boolean,
 ): React.JSX.Element | null {
   const key = `${cue.id}-${index}`
   switch (token.kind) {
@@ -69,6 +76,8 @@ function renderToken(
           {...(handHintFor(cue, index) ? { handHint: handHintFor(cue, index)! } : {})}
           size={size}
           reducedMotion={reducedMotion}
+          affirmed={affirmed}
+          affirmKey={`${cue.id}-${index}`}
         />
       )
     case 'defense':
@@ -141,6 +150,7 @@ function CueRow(props: {
             view.tokenStates[index] ?? 'upcoming',
             size,
             reducedMotion,
+            view.affirmedTokenIndexes?.includes(index) ?? false,
           ),
         )}
       </View>

@@ -94,6 +94,19 @@ export const colors = {
   dangerSurface: '#3D1608',
 
   /**
+   * Reward / affirmation. Mustard's metallic sibling, not a fifth swatch:
+   * the same authored hue family (~46 deg vs mustard's ~47), desaturated and
+   * darkened so it reads as *metal* rather than as `accent`.
+   *
+   * That separation is the point. `accent` already means "the thing you are
+   * doing right now" on the live screen, so borrowing it to say "you did
+   * that well" would say the wrong thing. Used for the form-affirmation
+   * glow and the exact-target badge; ~8.9:1 on `background`, so it is
+   * legible as text and not only as a large fill.
+   */
+  gold: '#D4AF37',
+
+  /**
    * Physical tracker colours. The trackers are colour-coded and permanently
    * assigned — blue is the left glove, red the right (see
    * ble/knownTrackers.ts). Any surface that distinguishes hands should use
