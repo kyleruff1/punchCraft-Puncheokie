@@ -1,7 +1,18 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
-  testPathIgnorePatterns: ['/node_modules/', '/android/', '/ios/', '/dist/', '/.expo/'],
+  // `.claude/worktrees/**` holds git worktrees for parallel agent branches.
+  // Without this, jest discovers their suites too and reports a combined
+  // count for code that is not on this branch.
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/android/',
+    '/ios/',
+    '/dist/',
+    '/.expo/',
+    '/.claude/worktrees/',
+  ],
+  modulePathIgnorePatterns: ['<rootDir>/.claude/worktrees/'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^@ble/(.*)$': '<rootDir>/src/ble/$1',
