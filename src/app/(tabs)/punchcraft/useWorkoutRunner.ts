@@ -34,6 +34,7 @@ import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
 import { WorkoutSessionClock, type SessionTransition } from '@domain/session/WorkoutSessionClock'
+import { RoundResultFreeze } from '@domain/session/restPhases'
 import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
@@ -42,7 +43,7 @@ import type { CueEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
-import { resetLive, setLive, type LiveVelocity } from '@state/useWorkoutStore'
+import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkoutStore'
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
 export const TICK_INTERVAL_MS = 50
@@ -56,6 +57,8 @@ export interface WorkoutRunner {
   emergencyStop(): void
   skipCue(): void
   repeatCue(): void
+  /** End the rest interval — all three §23 rest views go with it (D6). */
+  skipRest(): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
   readCues(): { current?: CueView; next?: CueView }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
@@ -119,6 +122,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const affirmedRef = useRef<number[]>([])
   const extrasRef = useRef(0)
   const lastScoreRef = useRef<CueScore | undefined>(undefined)
+  /**
+   * Per-round tallies that stop at the bell (M33-04). Separate from
+   * `countsRef`, which is cumulative for the whole session and therefore
+   * cannot answer "what did this round do".
+   */
+  const freezeRef = useRef<RoundResultFreeze>(new RoundResultFreeze())
 
   const capability = useMemo(
     () => resolveCapabilityTier({ capability: source.capability }),
@@ -233,6 +242,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (event.hand === 'left') counts.left += 1
       else if (event.hand === 'right') counts.right += 1
 
+      // Frozen rounds count from the same punch stream — and ignore it once
+      // the bell has rung (M33-04).
+      freezeRef.current.observePunch({
+        hand: event.hand,
+        ...(capability.velocityAvailable && typeof event.velocityRaw === 'number'
+          ? { velocityRaw: event.velocityRaw }
+          : {}),
+      })
+
       if (capability.velocityAvailable && typeof event.velocityRaw === 'number') {
         velocitySumRef.current += event.velocityRaw
         velocityCountRef.current += 1
@@ -313,15 +331,25 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     for (const transition of transitions) {
       switch (transition.type) {
         case 'work-entered':
+          // A new round opens fresh tallies, and the previous round's frozen
+          // result leaves the store rather than lingering behind the cues.
+          freezeRef.current.beginRound(transition.roundIndex)
+          setLive({ frozenRoundResult: undefined })
           engine.onSessionPhase({
             type: 'work-entered',
             roundIndex: transition.roundIndex,
             nowMs: clock.now(),
           })
           break
-        case 'rest-entered':
+        case 'rest-entered': {
+          // The bell. Everything the rest screen shows is fixed here; later
+          // punches reach a closed accumulator and change nothing (doc §23).
+          const target = workout.schedule[transition.roundIndex]?.targetPunches ?? 0
+          const frozen = freezeRef.current.freeze(target)
+          if (frozen) setLive({ frozenRoundResult: frozen })
           engine.onSessionPhase({ type: 'rest-entered', nowMs: clock.now() })
           break
+        }
         case 'paused':
           engine.onSessionPhase({ type: 'paused', nowMs: clock.now() })
           break
@@ -338,7 +366,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           break
       }
     }
-  }, [clock])
+  }, [clock, workout])
 
   // -------------------------------------------------------------------------
   // Wiring. Keyed on the timeline + source so a recipe change rebuilds
@@ -368,6 +396,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     source.start()
 
     const timer = setInterval(() => {
+      // Sampled rather than subscribed: `useLivePunchSource` owns the
+      // degraded string, and a round only needs to know that a glove was
+      // down at some point in it (doc §23).
+      if (getLive().degraded) freezeRef.current.noteTrackerDropped()
       const transitions = session.advance()
       if (transitions.length > 0) applyTransitions(transitions)
       engine.tick(session.snapshot().workElapsedMs)
@@ -435,6 +467,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       },
       repeatCue: () => {
         engineRef.current?.repeatCue()
+        syncFromEngine()
+        pushStore(true)
+      },
+      skipRest: () => {
+        // One call, one state left behind. The three §23 rest views have no
+        // representation in the session machine, so there is nothing finer
+        // to skip (D6).
+        applyTransitions(sessionRef.current?.skipRest() ?? [])
         syncFromEngine()
         pushStore(true)
       },

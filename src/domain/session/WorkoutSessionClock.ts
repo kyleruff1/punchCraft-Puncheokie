@@ -158,6 +158,21 @@ export class WorkoutSessionClock {
     return [{ type: 'resumed' }]
   }
 
+  /**
+   * End the rest interval now (doc §8.4, D6).
+   *
+   * One entry point, because there is one rest state. The three §23 rest
+   * views are presentation sub-phases with no representation here, so
+   * skipping "the rest" necessarily skips all three — there is nothing
+   * finer to skip. Outside `rest` this does nothing: skip is not a general
+   * fast-forward, and letting it shorten a *work* interval would silently
+   * rewrite the workout.
+   */
+  skipRest(): SessionTransition[] {
+    if (this.phase !== 'rest') return []
+    return this.advancePhase(0)
+  }
+
   /** Immediate stop (doc §25) — nothing lingers. */
   cancel(): SessionTransition[] {
     if (this.phase === 'completed' || this.phase === 'cancelled') return []
