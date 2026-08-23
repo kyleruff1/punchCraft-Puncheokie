@@ -13,5 +13,7 @@ module.exports = {
     '^@state/(.*)$': '<rootDir>/src/state/$1',
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@diagnostics/(.*)$': '<rootDir>/src/diagnostics/$1',
+    '^@simulation/(.*)$': '<rootDir>/src/simulation/$1',
+    '^@testing/(.*)$': '<rootDir>/src/testing/$1',
   },
 }
