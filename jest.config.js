@@ -1,9 +1,13 @@
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
-  // `.claude/worktrees/**` holds git worktrees for parallel agent branches.
-  // Without this, jest discovers their suites too and reports a combined
-  // count for code that is not on this branch.
+  // Two exclusions, for different reasons:
+  //
+  // - `.claude/worktrees/**` holds git worktrees for parallel agent
+  //   branches. Without this, jest discovers their suites too and reports a
+  //   combined count for code that is not on this branch.
+  // - `__tests__/helpers/` holds shared fixtures and adapters, not suites —
+  //   without this jest treats every helper module as an empty test file.
   testPathIgnorePatterns: [
     '/node_modules/',
     '/android/',
@@ -11,6 +15,7 @@ module.exports = {
     '/dist/',
     '/.expo/',
     '/.claude/worktrees/',
+    '/__tests__/helpers/',
   ],
   modulePathIgnorePatterns: ['<rootDir>/.claude/worktrees/'],
   moduleNameMapper: {

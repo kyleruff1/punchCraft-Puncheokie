@@ -16,6 +16,7 @@ import type { SQLiteDatabase } from 'expo-sqlite'
 import { logger, safe } from '@/diagnostics/logger'
 import { MIGRATION_001 } from '@/storage/migrations/001_initial'
 import { MIGRATION_002 } from '@/storage/migrations/002_punch_events'
+import { MIGRATION_003 } from '@/storage/migrations/003_sessions'
 
 export interface Migration {
   id: number
@@ -23,7 +24,16 @@ export interface Migration {
   up: (db: SQLiteDatabase) => void
 }
 
-const MIGRATIONS: readonly Migration[] = [MIGRATION_001, MIGRATION_002]
+// Ids are permanent: never renumber a migration that has landed, and never
+// reuse an id another branch has already claimed (004 belongs to the workouts
+// migration, #176).
+const MIGRATIONS: readonly Migration[] = [MIGRATION_001, MIGRATION_002, MIGRATION_003]
+
+/**
+ * The registry, exposed so tests can assert ids are unique, ascending, and
+ * never renumbered. Read-only — application code goes through runMigrations.
+ */
+export const MIGRATIONS_FOR_TESTS: readonly Migration[] = MIGRATIONS
 
 /** Apply any migrations whose id is not yet recorded in schema_migrations. */
 export function runMigrations(db: SQLiteDatabase): void {
