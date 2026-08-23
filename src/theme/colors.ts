@@ -83,6 +83,21 @@ export const colors = {
   /** Success indicator. Brightened teal (~6:1). */
   success: '#12B3B3',
   /**
+   * The exact-target result (doc §23; M33-03, shared with M32-08).
+   *
+   * Mustard's metallic sibling, not a fifth swatch: hue ≈46° against
+   * mustard's ≈47°, so it is the same authored family — but desaturated
+   * (0.74 vs 0.89) and darkened (V 0.83 vs 1.0) so it reads as *metal*
+   * rather than as `accent`. That separation is the point: `accent` already
+   * means "the thing you are doing right now" on the live screen, and a
+   * result badge borrowing it would say the wrong thing. ~8.9:1 on the
+   * background, so it is legible as text and not only as a fill.
+   *
+   * Colour still never carries the meaning alone (spec §19.4) — the exact
+   * state renders a target icon and the words `EXACT TARGET` beside it.
+   */
+  gold: '#D4AF37',
+  /**
    * Danger / error. Brightened rust.
    *
    * Deliberately rare: doc §13/§21 forbid a red flash mid-combination, so
