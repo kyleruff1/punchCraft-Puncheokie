@@ -20,7 +20,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Stack, useFocusEffect, useRouter } from 'expo-router'
+import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
@@ -41,6 +41,7 @@ const LIVE_KEEP_AWAKE_TAG = 'punchcraft-live'
 
 export default function LiveScreen(): React.JSX.Element {
   const router = useRouter()
+  const navigation = useNavigation()
   const recipe = useRecipe()
   const live = useLive()
   const [confirmingStop, setConfirmingStop] = useState(false)
@@ -68,7 +69,15 @@ export default function LiveScreen(): React.JSX.Element {
       void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE)
       void activateKeepAwakeAsync(LIVE_KEEP_AWAKE_TAG)
 
+      // Hide the tab bar: doc §19 requires settings and recipe navigation to
+      // be unreachable during a workout, and a visible tab bar is a one-tap
+      // exit sitting under the athlete's thumb. It also reclaims the height
+      // the cue stage wants.
+      const parent = navigation.getParent()
+      parent?.setOptions({ tabBarStyle: { display: 'none' } })
+
       return () => {
+        parent?.setOptions({ tabBarStyle: undefined })
         // Release rather than force portrait: the global setting is
         // 'default', so unlocking hands control back to the OS.
         void ScreenOrientation.unlockAsync().catch(() => undefined)
@@ -79,7 +88,7 @@ export default function LiveScreen(): React.JSX.Element {
           // Already released; nothing to do.
         }
       }
-    }, []),
+    }, [navigation]),
   )
 
   const cues = runner.readCues()

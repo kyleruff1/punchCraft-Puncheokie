@@ -28,11 +28,15 @@ export function RecipeSummaryCard(props: {
     <View style={styles.root} testID="recipe-summary-card">
       <Text style={styles.title}>Recipe summary</Text>
 
-      {summary.lines.map((line, index) => (
-        <Text key={`${index}-${line}`} style={styles.line}>
-          {line}
-        </Text>
-      ))}
+      {/* The pace gets its own emphasised row below, so drop it from the
+          plain lines rather than printing the same sentence twice. */}
+      {summary.lines
+        .filter((line) => !line.startsWith('Expected active pace'))
+        .map((line, index) => (
+          <Text key={`${index}-${line}`} style={styles.line}>
+            {line}
+          </Text>
+        ))}
 
       <Text style={styles.pace} testID="expected-active-pace">
         Expected active pace: {summary.expectedActivePace} punches/minute

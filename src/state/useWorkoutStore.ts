@@ -36,10 +36,13 @@ import type { TileId } from '@components/workout/MetricsRail'
  * mean something before any scoring exists (M33-02).
  */
 export const DEFAULT_TILES: TileId[] = [
-  'left-right-balance',
+  // Deliberately NOT 'left-right-balance': the rail already shows left/right
+  // as an always-on metric, and having it twice wasted one of the four
+  // slots on a number already on screen.
   'punches-last-15s',
   'combo-completion',
   'projected-final',
+  'peak-velocity',
 ]
 
 export interface WorkoutStoreState {

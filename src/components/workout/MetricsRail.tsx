@@ -22,7 +22,7 @@
  * Presentational only — no store, engine or clock imports.
  */
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { sequenceScoreLabel, type CapabilityTier } from '@domain/workout/capabilityTier'
@@ -152,7 +152,14 @@ export function MetricsRail(props: MetricsRailProps): React.JSX.Element {
     id === 'correct-hand-percent' ? sequenceScoreLabel(capabilityTier) : undefined
 
   return (
-    <View style={styles.root} testID="metrics-rail">
+    // Scrolls: four optional tiles plus five defaults overflow a landscape
+    // rail on a 1200px-tall tablet, and a clipped metric is worse than a
+    // scrollable one.
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={styles.content}
+      testID="metrics-rail"
+    >
       <Metric
         testID="metric-punches"
         label="Punches"
@@ -198,19 +205,19 @@ export function MetricsRail(props: MetricsRailProps): React.JSX.Element {
           ))}
         </View>
       ) : null}
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
   root: {
-    gap: 10,
-    padding: 12,
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: colors.background,
-    minWidth: 160,
+    minWidth: 180,
+    maxWidth: 220,
   },
+  content: { gap: 10, padding: 12, paddingBottom: 28 },
   metric: { gap: 1 },
   metricLabel: {
     fontSize: 11,

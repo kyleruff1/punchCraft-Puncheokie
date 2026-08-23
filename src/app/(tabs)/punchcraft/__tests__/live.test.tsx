@@ -30,6 +30,7 @@ jest.mock('expo-router', () => {
     Stack,
     Link,
     useRouter: () => ({ back: jest.fn(), push: jest.fn() }),
+    useNavigation: () => ({ getParent: () => mockParent }),
     useFocusEffect: (fn: () => void | (() => void)) => {
       // Run the effect body once so the orientation/keep-awake calls are
       // exercised, mirroring a focused screen.
@@ -51,6 +52,8 @@ jest.mock('expo-keep-awake', () => ({
 }))
 
 const mockCleanups: Array<() => void> = []
+/** Stands in for the tab navigator whose bar the live screen hides. */
+const mockParent = { setOptions: jest.fn() }
 
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
@@ -131,6 +134,23 @@ describe('orientation and keep-awake (M32-05 decision)', () => {
       for (const cleanup of mockCleanups.splice(0)) cleanup()
     })
     expect((deactivateKeepAwake as jest.Mock).mock.calls[0]?.[0]).toBe(acquiredTag)
+  })
+})
+
+describe('navigation is unreachable during a workout (doc §19)', () => {
+  it('hides the tab bar on focus', () => {
+    render()
+    expect(mockParent.setOptions).toHaveBeenCalledWith({
+      tabBarStyle: { display: 'none' },
+    })
+  })
+
+  it('restores it on blur', () => {
+    render()
+    act(() => {
+      for (const cleanup of mockCleanups.splice(0)) cleanup()
+    })
+    expect(mockParent.setOptions).toHaveBeenLastCalledWith({ tabBarStyle: undefined })
   })
 })
 

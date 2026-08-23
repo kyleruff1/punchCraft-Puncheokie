@@ -112,8 +112,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 8,
     bottom: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    // Glove-friendly: the original chip was a ~40x28 target and was easy to
+    // miss even with a mouse.
+    minWidth: 64,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.borderStrong,
