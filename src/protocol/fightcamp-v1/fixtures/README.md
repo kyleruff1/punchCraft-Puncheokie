@@ -1,0 +1,3 @@
+# FightCamp v1 decoder fixtures
+
+`spike-mt4wm1d8-fx6x.json` is the first live capture where notifications flowed on the `ca281069` characteristic (see H07-REVISED). It was recorded on 2026-08-22 during the M11 protocol probe run and the byte payloads are verbatim from the operator's JSON export. Field semantics for each 9-byte (v>=4) or 13-byte (v<4) record are defined by H11 in `docs/protocol/hypotheses.md`, which was derived from decompiling the Hykso APK. New fixtures should follow the same JSON shape (`runId`, `capturedAt`, `deviceId`, `serviceUuid`, `characteristicUuid`, `records[]` with `seq`, `elapsedMs`, `valueHex`, optional `notes`) so the decoder tests can iterate them uniformly.

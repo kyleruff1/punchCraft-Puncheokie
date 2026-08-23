@@ -232,7 +232,7 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 **Verification against probe capture `spike-mt4wm1d8-fx6x` sample `011001a0518a6a530a`:**
 - `type = 0x01` → is a power punch (velocity ×1.7)
 - `acceleration = 0x0110 / 100 = 2.72` (g, presumed)
-- `epochSeconds = 0x6a8a51a0 = 1787449760` → 2026-08-22 19:29:20 UTC (within a few hours of the probe run at 21:50 UTC — plausible tracker clock)
+- `epochSeconds = 0x6a8a51a0 = 1787449760` → **2026-08-23 01:49:20 UTC** (~4 hours after the probe run at 21:50 UTC — plausible clock drift on the tracker; a previous draft of this note miscomputed as 19:29:20 UTC before the FightCampV1Decoder test locked the value in)
 - `subSecondMs = 0x53 * 1000 / 256 = 324 ms`
 - `velocityRaw = 0x0a = 10 → v = 5.0`. `v > 4 && v <= 8` → `velocity = (5-4)*3 + 2 = 5.0`. Type is power → `velocity = 5.0 * 1.7 = 8.5` (units unlabeled).
 
