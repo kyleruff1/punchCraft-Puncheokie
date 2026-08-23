@@ -25,7 +25,7 @@ export interface BuildInfo {
 export function getBuildInfo(): BuildInfo {
   const extra = (Constants.expoConfig?.extra ?? {}) as Record<string, unknown>
   return {
-    appName: (Constants.expoConfig?.name as string) ?? 'PunchLab',
+    appName: (Constants.expoConfig?.name as string) ?? 'punchCraft',
     appVersion: (Constants.expoConfig?.version as string) ?? '0.0.0',
     gitSha: (extra.gitSha as string | undefined) ?? 'unknown',
     releaseChannel: (extra.releaseChannel as string | undefined) ?? 'unknown',

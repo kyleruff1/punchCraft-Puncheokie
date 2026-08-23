@@ -13,10 +13,10 @@ function gitSha(): string {
 }
 
 const config: ExpoConfig = {
-  name: 'PunchLab',
-  slug: 'punchlab-puncheokie',
+  name: 'punchCraft',
+  slug: 'punchcraft-puncheokie',
   version: '0.1.0',
-  scheme: 'punchlab',
+  scheme: 'punchcraft',
   orientation: 'portrait',
   userInterfaceStyle: 'dark',
   // New Architecture is always enabled from Expo SDK 55 onward (§11.2 note);
@@ -26,7 +26,7 @@ const config: ExpoConfig = {
     releaseChannel: 'dev',
   },
   android: {
-    package: 'com.kyleruff.punchlab',
+    package: 'com.kyleruff.punchcraft',
     versionCode: 1,
     // These are also declared by react-native-ble-plx's config plugin below,
     // but we list them here so the manifest is legible without running prebuild.
@@ -40,7 +40,7 @@ const config: ExpoConfig = {
   ios: {
     // Not shipping to iOS in the MVP; keep a minimal declaration so `expo prebuild`
     // does not fail when someone accidentally runs it for iOS.
-    bundleIdentifier: 'com.kyleruff.punchlab',
+    bundleIdentifier: 'com.kyleruff.punchcraft',
     supportsTablet: true,
   },
   plugins: [

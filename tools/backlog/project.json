@@ -2,10 +2,10 @@
   "project": {
     "id": "PVT_kwHOAvpEDc4BhJtG",
     "number": 5,
-    "title": "PunchLab Puncheokie",
+    "title": "punchCraft Puncheokie",
     "url": "https://github.com/users/kyleruff1/projects/5",
     "owner": "@me",
-    "repo": "kyleruff1/PunchLab-Puncheokie"
+    "repo": "kyleruff1/punchCraft-Puncheokie"
   },
   "fields": {
     "Phase": {
@@ -55,7 +55,7 @@
         "Calibration": {
           "id": "8f28ef06"
         },
-        "PunchLab": {
+        "punchCraft": {
           "id": "988c21ce"
         },
         "Puncheokie": {

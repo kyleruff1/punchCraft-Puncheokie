@@ -1,6 +1,6 @@
 {
   "project": {
-    "title": "PunchLab Puncheokie",
+    "title": "punchCraft Puncheokie",
     "description": "Android-first Expo app reviving FightCamp v1 BLE punch trackers.",
     "iteration": {
       "startDate": "2026-08-24",
@@ -36,7 +36,7 @@
           { "name": "Protocol", "color": "GREEN" },
           { "name": "Velocity Lab", "color": "PURPLE" },
           { "name": "Calibration", "color": "YELLOW" },
-          { "name": "PunchLab", "color": "ORANGE" },
+          { "name": "punchCraft", "color": "ORANGE" },
           { "name": "Puncheokie", "color": "PINK" },
           { "name": "Spotify", "color": "GREEN" },
           { "name": "Storage", "color": "GRAY" },
@@ -74,7 +74,7 @@
     "protocol": "Protocol",
     "velocity-lab": "Velocity Lab",
     "calibration": "Calibration",
-    "punchlab": "PunchLab",
+    "punchcraft": "punchCraft",
     "puncheokie": "Puncheokie",
     "spotify": "Spotify",
     "storage": "Storage",
@@ -89,7 +89,7 @@
     { "name": "phase:1", "color": "bfdbfe", "description": "Phase 1 — Velocity Lab Bluetooth listener" },
     { "name": "phase:2", "color": "bbf7d0", "description": "Phase 2 — Protocol initialization, decoding, and synchronization" },
     { "name": "phase:3", "color": "fef08a", "description": "Phase 3 — Velocity Lab calibration" },
-    { "name": "phase:4", "color": "fed7aa", "description": "Phase 4 — PunchLab sessions" },
+    { "name": "phase:4", "color": "fed7aa", "description": "Phase 4 — punchCraft sessions" },
     { "name": "phase:5", "color": "fecaca", "description": "Phase 5 — Puncheokie program engine without Spotify" },
     { "name": "phase:6", "color": "fbcfe8", "description": "Phase 6 — Spotify playlist connection" },
     { "name": "phase:7", "color": "e9d5ff", "description": "Phase 7 — Hardening and release preparation" },
@@ -98,7 +98,7 @@
     { "name": "area:protocol", "color": "10b981", "description": "FightCamp v1 protocol adapter and replay" },
     { "name": "area:velocity-lab", "color": "8b5cf6", "description": "Velocity Lab surface" },
     { "name": "area:calibration", "color": "f59e0b", "description": "Calibration engine and workflows" },
-    { "name": "area:punchlab", "color": "f97316", "description": "PunchLab session and metrics" },
+    { "name": "area:punchcraft", "color": "f97316", "description": "punchCraft session and metrics" },
     { "name": "area:puncheokie", "color": "ec4899", "description": "Puncheokie program engine and cue runner" },
     { "name": "area:spotify", "color": "22c55e", "description": "Spotify integration" },
     { "name": "area:storage", "color": "6b7280", "description": "SQLite schema and repositories" },

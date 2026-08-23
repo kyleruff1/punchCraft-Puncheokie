@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * setup-project.mjs — idempotent setup for the PunchLab · Puncheokie GitHub Project (v2).
+ * setup-project.mjs — idempotent setup for the punchCraft · Puncheokie GitHub Project (v2).
  *
  * Uses only the authenticated `gh` CLI. No npm dependencies.
  *
@@ -16,7 +16,7 @@
  * Flags:
  *   --owner <login>   default "@me"
  *   --repo <owner/repo>  default: parsed from `git remote get-url origin` (falls back to
- *                        kyleruff1/PunchLab-Puncheokie)
+ *                        kyleruff1/punchCraft-Puncheokie)
  *   --dry-run         print planned actions; do not mutate
  */
 import { spawnSync } from 'node:child_process'
@@ -42,7 +42,7 @@ let REPO = args.get('repo')
 if (!REPO) {
   const url = sh(['git', 'remote', 'get-url', 'origin'], { allowFail: true }).stdout.trim()
   const m = url.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/)
-  REPO = m ? `${m[1]}/${m[2]}` : 'kyleruff1/PunchLab-Puncheokie'
+  REPO = m ? `${m[1]}/${m[2]}` : 'kyleruff1/punchCraft-Puncheokie'
 }
 const [REPO_OWNER, REPO_NAME] = REPO.split('/')
 

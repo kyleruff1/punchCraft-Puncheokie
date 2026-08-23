@@ -7,7 +7,7 @@
  *
  * Inputs:
  *   tools/backlog/backlog-static.json   — labels, milestones, project fields
- *   tools/backlog/backlog-issues.json   — { fragments: [...] } from the punchlab-backlog workflow
+ *   tools/backlog/backlog-issues.json   — { fragments: [...] } from the punchcraft-backlog workflow
  *                                          (one fragment per phase; see workflow schema)
  *   tools/backlog/project.json          — written by setup-project.mjs
  *
@@ -48,7 +48,7 @@ const SLEEP_MS = Number(args.get('sleep') || 350)
 const STATIC = JSON.parse(readFileSync(join(BACKLOG_DIR, 'backlog-static.json'), 'utf8'))
 const ISSUES_FILE = join(BACKLOG_DIR, 'backlog-issues.json')
 if (!existsSync(ISSUES_FILE)) {
-  console.error(`[seed] ${ISSUES_FILE} not found. Run the punchlab-backlog workflow first and write the merged result there.`)
+  console.error(`[seed] ${ISSUES_FILE} not found. Run the punchcraft-backlog workflow first and write the merged result there.`)
   process.exit(2)
 }
 const ISSUES_DOC = JSON.parse(readFileSync(ISSUES_FILE, 'utf8'))
@@ -71,7 +71,7 @@ let REPO = args.get('repo')
 if (!REPO) {
   const url = sh(['git', 'remote', 'get-url', 'origin'], { allowFail: true }).stdout.trim()
   const m = url.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/)
-  REPO = m ? `${m[1]}/${m[2]}` : 'kyleruff1/PunchLab-Puncheokie'
+  REPO = m ? `${m[1]}/${m[2]}` : 'kyleruff1/punchCraft-Puncheokie'
 }
 const [REPO_OWNER, REPO_NAME] = REPO.split('/')
 const OWNER = PROJECT?.project?.owner || '@me'

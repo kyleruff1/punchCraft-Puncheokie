@@ -47,7 +47,7 @@ Plus the M10 go/no-go decision: is a third-party tracker client feasible given w
 
 ## Explicit non-goals for Sprint 1
 
-- No PunchLab timers, no metric polish, no session persistence beyond the raw-frame `ble_captures` / `ble_frames` tables and the GATT inventory (§17.1).
+- No punchCraft timers, no metric polish, no session persistence beyond the raw-frame `ble_captures` / `ble_frames` tables and the GATT inventory (§17.1).
 - No Puncheokie program authoring or cue engine.
 - No Spotify authorization.
 - **No writes to unknown GATT characteristics** (§7.2C, §12.1). Guarded writes stay disabled outside developer mode.
@@ -75,7 +75,7 @@ The seed script creates the four views (name + layout + visible fields). GitHub'
 - **Epics** — layout TABLE; filter `label:epic`; add the "Sub-issues progress" column.
 - **Timeline** — layout ROADMAP; date field = Sprint.
 
-Also (one-click, in project ⋯ menu → Workflows): enable **Auto-add to project** for `is:issue is:open repo:kyleruff1/PunchLab-Puncheokie` so new issues drop onto the board without re-running the seed.
+Also (one-click, in project ⋯ menu → Workflows): enable **Auto-add to project** for `is:issue is:open repo:kyleruff1/punchCraft-Puncheokie` so new issues drop onto the board without re-running the seed.
 
 ## Sprint 2 preview (not yet assigned)
 
