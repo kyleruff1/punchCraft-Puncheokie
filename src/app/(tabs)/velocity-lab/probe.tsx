@@ -26,7 +26,7 @@ import type {
   RawBleFrame,
 } from '@ble/bleTypes'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
-import { getTrackerSlots, useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
+import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
 
 /** FightCamp v1 custom service (H05). */
 const FIGHTCAMP_SERVICE_UUID = 'ca280069-5470-4e34-94dd-caf160200b29'
@@ -196,12 +196,15 @@ export default function ProtocolProbeScreen(): React.ReactElement {
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
 
+  // Only probe a slot that is CURRENTLY connected (state ready | streaming).
+  // Anything else — dormant / error / connecting / discovering / etc — means
+  // the underlying GATT connection is not usable, and discoverAll will fail
+  // with "Device X is not connected". Better to show a clear "connect a
+  // tracker first" than to try and fail every time.
   const activeSlot = useMemo(() => {
-    if (leftSlot && leftSlot.state !== 'dormant' && leftSlot.state !== 'error') return leftSlot
-    if (rightSlot && rightSlot.state !== 'dormant' && rightSlot.state !== 'error') return rightSlot
-    // Fall back to whichever slot exists at all so the user can attempt to probe.
-    const slots = getTrackerSlots()
-    return slots.left ?? slots.right ?? null
+    const ready = (s: typeof leftSlot) =>
+      s && (s.state === 'ready' || s.state === 'streaming') ? s : null
+    return ready(rightSlot) ?? ready(leftSlot) ?? null
   }, [leftSlot, rightSlot])
 
   const [snapshot, setSnapshot] = useState<GattSnapshot | null>(null)
