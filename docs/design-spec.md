@@ -1434,6 +1434,11 @@ src/
     voiceAssets/
   haptics/
     HapticsExpo.ts
+  presentation/
+    backdrops/
+      BackdropRenderer.tsx
+      backdropLibrary.ts
+      assets/
   simulation/
     SimulatedPunchSource.ts
     scripts.ts
@@ -2062,6 +2067,7 @@ Specified in detail by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-e
 13. Implement the deterministic seeded `WorkoutGenerator`, versioned by `generator_version`, with golden-output tests.
 14. Build the workout summary: completion over punch tokens, hand-sequence match, tracker-reported velocity when available, extras always visible.
 15. Implement strike confirmation and gratification (Puncheokie doc §28): per-strike node flash with a four-cue haptic vocabulary, the progressive combo affirmation border, the capability-aware five-signal plausibility model with four confidence tiers, bounded celebration levels with a Focus mode, and `combo_results` persistence versioned by `CONFIDENCE_VERSION` (D11).
+16. Implement the workout backdrop and ambience library (§31): `BackdropTheme` contracts and mood taxonomy, the scrim that guarantees foreground contrast, a bundled and licence-recorded starter library, the renderer with its `still`/`subtle`/`active` motion levels and auto-degrade, and recipe-level selection that resolves through the deterministic seed. The backdrop is independent of audio in every respect (D12).
 
 **Definition of done:** The user can pick a preset or tune a recipe, run the generated workout in landscape on the tablet with visual, haptic, and — when no third-party audio is playing, or after an explicit opt-in — spoken cues, switch stance, pause and resume, and receive capability-appropriate, hand-sequence-match-labeled results that can be regenerated from the stored recipe, seed, generator version, and realized token stream, all without Spotify.
 
@@ -2231,6 +2237,8 @@ Acceptance criteria:
 | Adaptive plans persist the realized token stream and decisions | Accepted 2026-08-23 | Required for deterministic recalculation (§8.6, §19.1) (D8) |
 | Recipe + generator + seed replace editable programs and the editor | Accepted 2026-08-23 | Deterministic regeneration, smaller UI surface; persistence is parameters + version + seed (D9, D10) |
 | Strike confirmation is graded, capability-aware and never punitive | Accepted 2026-08-23 | The tracker cannot prove technique, so confirmation reports a confidence tier; signals the tier cannot supply are omitted, never zeroed, so a missing capability never reads as athlete failure (D11) |
+| The workout backdrop is fully independent of audio | Accepted 2026-08-23 | An animated visual playing alongside a streaming service is exactly the §14.6 synchronisation question; the backdrop loops on its own clock, is selected before playback, derives nothing from the track, and renders identically in silence. Any playback-to-backdrop coupling needs the §14.6 review first (D12, §31.1) |
+| Backdrop carries no information and is always defeatable | Accepted 2026-08-23 | It sits under a contrast scrim with a measurable floor (§31.3), auto-degrades under thermal or frame pressure, honours reduced motion, and can be switched off without affecting the workout (§31.4) |
 
 ## 26. Open technical questions
 
@@ -2261,6 +2269,9 @@ These questions should be answered through Velocity Lab evidence rather than spe
 23. Does the hand + broad-type tier yield a useful technique-family signal, or should body tokens be scored as hand-only?
 24. Can the tracker timestamp (epoch seconds + 1/256 s, with the drift observed in H11) be used for token matching, or must app receive time be used?
 25. Can the four-zone live screen plus cadence indicator hold the §19.2 p95 ≤ 250 ms budget on the tablet?
+26. Which backdrop rendering technology holds 60 fps on the target tablet without disturbing the cue pipeline or overheating the device across a 60-minute session (§31.4)?
+27. What is the battery cost per hour of each backdrop motion level, and at what threshold should auto-degrade engage?
+28. Does the bundled backdrop library stay within an acceptable installed-application size, and which asset format gives the best quality-per-megabyte on Android?
 
 ## 27. MVP definition
 
@@ -2354,10 +2365,80 @@ Begin Phase 1 by creating the smallest possible installable Velocity Lab develop
 
 Do not begin punchCraft metric polish, Puncheokie workout generation, or Spotify authorization until the app can capture a repeatable tracker frame for one controlled punch.
 
-## 31. Revision history
+## 31. Workout backdrop and ambience
+
+Every workout presentation — the punchCraft live session (§8.3) and the Puncheokie live screen (Puncheokie doc §19) — renders its interface over a selectable, looping animated backdrop drawn from a curated library organised by mood. The backdrop sets the feel of the room. It never carries information: no state, count, cue or warning is ever expressed by the backdrop alone.
+
+### 31.1 Independence from audio
+
+This subsection is binding and exists because an animated visual that plays while a streaming service does is precisely the synchronisation question §14.6 raises. The backdrop:
+
+- loops on its own presentation clock, never on audio;
+- is never derived from a playing track's tempo, beats, structure, loudness, genre, mood, artwork, metadata, or playback position;
+- performs no audio analysis and uses no microphone input, and requests no Spotify scope beyond playlist read;
+- is chosen by the athlete or by the workout recipe **before** playback begins and does not change in response to it; and
+- renders identically whether music is playing or silent.
+
+Any coupling at all between playback and the backdrop — including the seemingly innocuous "suggest a mood from the connected playlist" — is a synchronisation feature and requires the §14.6 policy review before it is designed, not after. Recorded as decision D12.
+
+### 31.2 Model
+
+```ts
+export type BackdropMood = 'calm' | 'focus' | 'gritty' | 'hype' | 'nocturne' | 'clinical'
+export type MotionIntensity = 'still' | 'subtle' | 'active'
+
+export interface BackdropTheme {
+  id: string
+  name: string
+  mood: BackdropMood
+  source:
+    | { kind: 'gradient'; stops: string[] }        // cheapest; always available
+    | { kind: 'mesh'; points: MeshPoint[] }        // animated mesh gradient
+    | { kind: 'lottie'; asset: string }            // authored vector loop
+    | { kind: 'video'; asset: string }             // photographic loop
+  motion: MotionIntensity
+  loopDurationMs: number
+  /** Mean luminance (0..1) of the brightest region a foreground element can
+   *  overlap, measured at authoring time. Drives the scrim (§31.3). */
+  peakLuminance: number
+  /** Optional accent the foreground may adopt; must still satisfy §31.3. */
+  accent?: string
+  attribution?: { author: string; license: string; url?: string }
+}
+```
+
+### 31.3 Legibility guarantee
+
+A backdrop must never make the workout harder to read. Every backdrop renders beneath a **contrast scrim** whose opacity is computed from `peakLuminance` so that foreground text and tokens hold their contrast ratio against the scrimmed backdrop:
+
+- at least **4.5:1** for body text and metric values;
+- at least **3:1** for large text, the round timer, cue tokens, and the count badge.
+
+Scrim opacity is a pure function of `peakLuminance` and the palette, so the whole library is checkable in CI without rendering anything. A backdrop that cannot reach the floor at any opacity is rejected from the library rather than shipped dim. This is the §19.4 contrast requirement applied to a moving surface; the §19.4 rule that colour is never the only signal is unaffected, because the backdrop carries no signal at all.
+
+### 31.4 Motion, performance, and battery
+
+The backdrop is the lowest-priority consumer of the device. It must not disturb the §19.2 latency budget, and a workout must remain completable if it is switched off entirely.
+
+- The cue pipeline's p95 latency (§19.2) must be unchanged, within measurement noise, with the heaviest backdrop running versus none.
+- The backdrop renders off the JavaScript thread wherever the chosen technology allows it, so a dropped backdrop frame can never delay a cue, a timer tick, or a punch acknowledgement.
+- **Auto-degrade** on sustained frame drops, thermal throttling, or battery saver: `active` falls back to `subtle`, then to `still` (a single frame or flat gradient). Degrading is silent and never interrupts the workout.
+- Reduced motion (§19.4, Puncheokie doc §25) forces `still`.
+- An explicit off switch is always available, and `{ kind: 'gradient' }` is the guaranteed-available floor on every device.
+
+### 31.5 Selection and reproducibility
+
+The athlete picks either a specific backdrop or a mood; picking a mood lets the engine choose within it. That choice is a workout-recipe parameter, persisted in `workout_recipes.params_json` and stamped onto the generated workout, and mood-level choices resolve through the existing deterministic seed. "Run This Exact Workout Again" therefore reproduces the same visuals as well as the same combinations.
+
+### 31.6 Library and assets
+
+The starter library ships bundled with the application; there is no backend and no runtime fetch (§15.6). Every entry records its author, licence and source URL, and the licence must permit redistribution inside a distributed application. User-supplied loops are deliberately out of scope for the first release: they raise licensing, moderation and legibility questions that the bundled library answers by construction.
+
+## 32. Revision history
 
 | Date | Version | Change |
 |---|---|---|
 | 2026-08-22 | 1.0 | Initial specification (as PunchLab). |
 | 2026-08-23 | 1.1 | Product renamed punchCraft (PR #166). Puncheokie v0.2 design landed ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md)): §13 banner added; §13.3, §13.5, §14.1, §14.6, §19.4 amended; §6, §15.2, §16, §17.1, §18.1 updated; §22 Phase 5 rewritten; §25 and §26 entries added; this section added. |
 | 2026-08-23 | 1.2 | Puncheokie v0.3 (doc §28 strike confirmation, combo plausibility and gratification): `combo_results` added to §17.1; `domain/feedback/` and `haptics/` added to §16; §22 Phase 5 task 15 added; §25 gains the D11 decision. |
+| 2026-08-23 | 1.3 | New §31 Workout backdrop and ambience (selectable animated loops, audio independence, contrast scrim, motion and battery budget, seed-stable selection, bundled licensed library); `presentation/backdrops/` added to §16; §22 Phase 5 task 16 added; §25 gains D12; §26 gains questions 26–28; revision history renumbered to §32. |
