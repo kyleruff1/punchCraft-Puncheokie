@@ -260,6 +260,70 @@ describe('the ready tone lands on the cue clock (D3, spec §18.3)', () => {
   })
 })
 
+describe('deadlines are handed over in the port clock (D3)', () => {
+  // Found on the tablet: the coach was "mostly beeping, with the occasional
+  // truncated One". Cue times are work-elapsed — milliseconds into the round —
+  // and the port schedules against the monotonic clock, which counts from app
+  // launch. Handing one to the other made every call look overdue by minutes,
+  // so the whole phrase fired at announce time and the next cue cut it off.
+  // Only the tones, being short, survived intact.
+  const OFFSET = 500_000
+
+  function announceAt(offsetMs: number): RecordingPort {
+    const port = new RecordingPort()
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: port,
+    })
+    const c = cue()
+    announcer.onCueEvent({
+      ...cueEvent('cue-announcing', c),
+      workElapsedMs: c.announceAt,
+      nowMs: c.announceAt + offsetMs,
+    })
+    return port
+  }
+
+  it('shifts the ready tone by the offset between the two clocks', () => {
+    const c = cue()
+    const readyWork = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+    const port = announceAt(OFFSET)
+    expect(port.calls).toContainEqual({
+      kind: 'asset',
+      id: 'tone-ready',
+      atMs: readyWork + OFFSET,
+    })
+  })
+
+  it('shifts the phrase by the same offset', () => {
+    const port = announceAt(OFFSET)
+    const phrase = port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.atMs).toBe(cue().announceAt + OFFSET)
+  })
+
+  it('changes nothing when the clocks happen to agree', () => {
+    // The offset is zero only at the very start of a round, which is exactly
+    // why this bug survived a reading of the code.
+    const port = announceAt(0)
+    const phrase = port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.atMs).toBe(cue().announceAt)
+  })
+
+  it('never hands over a deadline already far in the past', () => {
+    // The symptom to catch: a deadline behind the event that produced it
+    // means the port plays everything at once.
+    const c = cue()
+    const port = announceAt(OFFSET)
+    const nowAtEvent = c.announceAt + OFFSET
+    for (const call of port.calls) {
+      if (call.kind !== 'asset' && call.kind !== 'phrase') continue
+      const at = call.atMs
+      if (at === undefined) continue
+      expect([call, at >= nowAtEvent - 2_000]).toEqual([call, true])
+    }
+  })
+})
+
 describe('each style calls the combination its own way (doc §18.1)', () => {
   it('call-and-go speaks the whole phrase at the announce moment', () => {
     const h = harness({ style: 'call-and-go' })

@@ -5,10 +5,22 @@
  *
  * The announcer has no timer, reads no clock, and schedules nothing of its
  * own. Every deadline it hands the output port is arithmetic on timestamps
- * that arrived with the event — `executionScheduledMs − readyToneMs`, and
- * nothing else. That is D3 made structural: if the announcer could set a
- * timer, speech latency would eventually be allowed to move the workout, and
- * the failure mode is a coach that narrates the punch you already threw.
+ * that arrived with the event. That is D3 made structural: if the announcer
+ * could set a timer, speech latency would eventually be allowed to move the
+ * workout, and the failure mode is a coach that narrates the punch you
+ * already threw.
+ *
+ * ## Two clocks, and the conversion between them
+ *
+ * Cue times are **work-elapsed** — milliseconds into the current round. The
+ * output port schedules against the **monotonic** clock, which counts from
+ * app launch. They are different origins, and a work-elapsed deadline handed
+ * straight to the port is not merely wrong, it is wrong by minutes: every
+ * call looks overdue and fires at once.
+ *
+ * Every `CueEvent` carries both readings — `workElapsedMs` and `nowMs` — so
+ * their difference is the offset between the clocks at that instant. That is
+ * still arithmetic on the event, not a clock read, so D3 holds.
  *
  * ## It never speaks first and checks later
  *
@@ -159,7 +171,7 @@ export class CueAnnouncer {
 
     switch (e.type) {
       case 'cue-announcing':
-        this.announce(e.cue)
+        this.announce(e.cue, e.nowMs - e.workElapsedMs)
         break
 
       case 'cue-active':
@@ -300,10 +312,15 @@ export class CueAnnouncer {
     this.output.speak(text, AUDIO_PRIORITY.metric)
   }
 
-  private announce(cue: CueInstance): void {
+  /**
+   * @param clockOffsetMs monotonic minus work-elapsed, from the event that
+   * triggered this call. Adding it converts a cue time into the clock the
+   * output port schedules against.
+   */
+  private announce(cue: CueInstance, clockOffsetMs: number): void {
     // The ready tone is a property of the cue reaching its start, not of the
     // phrase, so it is emitted whatever the style does with the words.
-    const readyAt = cue.scheduledStartMs - this.leadTimes.readyToneMs
+    const readyAt = cue.scheduledStartMs - this.leadTimes.readyToneMs + clockOffsetMs
 
     if (this.policy.style === 'coach-shorthand' && cue.repeatIndex > 0) {
       // Doc §18.1: the combination is spoken once; repetitions are beeps.
@@ -327,12 +344,13 @@ export class CueAnnouncer {
     const assets = this.prepared.get(cue.id) ?? comboPhraseAssets(cue.tokens)
     if (assets.length > 0) {
       const plan = this.planPhrase(cue, assets)
+      const startAt = plan.startAt + clockOffsetMs
       if (this.output.playPhrase) {
-        this.output.playPhrase(assets, plan.startAt, plan.tightness)
+        this.output.playPhrase(assets, startAt, plan.tightness)
       } else {
         // Fallback for a port with no phrase support: a shared deadline is
         // still the signal that these clips are one call.
-        for (const asset of assets) this.output.playAsset(asset, plan.startAt)
+        for (const asset of assets) this.output.playAsset(asset, startAt)
       }
     }
     this.emitReadyTone(readyAt)
