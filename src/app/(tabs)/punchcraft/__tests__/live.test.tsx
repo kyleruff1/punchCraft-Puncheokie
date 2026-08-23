@@ -304,6 +304,36 @@ describe('capability honesty (doc §3, spec §4.3)', () => {
   })
 })
 
+describe('matching surfaces (#188)', () => {
+  it('shows the extra-punch count', () => {
+    const tree = render()
+    drive({ phase: 'work', extraCount: 3 })
+    expect(textOf(tree.root.findByProps({ testID: 'extra-count' }))).toContain('3')
+  })
+
+  it('shows zero extras rather than hiding the row', () => {
+    // Extras are a fact about the round, not a warning that appears only
+    // when something went wrong.
+    const tree = render()
+    drive({ phase: 'work', extraCount: 0 })
+    expect(() => tree.root.findByProps({ testID: 'extra-count' })).not.toThrow()
+  })
+
+  it('takes the sequence-score label from the store, never a literal', () => {
+    const tree = render()
+    drive({ phase: 'work', sequenceScoreLabel: 'hand-sequence match' })
+    expect(allText(tree).toLowerCase()).toContain('hand-sequence match')
+  })
+
+  it('would render technique match only if the tier ever allowed it', () => {
+    // Proves the string is resolved rather than hardcoded — no tier this
+    // hardware reaches produces it (D12).
+    const tree = render()
+    drive({ phase: 'work', sequenceScoreLabel: 'technique match' })
+    expect(allText(tree).toLowerCase()).toContain('technique match')
+  })
+})
+
 describe('no red flash mid-combination (doc §13, §21)', () => {
   it('uses danger only on the stop control, never in the cue zone', () => {
     const tree = render()

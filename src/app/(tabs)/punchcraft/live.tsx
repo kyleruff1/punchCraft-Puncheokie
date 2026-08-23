@@ -166,6 +166,16 @@ export default function LiveScreen(): React.JSX.Element {
         />
       </View>
 
+      {/* Extras are always visible — a punch with no cue to answer still
+          happened (spec §13.6). The label comes from the store so no surface
+          can hardcode a technique claim (D4). */}
+      <View style={styles.scoreStrip} testID="score-strip">
+        <Text style={styles.scoreLabel}>{live.sequenceScoreLabel}</Text>
+        <Text style={styles.extras} testID="extra-count">
+          {`Extra punches: ${live.extraCount}`}
+        </Text>
+      </View>
+
       <View style={styles.controls}>
         {isPaused ? (
           <Pressable
@@ -285,6 +295,21 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   pausedText: { fontSize: 40, fontWeight: '800', color: colors.textPrimary },
+  scoreStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  scoreLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  extras: { fontSize: 13, color: colors.textSecondary },
   controls: {
     flexDirection: 'row',
     gap: 10,

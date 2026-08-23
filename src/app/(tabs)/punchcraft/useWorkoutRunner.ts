@@ -18,16 +18,20 @@
  * 3. **No raw event array reaches the store.** Only counts and the two
  *    velocity readings a surface actually shows.
  *
- * Matching is not here. Until M33-02 inserts CueMatcher, a punch simply
- * credits the next unfilled expectation of the same hand — enough to make
- * the screen respond honestly to input without inventing a score.
+ * Matching runs through `LiveCueMatcher` (#188): a punch is credited
+ * provisionally the moment it lands, and the cue settles authoritatively
+ * when its window closes. Settled results accumulate here for M33-08 to
+ * persist as `cue_results`.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { CueEngine, DEFAULT_LEAD_TIMES } from '@domain/programs/CueEngine'
+import { LiveCueMatcher, type LiveMatcherEvent } from '@domain/programs/LiveCueMatcher'
+import type { CueMatchResult } from '@domain/programs/CueMatcher'
+import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance } from '@domain/programs/CueTimeline'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
-import { resolveCapabilityTier } from '@domain/workout/capabilityTier'
+import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
 import { WorkoutSessionClock, type SessionTransition } from '@domain/session/WorkoutSessionClock'
 import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
@@ -54,6 +58,8 @@ export interface WorkoutRunner {
   repeatCue(): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
   readCues(): { current?: CueView; next?: CueView }
+  /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
+  readResults(): WorkoutRunnerResults
 }
 
 export interface UseWorkoutRunnerArgs {
@@ -61,6 +67,13 @@ export interface UseWorkoutRunnerArgs {
   source: PunchEventSource
   stance: Stance
   clock?: MonotonicClock
+}
+
+export interface WorkoutRunnerResults {
+  /** Settled per-cue matches, in cue order — M33-08 persists these. */
+  cueResults: CueMatchResult[]
+  /** The most recent settled score, for the round readouts. */
+  lastScore?: CueScore
 }
 
 interface CueRenderState {
@@ -100,6 +113,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const velocityCountRef = useRef(0)
   const lastVelocityRef = useRef<LiveVelocity | undefined>(undefined)
   const lastStoreWriteRef = useRef(0)
+  const matcherRef = useRef<LiveCueMatcher | null>(null)
+  const extrasRef = useRef(0)
+  const lastScoreRef = useRef<CueScore | undefined>(undefined)
 
   const capability = useMemo(
     () => resolveCapabilityTier({ capability: source.capability }),
@@ -145,6 +161,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         currentCueId: currentRef.current?.cue.id,
         nextCueId: nextRef.current?.cue.id,
         counts: { ...countsRef.current },
+        extraCount: extrasRef.current,
+        sequenceScoreLabel: sequenceScoreLabel(capability.tier),
         velocityAvailable: capability.velocityAvailable,
         capabilityTier: capability.tier,
         sourceKind: source.id === 'sim' ? 'simulated' : 'tracker',
@@ -186,6 +204,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const onCueEvent = useCallback(
     (event: CueEvent): void => {
       if (event.type === 'token-due') return
+      // The matcher needs the window lifecycle to know which cue is open.
+      matcherRef.current?.onCueEvent(event)
       if (event.type === 'cue-active') {
         // A new combination: the per-cue credit resets, and the expected
         // count comes from the cue itself.
@@ -215,24 +235,56 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         }
       }
 
-      // Stand-in for CueMatcher (M33-02): credit the next unfilled
-      // expectation whose hand matches. No score is claimed here.
-      const engine = engineRef.current
-      const current = currentRef.current?.cue
-      if (engine && current) {
-        const nextIndex = counts.inCue
-        const expected = current.expectedPunches[nextIndex]
-        if (expected && expected.hand === event.hand) {
-          engine.notifyMatch(current.id, nextIndex, event.receivedMonotonicTimeMs)
-          counts.inCue = nextIndex + 1
-        }
-      }
+      // The matcher decides what this punch answered; the runner only
+      // counts. Its callback drives notifyMatch and the in-cue tally.
+      matcherRef.current?.onPunchEvent(event)
 
       syncFromEngine()
       // Bypasses the throttle: a punch landing has to feel instant.
       pushStore(true)
     },
     [capability.velocityAvailable, pushStore, syncFromEngine],
+  )
+
+  const onMatcherEvent = useCallback(
+    (event: LiveMatcherEvent): void => {
+      switch (event.type) {
+        case 'match':
+          // A hand mismatch still consumed the slot, so the combination
+          // advances either way — but only a real match is credited to the
+          // engine, which is what decides completed vs expired.
+          if (event.match.outcome === 'matched') {
+            engineRef.current?.notifyMatch(
+              event.match.cueId,
+              event.match.expectedIndex,
+              event.match.eventTimeMs,
+            )
+          }
+          countsRef.current.inCue = event.match.expectedIndex + 1
+          break
+
+        case 'extra':
+          // Counted and surfaced, never discarded (spec §13.6).
+          extrasRef.current += 1
+          break
+
+        case 'cue-settled':
+          lastScoreRef.current = event.score
+          if (event.corrections.length > 0) {
+            // A late or recovered event reordered a cue the athlete already
+            // saw feedback for. Worth a log: it is rare and it means the
+            // tokens they watched did not match the recorded result.
+            logger.info('puncheokie.match.corrected', 'settled match differed from live feedback', {
+              cue: safe(event.result.cueId),
+              corrections: safe(event.corrections.length),
+            })
+          }
+          break
+      }
+      syncFromEngine()
+      pushStore(true)
+    },
+    [pushStore, syncFromEngine],
   )
 
   const applyTransitions = useCallback((transitions: SessionTransition[]): void => {
@@ -275,6 +327,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
   useEffect(() => {
     const engine = new CueEngine(timeline, { leadTimes: DEFAULT_LEAD_TIMES, clock })
+    const matcher = new LiveCueMatcher({
+      tier: capability.tier,
+      extraPunchPolicy: workout.recipe.extraPunchPolicy,
+    })
+    matcherRef.current = matcher
     const session = new WorkoutSessionClock(
       workout.schedule.map((r) => ({
         workDurationMs: r.workDurationMs,
@@ -286,6 +343,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     sessionRef.current = session
 
     const offEngine = engine.subscribe(onCueEvent)
+    const offMatcher = matcher.subscribe(onMatcherEvent)
     const offSource = source.subscribe(onPunch)
     source.start()
 
@@ -306,16 +364,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     return () => {
       clearInterval(timer)
       offEngine()
+      offMatcher()
       offSource()
       source.stop()
       engineRef.current = null
       sessionRef.current = null
+      matcherRef.current = null
       resetLive()
     }
   }, [
     applyTransitions,
+    capability.tier,
     clock,
     onCueEvent,
+    onMatcherEvent,
     onPunch,
     pushStore,
     source,
@@ -359,6 +421,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       readCues: () => ({
         ...(currentRef.current ? { current: currentRef.current } : {}),
         ...(nextRef.current ? { next: nextRef.current } : {}),
+      }),
+      readResults: () => ({
+        cueResults: matcherRef.current?.results() ?? [],
+        ...(lastScoreRef.current ? { lastScore: lastScoreRef.current } : {}),
       }),
     }),
     [applyTransitions, pushStore, source, syncFromEngine],
