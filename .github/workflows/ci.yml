@@ -13,9 +13,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
+      # Node 24 matches the workstation toolchain and, unlike Node 20, ships
+      # `node:sqlite` — the storage suite runs its migrations against a real
+      # in-memory SQLite instead of adding a native dependency (§21).
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
       - run: npm ci
       - run: npm run typecheck
