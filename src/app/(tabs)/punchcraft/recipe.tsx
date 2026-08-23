@@ -1,7 +1,11 @@
 /**
  * Workout Recipe screen (M31-06, doc §8).
  *
- * The first user-visible Puncheokie surface: the seven primary control
+ * Lives under punchCraft, which owns building and running a workout end to
+ * end. (The design doc calls the workout engine "Puncheokie"; that is now a
+ * separate punch-along mode that has not shipped.)
+ *
+ * The seven primary control
  * groups, live conflict feedback, the pinned Recipe Summary card, and
  * "Start with a sample". It replaces the retired free-form program editor
  * (plan C5) — recipe plus generator, never a hand-built program.
@@ -12,17 +16,17 @@
  */
 import React, { useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Link, Stack } from 'expo-router'
 
-import { ConflictNotice } from '@components/puncheokie/ConflictNotice'
-import { EnablementMenu } from '@components/puncheokie/EnablementMenu'
-import { RecipeSummaryCard } from '@components/puncheokie/RecipeSummaryCard'
+import { ConflictNotice } from '@components/workout/ConflictNotice'
+import { EnablementMenu } from '@components/workout/EnablementMenu'
+import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
 import {
   ControlGroup,
   SegmentedControl,
   Stepper,
   type SegmentOption,
-} from '@components/puncheokie/RecipeControls'
+} from '@components/workout/RecipeControls'
 import { colors } from '@/theme/colors'
 import {
   conflictsForField,
@@ -335,16 +339,14 @@ export default function RecipeScreen(): React.JSX.Element {
       <RecipeSummaryCard summary={summary} conflicts={conflicts} />
 
       <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: true }}
-          disabled
-          style={styles.startButton}
-          testID="start-button"
-        >
-          <Text style={styles.startButtonText}>Start workout</Text>
-        </Pressable>
-        <Text style={styles.startCaption}>The live screen arrives in M32.</Text>
+        <Link href="/(tabs)/punchcraft/live" asChild>
+          <Pressable accessibilityRole="button" style={styles.startButton} testID="start-button">
+            <Text style={styles.startButtonText}>Start workout</Text>
+          </Pressable>
+        </Link>
+        <Text style={styles.startCaption}>
+          Runs on simulated punches until the trackers are wired in (M33-01).
+        </Text>
 
         <Pressable
           accessibilityRole="button"
@@ -425,10 +427,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 16,
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    opacity: 0.6,
+    backgroundColor: colors.accent,
   },
-  startButtonText: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  startButtonText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
   startCaption: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
   resetButton: { paddingVertical: 12, alignItems: 'center' },
   resetButtonText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },

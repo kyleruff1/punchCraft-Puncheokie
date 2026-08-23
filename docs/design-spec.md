@@ -2231,6 +2231,7 @@ Acceptance criteria:
 | Adaptive plans persist the realized token stream and decisions | Accepted 2026-08-23 | Required for deterministic recalculation (§8.6, §19.1) (D8) |
 | Recipe + generator + seed replace editable programs and the editor | Accepted 2026-08-23 | Deterministic regeneration, smaller UI surface; persistence is parameters + version + seed (D9, D10) |
 | Strike confirmation is graded, capability-aware and never punitive | Accepted 2026-08-23 | The tracker cannot prove technique, so confirmation reports a confidence tier; signals the tier cannot supply are omitted, never zeroed, so a missing capability never reads as athlete failure (D11) |
+| Global orientation is `default`; the Puncheokie live route locks landscape on focus | Accepted 2026-08-23 | Records the mechanism behind D7's landscape-first deviation from §19.4's phone-first rule. `app.config.ts` sets `orientation: 'default'` so the OS follows the device everywhere, and only the live route calls `ScreenOrientation.lockAsync(LANDSCAPE)` in a `useFocusEffect`, releasing with `unlockAsync()` on blur — so no other route changes presentation. Prebuild emits `android:screenOrientation="unspecified"` with `configChanges` covering `orientation\|screenSize\|screenLayout\|smallestScreenSize`, so rotation delivers a configuration change to the existing activity rather than recreating it, and both React and Zustand state survive. Verified on the Lenovo TB125FU in the M32-05 spike (#182) |
 
 ## 26. Open technical questions
 
