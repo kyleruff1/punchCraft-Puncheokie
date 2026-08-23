@@ -1,5 +1,5 @@
 import { Link, Stack } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
@@ -28,9 +28,11 @@ export default function PuncheokieLanding() {
         stays off until you switch it on. Scoring uses the same tracker frames Velocity Lab shows
         raw and is labeled as a hand-sequence match.
       </Text>
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>Coming after Sprint 1.</Text>
-      </View>
+      <Link href="/(tabs)/puncheokie/recipe" asChild>
+        <Pressable accessibilityRole="button" style={styles.primaryAction} testID="setup-workout">
+          <Text style={styles.primaryActionText}>Set up a workout</Text>
+        </Pressable>
+      </Link>
     </ScrollView>
   )
 }
@@ -40,16 +42,14 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 16 },
   title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
-  placeholder: {
+  primaryAction: {
     marginTop: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-    borderRadius: 8,
-    backgroundColor: colors.surface,
+    paddingVertical: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: colors.accent,
   },
-  placeholderText: { fontSize: 14, fontStyle: 'italic', color: colors.textSecondary },
+  primaryActionText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
   headerLink: { paddingHorizontal: 12 },
   headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
 })
