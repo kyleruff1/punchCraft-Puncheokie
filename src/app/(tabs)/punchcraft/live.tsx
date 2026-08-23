@@ -5,6 +5,11 @@
  * workout logic of its own — the session clock and cue engine live in the
  * runner, and everything here either reads the store or calls a control.
  *
+ * The punch source is chosen by `useLivePunchSource` (M33-01): the real
+ * trackers when both gloves are connected, the simulator otherwise. That
+ * choice is invisible to the runner, which only knows the `PunchEventSource`
+ * port — which is the entire reason the port exists.
+ *
  * Landscape-first is a recorded deviation from spec §19.4's phone-first
  * rule for this one route (D7). The mechanism is the M32-05 spike's: global
  * `orientation: 'default'`, lock on focus, release on blur.
@@ -29,10 +34,10 @@ import { MetricsRail } from '@components/workout/MetricsRail'
 import { RoundTopBar } from '@components/workout/RoundTopBar'
 import { SimControls } from '@components/workout/SimControls'
 import { colors } from '@/theme/colors'
-import { SimulatedPunchSource } from '@simulation/SimulatedPunchSource'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { threeRoundFundamentals } from '@domain/workout/samples'
 import { useLive, useRecipe } from '@state/useWorkoutStore'
+import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner } from './useWorkoutRunner'
 import type { SimScriptId } from '@simulation/scripts'
 
@@ -47,10 +52,9 @@ export default function LiveScreen(): React.JSX.Element {
   const [confirmingStop, setConfirmingStop] = useState(false)
 
   const clock = useMemo(() => systemMonotonicClock(), [])
-  const source = useMemo(
-    () => new SimulatedPunchSource({ clock, seed: 'live-screen', velocity: true }),
-    [clock],
-  )
+  // Real trackers when both gloves are connected, the simulator otherwise
+  // (M33-01). The runner is written against the port and sees no difference.
+  const { source, sim, connection } = useLivePunchSource(clock)
 
   // The workout under test until the generator (M35) and the library picker
   // hand one in. The recipe's stance still drives hand resolution.
@@ -115,7 +119,7 @@ export default function LiveScreen(): React.JSX.Element {
         roundCount={live.roundCount || workout.schedule.length}
         roundRemainingMs={live.roundRemainingMs}
         stance={live.stance}
-        connection={{ left: 'simulated', right: 'simulated' }}
+        connection={connection}
         {...(live.degraded ? { degraded: live.degraded } : {})}
       />
 
@@ -252,10 +256,13 @@ export default function LiveScreen(): React.JSX.Element {
         </View>
       ) : null}
 
-      {__DEV__ ? (
+      {/* Sim controls exist only when the simulator is the source: with real
+          trackers streaming there is nothing to fake, and a tap pad would be
+          a way to inflate a real session's counts. */}
+      {__DEV__ && sim ? (
         <SimControls
-          onTap={(hand) => source.emitTap(hand)}
-          onPlayScript={(id: SimScriptId) => source.playScript(id)}
+          onTap={(hand) => sim.emitTap(hand)}
+          onPlayScript={(id: SimScriptId) => sim.playScript(id)}
         />
       ) : null}
     </View>
