@@ -23,6 +23,7 @@
   "dependencies": {
     "@sfourdrinier/react-native-ble-plx": "3.9.3",
     "expo": "57.0.15",
+    "expo-audio": "~57.0.4",
     "expo-auth-session": "~57.0.8",
     "expo-build-properties": "~57.0.13",
     "expo-clipboard": "~57.0.1",
@@ -36,6 +37,7 @@
     "expo-router": "~57.0.15",
     "expo-screen-orientation": "~57.0.1",
     "expo-secure-store": "~57.0.1",
+    "expo-speech": "~57.0.1",
     "expo-splash-screen": "~57.0.7",
     "expo-sqlite": "~57.0.1",
     "expo-status-bar": "~57.0.1",
