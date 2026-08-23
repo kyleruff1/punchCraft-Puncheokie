@@ -33,6 +33,13 @@ export default function PuncheokieLanding() {
           <Text style={styles.primaryActionText}>Set up a workout</Text>
         </Pressable>
       </Link>
+
+      {/* Throwaway M32-05 spike entry (#182); removed when the spike closes. */}
+      <Link href="/(tabs)/puncheokie/orientation-spike" asChild>
+        <Pressable accessibilityRole="button" style={styles.spikeAction} testID="open-spike">
+          <Text style={styles.spikeActionText}>M32-05 spike: orientation / keep-awake / haptics</Text>
+        </Pressable>
+      </Link>
     </ScrollView>
   )
 }
@@ -50,6 +57,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
   },
   primaryActionText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
+  spikeAction: {
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+  },
+  spikeActionText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   headerLink: { paddingHorizontal: 12 },
   headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
 })
