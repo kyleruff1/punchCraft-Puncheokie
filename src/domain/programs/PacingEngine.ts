@@ -29,6 +29,8 @@
  */
 
 import { clampToProfile, type CadenceProfile } from '../workout/cadence'
+import { allocateRoundTargets } from '../workout/goalAllocation'
+import type { WorkoutFocus } from '../workout/punchGoals'
 import type { ProgramRound } from '../workout/WorkoutTokens'
 
 export interface PacingSnapshot {
@@ -91,6 +93,8 @@ export interface PacingEngineOptions {
   mode: PacingMode
   profile: CadenceProfile
   maxRequiredPace?: number
+  /** Needed by goal-seeking to reallocate; ignored in the other modes. */
+  focus?: WorkoutFocus
 }
 
 export class PacingEngine {
@@ -99,6 +103,7 @@ export class PacingEngine {
   private readonly mode: PacingMode
   private readonly profile: CadenceProfile
   private readonly maxRequiredPace: number
+  private readonly focus: WorkoutFocus
 
   private accepted = 0
   /** Cumulative cadence factor, so the per-round cap compounds correctly. */
@@ -110,6 +115,7 @@ export class PacingEngine {
     this.mode = opts.mode
     this.profile = opts.profile
     this.maxRequiredPace = opts.maxRequiredPace ?? DEFAULT_MAX_REQUIRED_PACE
+    this.focus = opts.focus ?? 'balanced'
   }
 
   /** Total active seconds across scored rounds only (doc §22, M31-03). */
@@ -195,6 +201,25 @@ export class PacingEngine {
 
     const behind = ratio > 1
     const cueText: PacingCueText = behind ? 'Build the pace' : 'You are ahead; stay sharp'
+
+    // Goal-seeking reshapes the remaining plan rather than the cadence
+    // (doc §22). It reallocates what is left of the budget across the
+    // rounds that have not started; the runner turns that into blocks.
+    if (this.mode === 'goal-seeking') {
+      const remaining = this.schedule.map((round, index) =>
+        index <= ctx.roundIndex ? { ...round, countsTowardGoal: false } : round,
+      )
+      const reallocated = allocateRoundTargets(snapshot.remainingPunches, remaining, this.focus)
+
+      // Rounds already run keep the targets they were actually judged
+      // against — rewriting them would retroactively change a result the
+      // athlete was already shown.
+      const roundTargets = this.schedule.map((round, index) =>
+        index <= ctx.roundIndex ? round.targetPunches : (reallocated[index] ?? 0),
+      )
+
+      return { ...base, action: { kind: 'reallocate', roundTargets }, cueText }
+    }
 
     // Cadence moves gradually, capped per round and clamped to the
     // profile's own BPM range so a theme never becomes unrecognisable.

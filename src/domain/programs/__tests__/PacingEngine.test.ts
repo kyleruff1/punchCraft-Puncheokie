@@ -276,6 +276,76 @@ describe('adaptive factors stay inside their limits (doc §22)', () => {
   })
 })
 
+describe('goal-seeking reshapes the plan, not the cadence (#193, doc §22)', () => {
+  const seeking = () =>
+    new PacingEngine({
+      totalGoal: 540,
+      schedule: SCHEDULE,
+      mode: 'goal-seeking',
+      profile: STEADY,
+      focus: 'balanced',
+    })
+
+  it('reallocates instead of scaling cadence when behind', () => {
+    const e = seeking()
+    e.recordAccepted(60)
+    const decision = boundary(e, 180, 0)
+    expect(decision.action.kind).toBe('reallocate')
+    expect(decision.cueText).toBe('Build the pace')
+  })
+
+  it('leaves rounds that already ran with the targets they were judged against', () => {
+    // Rewriting them would retroactively change a result the athlete was
+    // already shown.
+    const e = seeking()
+    e.recordAccepted(60)
+    const decision = boundary(e, 180, 0)
+    if (decision.action.kind !== 'reallocate') throw new Error('expected a reallocation')
+    expect(decision.action.roundTargets[0]).toBe(SCHEDULE[0]!.targetPunches)
+  })
+
+  it('spreads only the remaining budget across the remaining rounds', () => {
+    const e = seeking()
+    e.recordAccepted(100)
+    const decision = boundary(e, 180, 0)
+    if (decision.action.kind !== 'reallocate') throw new Error('expected a reallocation')
+    const future = decision.action.roundTargets.slice(1).reduce((a, b) => a + b, 0)
+    expect(future).toBe(440)
+  })
+
+  it('still goes silent on an unreachable target', () => {
+    // Goal-seeking may reshape a plan, but not into one nobody could run
+    // (doc §25).
+    const e = seeking()
+    const decision = boundary(e, 535, 0)
+    expect(decision.action).toEqual({ kind: 'none', reason: 'target-unreachable' })
+    expect(decision.cueText).toBeUndefined()
+  })
+
+  it('does nothing while on pace', () => {
+    const e = seeking()
+    e.recordAccepted(180)
+    expect(boundary(e, 180, 0).action).toEqual({ kind: 'none', reason: 'within-band' })
+  })
+
+  it('reallocates when far ahead too', () => {
+    const e = seeking()
+    e.recordAccepted(400)
+    const decision = boundary(e, 180, 0)
+    expect(decision.action.kind).toBe('reallocate')
+    expect(decision.cueText).toBe('You are ahead; stay sharp')
+  })
+
+  it('is deterministic', () => {
+    const run = () => {
+      const e = seeking()
+      e.recordAccepted(60)
+      return boundary(e, 180, 0)
+    }
+    expect(run()).toEqual(run())
+  })
+})
+
 describe('every decision records what it decided on', () => {
   it('carries the snapshot, mode, round and work-clock time', () => {
     const e = engine('adaptive')
