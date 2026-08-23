@@ -554,7 +554,7 @@ The workout scheduler, not the speech engine, is the master clock. Voice, visual
 
 ### 18.2 Time-critical versus descriptive audio
 
-Time-critical audio should use deterministic short assets or cached phrases:
+Time-critical audio should use deterministic short assets or cached phrases. **These are pre-rendered offline and never synthesized at runtime — see D16.** The list below is the closed vocabulary, and because D15 adds a second vocabulary it is rendered twice (numbers and names):
 
 - 1 through 6;
 - body suffix;
@@ -1091,6 +1091,24 @@ This is not only preference. **Phrase duration competes with the cue window**: a
 
 Vocabulary is orthogonal to the D1 third-party-playback gate: choosing a vocabulary never enables speech over music.
 
+**D16 - Time-critical speech is pre-rendered, never synthesized at runtime.** The §18.2 time-critical vocabulary is a small closed set - 1 through 6, the body suffix, the defense and footwork words, go/stop/switch, bells and tones - which D15's second vocabulary renders twice, for roughly 50-60 clips per voice. Those clips are **generated ahead of time by a self-hosted open-source TTS model (Kokoro-82M) and shipped or prefetched as cached assets**. At workout time the app plays a local file and performs no synthesis and no network request.
+
+This is not a fallback arrangement; it is better than on-device TTS for this set, for three reasons:
+
+1. **Durations are measured, not estimated.** D15 requires `CueAnnouncer` to know each phrase's duration so it can skip or downgrade rather than overlap. A pre-rendered clip has an exact duration, recorded in the asset manifest. On-device TTS would force the announcer to guess whether a phrase fits the beat interval, and a wrong guess produces exactly the drift D15 exists to prevent.
+2. **Prosody is consistent.** Device TTS varies by device, locale and engine version; the same cue would sound different on different tablets.
+3. **No engine latency variance** inside the cue window. R5 requires the workout cue clock, not the speech engine, to control timing; removing synthesis from the runtime path removes the failure mode entirely.
+
+It also preserves the spec's local-first stance: the generator runs offline as a build step and never ships, so there is **no runtime backend** on the core path, and R20 ("the workout must remain usable when voice playback is unavailable") holds without a network at the bag.
+
+**Descriptive audio keeps on-device TTS.** Round summaries, punch-count and velocity announcements, and generated workout names are dynamic strings that cannot be pre-rendered. They fire at rest boundaries (§23) where a one- to two-second render is invisible against a 60-second rest, and they are already forbidden from interrupting a combination (§18.2).
+
+A hosted synthesis endpoint for *descriptive* lines - higher quality than device TTS - is permitted only under all of these conditions: it is behind a flag, defaulting off; it is called at rest boundaries only, never inside a work interval; and it degrades to device TTS and then to silence without stalling the workout. Introducing it is a deliberate departure from local-first and requires its own decision; nothing in Phase 5 depends on it.
+
+**Licensing gate.** Baked-in audio assets travel with the application, so the generating model's licence governs distribution. Kokoro-82M is Apache-2.0 and is the default choice for that reason. Any alternative model - XTTS among them - must have its licence verified against the actual licence text before its output is bundled; several community TTS models ship under non-commercial terms that would not permit distribution. When in doubt, Kokoro alone covers the entire closed vocabulary.
+
+**Asset manifest.** The manifest carries, per clip: vocabulary (`numbers` | `names`), token or phrase key, file reference, **measured duration in milliseconds**, sample rate, and the model plus voice identifier used to generate it. The model/voice identifier is recorded so a re-render is reproducible and so a voice change is a visible, versioned event rather than a silent asset swap.
+
 ## 30. Revision history
 
 | Date | Version | Change |
@@ -1098,4 +1116,5 @@ Vocabulary is orthogonal to the D1 third-party-playback gate: choosing a vocabul
 | 2026-08-22 | 0.2 | Authored against the PunchLab Technical Design Document. |
 | 2026-08-23 | 0.2 (landed) | Committed as `docs/puncheokie-ux-workout-engine.md`; branded punchCraft; Markdown structure restored; "Status and supersession" table and Resolved decisions added; spec §13 banner and amendments landed in the same PR. |
 | 2026-08-23 | 0.4 | Reconciled against on-device evidence (H12). D12 corrects the capability tier to hand + timestamp + velocity and retires the vendor type flag; D13 records the transmit floor and its effect on `missed`; D14 resolves five §4/§17/§26 contract inconsistencies and fixes the versioned constants; D15 separates voice mode from voice vocabulary. C6 and D4 annotated; the H11 tracker-facts paragraph rewritten. §1-§28 otherwise unchanged. |
+| 2026-08-23 | 0.4 | (cont.) D16 fixes time-critical speech as pre-rendered offline assets generated by a self-hosted open-source TTS model, with measured per-clip durations in the manifest; descriptive lines keep on-device TTS, and a hosted endpoint is permitted only at rest boundaries behind a flag. §18.2 annotated. |
 | 2026-08-23 | 0.3 | Added §28 Strike confirmation, combo plausibility, and gratification (node flash and haptic vocabulary, progressive affirmation border, the five-signal capability-aware plausibility model with four confidence tiers, bounded gratification levels) and decision D11. Resolved decisions moved to §29 and this history to §30; §1–§27 are unchanged. |
