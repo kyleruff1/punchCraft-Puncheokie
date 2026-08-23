@@ -41,6 +41,12 @@ import { threeRoundFundamentals } from '@domain/workout/samples'
 import { useLive, useRecipe } from '@state/useWorkoutStore'
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
+import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
+import {
+  PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
+  createPlaybackDetector,
+} from '@audio/ThirdPartyPlaybackDetector'
+import { useVoiceSettingsStore } from '@state/useVoiceSettingsStore'
 import type { SimScriptId } from '@simulation/scripts'
 
 /** Tag for the keep-awake lock this screen owns; see the header note. */
@@ -60,6 +66,39 @@ export default function LiveScreen(): React.JSX.Element {
    */
   const [endOutcome, setEndOutcome] = useState<SessionEndOutcome | null>(null)
 
+  // The Voice Coach. Built once per screen: the output owns players and a
+  // focus request, and rebuilding it mid-workout would drop both.
+  const policy = useVoiceSettingsStore((s) => s.policy)
+  const volumes = useVoiceSettingsStore((s) => s.volumes)
+  const detector = React.useMemo(() => createPlaybackDetector(), [])
+  // Built once, never per render: the output owns players and a focus
+  // request, and rebuilding it mid-workout would drop both.
+  const output = React.useMemo(() => new VoiceOutputExpo(), [])
+
+  React.useEffect(() => {
+    return () => {
+      output.release()
+    }
+  }, [output])
+
+  React.useEffect(() => {
+    // Preload during the countdown, not at the first cue: M34-01 measured a
+    // cold clip at roughly twice the jitter of a preloaded one. Re-runs on a
+    // vocabulary change so switching to names actually loads the names clips
+    // rather than leaving the coach saying "one".
+    output.setVocabulary(policy.vocabulary)
+    void output.preload()
+  }, [output, policy.vocabulary])
+
+  React.useEffect(() => {
+    output.setVolumes(volumes)
+  }, [output, volumes])
+
+  const voice = React.useMemo(
+    () => ({ output, policy, detector }),
+    [output, policy, detector],
+  )
+
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
   // (M33-01). The runner is written against the port and sees no difference.
@@ -76,6 +115,7 @@ export default function LiveScreen(): React.JSX.Element {
     // `setEndOutcome` is stable, which the runner requires — an unstable
     // callback here would rebuild the cue engine on every render.
     onSessionEnded: setEndOutcome,
+    voice,
   })
 
   const startedRef = useRef(false)
@@ -142,6 +182,15 @@ export default function LiveScreen(): React.JSX.Element {
         connection={connection}
         {...(live.degraded ? { degraded: live.degraded } : {})}
       />
+
+      {/* Why the coach is silent, said once and quietly. Either the athlete
+          turned it off, or this build cannot tell whether their music is
+          playing — and the second is the app's limitation, not theirs. */}
+      {policy.mode === 'off' ? null : detector.available ? null : (
+        <Text style={styles.gateNotice} testID="voice-gate-notice">
+          {PLAYBACK_DETECTION_UNAVAILABLE_NOTICE}
+        </Text>
+      )}
 
       <View style={styles.body}>
         <View style={styles.stage}>
@@ -345,6 +394,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.background,
     opacity: 0.92,
+  },
+  gateNotice: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+    fontSize: 11,
+    color: colors.textMuted,
   },
   saveNote: { marginTop: 6, fontSize: 13, color: colors.textSecondary },
   pausedText: { fontSize: 40, fontWeight: '800', color: colors.textPrimary },
