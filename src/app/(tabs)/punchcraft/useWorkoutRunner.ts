@@ -27,6 +27,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { CueEngine, DEFAULT_LEAD_TIMES } from '@domain/programs/CueEngine'
 import { LiveCueMatcher, type LiveMatcherEvent } from '@domain/programs/LiveCueMatcher'
+import { PacingEngine, type PacingCueText } from '@domain/programs/PacingEngine'
+import { CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance } from '@domain/programs/CueTimeline'
@@ -117,7 +119,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const velocityCountRef = useRef(0)
   const lastVelocityRef = useRef<LiveVelocity | undefined>(undefined)
   const lastStoreWriteRef = useRef(0)
+  /** Active work seconds banked from completed rounds. */
+  const completedActiveSecondsRef = useRef(0)
+  const activeElapsedSecondsRef = useRef(0)
   const matcherRef = useRef<LiveCueMatcher | null>(null)
+  const pacingRef = useRef<PacingEngine | null>(null)
+  const pacingCueRef = useRef<PacingCueText | undefined>(undefined)
   /** Token indexes affirmed in the cue currently on the stage. */
   const affirmedRef = useRef<number[]>([])
   const extrasRef = useRef(0)
@@ -156,6 +163,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       lastStoreWriteRef.current = now
 
       const session = sessionRef.current?.snapshot()
+      if (session?.phase === 'work') {
+        activeElapsedSecondsRef.current =
+          completedActiveSecondsRef.current + session.workElapsedMs / 1000
+      }
+      const pacing = pacingRef.current?.snapshot(activeElapsedSecondsRef.current)
       const avg =
         velocityCountRef.current > 0
           ? ({
@@ -175,6 +187,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         nextCueId: nextRef.current?.cue.id,
         counts: { ...countsRef.current },
         extraCount: extrasRef.current,
+        ...(pacing
+          ? { requiredPace: pacing.requiredPace, projectedTotal: pacing.projectedTotal }
+          : {}),
+        pacingCue: pacingCueRef.current,
         sequenceScoreLabel: sequenceScoreLabel(capability.tier),
         velocityAvailable: capability.velocityAvailable,
         capabilityTier: capability.tier,
@@ -261,6 +277,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         }
       }
 
+      // Pacing counts every accepted punch, matched or not: doc §22's
+      // required pace is about volume, not sequence accuracy.
+      pacingRef.current?.recordAccepted(1)
+
       // The matcher decides what this punch answered; the runner only
       // counts. Its callback drives notifyMatch and the in-cue tally.
       matcherRef.current?.onPunchEvent(event)
@@ -330,24 +350,42 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     if (!engine) return
     for (const transition of transitions) {
       switch (transition.type) {
-        case 'work-entered':
+        case 'work-entered': {
           // A new round opens fresh tallies, and the previous round's frozen
           // result leaves the store rather than lingering behind the cues.
           freezeRef.current.beginRound(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
+
+          // Bank the previous round's active time so the pacing clock spans
+          // the whole workout rather than restarting each round.
+          const previous = workout.schedule[transition.roundIndex - 1]
+          if (previous?.countsTowardGoal) {
+            completedActiveSecondsRef.current += previous.workDurationMs / 1000
+          }
           engine.onSessionPhase({
             type: 'work-entered',
             roundIndex: transition.roundIndex,
             nowMs: clock.now(),
           })
           break
+        }
         case 'rest-entered': {
           // The bell. Everything the rest screen shows is fixed here; later
           // punches reach a closed accumulator and change nothing (doc §23).
           const target = workout.schedule[transition.roundIndex]?.targetPunches ?? 0
           const frozen = freezeRef.current.freeze(target)
           if (frozen) setLive({ frozenRoundResult: frozen })
+
           engine.onSessionPhase({ type: 'rest-entered', nowMs: clock.now() })
+          // A rest is a safe boundary (doc §22) — the only place pacing may
+          // propose anything.
+          const restSnapshot = sessionRef.current?.snapshot()
+          const decision = pacingRef.current?.onBoundary('rest', {
+            roundIndex: restSnapshot?.roundIndex ?? 0,
+            atWorkElapsedMs: restSnapshot?.workElapsedMs ?? 0,
+            activeElapsedSeconds: activeElapsedSecondsRef.current,
+          })
+          pacingCueRef.current = decision?.cueText
           break
         }
         case 'paused':
@@ -380,6 +418,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       extraPunchPolicy: workout.recipe.extraPunchPolicy,
     })
     matcherRef.current = matcher
+
+    const pacing = new PacingEngine({
+      totalGoal: workout.recipe.totalPunchGoal,
+      schedule: workout.schedule,
+      mode: workout.recipe.adaptationMode,
+      profile: CADENCE[workout.recipe.cadenceProfile],
+    })
+    pacingRef.current = pacing
     const session = new WorkoutSessionClock(
       workout.schedule.map((r) => ({
         workDurationMs: r.workDurationMs,
@@ -422,6 +468,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       engineRef.current = null
       sessionRef.current = null
       matcherRef.current = null
+      pacingRef.current = null
       resetLive()
     }
   }, [

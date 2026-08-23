@@ -178,6 +178,7 @@ export default function LiveScreen(): React.JSX.Element {
         <MetricsRail
           counts={{ total: live.counts.total, left: live.counts.left, right: live.counts.right }}
           {...(roundGoal === undefined ? {} : { roundGoal })}
+          {...(live.requiredPace === undefined ? {} : { requiredPace: live.requiredPace })}
           {...(live.avgVelocity ? { avgVelocity: live.avgVelocity } : {})}
           {...(live.lastVelocity ? { lastVelocity: live.lastVelocity } : {})}
           velocityAvailable={live.velocityAvailable}
@@ -185,6 +186,9 @@ export default function LiveScreen(): React.JSX.Element {
           tiles={live.tiles}
           tileValues={{
             'combo-completion': `${live.counts.inCue}/${live.counts.inCueExpected}`,
+            ...(live.projectedTotal === undefined
+              ? {}
+              : { 'projected-final': live.projectedTotal }),
           }}
         />
       </View>
@@ -197,6 +201,13 @@ export default function LiveScreen(): React.JSX.Element {
         <Text style={styles.extras} testID="extra-count">
           {`Extra punches: ${live.extraCount}`}
         </Text>
+        {/* Set only at a boundary, and never when the target is out of
+            reach — doc §25 forbids urging acceleration toward one. */}
+        {live.pacingCue ? (
+          <Text style={styles.pacingCue} testID="pacing-cue">
+            {live.pacingCue}
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.controls}>
@@ -336,6 +347,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   extras: { fontSize: 13, color: colors.textSecondary },
+  pacingCue: { fontSize: 13, fontWeight: '700', color: colors.accent },
   controls: {
     flexDirection: 'row',
     gap: 10,

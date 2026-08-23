@@ -189,6 +189,16 @@ export interface LiveState {
   degraded?: string
   /** Punches with no expectation to answer. Counted, never discarded. */
   extraCount: number
+  /** Punches per minute needed to finish on target (doc §22). */
+  requiredPace?: number
+  /** Extrapolated from the rate achieved so far, not the rate being asked. */
+  projectedTotal?: number
+  /**
+   * The doc §22 pacing cue, set only at a boundary and only when the band
+   * is crossed. Absent when the target is unreachable — doc §25 forbids
+   * encouraging acceleration toward something out of reach.
+   */
+  pacingCue?: 'Build the pace' | 'You are ahead; stay sharp'
   /**
    * What a sequence score may be called at the live tier (D4). Held in the
    * store so no surface can hardcode it and drift into claiming technique
