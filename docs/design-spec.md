@@ -2429,7 +2429,7 @@ The backdrop is the lowest-priority consumer of the device. It must not disturb 
 
 ### 31.5 Selection and reproducibility
 
-The athlete picks either a specific backdrop or a mood; picking a mood lets the engine choose within it. That choice is a workout-recipe parameter, persisted in `workout_recipes.params_json` and stamped onto the generated workout, and mood-level choices resolve through the existing deterministic seed. "Run This Exact Workout Again" therefore reproduces the same visuals as well as the same combinations.
+The athlete picks either a specific backdrop or a mood; picking a mood lets the engine choose within it. The control lives on the **workout configuration screen** — the punchCraft Recipe screen, alongside duration, goal, focus and stance — not on a settings page and not on a route of its own. It belongs there because it is a property of the workout being built, not of the application: two workouts can legitimately want different rooms, and a global setting could not express that. That choice is a workout-recipe parameter, persisted in `workout_recipes.params_json` and stamped onto the generated workout, and mood-level choices resolve through the existing deterministic seed. "Run This Exact Workout Again" therefore reproduces the same visuals as well as the same combinations.
 
 ### 31.6 Library and assets
 
