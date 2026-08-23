@@ -47,6 +47,7 @@ function cueRow(overrides: Partial<CueResultRow> = {}): CueResultRow {
     sessionId: 'ses-1',
     generatedWorkoutId: threeRoundFundamentals.id,
     blockId: 'blk-1',
+    repeatIndex: 0,
     tokenIndex: 0,
     expectedHand: 'left',
     // Always null on FightCamp v1 (D12).
@@ -316,6 +317,36 @@ describe('cue results', () => {
     expect(read[0]?.velocityUnit).toBe('tracker-unit')
     expect(read[1]?.outcome).toBe('missed')
     expect(read[1]?.offsetMs).toBeNull()
+  })
+
+  it('keeps both passes of a repeated block (migration 005)', () => {
+    // A `repeat: 2` block expands into two cues naming the same token
+    // indexes. Before `repeat_index` joined the key these collided, and
+    // because the write is one transaction the whole session went with them —
+    // any workout using a repeated block simply could not be saved.
+    repo.writeCueResults([
+      cueRow({ repeatIndex: 0, tokenIndex: 0 }),
+      cueRow({ repeatIndex: 0, tokenIndex: 1 }),
+      cueRow({ repeatIndex: 1, tokenIndex: 0 }),
+      cueRow({ repeatIndex: 1, tokenIndex: 1 }),
+    ])
+
+    const read = repo.listCueResults('ses-1')
+    expect(read).toHaveLength(4)
+    // Read back in pass order, so a combination reads as it was thrown.
+    expect(read.map((r) => [r.repeatIndex, r.tokenIndex])).toEqual([
+      [0, 0],
+      [0, 1],
+      [1, 0],
+      [1, 1],
+    ])
+  })
+
+  it('still rejects a genuine duplicate within one pass', () => {
+    // Widening the key must not have made it meaningless: the same token in
+    // the same pass is still one row.
+    repo.writeCueResults([cueRow({ repeatIndex: 1, tokenIndex: 0 })])
+    expect(() => repo.writeCueResults([cueRow({ repeatIndex: 1, tokenIndex: 0 })])).toThrow()
   })
 
   it('records the hand-timestamp tier with expected_type null (D12)', () => {

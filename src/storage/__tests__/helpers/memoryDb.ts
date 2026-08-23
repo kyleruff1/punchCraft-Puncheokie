@@ -18,10 +18,7 @@ import { DatabaseSync } from 'node:sqlite'
 
 import type { SQLiteDatabase } from 'expo-sqlite'
 
-import { MIGRATION_001 } from '@/storage/migrations/001_initial'
-import { MIGRATION_002 } from '@/storage/migrations/002_punch_events'
-import { MIGRATION_003 } from '@/storage/migrations/003_sessions'
-import { MIGRATION_004 } from '@/storage/migrations/004_workouts'
+import { MIGRATIONS_FOR_TESTS } from '@/storage/migrations'
 import type { SqlBindValue, SqlPort, SqlStatement } from '@/storage/SqlPort'
 
 type NodeBind = string | number | bigint | null | Uint8Array
@@ -86,9 +83,11 @@ export class MemoryDb implements SqlPort {
 export function createMigratedDb(): MemoryDb {
   const db = new MemoryDb()
   const asSqliteDatabase = db as unknown as SQLiteDatabase
-  MIGRATION_001.up(asSqliteDatabase)
-  MIGRATION_002.up(asSqliteDatabase)
-  MIGRATION_003.up(asSqliteDatabase)
-  MIGRATION_004.up(asSqliteDatabase)
+  // Driven from the registry rather than a hand-kept list. A hard-coded list
+  // drifts silently: a new migration lands, every storage test keeps running
+  // against the old schema, and the mismatch only shows up on device.
+  for (const migration of [...MIGRATIONS_FOR_TESTS].sort((a, b) => a.id - b.id)) {
+    migration.up(asSqliteDatabase)
+  }
   return db
 }

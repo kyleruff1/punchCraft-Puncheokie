@@ -40,7 +40,7 @@ import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { threeRoundFundamentals } from '@domain/workout/samples'
 import { useLive, useRecipe } from '@state/useWorkoutStore'
 import { useLivePunchSource } from './useLivePunchSource'
-import { useWorkoutRunner } from './useWorkoutRunner'
+import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import type { SimScriptId } from '@simulation/scripts'
 
 /** Tag for the keep-awake lock this screen owns; see the header note. */
@@ -52,6 +52,13 @@ export default function LiveScreen(): React.JSX.Element {
   const recipe = useRecipe()
   const live = useLive()
   const [confirmingStop, setConfirmingStop] = useState(false)
+  /**
+   * How the finished workout was written (M33-08). Held here rather than in
+   * the store because it is a one-shot ending, not live state — and a failed
+   * write is shown rather than swallowed: the athlete should know their
+   * workout was not saved while they can still say something about it.
+   */
+  const [endOutcome, setEndOutcome] = useState<SessionEndOutcome | null>(null)
 
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
@@ -66,6 +73,9 @@ export default function LiveScreen(): React.JSX.Element {
     source,
     stance: recipe.defaultStance,
     clock,
+    // `setEndOutcome` is stable, which the runner requires — an unstable
+    // callback here would rebuild the cue engine on every render.
+    onSessionEnded: setEndOutcome,
   })
 
   const startedRef = useRef(false)
@@ -171,6 +181,11 @@ export default function LiveScreen(): React.JSX.Element {
               <Text style={styles.pausedText}>
                 {live.phase === 'completed' ? 'Workout complete' : 'Stopped'}
               </Text>
+              {endOutcome?.status === 'failed' ? (
+                <Text style={styles.saveNote} testID="save-failed">
+                  This workout could not be saved.
+                </Text>
+              ) : null}
             </View>
           ) : null}
         </View>
@@ -331,6 +346,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     opacity: 0.92,
   },
+  saveNote: { marginTop: 6, fontSize: 13, color: colors.textSecondary },
   pausedText: { fontSize: 40, fontWeight: '800', color: colors.textPrimary },
   scoreStrip: {
     flexDirection: 'row',

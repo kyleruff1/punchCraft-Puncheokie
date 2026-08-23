@@ -34,11 +34,13 @@ afterEach(() => {
 describe('migration registry', () => {
   it('registers 003_sessions with a unique, never-renumbered id', () => {
     const ids = MIGRATIONS_FOR_TESTS.map((m) => m.id)
-    expect(ids).toEqual([1, 2, 3, 4])
+    expect(ids).toEqual([1, 2, 3, 4, 5])
     expect(new Set(ids).size).toBe(ids.length)
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 3)?.name).toBe('003_sessions')
-    // 004 was claimed by the workouts migration (#176); 003 keeps its id.
+    // 004 was claimed by the workouts migration (#176) and 005 by the
+    // cue_results key fix (M33-08); 003 keeps its id.
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 4)?.name).toBe('004_workouts')
+    expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 5)?.name).toBe('cue_result_repeat_index')
   })
 })
 

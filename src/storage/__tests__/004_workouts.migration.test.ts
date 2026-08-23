@@ -118,10 +118,13 @@ describe('schema shape', () => {
   })
 
   it('creates cue_results with the §17.1 columns', () => {
+    // `repeat_index` is 005's addition, and the fixture runs every migration
+    // — this asserts the shape a device actually ends up with.
     expect(columnsOf(db, 'cue_results')).toEqual([
       'session_id',
       'generated_workout_id',
       'block_id',
+      'repeat_index',
       'token_index',
       'expected_hand',
       'expected_type',
@@ -137,13 +140,21 @@ describe('schema shape', () => {
     ])
   })
 
-  it('keys cue_results on (session, workout, block, token index)', () => {
+  it('keys cue_results on (session, workout, block, repeat, token index)', () => {
     const pk = db
       .query<{ name: string; pk: number }>('PRAGMA table_info(cue_results)')
       .filter((c) => c.pk > 0)
       .sort((a, b) => a.pk - b.pk)
       .map((c) => c.name)
-    expect(pk).toEqual(['session_id', 'generated_workout_id', 'block_id', 'token_index'])
+    // The repeat is part of the key: one block can run several times, each
+    // pass naming the same token indexes (migration 005).
+    expect(pk).toEqual([
+      'session_id',
+      'generated_workout_id',
+      'block_id',
+      'repeat_index',
+      'token_index',
+    ])
   })
 
   it('indexes cue_results by session and by generated workout', () => {

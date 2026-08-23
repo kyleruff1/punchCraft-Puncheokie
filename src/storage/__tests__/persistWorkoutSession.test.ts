@@ -31,6 +31,7 @@ type PendingCueResult = Omit<CueResultRow, 'sessionId' | 'generatedWorkoutId'>
 function cueRow(over: Partial<PendingCueResult> = {}): PendingCueResult {
   return {
     blockId: WORKOUT.schedule[0]!.blocks[0]!.id,
+    repeatIndex: 0,
     tokenIndex: 0,
     expectedHand: 'left',
     expectedType: null,
