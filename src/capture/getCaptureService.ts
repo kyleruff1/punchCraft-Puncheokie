@@ -36,13 +36,29 @@ export function getCaptureService(): BleCaptureService {
 export function startCapture(label?: string): BleCaptureService {
   const service = getCaptureService()
   const captureId = service.start(label != null ? { label } : {})
+
+  // Installing the sink on the TRANSPORT means every frame is persisted
+  // before it reaches any subscriber, so the Live decode screen, the protocol
+  // probe and the BLE spike are all covered without opting in.
+  //
+  // This THROWS on failure rather than warning. A capture whose sink was never
+  // installed records nothing while still reporting itself as started — the
+  // caller would believe it was capturing and it would not be. Better to fail
+  // the open: callers already degrade gracefully and tell the user that frames
+  // are not being persisted.
   try {
-    getBleManager().setCaptureIdProvider(() => service.currentCaptureId() ?? 'ephemeral')
+    const ble = getBleManager()
+    ble.setCaptureIdProvider(() => service.currentCaptureId() ?? 'ephemeral')
+    ble.setFrameSink(service)
   } catch (err) {
-    logger.warn('capture.provider.install.failed', 'could not install capture id provider', {
+    logger.error('capture.sink.install.failed', 'transport sink not installed — capture would record nothing', {
+      captureId: safe(captureId),
       error: safe(String(err)),
     })
+    void stopCapture()
+    throw err
   }
+
   logger.info('capture.start', 'capture started', { captureId: safe(captureId) })
   return service
 }
@@ -52,7 +68,9 @@ export async function stopCapture(): Promise<void> {
   if (!instance) return
   await instance.stop()
   try {
-    getBleManager().setCaptureIdProvider(() => 'ephemeral')
+    const ble = getBleManager()
+    ble.setCaptureIdProvider(() => 'ephemeral')
+    ble.setFrameSink(null)
   } catch {
     /* transport already torn down */
   }

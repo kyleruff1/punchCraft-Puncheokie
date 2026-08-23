@@ -35,7 +35,8 @@ import {
   type PunchStreamController,
 } from '@protocol/PunchStream'
 import type { BleCaptureService } from '@capture/BleCaptureService'
-import { getCaptureService, startCapture, stopCapture } from '@capture/getCaptureService'
+import { getCaptureService } from '@capture/getCaptureService'
+import { useCaptureSession } from '@capture/useCaptureSession'
 import type { TrackerPunchEvent } from '@/domain/punch/PunchEvent'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
 import type { SlotState } from '@/state/useTrackerStore'
@@ -257,31 +258,19 @@ export default function LiveDecodeScreen(): React.ReactElement {
     if (ctl) setStreamState(ctl.getState())
   }, [])
 
-  // Capture lifecycle is tied to the SCREEN, not to the stream. Flipping the
-  // L/R toggle re-runs the stream effect below, and if the capture rode along
-  // with it the async stop() from one cleanup would land after the next
-  // start(), tearing down the capture the new stream had just opened — which
-  // silently dropped every subsequent frame. One visit to this screen is one
-  // capture; switching trackers mid-capture is fine and arguably more correct.
-  const [captureReady, setCaptureReady] = useState(false)
+  // One capture per visit to this screen — see useCaptureSession for why it
+  // must not depend on the selected tracker.
+  const capture = useCaptureSession('live-decode')
+  const captureReady = capture.ready
   useEffect(() => {
-    try {
-      startCapture('live-decode')
-      setCaptureReady(true)
-    } catch (err) {
-      setCaptureReady(false)
+    if (capture.error) {
       onDecodeMeta({
         kind: 'init-error',
-        text: `capture unavailable, frames will NOT be persisted: ${(err as Error)?.message ?? String(err)}`,
+        text: `capture unavailable, frames will NOT be persisted: ${capture.error}`,
       })
     }
-    return () => {
-      setCaptureReady(false)
-      // Flushes the tail of the session, then closes.
-      void stopCapture()
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [capture.error])
 
   useEffect(() => {
     if (!active || !adapter) return

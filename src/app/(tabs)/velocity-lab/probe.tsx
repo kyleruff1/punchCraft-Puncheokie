@@ -26,6 +26,7 @@ import type {
   RawBleFrame,
 } from '@ble/bleTypes'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
+import { useCaptureSession } from '@capture/useCaptureSession'
 import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
 
 /** FightCamp v1 custom service (H05). */
@@ -193,6 +194,11 @@ function truncateDeviceId(id: string): string {
 }
 
 export default function ProtocolProbeScreen(): React.ReactElement {
+  // Opens a capture for this screen. The transport persists every frame into
+  // it before delivering to the handler below, so probe traffic is retained
+  // for later analysis instead of existing only in this screen's ring buffer.
+  useCaptureSession('protocol-probe')
+
   const leftSlot = useLeftSlot()
   const rightSlot = useRightSlot()
 
