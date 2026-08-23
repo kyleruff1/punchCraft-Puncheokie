@@ -1,6 +1,6 @@
 # punchCraft — Product and Engineering Design Specification
 
-> Canonical design specification for punchCraft / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog.json`](../tools/backlog/backlog.json).
+> Canonical design specification for punchCraft / Velocity Lab / Puncheokie. Platform facts were checked on 2026-08-22 (see §29). This document is the source of truth for the roadmap in [roadmap.md](roadmap.md) and the backlog in [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json) (labels, milestones, and the project definition live in [`backlog-static.json`](../tools/backlog/backlog-static.json)). Puncheokie's workout engine and live UX are specified in [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md), which supersedes parts of §13, §17.1, §22 Phase 5, and §27 — see the §13 banner and §31.
 
 ## 1. Executive summary
 
@@ -213,8 +213,8 @@ src/app/
       history.tsx
     puncheokie/
       index.tsx
-      programs.tsx
-      editor.tsx
+      presets.tsx
+      recipe.tsx
       spotify.tsx
       live.tsx
       summary.tsx
@@ -987,6 +987,8 @@ The replay harness must run without Bluetooth hardware. This allows protocol wor
 
 ## 13. Puncheokie functional design
 
+> **Superseded in part (2026-08-23).** The Puncheokie workout model, recipe/generator/seed, cue lifecycle, cadence, live screen, Voice Coach, and persistence are specified in [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) (v0.2), whose "Status and supersession" table lists exactly which parts of §6, §13, §15.2, §16, §17.1, §18, §19.4, §22 Phase 5, and §27 it replaces. §13.1–13.6 remain as the original rationale and as the definition of the capability tiers and the **hand-sequence match** rule, which still apply. In particular: `PunchProgram`/`ProgramRound`/`PunchCue` (§13.4) are replaced by `WorkoutRecipe` → generated `WorkoutBlock[]`/`WorkoutToken[]`; stance values are `orthodox`/`southpaw`/`switch`, not `regular`/`switch`; defense/footwork/coach tokens are display-only and unscored.
+
 Puncheokie is a programmed workout mode. The name is a play on "karaoke": the athlete follows displayed punch combinations while listening to personal music.
 
 ### 13.1 Core user flow
@@ -1031,7 +1033,7 @@ Puncheokie must not claim technique recognition beyond the tracker data.
 | Hand + distinct type | Full numbered technique match |
 | Velocity | Optional intensity-zone target |
 
-When only hand is known, a regular-stance 1-2-3 sequence maps to left-right-left. The app may score that hand pattern but must label the result **hand-sequence match**, not punch-technique accuracy.
+When only hand is known, an orthodox-stance 1-2-3 sequence maps to left-right-left (southpaw: right-left-right). The app may score that hand pattern but must label the result **hand-sequence match**, not punch-technique accuracy, on every surface that shows it — the live count badge, block and round readouts, and the session summary.
 
 ### 13.4 Program structure
 
@@ -1118,7 +1120,7 @@ The live cue screen shall show:
 - sequence-match status; and
 - optional velocity-zone status.
 
-Use visual and haptic cues by default. Avoid app-generated audio prompts over Spotify playback until Spotify policy implications have been reviewed and, if necessary, written permission obtained.
+Use visual and haptic cues by default. The Voice Coach (spoken cues; [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md)) is fully available when no third-party playback is active. While Spotify or any other third-party playback is active, the Voice Coach is gated behind an explicit user toggle that defaults to OFF and whose label states that it speaks over the user's music; the app never enables it automatically. This gate stays in place until the Spotify policy review in §22 Phase 7 task 10 is complete and, if necessary, written permission is obtained.
 
 ### 13.6 Event-to-cue matching
 
@@ -1160,7 +1162,7 @@ For this project, playlist sync means:
 - preserve its Spotify ID/URI and snapshot metadata locally; and
 - open or optionally control playback through supported Spotify mechanisms.
 
-It does not mean downloading audio, extracting audio features without a permitted endpoint, analyzing beats, aligning cues to song structure, mixing voice prompts into Spotify audio, or copying Spotify content into the app.
+It does not mean downloading audio, extracting audio features without a permitted endpoint, analyzing beats, aligning cues to song structure, mixing app audio into the Spotify audio stream (the opt-in Voice Coach plays on a separate Android audio stream with transient audio focus and never alters Spotify's audio; §13.5), or copying Spotify content into the app.
 
 ### 14.2 Authentication
 
@@ -1236,7 +1238,7 @@ The initial design therefore imposes these constraints:
 - Spotify playback is user-selected background listening;
 - no song-specific cue choreography;
 - no audio analysis;
-- no overlay of app-generated audio on Spotify playback by default;
+- no overlay of app-generated audio on Spotify playback by default — the Voice Coach is OFF whenever third-party playback is active and speaks over it only after an explicit per-user opt-in (§13.5, Puncheokie doc D1);
 - no commercial launch of integrated streaming functionality without policy/legal review; and
 - clear separation between Spotify metadata and punchCraft-owned workout data.
 
@@ -1307,8 +1309,10 @@ Dependency direction points inward. Domain code must not import React Native, Ex
 | CalibrationEngine | Apply and validate calibration profiles |
 | SessionEngine | Work/rest state, event acceptance, pause semantics |
 | MetricsEngine | Deterministic session and round aggregation |
-| ProgramEngine | Execute Puncheokie cues |
+| WorkoutGenerator | Deterministic, seeded recipe → WorkoutBlock[] expansion, versioned by generator_version |
+| CueEngine | Run generated blocks/tokens through the cue lifecycle inside the session machine |
 | CueMatcher | Assign observed events to expected punch tokens |
+| VoiceCoach (domain/coach + audio/) | Spoken cues via a domain port; Expo TTS/assets and audio focus live in src/audio/ |
 | SpotifyAuthService | PKCE authorization and token refresh |
 | SpotifyPlaylistService | Fetch/cache playlist metadata |
 | SpotifyPlaybackGateway | Deep link initially; optional remote control later |
@@ -1395,11 +1399,37 @@ src/
     metrics/
       MetricsEngine.ts
       metricDefinitions.ts
+    workout/
+      WorkoutTokens.ts
+      WorkoutRecipe.ts
+      GeneratedWorkout.ts
+      roundSchedule.ts
+      punchGoals.ts
+      cadence.ts
+      capabilityTier.ts
+      ComboTemplate.ts
+      comboLibrary.ts
+      seededRandom.ts
+      WorkoutGenerator.ts
+      samples/
     programs/
-      PunchProgram.ts
-      ProgramEngine.ts
-      CueMatcher.ts
       StanceMapper.ts
+      CueTimeline.ts
+      CueEngine.ts
+      CueMatcher.ts
+      PacingEngine.ts
+      roundGrading.ts
+      workoutSummary.ts
+    coach/
+      VoiceOutputPort.ts
+      VoiceCoachPolicy.ts
+      CueAnnouncer.ts
+  audio/
+    VoiceOutputExpo.ts
+    voiceAssets/
+  simulation/
+    SimulatedPunchSource.ts
+    scripts.ts
   spotify/
     SpotifyAuthService.ts
     SpotifyTokenStore.ts
@@ -1415,18 +1445,30 @@ src/
       PunchEventRepository.ts
       CalibrationRepository.ts
       SessionRepository.ts
-      ProgramRepository.ts
+      WorkoutRepository.ts
       SpotifyCacheRepository.ts
   state/
     useDeviceStore.ts
     useSessionStore.ts
-    useProgramStore.ts
+    useWorkoutStore.ts
   components/
     ConnectionBadge.tsx
     MetricTile.tsx
     RoundTimer.tsx
     PunchSequenceCard.tsx
     RawFrameList.tsx
+    puncheokie/
+      PunchToken.tsx
+      DefenseToken.tsx
+      FootworkToken.tsx
+      CoachBanner.tsx
+      StanceChangeCard.tsx
+      CueStage.tsx
+      RoundTopBar.tsx
+      MetricsRail.tsx
+      CountBadge.tsx
+      RestPhases.tsx
+      RecipeSummaryCard.tsx
   diagnostics/
     logger.ts
     errorCodes.ts
@@ -1500,7 +1542,7 @@ Contains the fields described in Section 10 plus activation and invalidation met
 - `ended_at`
 - `active_duration_ms`
 - `timer_config_json`
-- `program_id`
+- `generated_workout_id` nullable (Puncheokie)
 - `spotify_playlist_id`
 - `left_calibration_id`
 - `right_calibration_id`
@@ -1530,21 +1572,55 @@ Stores normalized events and retains source frame references, raw values, calibr
 - `calculation_version`
 - `calculated_at`
 
-**`punch_programs`, `program_rounds`, `punch_cues`**
+**`workout_recipes`**
 
-Store editable Puncheokie programs and cue timing.
+- `id`
+- `name`
+- `preset_key` nullable (built-in preset this recipe derives from)
+- `default_stance`: `orthodox` or `southpaw`
+- `params_json` (recipe parameters; schema versioned by `recipe_schema_version`)
+- `recipe_schema_version`
+- `created_at`
+- `updated_at`
 
-**`cue_results`**
+**`generated_workouts`**
+
+- `id`
+- `recipe_id`
+- `session_id` nullable until the workout is run
+- `generator_version`
+- `seed`
+- `params_snapshot_json` (recipe parameters at generation time)
+- `blocks_json` (generated `WorkoutBlock[]` / `WorkoutToken[]`)
+- `realized_tokens_json` NOT NULL (token stream as actually executed, including inserted, shortened, or dropped blocks)
+- `created_at`
+
+**`workout_adaptations`**
+
+- `id`
+- `generated_workout_id`
+- `decided_at_monotonic_ms`
+- `boundary`: `block`, `rest`, or `round`
+- `inputs_json`
+- `decision_json`
+
+**`cue_results`** (one row per punch token window; defense/footwork/coach tokens are never scored)
 
 - `session_id`
-- `cue_id`
-- `expected_count`
-- `observed_count`
-- `correct_hand_count`
-- `correct_type_count`
-- `extra_count`
-- `average_velocity`
-- `completion_score`
+- `generated_workout_id`
+- `block_id`
+- `token_index`
+- `expected_hand`
+- `expected_type` nullable (broad technique family, when the tier supports it)
+- `observed_event_id` nullable
+- `outcome`: `matched`, `hand-mismatch`, `type-mismatch`, `missed`, `late`, or `during-pause`
+- `offset_ms` nullable (event time minus window open, monotonic)
+- `velocity_raw`, `velocity_calibrated`, `velocity_unit` nullable
+- `capability_tier`
+- `decoder_version`
+- `calculation_version`
+
+> `punch_programs`, `program_rounds`, and `punch_cues` (spec v1.0) are superseded by the tables above and are not created. See [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) D8.
 
 **`spotify_playlists`**
 
@@ -1583,6 +1659,8 @@ stateDiagram-v2
     completed --> [*]
     cancelled --> [*]
 ```
+
+**Puncheokie composition.** Puncheokie adds no states to this machine. Its cue lifecycle ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md), D5–D6) nests inside `work`: `paused` suspends every cue and flags punches `duringPause`; `rest` hosts the three rest presentation sub-phases; a token's acceptance window is clamped to the enclosing active work interval (§18.2), so it never extends into `rest`, `paused`, or `finishing`; and the cue-level `gap` state is unrelated to the BLE `recovering` state of §11.5/§19.3.
 
 ### 18.2 Event acceptance
 
@@ -1660,7 +1738,7 @@ For a tracker that begins advertising again within range:
 - screen-wake option during active sessions;
 - minimal touch targets during glove/wrap use;
 - confirmation before destructive stop/discard; and
-- landscape/tablet layout after the phone-width baseline works.
+- landscape/tablet layout after the phone-width baseline works — except the Puncheokie live screen, which is landscape-first on the tablet ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) D7); its phone-width layout is the §22 Phase 7 task 8 follow-up.
 
 ### 19.5 Safety language
 
@@ -1934,25 +2012,33 @@ This is the first functional product milestone.
 
 **Definition of done:** A timed multi-round bag session can be completed, saved, reopened, and deterministically recalculated from stored events.
 
-### Phase 5 — Puncheokie program engine without Spotify
+### Phase 5 — Puncheokie workout engine without Spotify
+
+Specified in detail by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md); its §27 is the implementation sequence and the list below is the coarse map.
 
 **Objectives**
 
-- prove numbered sequences, stance mapping, and scoring independently of a third-party music API.
+- prove recipe-generated workouts, stance mapping, the cue lifecycle, and capability-aware scoring independently of any third-party music API;
+- ship the landscape live screen and the Voice Coach with the third-party-playback gate OFF by default.
 
 **Tasks**
 
-1. Implement program/round/cue data model.
-2. Build a basic program editor.
-3. Implement regular/default and switch stance mapping.
-4. Implement cue timer and visual/haptic presentation.
-5. Implement hand-sequence matching.
-6. Add type matching if supported.
-7. Add velocity-zone targets if supported.
-8. Persist cue results.
-9. Build program summary.
+1. Implement the workout model: `WorkoutRecipe`, `WorkoutBlock`, `WorkoutToken` (`punch` / `defense` / `footwork` / `coach`, body modifier), stance `orthodox` / `southpaw` / `switch` with `inherit` on blocks.
+2. Implement `StanceMapper` for orthodox/southpaw × switch with table-driven tests.
+3. Implement cadence profiles: BPM authored by the recipe and scheduled on the §18.3 monotonic clock, never derived from audio (D3).
+4. Ship built-in presets and the recipe screen (`presets.tsx`, `recipe.tsx`); no free-form editor.
+5. Implement the `PunchEventSource` port and the `src/simulation/` harness, and run it in CI.
+6. Implement `CueEngine`: block scheduler nested inside the §18.1 session machine, cue lifecycle with `gap`, pause/resume and window-clamping rules (D5).
+7. Implement the three rest presentation sub-phases inside `rest` (D6).
+8. Build the landscape-first live screen: fixed four-zone layout, optional rail (≤ 4 tiles), text + icon badge, haptics (D7, D9).
+9. Implement `CueMatcher` over punch tokens at the hand + broad-type tier; defense/footwork/coach tokens display-only; **hand-sequence match** labeling on every surface (D4).
+10. Implement the Voice Coach: `src/domain/coach/` (what to say, when) behind a port implemented in `src/audio/` (TTS, audio focus, ducking); OFF by default whenever third-party playback is active (D1).
+11. Persist `workout_recipes`, `generated_workouts`, `workout_adaptations`, and `cue_results` (§17.1).
+12. Implement adaptive / goal-seeking adjustments with every decision recorded for deterministic recalculation (D8).
+13. Implement the deterministic seeded `WorkoutGenerator`, versioned by `generator_version`, with golden-output tests.
+14. Build the workout summary: completion over punch tokens, hand-sequence match, tracker-reported velocity when available, extras always visible.
 
-**Definition of done:** The user can author and run a sequence workout, switch stance, and receive capability-appropriate completion results without Spotify.
+**Definition of done:** The user can pick a preset or tune a recipe, run the generated workout in landscape on the tablet with visual, haptic, and — when no third-party audio is playing, or after an explicit opt-in — spoken cues, switch stance, pause and resume, and receive capability-appropriate, hand-sequence-match-labeled results that can be regenerated from the stored recipe, seed, generator version, and realized token stream, all without Spotify.
 
 ### Phase 6 — Spotify playlist connection
 
@@ -2110,6 +2196,15 @@ Acceptance criteria:
 | Spotify MVP uses playlist metadata and deep link | Proposed | Lowest complexity and policy exposure |
 | Spotify playback control is deferred | Proposed | Requires native bridge/scopes and policy review |
 | Background BLE is deferred | Accepted | Foreground reliability comes first |
+| Puncheokie v0.2 design doc is canonical for Puncheokie | Accepted 2026-08-23 | Recipe + generator + seed, WorkoutBlock/Token model, landscape-first live UX; §13 retained for rationale and capability tiers |
+| Voice Coach is opt-in over third-party playback | Accepted 2026-08-23 | Spoken cues are valuable without music; over Spotify they are OFF by default behind an explicit toggle pending the §22 Phase 7 policy review (D1) |
+| Stance enum is orthodox / southpaw / switch | Accepted 2026-08-23 | "regular" was ambiguous; §13.2 and the Puncheokie doc §2 now agree (D2) |
+| Cadence BPM is authored on the monotonic clock, never derived from audio | Accepted 2026-08-23 | Keeps "no beat sync" (§14.6) literally true while allowing rhythmic cues (D3) |
+| Defense / footwork / coach tokens are display-only and unscored | Accepted 2026-08-23 | The tracker observes punches only (H11); scoring anything else would be fabricated (D4) |
+| Cue states nest inside §18.1 `work`; the cue-level gap state is `gap` | Accepted 2026-08-23 | Avoids collisions with session `completed`/`cancelled` and BLE `recovering` (D5, D6) |
+| Puncheokie live screen is landscape-first | Accepted 2026-08-23 | Target device is the tablet (§5.1); phone-width follows in Phase 7 (D7) |
+| Adaptive plans persist the realized token stream and decisions | Accepted 2026-08-23 | Required for deterministic recalculation (§8.6, §19.1) (D8) |
+| Recipe + generator + seed replace editable programs and the editor | Accepted 2026-08-23 | Deterministic regeneration, smaller UI surface; persistence is parameters + version + seed (D9, D10) |
 
 ## 26. Open technical questions
 
@@ -2135,6 +2230,11 @@ These questions should be answered through Velocity Lab evidence rather than spe
 18. Does the chosen Expo SDK and BLE library combination handle both trackers reliably?
 19. Is Puncheokie intended only for personal use or eventual public distribution?
 20. Will Spotify remain optional, or must another music-provider abstraction be introduced?
+21. Does transient may-duck audio focus reliably duck Spotify on the target tablet without pausing it, and does Spotify restore volume after each Voice Coach utterance?
+22. What spoken-cue lead time (ms before a token window opens) is needed per cadence profile, given text-to-speech start latency on the tablet?
+23. Does the hand + broad-type tier yield a useful technique-family signal, or should body tokens be scored as hand-only?
+24. Can the tracker timestamp (epoch seconds + 1/256 s, with the drift observed in H11) be used for token matching, or must app receive time be used?
+25. Can the four-zone live screen plus cadence indicator hold the §19.2 p95 ≤ 250 ms budget on the tablet?
 
 ## 27. MVP definition
 
@@ -2160,8 +2260,8 @@ The MVP includes:
 
 **Puncheokie**
 
-- program editor with numbered combinations;
-- regular and switch stance;
+- preset and recipe-driven generated workouts with numbered combinations (no free-form editor);
+- orthodox, southpaw, and switch stance;
 - visual/haptic cue runner;
 - hand/count scoring, plus type/velocity scoring when supported;
 - optional Spotify account connection;
@@ -2226,4 +2326,11 @@ Begin Phase 1 by creating the smallest possible installable Velocity Lab develop
 - raw frame persistence; and
 - JSON export.
 
-Do not begin punchCraft metric polish, Puncheokie program authoring, or Spotify authorization until the app can capture a repeatable tracker frame for one controlled punch.
+Do not begin punchCraft metric polish, Puncheokie workout generation, or Spotify authorization until the app can capture a repeatable tracker frame for one controlled punch.
+
+## 31. Revision history
+
+| Date | Version | Change |
+|---|---|---|
+| 2026-08-22 | 1.0 | Initial specification (as PunchLab). |
+| 2026-08-23 | 1.1 | Product renamed punchCraft (PR #166). Puncheokie v0.2 design landed ([puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md)): §13 banner added; §13.3, §13.5, §14.1, §14.6, §19.4 amended; §6, §15.2, §16, §17.1, §18.1 updated; §22 Phase 5 rewritten; §25 and §26 entries added; this section added. |
