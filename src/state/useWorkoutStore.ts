@@ -28,6 +28,7 @@ import { defaultRecipe, type WorkoutRecipe } from '@domain/workout/WorkoutRecipe
 import type { SampleWorkoutKey } from '@domain/workout/samples'
 import type { CapabilityTier } from '@domain/workout/capabilityTier'
 import type { SessionPhase } from '@domain/session/WorkoutSessionClock'
+import type { FrozenRoundResult } from '@domain/session/restPhases'
 import type { Stance } from '@domain/workout/WorkoutTokens'
 import type { TileId } from '@components/workout/MetricsRail'
 
@@ -204,6 +205,14 @@ export interface LiveState {
    * accuracy.
    */
   sequenceScoreLabel: 'hand-sequence match' | 'technique match'
+  /**
+   * The round result as it stood at the bell (M33-04, doc §23).
+   *
+   * Written once on `rest-entered` and cleared when the next round starts.
+   * Nothing else may write it: the rest screen reads a value that has
+   * already stopped moving, which is the whole point of freezing it.
+   */
+  frozenRoundResult?: FrozenRoundResult
 }
 
 export const INITIAL_LIVE: LiveState = {

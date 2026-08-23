@@ -31,9 +31,11 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
+import { RestPhases } from '@components/workout/RestPhases'
 import { RoundTopBar } from '@components/workout/RoundTopBar'
 import { SimControls } from '@components/workout/SimControls'
 import { colors } from '@/theme/colors'
+import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { threeRoundFundamentals } from '@domain/workout/samples'
 import { useLive, useRecipe } from '@state/useWorkoutStore'
@@ -108,6 +110,14 @@ export default function LiveScreen(): React.JSX.Element {
 
   const roundGoal = workout.schedule[Math.max(0, live.roundIndex)]?.targetPunches
 
+  // Rest presentation (M33-04). Elapsed is derived from the remaining time
+  // the session clock already publishes — the sub-phases read the same
+  // monotonic timer as the rest itself, never a timer of their own (D6).
+  const frozen = live.frozenRoundResult
+  const restDurationMs = workout.schedule[Math.max(0, live.roundIndex)]?.restAfterMs ?? 0
+  const restElapsedMs = Math.max(0, restDurationMs - live.roundRemainingMs)
+  const preview = nextRoundPreview(workout.schedule[live.roundIndex + 1], live.stance)
+
   return (
     <View style={styles.root} testID="live-screen">
       {/* Header hidden: the zones are the chrome, and a nav bar would eat
@@ -134,6 +144,15 @@ export default function LiveScreen(): React.JSX.Element {
             >
               <Text style={styles.startButtonText}>Start workout</Text>
             </Pressable>
+          ) : live.phase === 'rest' && frozen ? (
+            <RestPhases
+              frozen={frozen}
+              {...(preview ? { nextRound: preview } : {})}
+              restElapsedMs={restElapsedMs}
+              restDurationMs={restDurationMs}
+              onSkipRest={runner.skipRest}
+              capabilityTier={live.capabilityTier}
+            />
           ) : (
             <CueStage
               {...(cues.current ? { current: cues.current } : {})}
