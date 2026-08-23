@@ -155,3 +155,30 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
   2. `adb pull /data/app/.../com.hykso/base.apk` and decompile with jadx-gui. Grep the Java for `ca281079` / `ca281077` / `caf160200b29` to find the protocol constants.
   3. Compare the decompiled init sequence with what our probe UI reveals via active byte-write experimentation — if we can reproduce their init and then decode their notification format, Phase 2's FightCampV1Adapter is essentially half-written from the decompilation.
 - **Owner / date:** Kyle + Claude, 2026-08-22.
+
+### H07-REVISED — Punch data stream is ca281069 (indication), not ca281077
+
+- **Status:** confirmed (channel + auto-emit); proposed (payload structure)
+- **Confidence:** high (channel), medium (structure)
+- **Claim:** On the FightCamp v1 custom service, the primary event stream is characteristic `ca281069-5470-4e34-94dd-caf160200b29` (indicate direction), not `ca281077` as I guessed in H07. The tracker begins emitting on `ca281069` as soon as the central enables its CCCD — no initialization write to `ca281079` is required. Two writes of `01` to `ca281079` during the probe run had no visible effect on the frame format or rate.
+- **Evidence:** Probe run 2026-08-23T01:50:07Z against tracker `EA:69:2D:9C:FD:53`. All 22 notification entries in the event log landed on `ca281069/indication`; zero landed on `ca281077` or any other notify/indicate channel. Full JSON export saved by the operator; sequence + payload references below in H10.
+- **Consequence:** The Phase 2 `FightCampV1Adapter` needs to subscribe to `ca281069` on connect and skip the initialization write entirely — the "start punch session" step H07 anticipated does not exist, or is a no-op on this firmware. `buildInitializationPlan` can be an empty list.
+- **Counter-evidence to watch:** the write may enable additional channels or unlock the writable config chars (0x1071-0x1076). Worth re-running the probe and comparing frame rate / structure with vs. without the write, on a rested tracker.
+- **Owner / date:** Kyle + Claude, 2026-08-23.
+
+### H10 — FightCamp v1 stream frame format: 9-byte records, byte-0 discriminant
+
+- **Status:** proposed
+- **Confidence:** medium (record boundary), low (field semantics)
+- **Claim:** The `ca281069` payload is a whole number of 9-byte records concatenated with no delimiter. Byte 0 of each record is a small enum discriminator (values 01, 02, 03, 04, 05 observed) — plausible interpretations: event type, hand, sensor id, or a rolling counter. Bytes 1-8 carry the structured payload of that record and their meaning depends on byte 0.
+- **Evidence (raw hex, probe run 2026-08-23):**
+  - 9-byte payloads (single record): `011001a0518a6a530a`, `03d400a1518a6a1609`, `01b500a1518a6aaf08`, `05c200a2518a6af208`, `013f02a3518a6a4109`, `059300a3518a6abc06`, `03fa000300c2a89409`, `042d010400c2a83c09`, `0310010400c2a8ce09`, `0328010500c2a8820a`, `01d0010500c2a8f10a`, `055e010d00c2a8cf0b`, `03d6000f00c2a88c09`, `03d8000f00c2a8fa08`, `01bd001100c2a81a08`, `03cb001100c2a8a008`, `0348011100c2a8fd08`, `03a4001300c2a87e0a`, `03c8001400c2a8c008`.
+  - 18-byte payloads (two records concatenated): `05bd006f518a6a86040570006f518a6abc04`, `0584006f518a6af20402f5009f518a6a9d0c`.
+- **Structural observations:**
+  - All observed payload lengths are multiples of 9. Splitting 18-byte payloads on the 9-byte boundary yields records that begin with the same small-enum discriminator range as single-record frames — strong evidence that 9 is the record width.
+  - Frame arrival is bursty and correlates with punch timing: initial connect burst (seq 0-7), quiescence, then two burst clusters around the operator's two punches (seq 9-13 and seq 17-23).
+  - Two of the fields might be little-endian 16-bit counters — e.g. bytes 3-4 in the post-first-write frames step through `03 00`, `04 00`, `05 00`, `0d 00`, `0f 00` (twice), `11 00` (three times), `13 00`, `14 00` in monotonically-increasing order — consistent with a per-record counter or per-punch id.
+  - A subset of the frames after the operator's writes have a stable `c2 a8` pair at bytes 5-6 that the pre-write frames do not — worth investigating whether the write actually did latch some state we haven't visualized yet.
+- **Consequence if true:** Phase 2 `FightCampV1Decoder` walks the payload in 9-byte strides, switches on byte 0, and materializes one `TrackerPunchEvent` per record. Sixteen more probe runs correlated to specific punch actions (single L, single R, slow, fast, hooks vs straights) will let us pin field semantics without decompiling anything.
+- **Counter-evidence to watch:** longer captures may reveal record widths other than 9 for different event types (config-changed, low-battery, etc.). The 9-byte assumption is only as strong as the sample.
+- **Owner / date:** Kyle + Claude, 2026-08-23.
