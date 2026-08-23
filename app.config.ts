@@ -58,6 +58,9 @@ const config: ExpoConfig = {
     'expo-splash-screen',
     'expo-status-bar',
     'expo-screen-orientation',
+    // M34-01 voice spike: cached-clip playback and TTS. `expo-audio` needs a
+    // config plugin for the Android record permission; `expo-speech` does not.
+    'expo-audio',
     [
       'expo-build-properties',
       {
