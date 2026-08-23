@@ -27,6 +27,7 @@ import type {
   SpikeReport,
   SubscriptionResult,
 } from '@ble/bleTypes'
+import { useCaptureSession } from '@capture/useCaptureSession'
 import { getBuildInfo } from '@/diagnostics/buildInfo'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 import { getTrackerSlots } from '@/state/useTrackerStore'
@@ -128,6 +129,10 @@ function errMessage(e: unknown): string {
   }
 
 export default function SpikeScreen() {
+  // Opens a capture for this screen so the spike's notification frames are
+  // persisted by the transport rather than living only in the run report.
+  useCaptureSession('ble-spike')
+
   const info = useMemo(() => getBuildInfo(), [])
   const [state, setState] = useState<UiState>({
     phase: 'idle',

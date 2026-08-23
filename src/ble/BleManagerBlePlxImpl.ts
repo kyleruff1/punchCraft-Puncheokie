@@ -23,6 +23,7 @@ import type {
   GattServiceSnapshot,
   GattSnapshot,
   RawBleFrame,
+  RawFrameSink,
   ReadResult,
   SubscriptionResult,
   WriteResult,
@@ -166,6 +167,22 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
   /** Overridable getter — the capture pipeline swaps this in when a real
    * capture opens; until then frames are tagged 'ephemeral'. */
   getCaptureId: () => string = () => 'ephemeral'
+
+  setCaptureIdProvider(provider: () => string): void {
+    this.getCaptureId = provider
+  }
+
+  /**
+   * Durable sink for raw frames. Every frame is handed here BEFORE it is
+   * delivered to the subscriber that asked for it, so persist-before-parse
+   * holds for every consumer — Live decode, the protocol probe, the BLE
+   * spike — without any of them opting in.
+   */
+  private frameSink: RawFrameSink | null = null
+
+  setFrameSink(sink: RawFrameSink | null): void {
+    this.frameSink = sink
+  }
 
   private ensure(): PlxBleManager {
     if (!this.manager) this.manager = new PlxBleManager()
@@ -451,6 +468,18 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
             valueBase64,
             valueHex,
             connectionGeneration: this.currentGeneration(deviceId),
+          }
+          // PERSIST BEFORE DELIVERY (CLAUDE.md §1, §11.9, §12.4). The frame
+          // reaches durable storage before any subscriber — decoder, probe UI
+          // or spike harness — is even aware of it. Doing this here rather
+          // than at each call site is what makes the guarantee structural:
+          // a new screen cannot forget to persist. The sink's contract is
+          // that capture() is synchronous and never throws, but we guard
+          // anyway because a storage fault must never break frame delivery.
+          try {
+            this.frameSink?.capture(frame)
+          } catch {
+            /* sink contract violation — never break the native callback */
           }
           onFrame(frame)
         },

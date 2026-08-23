@@ -38,6 +38,15 @@ export interface PunchStreamOptions {
     unknown?: boolean
     notes?: string[]
   }) => void
+  /**
+   * Optional durable sink for DECODED events.
+   *
+   * Raw frames are NOT persisted here — the transport does that before the
+   * frame ever reaches this module (see BleManagerFacade.setFrameSink), which
+   * covers every consumer rather than just this one. Decoded events are
+   * derived data and belong to whoever is doing the decoding, hence this hook.
+   */
+  onEventPersist?: (event: TrackerPunchEvent) => void
 }
 
 export interface PunchStreamController {
@@ -53,7 +62,7 @@ export interface PunchStreamController {
 export async function startPunchStream(
   opts: PunchStreamOptions,
 ): Promise<PunchStreamController> {
-  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta } = opts
+  const { facade, deviceId, adapter, hand, onEvent, onDecodeMeta, onEventPersist } = opts
 
   const handles: SubscriptionHandle[] = []
   const subscribedChars: string[] = []
@@ -64,9 +73,17 @@ export async function startPunchStream(
 
   const onFrame = (frame: RawBleFrame): void => {
     const stampedFrame: RawBleFrame = { ...frame, handAtCapture: hand as Hand }
+
+    // NOTE: the raw frame is ALREADY persisted by the time it arrives here —
+    // the transport writes it to the capture sink before delivering it to any
+    // subscriber (CLAUDE.md §1, §11.9, §12.4). So a decoder throw below can no
+    // longer cost us the payload, which is why this try/catch is safe.
     try {
       const result = adapter.decodeFrame(stampedFrame, state)
-      for (const ev of result.events) onEvent(ev)
+      for (const ev of result.events) {
+        onEventPersist?.(ev)
+        onEvent(ev)
+      }
       if (onDecodeMeta && (result.malformed || result.unknown || result.notes)) {
         onDecodeMeta({
           frameId: frame.id,

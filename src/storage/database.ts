@@ -10,7 +10,7 @@
 import { openDatabaseSync, type SQLiteDatabase } from 'expo-sqlite'
 
 import { logger, safe } from '@/diagnostics/logger'
-import { runMigrations } from '@/storage/migrations/001_initial'
+import { runMigrations } from '@/storage/migrations'
 
 const DB_NAME = 'punchcraft.db'
 

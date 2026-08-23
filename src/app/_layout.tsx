@@ -8,6 +8,7 @@ import { StyleSheet } from 'react-native'
 // before any screen calls getBleManager(). See src/ble/index.ts.
 import '@/ble'
 
+import { useAutoConnectOnLaunch } from '@ble/useAutoConnectOnLaunch'
 import { colors } from '@/theme/colors'
 
 const stackScreenOptions = {
@@ -19,6 +20,10 @@ const stackScreenOptions = {
 } as const
 
 export default function RootLayout() {
+  // Bind the known trackers once per launch (blue -> left, red -> right).
+  // Non-blocking and non-throwing; Velocity Lab offers a manual retry.
+  useAutoConnectOnLaunch()
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
