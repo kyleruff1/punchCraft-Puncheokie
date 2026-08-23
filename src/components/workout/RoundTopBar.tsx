@@ -18,7 +18,11 @@ import { colors, stateColors } from '@/theme/colors'
 import type { ConnectionState } from '@ble/bleTypes'
 import type { Stance } from '@domain/workout/WorkoutTokens'
 
-/** `'simulated'` is a first-class state: the sim backs the screen until M33-01. */
+/**
+ * `'simulated'` is a first-class state, not a placeholder: since M33-01 the
+ * live screen falls back to the simulator whenever both gloves are not
+ * connected, and the chip has to say so.
+ */
 export type LiveConnectionState = ConnectionState | 'simulated'
 
 export interface RoundTopBarProps {

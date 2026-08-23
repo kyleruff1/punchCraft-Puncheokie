@@ -174,9 +174,22 @@ describe('zones', () => {
     expect(textOf(tree.root.findByProps({ testID: 'round-countdown' }))).toBe('1:35')
   })
 
-  it('marks the source as simulated', () => {
+  it('marks the source as simulated when no tracker is connected', () => {
+    // M33-01: the chips are fed from the selected source, and with no slots
+    // assigned that is still the simulator.
     const tree = render()
     expect(textOf(tree.root.findByProps({ testID: 'glove-chip-L' }))).toContain('SIM')
+    expect(textOf(tree.root.findByProps({ testID: 'glove-chip-R' }))).toContain('SIM')
+  })
+
+  it('surfaces a degraded tracker through the top bar, not a new channel', () => {
+    const tree = render()
+    expect(nodes(tree, 'degraded-warning')).toHaveLength(0)
+
+    drive({ degraded: 'Left glove reconnecting — those punches are not being counted' })
+    expect(textOf(tree.root.findByProps({ testID: 'degraded-warning' }))).toContain(
+      'Left glove reconnecting',
+    )
   })
 
   it('shows counts from the store', () => {
