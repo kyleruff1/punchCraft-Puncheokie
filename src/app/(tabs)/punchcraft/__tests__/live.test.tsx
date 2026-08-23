@@ -347,6 +347,41 @@ describe('matching surfaces (#188)', () => {
   })
 })
 
+describe('pacing surfaces (#191)', () => {
+  it('shows a real required pace once pacing supplies one', () => {
+    const tree = render()
+    drive({ phase: 'work', requiredPace: 63.4 })
+    expect(textOf(tree.root.findByProps({ testID: 'metric-required-pace' }))).toContain('63/min')
+  })
+
+  it('still shows an em dash before pacing has a figure', () => {
+    // Not measured yet is not zero.
+    const tree = render()
+    drive({ phase: 'work', requiredPace: undefined })
+    expect(textOf(tree.root.findByProps({ testID: 'metric-required-pace' }))).toContain('—')
+  })
+
+  it('shows the pacing cue when one is set', () => {
+    const tree = render()
+    drive({ phase: 'work', pacingCue: 'Build the pace' })
+    expect(textOf(tree.root.findByProps({ testID: 'pacing-cue' }))).toBe('Build the pace')
+  })
+
+  it('shows no cue when there is none — silence is the unreachable case', () => {
+    // Doc §25: an out-of-reach target produces no cue at all, so the
+    // absence has to render as nothing rather than as an empty row.
+    const tree = render()
+    drive({ phase: 'work', pacingCue: undefined })
+    expect(nodes(tree, 'pacing-cue')).toHaveLength(0)
+  })
+
+  it('uses the exact doc §22 wording', () => {
+    const tree = render()
+    drive({ phase: 'work', pacingCue: 'You are ahead; stay sharp' })
+    expect(allText(tree)).toContain('You are ahead; stay sharp')
+  })
+})
+
 describe('no red flash mid-combination (doc §13, §21)', () => {
   it('uses danger only on the stop control, never in the cue zone', () => {
     const tree = render()

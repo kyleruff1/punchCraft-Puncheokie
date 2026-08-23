@@ -28,6 +28,7 @@ import { defaultRecipe, type WorkoutRecipe } from '@domain/workout/WorkoutRecipe
 import type { SampleWorkoutKey } from '@domain/workout/samples'
 import type { CapabilityTier } from '@domain/workout/capabilityTier'
 import type { SessionPhase } from '@domain/session/WorkoutSessionClock'
+import type { FrozenRoundResult } from '@domain/session/restPhases'
 import type { Stance } from '@domain/workout/WorkoutTokens'
 import type { TileId } from '@components/workout/MetricsRail'
 
@@ -188,12 +189,30 @@ export interface LiveState {
   degraded?: string
   /** Punches with no expectation to answer. Counted, never discarded. */
   extraCount: number
+  /** Punches per minute needed to finish on target (doc §22). */
+  requiredPace?: number
+  /** Extrapolated from the rate achieved so far, not the rate being asked. */
+  projectedTotal?: number
+  /**
+   * The doc §22 pacing cue, set only at a boundary and only when the band
+   * is crossed. Absent when the target is unreachable — doc §25 forbids
+   * encouraging acceleration toward something out of reach.
+   */
+  pacingCue?: 'Build the pace' | 'You are ahead; stay sharp'
   /**
    * What a sequence score may be called at the live tier (D4). Held in the
    * store so no surface can hardcode it and drift into claiming technique
    * accuracy.
    */
   sequenceScoreLabel: 'hand-sequence match' | 'technique match'
+  /**
+   * The round result as it stood at the bell (M33-04, doc §23).
+   *
+   * Written once on `rest-entered` and cleared when the next round starts.
+   * Nothing else may write it: the rest screen reads a value that has
+   * already stopped moving, which is the whole point of freezing it.
+   */
+  frozenRoundResult?: FrozenRoundResult
 }
 
 export const INITIAL_LIVE: LiveState = {
