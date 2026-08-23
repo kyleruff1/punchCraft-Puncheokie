@@ -23,7 +23,7 @@ Read [docs/design-spec.md](docs/design-spec.md) — and, for anything Puncheokie
 
 ## GitHub conventions
 
-- 37 Milestones = the roadmap (`M01`…`M30` original; `M31`…`M37` Puncheokie v0.2/v0.3; `M24`–`M26` superseded). 8 Epics = phases (`[EPIC] Phase N — …`, label `epic`). Every task/story/spike issue has: a milestone, a `phase:N` label, an `area:*` label, a type label, and is a sub-issue of its phase epic.
+- 38 Milestones = the roadmap (`M01`…`M30` original; `M31`…`M38` Puncheokie v0.2/v0.3 + workout backdrop; `M24`–`M26` superseded). 8 Epics = phases (`[EPIC] Phase N — …`, label `epic`). Every task/story/spike issue has: a milestone, a `phase:N` label, an `area:*` label, a type label, and is a sub-issue of its phase epic.
 - Project board: https://github.com/users/kyleruff1/projects/5 — fields Phase, Area, Priority, Size, Sprint (2-week iterations from 2026-08-24).
 - New work items: add them to the right phase fragment in `tools/backlog/backlog-issues.json` (milestones in `backlog-static.json`) and run `node tools/backlog/seed.mjs --dry-run`, then `seed.mjs`. It is idempotent by **exact title** and never updates an existing issue — retitle or close superseded ones with `gh issue edit` / `gh issue close`.
 - Branch per issue (`feat/M05-02-tracker-connection`), PR title `<type>: <summary> (#issue)`, PR body `Closes #N`.

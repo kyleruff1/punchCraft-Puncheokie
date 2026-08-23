@@ -1,6 +1,6 @@
 # Roadmap
 
-The roadmap is 37 GitHub Milestones — `M01`…`M30` from the original plan plus `M31`…`M37` added for the Puncheokie v0.2/v0.3 design (`M24`–`M26` are retained but superseded) — grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
+The roadmap is 38 GitHub Milestones — `M01`…`M30` from the original plan plus `M31`…`M38` added for the Puncheokie v0.2/v0.3 design and the shared workout backdrop (`M24`–`M26` are retained but superseded) — grouped under 8 Phase Epics (`[EPIC] Phase 0` … `[EPIC] Phase 7`). Every task/story/spike issue is a sub-issue of its phase epic and lives on Project #5 with Phase, Area, Priority, Size, and (when scheduled) Sprint set.
 
 - Board: https://github.com/users/kyleruff1/projects/5
 - Milestones: https://github.com/kyleruff1/punchCraft-Puncheokie/milestones
@@ -80,6 +80,6 @@ Specified by [puncheokie-ux-workout-engine.md](puncheokie-ux-workout-engine.md) 
 | 2 | M11–M16 | no (Sprint 2+) |
 | 3 | M17–M19 | no |
 | 4 | M20–M23 | no |
-| 5 | M24–M26 (superseded), M31–M37 | no |
+| 5 | M24–M26 (superseded), M31–M38 | no |
 | 6 | M27–M28 | no |
 | 7 | M29–M30 | no |
