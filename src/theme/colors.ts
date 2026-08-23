@@ -83,7 +83,10 @@ export const colors = {
   /** Success indicator. Brightened teal (~6:1). */
   success: '#12B3B3',
   /**
-   * The exact-target result (doc §23; M33-03, shared with M32-08).
+   * Reward. Two consumers, deliberately sharing one token: the
+   * exact-target result badge (doc §23, M33-03) and the form-affirmation
+   * glow on a punch node. Both mean "that was right", so they should not
+   * be two different golds.
    *
    * Mustard's metallic sibling, not a fifth swatch: hue ≈46° against
    * mustard's ≈47°, so it is the same authored family — but desaturated
@@ -94,7 +97,8 @@ export const colors = {
    * background, so it is legible as text and not only as a fill.
    *
    * Colour still never carries the meaning alone (spec §19.4) — the exact
-   * state renders a target icon and the words `EXACT TARGET` beside it.
+   * state renders a target icon and the words `EXACT TARGET`, and the form
+   * affirmation renders a star glyph and a "good form" label.
    */
   gold: '#D4AF37',
   /**
@@ -108,18 +112,6 @@ export const colors = {
   /** Solid destructive button background. */
   dangerSurface: '#3D1608',
 
-  /**
-   * Reward / affirmation. Mustard's metallic sibling, not a fifth swatch:
-   * the same authored hue family (~46 deg vs mustard's ~47), desaturated and
-   * darkened so it reads as *metal* rather than as `accent`.
-   *
-   * That separation is the point. `accent` already means "the thing you are
-   * doing right now" on the live screen, so borrowing it to say "you did
-   * that well" would say the wrong thing. Used for the form-affirmation
-   * glow and the exact-target badge; ~8.9:1 on `background`, so it is
-   * legible as text and not only as a large fill.
-   */
-  gold: '#D4AF37',
 
   /**
    * Physical tracker colours. The trackers are colour-coded and permanently
