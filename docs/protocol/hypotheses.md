@@ -182,3 +182,67 @@ _(none yet — first entries are logged after the M01 official-app captures.)_
 - **Consequence if true:** Phase 2 `FightCampV1Decoder` walks the payload in 9-byte strides, switches on byte 0, and materializes one `TrackerPunchEvent` per record. Sixteen more probe runs correlated to specific punch actions (single L, single R, slow, fast, hooks vs straights) will let us pin field semantics without decompiling anything.
 - **Counter-evidence to watch:** longer captures may reveal record widths other than 9 for different event types (config-changed, low-battery, etc.). The 9-byte assumption is only as strong as the sample.
 - **Owner / date:** Kyle + Claude, 2026-08-23.
+
+### H11 — FightCamp v1 punch decoder — CONFIRMED via Hykso APK decompilation
+
+- **Status:** confirmed
+- **Confidence:** high (source-of-truth from vendor implementation)
+- **Source:** Hykso app APK v11.35+ (`com.hykso.hyksofit`) pulled from tablet 2026-08-22, decompiled with `jadx 1.5.2`. Key files:
+  - `com/hykso/hyksofit/session/d.java` — the `Punch` class constructor is the decoder.
+  - `X/a0.java` — the BroadcastReceiver that splits BLE notification payloads into 9-byte (v>=4) or 13-byte (v<4) punch records and dispatches per record.
+  - `m1/C0477c.java` — all custom-service characteristic UUIDs.
+  - `m1/AbstractC0475a.java` — the mode command bytes for the tracker.
+
+**Command channel (H07 was wrong on the UUID):**
+- Write mode bytes to `ca281071` (NOT `ca281079`). Modes:
+  - `0` = Idle · `1` = Normal (enables punch stream) · `2` = Gym · `3` = Fetch · `4` = Test · `5` = Normal Kick · `15` = Shutdown · `16` / `17` / `18` = unnamed
+- Second command channel `ca281072` accepts bytes 0/1/2 for a separate mode.
+- `ca281079` and `ca281077` are not used by the vendor for punch commands or the punch stream — Hykso reads/writes chars 0x1071/0x1072 and consumes notifications on 0x1069.
+
+**Data channel:**
+- Punch stream is `ca281069` (indication), auto-enabled on CCCD subscribe.
+
+**Frame packaging (from `X/a0.java`):**
+- Notification payload is 9 or 18 bytes for version >= 4. If 18 bytes: first 9 bytes = punch 1, next 9 = punch 2.
+- Legacy version < 4 uses 12- or 13-byte records; older firmware only.
+- The "version" is a `C0451a` field `f5812b` populated from a `com.hykso.EXTRA_VERSION` string that comes from device metadata read on connect (likely the Software Revision String on the Device Information service, 0x180a).
+
+**Per-record decoder — version >= 4, 9 bytes:**
+
+| Byte | Field | Interpretation |
+|---|---|---|
+| `0` | `punchType : uint8` | Small enum. `Punch.a()` returns "is a real punch" iff `type != 0 && type != 5`. `Punch.b()` returns "is power" iff `type == 1 || type == 2` (velocity is scaled ×1.7 for these). |
+| `1..2` (LE) | `accelerationRaw : uint16` | `acceleration = raw / 100.0` — unit not labeled in source but consistent with g-force (typical values 1-50 g). |
+| `3..6` (LE) | `epochSeconds : uint32` | Unix time in seconds. |
+| `7` | `subSecond256 : uint8` | Millisecond fraction = `byte7 * 1000 / 256`. Combined timestamp (ms) = `epochSeconds * 1000 + subSecond256 * 1000 / 256`. |
+| `8` | `velocityRaw : uint8` | Piecewise-scaled to `velocity`: `v = raw / 2.0`; if `v <= 4.0`: `velocity = v * 0.5`; elif `v <= 8.0`: `velocity = (v - 4.0) * 3.0 + 2.0`; else: `velocity = (v - 8.0) * 6.0 + 14.0`. If `type in {1, 2}`: `velocity *= 1.7`. Unit not labeled — could be m/s, mph, or a proprietary tracker unit; §4.3 says we label it "tracker-reported velocity" until externally validated. |
+
+**Per-record decoder — version < 4, 13 bytes (legacy):**
+
+| Byte | Field |
+|---|---|
+| `0` | `punchType : uint8` |
+| `2..3` (LE) | `accelerationRaw : uint16` → `raw / 100.0` |
+| `4..7` (LE) | `epochSeconds : uint32` |
+| `8` | `subSecond256 : uint8` |
+| `11` | `velocityRaw : uint8` → simple `raw / 2.0`, no piecewise scaling |
+
+**Hand identity is NOT in the payload.** Hykso tracks left/right by MAC address stored in SharedPreferences (`PairingInfo` → `left_device_addr` / `right_device_addr`) and injects it as `EXTRA_POSITION` when the notification fires. So the `hand` field on our `TrackerPunchEvent` must come from the `TrackerConnection` metadata (which slot the device is assigned to), NOT from the frame.
+
+**Verification against probe capture `spike-mt4wm1d8-fx6x` sample `011001a0518a6a530a`:**
+- `type = 0x01` → is a power punch (velocity ×1.7)
+- `acceleration = 0x0110 / 100 = 2.72` (g, presumed)
+- `epochSeconds = 0x6a8a51a0 = 1787449760` → 2026-08-22 19:29:20 UTC (within a few hours of the probe run at 21:50 UTC — plausible tracker clock)
+- `subSecondMs = 0x53 * 1000 / 256 = 324 ms`
+- `velocityRaw = 0x0a = 10 → v = 5.0`. `v > 4 && v <= 8` → `velocity = (5-4)*3 + 2 = 5.0`. Type is power → `velocity = 5.0 * 1.7 = 8.5` (units unlabeled).
+
+Result: a decoded punch at 2026-08-22 19:29:20.324 UTC, power-type, 2.72g accel, 8.5 tracker-units velocity. Realistic for a controlled punch.
+
+**Implications for Phase 2:**
+- `FightCampV1Adapter.buildInitializationPlan` should optionally write `01` to `ca281071` to force Normal Mode. Testing shows the tracker also auto-streams without this write, so it's a "nice to have" not "required".
+- `FightCampV1Decoder.decodeFrame` implements the version >= 4 table above; per-frame loop covers 1-2 records.
+- Set `TrackerPunchEvent.velocityUnit = 'tracker-unit'` (§4.3), `velocityRaw = raw / 2.0` (pre-piecewise), `velocityCalibrated = post-piecewise-with-power-boost`.
+- Read the tracker's Software Revision String on connect to populate `C0451a`-equivalent version field.
+- Legacy 13-byte path only needed for firmware versions < 4 — we can build v>=4 first, add legacy later if any of our physical trackers report v<4.
+
+- **Owner / date:** Kyle + Claude, 2026-08-22.
