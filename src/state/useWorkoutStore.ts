@@ -186,6 +186,14 @@ export interface LiveState {
   tiles: TileId[]
   sourceKind: 'simulated' | 'tracker'
   degraded?: string
+  /** Punches with no expectation to answer. Counted, never discarded. */
+  extraCount: number
+  /**
+   * What a sequence score may be called at the live tier (D4). Held in the
+   * store so no surface can hardcode it and drift into claiming technique
+   * accuracy.
+   */
+  sequenceScoreLabel: 'hand-sequence match' | 'technique match'
 }
 
 export const INITIAL_LIVE: LiveState = {
@@ -199,6 +207,8 @@ export const INITIAL_LIVE: LiveState = {
   capabilityTier: 'hand-only',
   tiles: DEFAULT_TILES,
   sourceKind: 'simulated',
+  extraCount: 0,
+  sequenceScoreLabel: 'hand-sequence match',
 }
 
 export interface LiveStoreState {
