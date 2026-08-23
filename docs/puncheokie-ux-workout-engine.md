@@ -1,6 +1,6 @@
 # punchCraft — Puncheokie UX and Workout Engine Design
 
-> **Version 0.3 — authored 2026-08-22 (v0.2), landed and extended 2026-08-23.** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §31 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§28` are stable and may be cited from issues as "doc §n"; §29 records the landing decisions and §30 the revision history.
+> **Version 0.4 — authored 2026-08-22 (v0.2), landed and extended 2026-08-23 (v0.3), reconciled against on-device evidence 2026-08-23 (v0.4).** Parent document: [punchCraft — Product and Engineering Design Specification](design-spec.md) (spec §13, §15.2, §16, §17.1, §18, §22 Phase 5, §27). **Status: Accepted — canonical for Puncheokie.** Where this document and the spec disagree on Puncheokie, this document wins; the spec's §13 banner and §31 point here, and the "Status and supersession" table below lists every affected spec section. Owner: Kyle Ruff (`kyleruff1`). Work items: [roadmap.md](roadmap.md) Phase 5 and the Phase 5 fragment of [`tools/backlog/backlog-issues.json`](../tools/backlog/backlog-issues.json). Section numbers `§1`–`§28` are stable and may be cited from issues as "doc §n"; §29 records the landing decisions and §30 the revision history.
 
 ## Status and supersession
 
@@ -11,7 +11,7 @@
 | C3 | §13.2, §13.3, §13.4 stance unions | supersedes | `defaultStance: 'orthodox' \| 'southpaw'`; block `stance: 'inherit' \| 'orthodox' \| 'southpaw' \| 'switch'`. "regular" is retired. See D2. |
 | C4 | §3.4, §14.1, §14.6; CLAUDE.md rule 8 | clarifies — compatible | Cadence BPM is authored by the recipe/generator on the §18.3 monotonic clock; never derived from Spotify audio, Audio Features, track metadata, or playback position; no scopes beyond playlist-read. See D3. |
 | C5 | §17.1, §22 Phase 5 tasks 1–2 + DoD, §27 MVP, §6 routes `programs.tsx`/`editor.tsx` | supersedes | Recipe + deterministic seeded generator replace editable programs and the editor; persistence = recipe params + `generator_version` + `seed`. Routes become `presets.tsx` + `recipe.tsx`. |
-| C6 | §13.3, §13.6 scoring dimensions, §17.1 `cue_results` | clarifies | Defense/footwork/coach tokens are display-only and unscored; completion counts punch tokens only; tier is "hand + broad type" (H11); **hand-sequence match** label on every scoring surface including the live count badge and summary. See D4. |
+| C6 | §13.3, §13.6 scoring dimensions, §17.1 `cue_results` | clarifies | Defense/footwork/coach tokens are display-only and unscored; completion counts punch tokens only; **hand-sequence match** label on every scoring surface including the live count badge and summary. See D4. ⚠️ The tier clause originally read "hand + broad type (H11)" — **corrected to `hand + timestamp + velocity` by D12** after H12 refuted the vendor type flag on hardware. |
 | C7 | §18.1 states, §18.2 acceptance, §11.5/§19.3 `recovering` | clarifies — naming | Cue states nest inside session `work`; `paused` suspends cues (`duringPause`); windows clamp to the active work interval; the cue-level post-window state is `gap`; block kind `active-recovery` unchanged. See D5. |
 | C8 | §18.1 `rest` | clarifies | The three rest phases are presentation sub-phases of `rest`, not new session states. See D6. |
 | C9 | §19.4, §22 Phase 7 task 8 | amends — Puncheokie live screen only | Landscape-first because the target is the tablet (§5.1); phone-width is the Phase 7 follow-up. See D7. |
@@ -20,7 +20,7 @@
 | C12 | §19.4 no color-only indication | complies | The green/red/gold badge always carries text and an icon. |
 | C13 | §15.1, §16 | amends — structure | Text-to-speech, audio focus, and ducking are Expo/Android APIs, so they live in `src/audio/` behind a domain port; `src/domain/coach/` stays pure. |
 
-Tracker facts this design assumes (H11, confirmed 2026-08-22): hand comes from the connection slot; the payload carries a two-value vendor type flag (heavy versus standard) and never a distinct technique; there is a tracker epoch timestamp; velocity arrives as tracker-reported velocity in unlabeled tracker units; and there is no sequence number. Anything beyond that is out of scope for scoring.
+Tracker facts this design assumes (**H12, superseding the H11 reading, confirmed on-device 2026-08-23**): hand comes from the connection slot; there is a tracker epoch timestamp; velocity arrives as tracker-reported velocity in unlabeled tracker units; there is no sequence number; and **the payload's type byte carries no device-portable meaning at all** — not a distinct technique, and not the "two-value vendor flag (heavy versus standard)" this document assumed at v0.3. The tracker also **transmits nothing below an acceleration floor**, so a soft strike does not exist to the app. Anything beyond hand, timestamp and velocity is out of scope for scoring. See **D12** (tier) and **D13** (transmit floor); the original H11 wording is preserved in `docs/protocol/hypotheses.md` for provenance.
 
 ## 1. Core user flow
 
@@ -56,15 +56,17 @@ The user's "regular" stance may be configured as orthodox or southpaw. "Switch" 
 
 Puncheokie must not claim technique recognition beyond the tracker data.
 
-| Available event fields | Supported validation |
-|---|---|
-| Hand only | Expected hand order and count |
-| Hand + timestamp | Hand order, count, and timing window |
-| Hand + broad type | Broad technique-family match |
-| Hand + distinct type | Full numbered technique match |
-| Velocity | Optional intensity-zone target |
+| Available event fields | Supported validation | FightCamp v1? |
+|---|---|---|
+| Hand only | Expected hand order and count | ✅ |
+| Hand + timestamp | Hand order, count, and timing window | ✅ |
+| Hand + broad type | Broad technique-family match | ❌ unreachable (D12) |
+| Hand + distinct type | Full numbered technique match | ❌ unreachable (D12) |
+| Velocity | Optional intensity-zone target | ✅ |
 
 When only hand is known, a regular-stance 1-2-3 sequence maps to left-right-left. The app may score that hand pattern but must label the result hand-sequence match, not punch-technique accuracy.
+
+**Tier reached on current hardware: `hand + timestamp + velocity`.** The two type rungs stay in this ladder for future decoders, but H12 showed the FightCamp v1 type byte carries no device-portable meaning, so neither is reachable today — see **D12**. The tier is resolved from connected-tracker capabilities at run time and is never hardcoded.
 
 ## 4. Program structure
 
@@ -705,13 +707,17 @@ This allows visual/audio latency and tracker latency to be measured independentl
 
 Tracker capability determines what can be scored:
 
-- **Count only:** actual punches and pace.
-- **Hand:** expected left/right sequence and extra punches.
-- **Broad type:** straight, hook, uppercut family matching.
-- **Detailed type:** full number matching.
-- **Velocity:** average, peak, zone, and consistency.
+- **Count only:** actual punches and pace. — *available*
+- **Hand:** expected left/right sequence and extra punches. — *available*
+- **Broad type:** straight, hook, uppercut family matching. — **unavailable on FightCamp v1 (D12)**
+- **Detailed type:** full number matching. — **unavailable on FightCamp v1 (D12)**
+- **Velocity:** average, peak, zone, and consistency. — *available*
 
 Defense and footwork commands are not automatically marked as failed when the trackers cannot observe them. They are instructional time blocks. Body-versus-head placement is also unscored unless the protocol reliably distinguishes it.
+
+The same reasoning now extends to technique itself: because the type byte is not device-portable (D12), *which* punch was thrown is unobservable, and no surface may assert it. Two combinations with the same hand sequence — `1-2-3` and `1-2b-3` are both left-right-left — are indistinguishable to the tracker and are scored identically. The cue tells the athlete which to throw; the tracker only confirms the hand fired in the window. This is precisely what the **hand-sequence match** label means.
+
+A `missed` outcome is likewise ambiguous: the tracker transmits nothing below an acceleration floor, so a strike thrown too softly and a strike not thrown at all are the same absence of evidence (D13). Neither may be presented as a failure.
 
 Every received punch should produce immediate but subtle feedback:
 
@@ -924,7 +930,7 @@ Added in v0.3 (2026-08-23). This section defines what happens on the screen and 
 
 ### 28.1 Why plausibility rather than proof
 
-The confirmed tracker (H11) reports which slot fired, a two-value vendor type flag, a tracker timestamp, and tracker-reported velocity. It cannot report that a strike was a hook rather than a cross. When the screen shows `1-2-3` in orthodox — left, right, left — the tracker can only establish that a left, a right, and a left arrived, in that order, inside the window.
+The confirmed tracker (**H12**) reports which slot fired, a tracker timestamp, and tracker-reported velocity — and a type byte that carries no device-portable meaning, so it is not used (D12). It cannot report that a strike was a hook rather than a cross. When the screen shows `1-2-3` in orthodox — left, right, left — the tracker can only establish that a left, a right, and a left arrived, in that order, inside the window.
 
 Confirmation is therefore **evidential, not definitive**: the app grades how consistent the observed strikes are with the displayed combination and says so in those words. Every label remains **hand-sequence match** (D4). A high-confidence result means "the strikes you threw are consistent with this combination", never "your technique was correct".
 
@@ -965,7 +971,7 @@ For each combination instance the engine computes signals in the range 0..1:
 | `handOrder` | ordered agreement between the expected hand sequence and the hands observed inside the window |
 | `timing` | fraction of confirmed nodes whose strike landed inside its token window, weighted by how centred it was |
 | `separation` | whether inter-strike intervals are consistent with the block's cadence — guards against one flail registering as three |
-| `intensity` | agreement between the emphasis a combination implies and the observed vendor type flag and tracker-reported velocity |
+| `intensity` | agreement between the emphasis a combination implies and the observed tracker-reported velocity. ⚠️ The vendor-type-flag input is removed by **D12** — velocity alone on FightCamp v1, and the signal is omitted entirely if velocity is unavailable |
 | `exclusivity` | whether extra strikes were interleaved between confirmed nodes |
 
 `confidence` is the weighted mean of the signals **that the connected tracker can actually supply**. This is the load-bearing rule: a signal the capability tier cannot produce is **omitted from the mean, never scored as zero**. An absent capability must never look like athlete failure. Weights are constants, tuned on the bag (M36-03).
@@ -1018,7 +1024,7 @@ These decisions were taken when this document was landed against spec v1.0. They
 
 **D3 — Cadence is authored, never derived.** BPM cadence profiles are recipe parameters expanded by the generator and scheduled on the §18.3 monotonic clock. The app never derives tempo from Spotify audio, the Audio Features/Analysis endpoints, the playing track's metadata, microphone input, or playback position; it requests no scopes beyond `playlist-read-private` (and `playlist-read-collaborative` only if needed); and it never aligns a cue to a song. Cadence therefore coexists with "no beat sync" (§3.4, §14.6, CLAUDE.md rule 8): any coincidence between cadence and music is accidental, and the workout is identical with music off.
 
-**D4 — Scoring scope and labeling.** The confirmed tracker (H11) reports hand (from the connection slot), a power-punch vendor classification flag versus non-power, a tracker timestamp, and tracker-reported velocity in tracker units; it has no sequence number and cannot observe slips, rolls, pivots, or rests. Therefore defense, footwork, and coach tokens are display-only, never scored, and never counted toward completion; completion, correct-hand, and timing percentages are computed over punch tokens only; the Puncheokie capability tier is "hand + broad type"; and every surface that shows a score — the live count badge, block and round readouts, and the session summary — labels it **hand-sequence match**, never technique accuracy.
+**D4 — Scoring scope and labeling.** ⚠️ *Partially superseded by D12 — the tier clause below was wrong. Everything else in D4 stands.* The confirmed tracker (H11) reports hand (from the connection slot), ~~a power-punch vendor classification flag versus non-power~~, a tracker timestamp, and tracker-reported velocity in tracker units; it has no sequence number and cannot observe slips, rolls, pivots, or rests. Therefore defense, footwork, and coach tokens are display-only, never scored, and never counted toward completion; completion, correct-hand, and timing percentages are computed over punch tokens only; ~~the Puncheokie capability tier is "hand + broad type"~~ **(see D12: the tier is `hand + timestamp + velocity`)**; and every surface that shows a score — the live count badge, block and round readouts, and the session summary — labels it **hand-sequence match**, never technique accuracy.
 
 **D5 — Cue lifecycle nests inside the session machine.** Puncheokie adds no states to spec §18.1. Cue states live inside `work`: session `paused` suspends every cue and flags punches `duringPause`; on resume, open windows continue from their remaining duration. A token's acceptance window is clamped to the enclosing active work interval (§18.2), so it never extends into `rest`, `paused`, or `finishing`. To avoid collisions, the cue-level post-window state is `gap` (BLE keeps `recovering`, §11.5/§19.3, and the event flag `recovered` is unchanged), the token timing field is `gapBeats`, the block kind `active-recovery` is unchanged, and cue-level terminal states are read as `cue.completed` / `cue.cancelled`, distinct from the session's `completed` / `cancelled`.
 
@@ -1034,10 +1040,62 @@ These decisions were taken when this document was landed against spec v1.0. They
 
 **D11 — Confirmation is graded, capability-aware, and never punitive.** Strike confirmation (§28) grades how consistent observed strikes are with the displayed combination and reports a tier — `confirmed` / `likely` / `partial` / `unconfirmed` — rather than a pass or fail. Signals the connected tracker cannot supply are omitted from the confidence mean, never scored as zero, so an absent capability never reads as athlete failure. Every label stays **hand-sequence match** (D4); no surface claims which punch was thrown. Nothing in the system is punitive: no red state, no failure sound, no buzz, and celebration never fires for a combination that closed `partial` or worse. The confidence, its input signals and `CONFIDENCE_VERSION` persist with each combination result so a better decoder or a retuned weight set recomputes history without touching raw events (D8).
 
+### Amendments landed at v0.4 (2026-08-23, after on-device verification)
+
+**D12 - Capability tier corrected: hand + timestamp + velocity.** This document was authored against the H11 reading that the payload carries "a two-value vendor type flag (heavy versus standard)", and on that basis D4/C6 fixed the Puncheokie tier at "hand + broad type". **H12 refuted that reading on hardware.** A controlled isolated-punch capture (2026-08-23, ~100 events, 10 sets, both trackers, one athlete, one sitting) showed the type byte carries no device-portable meaning: hooks were byte 2 on `EA:69` (7/8) but byte 1 on `D7:34` (8/10), with zero byte-2 events in blue's hook set; and on `D7:34` the byte behaves as a *velocity gate* - every event with `velocityByteRaw >= 10` landed in {3,4} (13/13) and nearly every event <= 9 landed in {1,2} (32/34) - while `EA:69` shows no threshold at all. Blue's polarity is the opposite of "1/2 = heavy" and red has no mapping, so the flag is not portable in either direction.
+
+This correction is required by this document's own rules - §3 "must not claim technique recognition beyond the tracker data" and §7 "shall score only what the connected tracker data can support" - and is therefore an application of D4's intent to new evidence, not a reversal of it.
+
+Consequences, all binding:
+
+- The FightCamp v1 capability tier resolves to **hand + timestamp + velocity**. The §3/§21 "broad type" and "detailed type" rungs are unreachable on this hardware; they remain in the ladder for future decoders.
+- `cue_results.expected_type` is always `NULL`, and the `outcome` value `type-mismatch` is unreachable. It stays in the enum - a better decoder must be able to produce it without a migration.
+- The §28.4 `intensity` signal loses its vendor-type-flag input. It is computed from tracker-reported velocity alone, or omitted entirely when velocity is unavailable - per D11, **omitted, never zeroed**.
+- §6's "technique-category percentage when supported" is not supported and is not displayed.
+- The tier is **resolved from connected-tracker capabilities at run time**, never hardcoded (M32-02). Nothing downstream may assume a richer tier.
+
+**This constrains verification only, never prescription.** The coach still calls out any designed strike - all of 1-6, body variants, defense, footwork, coach calls - and the generator still prescribes "left hook to the body" with full precision. What the tracker cannot do is confirm *which technique landed*; it confirms that the expected hand fired inside the expected window with enough force to register. That asymmetry is exactly why the **hand-sequence match** label (D4) is the honest one, and why no part of the workout vocabulary shrinks.
+
+**D13 - The transmit floor is a first-class limitation.** H12 also established that the tracker **sends no frame at all below an acceleration threshold**: ten deliberately soft uppercuts produced exactly one event, and Hykso's "not a real punch" bytes (0/5) never appeared, so the cutoff sits below the transmit stage rather than being a classification the app could observe and discard.
+
+Therefore `cue_results.outcome: missed` is ambiguous by construction - it cannot distinguish "the athlete did not throw" from "the athlete threw, but too softly to exist to the sensor". Under D11 (an absent capability must never read as athlete failure) these must not be presented identically:
+
+- The ambiguity is documented wherever completion percentage is surfaced; completion is never described as an accuracy or effort measure.
+- The live screen never implies a missed node means a failed strike (already required by §13: no red flash mid-combination).
+- Bag testing (M36-03) measures the practical floor in tracker units so the limitation can be stated concretely rather than qualitatively.
+
+**D14 - Contract reconciliation before the model is frozen.** Cross-reading §4, §17 and §26 surfaced five inconsistencies. Resolutions, binding on M31-01:
+
+1. §17's illustrative `{ command: '1', beatOffset }` literal is **not** a member of the §26 `WorkoutToken` union. **§26 is authoritative**; §17 is prose illustration and is not a contract.
+2. `ComboTemplate.allowedStances` is declared as an array that can contain the value meaning "any". It becomes the **scalar** `allowedStance: 'orthodox' | 'southpaw' | 'either'`.
+3. §26's `WorkoutRecipe` carries no `id`/`name` and omits seven §8.2 advanced controls (combo complexity, cue rhythm profile, velocity-zone emphasis, metric announcement frequency, visual lead time, command vocabulary style, extras policy). `id`/`name` live on the `workout_recipes` row, not the type. The seven advanced controls are **added to the type** rather than hidden in `params_json`, so the generator's inputs are statically checkable; `params_json` persists the whole typed object under `recipe_schema_version`.
+4. Voice mode and voice vocabulary are **independent axes** - see D15.
+5. §4's `PunchProgram` is **retired** (C5/D8 already removed editable programs). Only `ProgramRound` and `WorkoutBlock` survive, reached through `GeneratedWorkout.schedule`.
+
+Versioned constants that gate recalculation are defined before the first row is persisted: `generator_version`, `recipe_schema_version`, `CONFIDENCE_VERSION`, `calculation_version`, `capability_tier`, alongside the existing `decoder_version`.
+
+**D15 - Voice mode and voice vocabulary are independent.** §18.1 names four voice *behaviours* (Call and Go, Follow the Call, Coach Shorthand, Minimal) while §26 declares `voiceMode` with four *amount* values. These do not map 1:1 because they describe different things, and collapsing them into one enum is what produced the mismatch. They separate:
+
+```ts
+voiceMode:       'off' | 'minimal' | 'standard' | 'full'   // how much it speaks
+voiceVocabulary: 'numbers' | 'names'                        // which words it uses
+```
+
+`numbers` speaks the digits - "one, two, three" - matching how a coach calls combos in a gym. `names` speaks the techniques - "jab, cross, left hook" - for athletes learning the numbering.
+
+This is not only preference. **Phrase duration competes with the cue window**: at `sprint` cadence (130-150 BPM) the beat interval can be shorter than a phrase takes to speak, and "left hook to the body" is roughly four times the duration of "three". Consequently:
+
+- `CueAnnouncer` knows each phrase's duration and **skips or downgrades rather than overlapping**. A queue of overrunning announcements drifts further behind every cue and ends up narrating the wrong punch - the failure mode §5 and §18 already forbid by making the scheduler, not the speech engine, the master clock.
+- `numbers` is the automatic fallback when the cadence cannot fit `names`, and the downgrade is surfaced rather than silent.
+- The §18.2 cached-asset manifest carries a clip set per vocabulary.
+
+Vocabulary is orthogonal to the D1 third-party-playback gate: choosing a vocabulary never enables speech over music.
+
 ## 30. Revision history
 
 | Date | Version | Change |
 |---|---|---|
 | 2026-08-22 | 0.2 | Authored against the PunchLab Technical Design Document. |
 | 2026-08-23 | 0.2 (landed) | Committed as `docs/puncheokie-ux-workout-engine.md`; branded punchCraft; Markdown structure restored; "Status and supersession" table and Resolved decisions added; spec §13 banner and amendments landed in the same PR. |
+| 2026-08-23 | 0.4 | Reconciled against on-device evidence (H12). D12 corrects the capability tier to hand + timestamp + velocity and retires the vendor type flag; D13 records the transmit floor and its effect on `missed`; D14 resolves five §4/§17/§26 contract inconsistencies and fixes the versioned constants; D15 separates voice mode from voice vocabulary. C6 and D4 annotated; the H11 tracker-facts paragraph rewritten. §1-§28 otherwise unchanged. |
 | 2026-08-23 | 0.3 | Added §28 Strike confirmation, combo plausibility, and gratification (node flash and haptic vocabulary, progressive affirmation border, the five-signal capability-aware plausibility model with four confidence tiers, bounded gratification levels) and decision D11. Resolved decisions moved to §29 and this history to §30; §1–§27 are unchanged. |

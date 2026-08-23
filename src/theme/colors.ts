@@ -43,6 +43,18 @@ export const colors = {
   danger: '#e56464',
   /** Solid destructive button background. */
   dangerSurface: '#5a2b2b',
+
+  /**
+   * Physical tracker colours. The trackers are colour-coded and permanently
+   * assigned — blue is the left glove, red the right (see ble/knownTrackers.ts).
+   * Any surface that distinguishes hands should use these so the on-screen
+   * marker matches the device on the athlete's wrist.
+   *
+   * §19.4 still applies: colour is never the only signal. These always
+   * accompany an L/R letter or a text label.
+   */
+  trackerLeft: '#5aa9ff',
+  trackerRight: '#ff6b6b',
 } as const
 
 /**
