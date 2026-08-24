@@ -28,10 +28,7 @@ export default function PuncheokieLanding() {
       />
       <TrackerBadgesRow />
       <Text style={styles.title}>Puncheokie</Text>
-      <Text style={styles.paragraph}>
-        Puncheokie is the punch-along mode: follow the called combinations the way you would follow
-        the words to a song. It is not ready yet.
-      </Text>
+      <Text style={styles.paragraph}>Punch-along mode — follow the called combinations.</Text>
       <View style={styles.placeholder} testID="coming-soon">
         <Text style={styles.placeholderText}>Coming soon.</Text>
       </View>

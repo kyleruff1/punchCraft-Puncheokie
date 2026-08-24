@@ -143,11 +143,7 @@ export default function VelocityLabLanding() {
 
       <Text style={styles.title}>Velocity Lab</Text>
       <Text style={styles.paragraph}>
-        Velocity Lab is the raw-tracker workbench. Connect a FightCamp v1 punch tracker over BLE,
-        watch every notification frame stream in with its monotonic timestamp, and inspect
-        tracker-reported velocity in tracker units alongside the raw bytes that produced it.
-        No workout, no scoring, no interpretation — just the transport, the parser, and the
-        capture sink that persists every frame before anything else touches it.
+        Raw tracker frames, timestamps, and velocity — no workout, no scoring.
       </Text>
 
       {!bothConnected ? (

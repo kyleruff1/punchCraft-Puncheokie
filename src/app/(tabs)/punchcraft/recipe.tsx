@@ -10,9 +10,8 @@
  * "Start with a sample". It replaces the retired free-form program editor
  * (plan C5) — recipe plus generator, never a hand-built program.
  *
- * Scoring language on this screen is always "hand-sequence match" (D4).
- * The tracker cannot confirm which technique landed, so no copy here
- * promises technique accuracy.
+ * Scoring is punch count, not a per-combo sequence grade. The tracker cannot
+ * confirm which technique landed, so no copy here promises technique accuracy.
  */
 import React, { useMemo } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -150,8 +149,8 @@ export default function RecipeScreen(): React.JSX.Element {
       <Stack.Screen options={{ title: 'Workout recipe' }} />
 
       <Text style={styles.intro}>
-        Set the shape of the workout. punchCraft generates the combinations; scoring is a
-        hand-sequence match against the cues it calls.
+        Set the shape of the workout — punchCraft generates the combinations; you are scored on
+        punch count.
       </Text>
 
       {/* 1 — Duration */}

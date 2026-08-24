@@ -209,10 +209,10 @@ describe('start with a sample', () => {
 })
 
 describe('scoring language (D4)', () => {
-  it('calls scoring a hand-sequence match and never promises technique accuracy', () => {
+  it('scores on punch count and never promises technique accuracy', () => {
     const tree = render(<RecipeScreen />)
     const text = allText(tree)
-    expect(text).toContain('hand-sequence match')
+    expect(text.toLowerCase()).toContain('punch count')
     expect(text).not.toMatch(/technique (accuracy|recognition)/i)
   })
 
@@ -262,13 +262,15 @@ describe('advanced panel (M31-07)', () => {
 })
 
 describe('punchCraft landing — the workout home', () => {
-  it('carries the approved copy and never mentions beats (D3)', () => {
+  it('describes the mode briefly, on its own clock, and never mentions beats (D3)', () => {
     const tree = render(<PunchCraftLanding />)
     const text = allText(tree)
-    expect(text).toContain(
-      'Numbered combinations run on an independent workout clock: every cue, rest, and round is scheduled by punchCraft on the tablet, never by a song.',
-    )
-    expect(text).toContain('labeled as a hand-sequence match')
+    // A short label, not a tutorial: the cue clock is the master, so it is the
+    // tablet's own clock — never a song's beat (D3), and the score is punch
+    // count, not the old hand-sequence grade.
+    expect(text.toLowerCase()).toContain("tablet's own clock")
+    expect(text.toLowerCase()).toContain('punch count')
+    expect(text.toLowerCase()).not.toContain('hand-sequence match')
     expect(text.toLowerCase()).not.toContain('beat')
   })
 

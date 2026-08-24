@@ -32,13 +32,7 @@ export default function PunchCraftLanding() {
       <TrackerBadgesRow />
       <Text style={styles.title}>punchCraft</Text>
       <Text style={styles.paragraph}>
-        punchCraft is where you build a workout or pick one from the library, then run it.
-        Numbered combinations run on an independent workout clock: every cue, rest, and round is
-        scheduled by punchCraft on the tablet, never by a song. You can optionally connect Spotify
-        to listen to your own playlist in the background while you train, and an optional Voice
-        Coach can speak the cues; when music is playing it stays off until you switch it on.
-        Scoring uses the same tracker frames Velocity Lab shows raw and is labeled as a
-        hand-sequence match.
+        Build or run cued combinations on the tablet&apos;s own clock, tracked by punch count.
       </Text>
 
       <Link href="/(tabs)/punchcraft/recipe" asChild>
