@@ -8,6 +8,7 @@
  * These lock the decisions that cost the most to rediscover.
  */
 import {
+  compileAdlib,
   compilePhrase,
   groupTokens,
   isMovement,
@@ -198,6 +199,27 @@ describe('delivery', () => {
       expression: 'theatrical',
     })
     expect(plan.renderedText).toBe('Jab cross... Roll!... Lead hook cross!')
+  })
+})
+
+describe('ad-libs (the personality layer)', () => {
+  it('renders a fixed exclamation as a single-profile plan', () => {
+    const plan = compileAdlib('Ha!')
+    expect(plan.renderedText).toBe('Ha!')
+    expect(plan.profile).toBe('single')
+    expect(plan.adlib).toBe(true)
+    expect(plan.beats).toEqual([])
+  })
+
+  it('carries the settled shout finish by default', () => {
+    // An ad-lib picks up the persona finish for free rather than being tuned
+    // by hand — so it cannot drift away from the calls around it.
+    expect(compileAdlib('Come on!').finishShape.endSemitones).toBeGreaterThan(0)
+  })
+
+  it('honours a different performance and finish', () => {
+    const soft = compileAdlib('There it is.', { performance: 'teach', finish: 'land' })
+    expect(soft.finishShape.endSemitones).toBeLessThan(0)
   })
 })
 

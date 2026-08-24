@@ -491,3 +491,47 @@ export function compilePhrase({
     profile: strikes <= 1 && groups.length === 1 ? 'single' : 'combination',
   }
 }
+
+/**
+ * Ad-libs — the personality layer between the calls.
+ *
+ * "Ha!", "There it is!", "Let's go!", a breath. Not a combination: there is no
+ * notation, no grouping and no digit to place, just a fixed exclamation
+ * delivered with the same voice and finish as everything else. It is compiled
+ * rather than hand-tuned so an ad-lib picks up the settled contour, drift and
+ * finish for free and cannot drift away from the rest of the persona.
+ *
+ * Delivered as a `single` profile — short, punchy, dry — and the finish region
+ * carries the ending, same as a one-word call.
+ */
+export function compileAdlib(text, { performance = 'push', expression = 'theatrical', finish = 'shout' } = {}) {
+  const perf = PERFORMANCES[performance]
+  const fin = FINISHES[finish] ?? FINISHES.land
+  const depth = (EXPRESSION[expression] ?? EXPRESSION.expressive) * perf.contourScale
+  return {
+    canonicalTokens: [],
+    calloutMode: 'adlib',
+    cadence: 'steady',
+    performance,
+    expression,
+    finish,
+    adlib: true,
+    renderedText: text,
+    pitchContourSemitones: scaleContour(
+      SINGLE_CONTOUR.map((p) => ({ at: p.at, st: p.st })),
+      depth,
+      perf.pitchShiftSemitones,
+    ),
+    finishShape: {
+      peakSemitones: Math.round(fin.peakSt * depth * 100) / 100,
+      endSemitones: Math.round(fin.endSt * depth * 100) / 100,
+    },
+    beats: [],
+    swing: SWING,
+    finalAccentDb: perf.finalAccentDb + fin.accentDb,
+    pitchShiftSemitones: perf.pitchShiftSemitones,
+    // A touch quicker than a call — an ad-lib is thrown off, not announced.
+    speed: Math.round((CADENCE_SPEED.steady * perf.speedScale * 1.1) * 100) / 100,
+    profile: 'single',
+  }
+}

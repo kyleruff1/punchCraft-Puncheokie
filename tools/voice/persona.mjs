@@ -8,9 +8,15 @@
  *
  * | Axis        | Winner        | Round | What it decides                    |
  * |-------------|---------------|-------|------------------------------------|
- * | Timbre      | aged-melodic  | 1     | which voices are blended, and how  |
+ * | Timbre      | stone         | 1, 6  | which voices are blended, and how  |
  * | Expression  | theatrical    | 2     | how far the pitch contour moves    |
  * | Texture     | broadcast     | 3     | the production chain, post-render  |
+ * | Finish      | shout         | 4     | the ending inflection              |
+ *
+ * Round one picked aged-melodic; round six revisited the blend once the rest
+ * was settled and `stone` won — a deeper, darker, onyx-led voice with the grit
+ * and age the post-production chain could not add (round five confirmed the
+ * chain is a weak lever for character).
  *
  * The rounds are documented in docs/puncheokie-voice-spike.md, with the
  * measurements that settled each one.
@@ -24,12 +30,11 @@
  * the others, and leaning on it costs intelligibility — the one thing a punch
  * call cannot afford to lose.
  */
-export const PRODUCTION_BLEND_NAME = 'aged-melodic'
+export const PRODUCTION_BLEND_NAME = 'stone'
 export const PRODUCTION_BLEND = {
-  am_michael: 0.45,
+  am_onyx: 0.42,
+  am_michael: 0.33,
   am_fenrir: 0.25,
-  am_puck: 0.2,
-  am_santa: 0.1,
 }
 
 /** Expression — round two. The deepest of the three contour multipliers. */
@@ -61,5 +66,5 @@ export const PRODUCTION_TEXTURE = 'broadcast'
  * a stored session can tell which persona produced its audio (D16, spec §3.2
  * versioned decoders).
  */
-export const PERSONA_VERSION = 'cornerman-1'
+export const PERSONA_VERSION = 'cornerman-2'
 export const RENDERER = `kokoro-${PRODUCTION_BLEND_NAME}-${PRODUCTION_EXPRESSION}-${PRODUCTION_TEXTURE}`

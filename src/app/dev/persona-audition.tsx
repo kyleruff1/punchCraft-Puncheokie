@@ -46,8 +46,11 @@ const sleep = (ms: number): Promise<void> =>
   })
 
 export default function PersonaAuditionScreen(): React.JSX.Element {
+  // Default to whatever the round actually contains, not a fixed guess — a
+  // round that ships only `push` must not open filtered to an absent `work`,
+  // which reads as every clip missing.
   const [vocabulary, setVocabulary] = useState(VOCABULARIES[0] ?? 'numbers')
-  const [performance, setPerformance] = useState('work')
+  const [performance, setPerformance] = useState(PERFORMANCES[0] ?? 'work')
   const [nowPlaying, setNowPlaying] = useState<string | null>(null)
   const [note, setNote] = useState<string | null>(null)
   const playerRef = useRef<AudioPlayer | null>(null)

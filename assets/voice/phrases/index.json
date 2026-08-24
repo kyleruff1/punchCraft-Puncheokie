@@ -8,9 +8,9 @@
       "1",
       "1"
     ],
-    "durationMs": 751,
+    "durationMs": 845,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1.steady",
@@ -21,9 +21,9 @@
       "1",
       "1"
     ],
-    "durationMs": 698,
+    "durationMs": 762,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1.pressure",
@@ -34,9 +34,9 @@
       "1",
       "1"
     ],
-    "durationMs": 608,
+    "durationMs": 629,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1.sprint",
@@ -47,9 +47,9 @@
       "1",
       "1"
     ],
-    "durationMs": 465,
+    "durationMs": 582,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-2.technical",
@@ -61,9 +61,9 @@
       "1",
       "2"
     ],
-    "durationMs": 992,
+    "durationMs": 1121,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-2.steady",
@@ -75,9 +75,9 @@
       "1",
       "2"
     ],
-    "durationMs": 925,
+    "durationMs": 1015,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-2.pressure",
@@ -89,9 +89,9 @@
       "1",
       "2"
     ],
-    "durationMs": 818,
+    "durationMs": 891,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-2.sprint",
@@ -103,9 +103,9 @@
       "1",
       "2"
     ],
-    "durationMs": 657,
+    "durationMs": 757,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-step off.technical",
@@ -117,9 +117,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1490,
+    "durationMs": 1448,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-step off.steady",
@@ -131,9 +131,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1358,
+    "durationMs": 1337,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-step off.pressure",
@@ -145,9 +145,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1256,
+    "durationMs": 1218,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-1-step off.sprint",
@@ -159,9 +159,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 994,
+    "durationMs": 830,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2.technical",
@@ -172,9 +172,9 @@
       "1",
       "2"
     ],
-    "durationMs": 815,
+    "durationMs": 961,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2.steady",
@@ -185,9 +185,9 @@
       "1",
       "2"
     ],
-    "durationMs": 724,
+    "durationMs": 850,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2.pressure",
@@ -198,9 +198,9 @@
       "1",
       "2"
     ],
-    "durationMs": 612,
+    "durationMs": 708,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2.sprint",
@@ -211,9 +211,9 @@
       "1",
       "2"
     ],
-    "durationMs": 568,
+    "durationMs": 649,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3.technical",
@@ -225,9 +225,9 @@
       "2",
       "3"
     ],
-    "durationMs": 1021,
+    "durationMs": 1185,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3.steady",
@@ -239,9 +239,9 @@
       "2",
       "3"
     ],
-    "durationMs": 958,
+    "durationMs": 1053,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3.pressure",
@@ -253,9 +253,9 @@
       "2",
       "3"
     ],
-    "durationMs": 862,
+    "durationMs": 941,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3.sprint",
@@ -267,9 +267,9 @@
       "2",
       "3"
     ],
-    "durationMs": 672,
+    "durationMs": 740,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3-2.technical",
@@ -282,9 +282,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1233,
+    "durationMs": 1448,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3-2.steady",
@@ -297,9 +297,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1106,
+    "durationMs": 1290,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3-2.pressure",
@@ -312,9 +312,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1030,
+    "durationMs": 1106,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-3-2.sprint",
@@ -327,9 +327,9 @@
       "3",
       "2"
     ],
-    "durationMs": 782,
+    "durationMs": 928,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-pivot.technical",
@@ -341,9 +341,25 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1337,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1380,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 810
+      },
+      {
+        "tokenIndex": 2,
+        "token": "pivot",
+        "offsetMs": 1190
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-pivot.steady",
@@ -355,9 +371,25 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1184,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1284,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 780
+      },
+      {
+        "tokenIndex": 2,
+        "token": "pivot",
+        "offsetMs": 1150
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-pivot.pressure",
@@ -369,9 +401,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1092,
+    "durationMs": 1095,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2-pivot.sprint",
@@ -383,9 +415,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 714,
+    "durationMs": 778,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b.technical",
@@ -396,9 +428,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 963,
+    "durationMs": 1126,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b.steady",
@@ -409,9 +441,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 884,
+    "durationMs": 993,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b.pressure",
@@ -422,9 +454,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 765,
+    "durationMs": 860,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b.sprint",
@@ -435,9 +467,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 594,
+    "durationMs": 754,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3.technical",
@@ -449,9 +481,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1193,
+    "durationMs": 1381,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3.steady",
@@ -463,9 +495,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1116,
+    "durationMs": 1212,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3.pressure",
@@ -477,9 +509,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1001,
+    "durationMs": 1085,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3.sprint",
@@ -491,9 +523,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 743,
+    "durationMs": 859,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3-2.technical",
@@ -506,9 +538,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1428,
+    "durationMs": 1636,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3-2.steady",
@@ -521,9 +553,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1289,
+    "durationMs": 1481,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3-2.pressure",
@@ -536,9 +568,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1155,
+    "durationMs": 1249,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1-2b-3-2.sprint",
@@ -551,9 +583,9 @@
       "3",
       "2"
     ],
-    "durationMs": 925,
+    "durationMs": 1040,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1b-2-3-2.technical",
@@ -566,9 +598,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1430,
+    "durationMs": 1640,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1b-2-3-2.steady",
@@ -581,9 +613,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1288,
+    "durationMs": 1457,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1b-2-3-2.pressure",
@@ -596,9 +628,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1154,
+    "durationMs": 1274,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "1b-2-3-2.sprint",
@@ -611,9 +643,9 @@
       "3",
       "2"
     ],
-    "durationMs": 941,
+    "durationMs": 1040,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "2-3-6.technical",
@@ -625,9 +657,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1104,
+    "durationMs": 1238,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "2-3-6.steady",
@@ -639,9 +671,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1002,
+    "durationMs": 1119,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "2-3-6.pressure",
@@ -653,9 +685,9 @@
       "3",
       "6"
     ],
-    "durationMs": 843,
+    "durationMs": 942,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "2-3-6.sprint",
@@ -667,9 +699,9 @@
       "3",
       "6"
     ],
-    "durationMs": 717,
+    "durationMs": 797,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-1-2.technical",
@@ -681,9 +713,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1311,
+    "durationMs": 1429,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-1-2.steady",
@@ -695,9 +727,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1250,
+    "durationMs": 1264,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-1-2.pressure",
@@ -709,9 +741,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1118,
+    "durationMs": 1152,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-1-2.sprint",
@@ -723,9 +755,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1029,
+    "durationMs": 1066,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-3-2.technical",
@@ -737,9 +769,25 @@
       "3",
       "2"
     ],
-    "durationMs": 1457,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1529,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 710
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1000
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-3-2.steady",
@@ -751,9 +799,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1340,
+    "durationMs": 1362,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-3-2.pressure",
@@ -765,9 +813,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1149,
+    "durationMs": 1196,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "roll-3-2.sprint",
@@ -779,9 +827,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1061,
+    "durationMs": 1112,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-1-2.technical",
@@ -793,9 +841,25 @@
       "1",
       "2"
     ],
-    "durationMs": 1332,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1433,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 890
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-1-2.steady",
@@ -807,9 +871,25 @@
       "1",
       "2"
     ],
-    "durationMs": 1197,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1336,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 310
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 850
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-1-2.pressure",
@@ -821,9 +901,25 @@
       "1",
       "2"
     ],
-    "durationMs": 1061,
-    "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "durationMs": 1175,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 260
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 740
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-1-2.sprint",
@@ -835,9 +931,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1014,
+    "durationMs": 1058,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-2-3-2.technical",
@@ -850,9 +946,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1651,
+    "durationMs": 1718,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-2-3-2.steady",
@@ -865,9 +961,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1473,
+    "durationMs": 1587,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-2-3-2.pressure",
@@ -880,9 +976,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1256,
+    "durationMs": 1345,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
     "cueId": "slip-2-3-2.sprint",
@@ -895,8 +991,8 @@
       "3",
       "2"
     ],
-    "durationMs": 1170,
+    "durationMs": 1167,
     "wordMarks": [],
-    "renderer": "kokoro-aged-melodic-theatrical-broadcast"
+    "renderer": "kokoro-stone-theatrical-broadcast"
   }
 ]

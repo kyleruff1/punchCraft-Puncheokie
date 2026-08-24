@@ -255,7 +255,7 @@ the audition tool that produced each round is `tools/voice/make-audition.mjs`.
 
 | Round | Axis | Candidates | Winner |
 |---|---|---|---|
-| 1 | **Timbre** (voice blend) | aged-authoritative, aged-melodic, heavier-cornerman, more-theatrical | **aged-melodic** — `am_michael .45 / am_fenrir .25 / am_puck .2 / am_santa .1` |
+| 1 | **Timbre** (voice blend) | aged-authoritative, aged-melodic, heavier-cornerman, more-theatrical | **aged-melodic** (round 1) → superseded by **stone** in round 6 |
 | 2 | **Expression** (pitch-contour depth) | measured, expressive, theatrical | **theatrical** — contour ×2.6 |
 | 3 | **Texture** (production chain) | current, chest, grit, close, broadcast | **broadcast** — band-limited, mid-forward, very loud |
 | 4 | **Finish** (ending inflection) | land, slam, shout, snap | **shout** — rises into the power punch and stays up |
@@ -326,6 +326,26 @@ round four by the `shout` finish rather than by retuning the chain. The
 broadcast compression, saturation drive and EQ can still be tuned before the
 full library is committed, but the finish carried most of the perceived
 aggression.
+
+### Round six — the blend, revisited
+
+Round five showed the production chain barely moves character: broadcast (the
+cleanest) beat every gritty treatment, because saturation and EQ can only do so
+much before they cost intelligibility. So the grit and age were chased where
+they actually live — the voice. Four blends were compared with everything
+downstream pinned (theatrical · shout · broadcast), and **stone** won:
+`am_onyx .42 / am_michael .33 / am_fenrir .25` — deep, dark, onyx-led. Measured,
+it sits ~330 Hz lower in spectral centroid than aged-melodic (2434 vs 2761 Hz),
+where the whole texture round spanned ~20 Hz — the blend is a far bigger lever
+than the chain.
+
+`stone` is the production blend; the renderer id is
+`kokoro-stone-theatrical-broadcast` (persona version `cornerman-2`).
+
+An **ad-lib** path also exists now (`compileAdlib` in prosody.mjs): fixed
+exclamations — "Let's go!", "There it is!" — compiled with the same voice,
+contour and finish as the calls, so the personality layer cannot drift from the
+persona. Not yet wired into the runtime.
 
 ### Known gap, unchanged
 

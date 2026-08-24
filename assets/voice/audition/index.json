@@ -1,4588 +1,17 @@
 [
   {
-    "cueId": "2b.numbers.work.land",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.numbers.work.land.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 465,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.work.slam",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.numbers.work.slam.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 465,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.work.shout",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.numbers.work.shout.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 465,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.work.snap",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.numbers.work.snap.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 465,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.push.land",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.numbers.push.land.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 409,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.push.slam",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.numbers.push.slam.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 409,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.push.shout",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.numbers.push.shout.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 409,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.numbers.push.snap",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.numbers.push.snap.wav",
-    "spokenText": "Two bee!",
-    "durationMs": 409,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.work.land",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.techniques.work.land.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 576,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.work.slam",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.techniques.work.slam.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 576,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.work.shout",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.techniques.work.shout.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 576,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.work.snap",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2b.techniques.work.snap.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 576,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.push.land",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.techniques.push.land.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 507,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.push.slam",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.techniques.push.slam.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 507,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.push.shout",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.techniques.push.shout.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 507,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "2b.techniques.push.snap",
-    "combination": "2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2b.techniques.push.snap.wav",
-    "spokenText": "Body cross!",
-    "durationMs": 507,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.work.land",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.numbers.work.land.wav",
-    "spokenText": "One bee!",
-    "durationMs": 425,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.work.slam",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.numbers.work.slam.wav",
-    "spokenText": "One bee!",
-    "durationMs": 425,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.work.shout",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.numbers.work.shout.wav",
-    "spokenText": "One bee!",
-    "durationMs": 425,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.work.snap",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.numbers.work.snap.wav",
-    "spokenText": "One bee!",
-    "durationMs": 425,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.push.land",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.numbers.push.land.wav",
-    "spokenText": "One bee!",
-    "durationMs": 398,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.push.slam",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.numbers.push.slam.wav",
-    "spokenText": "One bee!",
-    "durationMs": 398,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.push.shout",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.numbers.push.shout.wav",
-    "spokenText": "One bee!",
-    "durationMs": 398,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.numbers.push.snap",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.numbers.push.snap.wav",
-    "spokenText": "One bee!",
-    "durationMs": 398,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.work.land",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.techniques.work.land.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 546,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.work.slam",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.techniques.work.slam.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 546,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.work.shout",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.techniques.work.shout.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 546,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.work.snap",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1b.techniques.work.snap.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 546,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.78
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.34
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.push.land",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.techniques.push.land.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 487,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.push.slam",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.techniques.push.slam.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 487,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.push.shout",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.techniques.push.shout.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 487,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1b.techniques.push.snap",
-    "combination": "1b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1b.techniques.push.snap.wav",
-    "spokenText": "Body jab!",
-    "durationMs": 487,
-    "profile": "single",
-    "plan": {
-      "canonicalTokens": [
-        "1b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Body jab!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0,
-          "offset": 0.94
-        },
-        {
-          "normalizedTime": 0.45,
-          "offset": 2.81
-        },
-        {
-          "normalizedTime": 1,
-          "offset": 0
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "single"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.work.land",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.numbers.work.land.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 884,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.work.slam",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.numbers.work.slam.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 884,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.work.shout",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.numbers.work.shout.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 884,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.work.snap",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.numbers.work.snap.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 884,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.push.land",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.numbers.push.land.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 814,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.push.slam",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.numbers.push.slam.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 814,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.push.shout",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.numbers.push.shout.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 814,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.numbers.push.snap",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.numbers.push.snap.wav",
-    "spokenText": "One two bee!",
-    "durationMs": 814,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.work.land",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.techniques.work.land.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1127,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.work.slam",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.techniques.work.slam.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1127,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.work.shout",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.techniques.work.shout.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1127,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.work.snap",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b.techniques.work.snap.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1127,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.push.land",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.techniques.push.land.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1088,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.push.slam",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.techniques.push.slam.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1088,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.push.shout",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.techniques.push.shout.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1088,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b.techniques.push.snap",
-    "combination": "1-2b",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b.techniques.push.snap.wav",
-    "spokenText": "Jab body cross!",
-    "durationMs": 1088,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.08,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.42,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.86,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.work.land",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.work.land.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 976,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.work.slam",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.work.slam.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 976,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.work.shout",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.work.shout.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 976,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.work.snap",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.work.snap.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 976,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.push.land",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.push.land.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 871,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.push.slam",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.push.slam.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 871,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.push.shout",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.push.shout.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 871,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.numbers.push.snap",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.numbers.push.snap.wav",
-    "spokenText": "Two three, two!",
-    "durationMs": 871,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Two three, two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.work.land",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.work.land.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1198,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.work.slam",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.work.slam.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1198,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.work.shout",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.work.shout.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1198,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.work.snap",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.work.snap.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1198,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.push.land",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.push.land.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1103,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.push.slam",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.push.slam.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1103,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.push.shout",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.push.shout.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1103,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 6.86,
-        "endSemitones": 8.11
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "2-3-2.techniques.push.snap",
-    "combination": "2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "2-3-2.techniques.push.snap.wav",
-    "spokenText": "Cross lead hook, cross!",
-    "durationMs": 1103,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "2",
-            "3"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Cross lead hook, cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.053,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.28,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.573,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.693,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.953,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.work.land",
+    "cueId": "1-2-3-2.numbers.push.aged-melodic",
     "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "land",
+    "axis": "blend",
+    "variant": "aged-melodic",
     "blend": "aged-melodic",
     "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.work.land.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1106,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.work.slam",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.work.slam.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1106,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.work.shout",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.work.shout.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1106,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.work.snap",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.work.snap.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1106,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.push.land",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
     "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2-3-2.numbers.push.land.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1053,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.push.slam",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.push.slam.wav",
-    "spokenText": "One two, three two!",
-    "durationMs": 1053,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.numbers.push.shout",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2-3-2.numbers.push.shout.wav",
+    "file": "1-2-3-2.numbers.push.aged-melodic.wav",
     "spokenText": "One two, three two!",
     "durationMs": 1053,
     "profile": "combination",
@@ -4654,19 +83,20 @@
     }
   },
   {
-    "cueId": "1-2-3-2.numbers.push.snap",
+    "cueId": "1-2-3-2.numbers.push.gravel",
     "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
+    "axis": "blend",
+    "variant": "gravel",
+    "blend": "gravel",
     "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
     "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2-3-2.numbers.push.snap.wav",
+    "file": "1-2-3-2.numbers.push.gravel.wav",
     "spokenText": "One two, three two!",
-    "durationMs": 1053,
+    "durationMs": 1103,
     "profile": "combination",
     "plan": {
       "canonicalTokens": [
@@ -4679,7 +109,7 @@
       "cadence": "steady",
       "performance": "push",
       "expression": "theatrical",
-      "finish": "snap",
+      "finish": "shout",
       "groups": [
         {
           "tokens": [
@@ -4724,500 +154,8 @@
         }
       ],
       "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.work.land",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.work.land.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1516,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.work.slam",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.work.slam.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1516,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.work.shout",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.work.shout.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1516,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.work.snap",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.work.snap.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1516,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.push.land",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.push.land.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1387,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2-3-2.techniques.push.slam",
-    "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2-3-2.techniques.push.slam.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1387,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
       },
       "beats": [],
       "swing": 0.57,
@@ -5228,19 +166,20 @@
     }
   },
   {
-    "cueId": "1-2-3-2.techniques.push.shout",
+    "cueId": "1-2-3-2.numbers.push.grizzled",
     "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
+    "axis": "blend",
+    "variant": "grizzled",
+    "blend": "grizzled",
     "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
-    "vocabulary": "techniques",
+    "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2-3-2.techniques.push.shout.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1387,
+    "file": "1-2-3-2.numbers.push.grizzled.wav",
+    "spokenText": "One two, three two!",
+    "durationMs": 1051,
     "profile": "combination",
     "plan": {
       "canonicalTokens": [
@@ -5249,7 +188,7 @@
         "3",
         "2"
       ],
-      "calloutMode": "techniques",
+      "calloutMode": "numbers",
       "cadence": "steady",
       "performance": "push",
       "expression": "theatrical",
@@ -5270,7 +209,7 @@
           "accentLast": true
         }
       ],
-      "renderedText": "Jab cross, lead hook cross!",
+      "renderedText": "One two, three two!",
       "pitchContourSemitones": [
         {
           "normalizedTime": 0.04,
@@ -5310,19 +249,20 @@
     }
   },
   {
-    "cueId": "1-2-3-2.techniques.push.snap",
+    "cueId": "1-2-3-2.numbers.push.stone",
     "combination": "1-2-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
+    "axis": "blend",
+    "variant": "stone",
+    "blend": "stone",
     "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
-    "vocabulary": "techniques",
+    "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2-3-2.techniques.push.snap.wav",
-    "spokenText": "Jab cross, lead hook cross!",
-    "durationMs": 1387,
+    "file": "1-2-3-2.numbers.push.stone.wav",
+    "spokenText": "One two, three two!",
+    "durationMs": 1150,
     "profile": "combination",
     "plan": {
       "canonicalTokens": [
@@ -5331,580 +271,6 @@
         "3",
         "2"
       ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.work.land",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.work.land.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1289,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.work.slam",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.work.slam.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1289,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.work.shout",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.work.shout.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1289,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.work.snap",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.work.snap.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1289,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.push.land",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.push.land.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1202,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.push.slam",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.push.slam.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1202,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "numbers",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.numbers.push.shout",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "numbers",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.numbers.push.shout.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1202,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
       "calloutMode": "numbers",
       "cadence": "steady",
       "performance": "push",
@@ -5914,7 +280,7 @@
         {
           "tokens": [
             "1",
-            "2b"
+            "2"
           ],
           "accentLast": true
         },
@@ -5926,7 +292,7 @@
           "accentLast": true
         }
       ],
-      "renderedText": "One two bee, three two!",
+      "renderedText": "One two, three two!",
       "pitchContourSemitones": [
         {
           "normalizedTime": 0.04,
@@ -5966,277 +332,30 @@
     }
   },
   {
-    "cueId": "1-2b-3-2.numbers.push.snap",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "snap",
+    "cueId": "1-2b.numbers.push.aged-melodic",
+    "combination": "1-2b",
+    "axis": "blend",
+    "variant": "aged-melodic",
     "blend": "aged-melodic",
     "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
     "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2b-3-2.numbers.push.snap.wav",
-    "spokenText": "One two bee, three two!",
-    "durationMs": 1202,
+    "file": "1-2b.numbers.push.aged-melodic.wav",
+    "spokenText": "One two bee!",
+    "durationMs": 814,
     "profile": "combination",
     "plan": {
       "canonicalTokens": [
         "1",
-        "2b",
-        "3",
-        "2"
+        "2b"
       ],
       "calloutMode": "numbers",
       "cadence": "steady",
       "performance": "push",
       "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "One two bee, three two!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6.5,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.work.land",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.work.land.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1857,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 3.9,
-        "endSemitones": -5.46
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 2.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.work.slam",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.work.slam.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1857,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.16,
-        "endSemitones": -6.24
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.work.shout",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.work.shout.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1857,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
       "finish": "shout",
       "groups": [
         {
@@ -6245,367 +364,20 @@
             "2b"
           ],
           "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
         }
       ],
-      "renderedText": "Jab body cross, lead hook cross!",
+      "renderedText": "One two bee!",
       "pitchContourSemitones": [
         {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 5.72,
-        "endSemitones": 6.76
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.2,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.work.snap",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "work",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.work.snap.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1857,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "work",
-      "expression": "theatrical",
-      "finish": "snap",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.3
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 2.99
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.65
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -1.82
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 2.99
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 7.28,
-        "endSemitones": 3.64
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 5.7,
-      "pitchShiftSemitones": -0.85,
-      "speed": 1.15,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.push.land",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "land",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.push.land.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1664,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "land",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
+          "normalizedTime": 0.08,
           "offset": -1.56
         },
         {
-          "normalizedTime": 0.21,
+          "normalizedTime": 0.42,
           "offset": -2.18
         },
         {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.68,
-        "endSemitones": -6.55
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 3,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.push.slam",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "slam",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.push.slam.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1664,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "slam",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
-          "offset": 3.59
-        }
-      ],
-      "finishShape": {
-        "peakSemitones": 4.99,
-        "endSemitones": -7.49
-      },
-      "beats": [],
-      "swing": 0.57,
-      "finalAccentDb": 6,
-      "pitchShiftSemitones": -1.1,
-      "speed": 1.29,
-      "profile": "combination"
-    }
-  },
-  {
-    "cueId": "1-2b-3-2.techniques.push.shout",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "shout",
-    "blend": "aged-melodic",
-    "expression": "theatrical",
-    "texture": "broadcast",
-    "vocabulary": "techniques",
-    "performance": "push",
-    "cadence": "steady",
-    "file": "1-2b-3-2.techniques.push.shout.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1664,
-    "profile": "combination",
-    "plan": {
-      "canonicalTokens": [
-        "1",
-        "2b",
-        "3",
-        "2"
-      ],
-      "calloutMode": "techniques",
-      "cadence": "steady",
-      "performance": "push",
-      "expression": "theatrical",
-      "finish": "shout",
-      "groups": [
-        {
-          "tokens": [
-            "1",
-            "2b"
-          ],
-          "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
-        }
-      ],
-      "renderedText": "Jab body cross, lead hook cross!",
-      "pitchContourSemitones": [
-        {
-          "normalizedTime": 0.04,
-          "offset": -1.56
-        },
-        {
-          "normalizedTime": 0.21,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
+          "normalizedTime": 0.86,
           "offset": 3.59
         }
       ],
@@ -6622,32 +394,31 @@
     }
   },
   {
-    "cueId": "1-2b-3-2.techniques.push.snap",
-    "combination": "1-2b-3-2",
-    "axis": "finish",
-    "variant": "snap",
-    "blend": "aged-melodic",
+    "cueId": "1-2b.numbers.push.gravel",
+    "combination": "1-2b",
+    "axis": "blend",
+    "variant": "gravel",
+    "blend": "gravel",
     "expression": "theatrical",
+    "finish": "shout",
     "texture": "broadcast",
-    "vocabulary": "techniques",
+    "vocabulary": "numbers",
     "performance": "push",
     "cadence": "steady",
-    "file": "1-2b-3-2.techniques.push.snap.wav",
-    "spokenText": "Jab body cross, lead hook cross!",
-    "durationMs": 1664,
+    "file": "1-2b.numbers.push.gravel.wav",
+    "spokenText": "One two bee!",
+    "durationMs": 868,
     "profile": "combination",
     "plan": {
       "canonicalTokens": [
         "1",
-        "2b",
-        "3",
-        "2"
+        "2b"
       ],
-      "calloutMode": "techniques",
+      "calloutMode": "numbers",
       "cadence": "steady",
       "performance": "push",
       "expression": "theatrical",
-      "finish": "snap",
+      "finish": "shout",
       "groups": [
         {
           "tokens": [
@@ -6655,52 +426,873 @@
             "2b"
           ],
           "accentLast": true
-        },
-        {
-          "tokens": [
-            "3",
-            "2"
-          ],
-          "accentLast": true
         }
       ],
-      "renderedText": "Jab body cross, lead hook cross!",
+      "renderedText": "One two bee!",
       "pitchContourSemitones": [
         {
-          "normalizedTime": 0.04,
+          "normalizedTime": 0.08,
           "offset": -1.56
         },
         {
-          "normalizedTime": 0.21,
+          "normalizedTime": 0.42,
           "offset": -2.18
         },
         {
-          "normalizedTime": 0.43,
-          "offset": 3.59
-        },
-        {
-          "normalizedTime": 0.54,
-          "offset": -0.78
-        },
-        {
-          "normalizedTime": 0.71,
-          "offset": -2.18
-        },
-        {
-          "normalizedTime": 0.93,
+          "normalizedTime": 0.86,
           "offset": 3.59
         }
       ],
       "finishShape": {
-        "peakSemitones": 8.74,
-        "endSemitones": 4.37
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
       },
       "beats": [],
       "swing": 0.57,
-      "finalAccentDb": 6.5,
+      "finalAccentDb": 6,
       "pitchShiftSemitones": -1.1,
       "speed": 1.29,
       "profile": "combination"
+    }
+  },
+  {
+    "cueId": "1-2b.numbers.push.grizzled",
+    "combination": "1-2b",
+    "axis": "blend",
+    "variant": "grizzled",
+    "blend": "grizzled",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "1-2b.numbers.push.grizzled.wav",
+    "spokenText": "One two bee!",
+    "durationMs": 815,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "1",
+        "2b"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "1",
+            "2b"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "One two bee!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.08,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.42,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.86,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "1-2b.numbers.push.stone",
+    "combination": "1-2b",
+    "axis": "blend",
+    "variant": "stone",
+    "blend": "stone",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "1-2b.numbers.push.stone.wav",
+    "spokenText": "One two bee!",
+    "durationMs": 885,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "1",
+        "2b"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "1",
+            "2b"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "One two bee!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.08,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.42,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.86,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "2-3-6.numbers.push.aged-melodic",
+    "combination": "2-3-6",
+    "axis": "blend",
+    "variant": "aged-melodic",
+    "blend": "aged-melodic",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "2-3-6.numbers.push.aged-melodic.wav",
+    "spokenText": "Two three, six!",
+    "durationMs": 868,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "2",
+        "3",
+        "6"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "2",
+            "3"
+          ],
+          "accentLast": true
+        },
+        {
+          "tokens": [
+            "6"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "Two three, six!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.053,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.28,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.573,
+          "offset": 3.59
+        },
+        {
+          "normalizedTime": 0.693,
+          "offset": -0.78
+        },
+        {
+          "normalizedTime": 0.953,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "2-3-6.numbers.push.gravel",
+    "combination": "2-3-6",
+    "axis": "blend",
+    "variant": "gravel",
+    "blend": "gravel",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "2-3-6.numbers.push.gravel.wav",
+    "spokenText": "Two three, six!",
+    "durationMs": 958,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "2",
+        "3",
+        "6"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "2",
+            "3"
+          ],
+          "accentLast": true
+        },
+        {
+          "tokens": [
+            "6"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "Two three, six!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.053,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.28,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.573,
+          "offset": 3.59
+        },
+        {
+          "normalizedTime": 0.693,
+          "offset": -0.78
+        },
+        {
+          "normalizedTime": 0.953,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "2-3-6.numbers.push.grizzled",
+    "combination": "2-3-6",
+    "axis": "blend",
+    "variant": "grizzled",
+    "blend": "grizzled",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "2-3-6.numbers.push.grizzled.wav",
+    "spokenText": "Two three, six!",
+    "durationMs": 946,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "2",
+        "3",
+        "6"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "2",
+            "3"
+          ],
+          "accentLast": true
+        },
+        {
+          "tokens": [
+            "6"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "Two three, six!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.053,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.28,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.573,
+          "offset": 3.59
+        },
+        {
+          "normalizedTime": 0.693,
+          "offset": -0.78
+        },
+        {
+          "normalizedTime": 0.953,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "2-3-6.numbers.push.stone",
+    "combination": "2-3-6",
+    "axis": "blend",
+    "variant": "stone",
+    "blend": "stone",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "2-3-6.numbers.push.stone.wav",
+    "spokenText": "Two three, six!",
+    "durationMs": 967,
+    "profile": "combination",
+    "plan": {
+      "canonicalTokens": [
+        "2",
+        "3",
+        "6"
+      ],
+      "calloutMode": "numbers",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "groups": [
+        {
+          "tokens": [
+            "2",
+            "3"
+          ],
+          "accentLast": true
+        },
+        {
+          "tokens": [
+            "6"
+          ],
+          "accentLast": true
+        }
+      ],
+      "renderedText": "Two three, six!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0.053,
+          "offset": -1.56
+        },
+        {
+          "normalizedTime": 0.28,
+          "offset": -2.18
+        },
+        {
+          "normalizedTime": 0.573,
+          "offset": 3.59
+        },
+        {
+          "normalizedTime": 0.693,
+          "offset": -0.78
+        },
+        {
+          "normalizedTime": 0.953,
+          "offset": 3.59
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.29,
+      "profile": "combination"
+    }
+  },
+  {
+    "cueId": "lets-go.numbers.push.aged-melodic",
+    "combination": "lets-go",
+    "axis": "blend",
+    "variant": "aged-melodic",
+    "blend": "aged-melodic",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "lets-go.numbers.push.aged-melodic.wav",
+    "spokenText": "Let's go!",
+    "durationMs": 518,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "Let's go!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "lets-go.numbers.push.gravel",
+    "combination": "lets-go",
+    "axis": "blend",
+    "variant": "gravel",
+    "blend": "gravel",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "lets-go.numbers.push.gravel.wav",
+    "spokenText": "Let's go!",
+    "durationMs": 547,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "Let's go!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "lets-go.numbers.push.grizzled",
+    "combination": "lets-go",
+    "axis": "blend",
+    "variant": "grizzled",
+    "blend": "grizzled",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "lets-go.numbers.push.grizzled.wav",
+    "spokenText": "Let's go!",
+    "durationMs": 523,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "Let's go!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "lets-go.numbers.push.stone",
+    "combination": "lets-go",
+    "axis": "blend",
+    "variant": "stone",
+    "blend": "stone",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "lets-go.numbers.push.stone.wav",
+    "spokenText": "Let's go!",
+    "durationMs": 575,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "Let's go!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "there-it-is.numbers.push.aged-melodic",
+    "combination": "there-it-is",
+    "axis": "blend",
+    "variant": "aged-melodic",
+    "blend": "aged-melodic",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "there-it-is.numbers.push.aged-melodic.wav",
+    "spokenText": "There it is!",
+    "durationMs": 535,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "There it is!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "there-it-is.numbers.push.gravel",
+    "combination": "there-it-is",
+    "axis": "blend",
+    "variant": "gravel",
+    "blend": "gravel",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "there-it-is.numbers.push.gravel.wav",
+    "spokenText": "There it is!",
+    "durationMs": 577,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "There it is!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "there-it-is.numbers.push.grizzled",
+    "combination": "there-it-is",
+    "axis": "blend",
+    "variant": "grizzled",
+    "blend": "grizzled",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "there-it-is.numbers.push.grizzled.wav",
+    "spokenText": "There it is!",
+    "durationMs": 556,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "There it is!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
+    }
+  },
+  {
+    "cueId": "there-it-is.numbers.push.stone",
+    "combination": "there-it-is",
+    "axis": "blend",
+    "variant": "stone",
+    "blend": "stone",
+    "expression": "theatrical",
+    "finish": "shout",
+    "texture": "broadcast",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "cadence": "steady",
+    "file": "there-it-is.numbers.push.stone.wav",
+    "spokenText": "There it is!",
+    "durationMs": 568,
+    "profile": "single",
+    "plan": {
+      "canonicalTokens": [],
+      "calloutMode": "adlib",
+      "cadence": "steady",
+      "performance": "push",
+      "expression": "theatrical",
+      "finish": "shout",
+      "adlib": true,
+      "renderedText": "There it is!",
+      "pitchContourSemitones": [
+        {
+          "normalizedTime": 0,
+          "offset": 0.94
+        },
+        {
+          "normalizedTime": 0.45,
+          "offset": 2.81
+        },
+        {
+          "normalizedTime": 1,
+          "offset": 0
+        }
+      ],
+      "finishShape": {
+        "peakSemitones": 6.86,
+        "endSemitones": 8.11
+      },
+      "beats": [],
+      "swing": 0.57,
+      "finalAccentDb": 6,
+      "pitchShiftSemitones": -1.1,
+      "speed": 1.42,
+      "profile": "single"
     }
   }
 ]

@@ -47,11 +47,16 @@ function formantScale(scale, rate = 24_000) {
  * arrive. In parallel, the harmonics are added while the clean attack stays
  * where it was — which is the difference between a voice with grit and a
  * voice that has been squashed.
+ *
+ * More grit comes from **driving harder into** the clipper (`preGain`), not
+ * from raising `param` — ffmpeg caps `asoftclip:param` at 3, and the honest
+ * way to saturate is to push a hotter signal through it anyway. `param` sets
+ * the knee; `mix` is how much of the dirt is blended back under the clean.
  */
-function parallelSaturation({ drive, mix, focusHz }) {
+function parallelSaturation({ preGain = 1, param, mix, focusHz }) {
   return [
     'asplit[clean][drive]',
-    `[drive]highpass=f=${focusHz},asoftclip=type=atan:param=${drive},volume=${mix}[dirt]`,
+    `[drive]highpass=f=${focusHz},volume=${preGain},asoftclip=type=atan:param=${param},volume=${mix}[dirt]`,
     '[clean][dirt]amix=inputs=2:normalize=0',
   ].join(';')
 }
@@ -69,6 +74,40 @@ const compressor = ({ threshold, ratio, attack, release, makeup }) =>
 
 const shelf = (hz, gain, width = 1.0) =>
   `equalizer=f=${hz}:width_type=o:width=${width}:g=${gain}`
+
+/**
+ * The broadcast chain, parametrised so its character variants (rasp, bark) are
+ * the *same* chain with a few values moved — not four hand-copied graphs that
+ * drift apart. `BROADCAST_BASE` is the settled round-three winner exactly.
+ */
+const BROADCAST_BASE = {
+  threshold: -32,
+  ratio: 12,
+  makeup: 7,
+  presence: 6,
+  preGain: 1,
+  param: 2.8,
+  mix: 0.3,
+  focusHz: 500,
+  limitRelease: 25,
+  baseI: -14,
+}
+
+function broadcastChain({ single, finalAccentDb }, o) {
+  return [
+    'highpass=f=150',
+    'lowpass=f=7200',
+    compressor({ threshold: o.threshold, ratio: o.ratio, attack: 1, release: single ? 40 : 55, makeup: o.makeup }),
+    shelf(1200, 3),
+    shelf(2600, o.presence),
+    shelf(5000, -3),
+    parallelSaturation({ preGain: o.preGain, param: o.param, mix: o.mix, focusHz: o.focusHz }),
+    room(single),
+    `alimiter=limit=0.95:attack=1:release=${o.limitRelease}`,
+    `loudnorm=I=${(o.baseI + finalAccentDb * 0.3).toFixed(1)}:TP=-1.2:LRA=6`,
+    'afade=t=in:st=0:d=0.004',
+  ]
+}
 
 /**
  * The candidates.
@@ -113,7 +152,7 @@ export const TEXTURES = {
     // stacking a bright shelf on top of it only makes the voice sound thin
     // again.
     shelf(2400, 2.5),
-    parallelSaturation({ drive: 1.8, mix: 0.22, focusHz: 350 }),
+    parallelSaturation({ param: 1.8, mix: 0.22, focusHz: 350 }),
     room(single),
     'alimiter=limit=0.95:attack=2:release=40',
     `loudnorm=I=${(-15 + finalAccentDb * 0.25).toFixed(1)}:TP=-1.2:LRA=8`,
@@ -131,7 +170,7 @@ export const TEXTURES = {
       release: single ? 50 : 70,
       makeup: single ? 6 : 5,
     }),
-    parallelSaturation({ drive: 2.4, mix: 0.38, focusHz: 300 }),
+    parallelSaturation({ param: 2.4, mix: 0.38, focusHz: 300 }),
     shelf(2800, 5),
     shelf(4200, 3),
     room(single),
@@ -153,7 +192,7 @@ export const TEXTURES = {
       makeup: single ? 7 : 6,
     }),
     shelf(3000, 4.5),
-    parallelSaturation({ drive: 1.6, mix: 0.18, focusHz: 400 }),
+    parallelSaturation({ param: 1.6, mix: 0.18, focusHz: 400 }),
     // Deliberately no `aecho`. The intimacy is the absence of a room, and a
     // short tail is worse than none — it reads as a small box rather than as
     // proximity.
@@ -163,25 +202,49 @@ export const TEXTURES = {
   ],
 
   /** The corner shouting over a PA: band-limited, mid-forward, very loud. */
-  broadcast: ({ single, finalAccentDb }) => [
-    'highpass=f=150',
-    'lowpass=f=7200',
-    compressor({
-      threshold: -32,
-      ratio: 12,
-      attack: 1,
-      release: single ? 40 : 55,
-      makeup: 7,
-    }),
-    shelf(1200, 3),
-    shelf(2600, 6),
-    shelf(5000, -3),
-    parallelSaturation({ drive: 2.8, mix: 0.3, focusHz: 500 }),
-    room(single),
-    'alimiter=limit=0.95:attack=1:release=25',
-    `loudnorm=I=${(-14 + finalAccentDb * 0.3).toFixed(1)}:TP=-1.2:LRA=6`,
-    'afade=t=in:st=0:d=0.004',
-  ],
+  broadcast: ({ single, finalAccentDb }) => broadcastChain({ single, finalAccentDb }, BROADCAST_BASE),
+
+  /**
+   * Weathered rasp — a voice that has shouted across gyms for thirty years.
+   *
+   * More parallel saturation, driven lower into the body of the voice so the
+   * grit sits *in* the tone rather than as fizz on top. Compression is left at
+   * baseline: rasp is harmonic content, not level.
+   */
+  rasp: ({ single, finalAccentDb }) =>
+    broadcastChain({ single, finalAccentDb }, { ...BROADCAST_BASE, preGain: 2.0, param: 3, mix: 0.55, focusHz: 430 }),
+
+  /**
+   * More bark — harder, brighter, hotter, getting on you.
+   *
+   * Faster and deeper compression flattens the dynamics into a wall, a bigger
+   * presence lift adds the edge, and a hotter target pushes it forward.
+   * Saturation stays at baseline so the bark reads as projection, not fuzz.
+   */
+  bark: ({ single, finalAccentDb }) =>
+    broadcastChain(
+      { single, finalAccentDb },
+      { ...BROADCAST_BASE, threshold: -34, ratio: 16, makeup: 8, presence: 9, limitRelease: 20, baseI: -13 },
+    ),
+
+  /** Both at once: the old dog who has never once called it quietly. */
+  raspbark: ({ single, finalAccentDb }) =>
+    broadcastChain(
+      { single, finalAccentDb },
+      {
+        ...BROADCAST_BASE,
+        threshold: -34,
+        ratio: 16,
+        makeup: 8,
+        presence: 8.5,
+        preGain: 1.7,
+        param: 3,
+        mix: 0.48,
+        focusHz: 450,
+        limitRelease: 20,
+        baseI: -13,
+      },
+    ),
 }
 
 /** The filtergraph for one clip, as a single `-af` argument. */
