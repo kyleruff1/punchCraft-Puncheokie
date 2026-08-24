@@ -46,6 +46,7 @@ import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
 import { CueAnnouncer } from '@domain/coach/CueAnnouncer'
+import { selectPerformanceState } from '@domain/coach/performanceState'
 import type { VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
 import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
 import type { ThirdPartyPlaybackDetector } from '@audio/ThirdPartyPlaybackDetector'
@@ -645,6 +646,24 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     })
     matcherRef.current = matcher
 
+    // Per-cue round context for the performance-state selector. Built here,
+    // where the whole timeline is in hand — `scheduledStartMs` is
+    // round-relative, so "how far into the round" is direct, and cues are
+    // sorted, so the first is the opening.
+    const performanceMeta = new Map<
+      string,
+      { startMsIntoRound: number; workDurationMs: number; isRoundOpening: boolean }
+    >()
+    for (const round of timeline) {
+      round.cues.forEach((c, index) => {
+        performanceMeta.set(c.id, {
+          startMsIntoRound: c.scheduledStartMs,
+          workDurationMs: round.workDurationMs,
+          isRoundOpening: index === 0,
+        })
+      })
+    }
+
     // The announcer holds the policy and the gate; the runner only feeds it
     // events. Absent `voice`, nothing is constructed and the workout is
     // silent by construction rather than by a flag (doc §25).
@@ -660,6 +679,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // library names the same vocabulary `techniques` — one canonical
           // sequence, two spoken forms.
           vocabulary: voice.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
+          // teach the opening, push the close (or a pressure block), work the
+          // body — chosen from the round context the timeline carries.
+          performanceFor: (cue) => {
+            const meta = performanceMeta.get(cue.id)
+            return meta
+              ? selectPerformanceState({ ...meta, cadenceProfile: workout.recipe.cadenceProfile })
+              : 'work'
+          },
         })
       : null
     announcerRef.current = announcer
