@@ -37,7 +37,6 @@ import { assetPriority } from '@domain/coach/assetPriority'
 import {
   AUDIO_PRIORITY,
   DEFAULT_VOLUMES,
-  VOICE_ASSET_IDS,
   type AudioPriority,
   type ToneKind,
   type VoiceAssetId,
@@ -46,7 +45,6 @@ import {
 } from '@domain/coach/VoiceOutputPort'
 import type { VoiceVocabulary } from '@domain/coach/VoiceCoachPolicy'
 import {
-  PHRASE_FORMS,
   voiceAssetManifest,
   type PhraseForm,
   type VoiceAssetManifest,
@@ -123,6 +121,22 @@ export const MIN_CLIP_GAP_MS = 130
  */
 export const FALLBACK_CLIP_MS = 320
 
+/**
+ * How many clip players stay resident.
+ *
+ * Android caps how many `AudioTrack` objects an app may hold, and preloading
+ * every clip in every form blew straight through it: with 48 players open,
+ * creating one more failed with "Cannot create AudioTrack" and **the whole
+ * app went silent** — including clips that had loaded fine. Nothing reported
+ * a problem, because each individual play still looked successful.
+ *
+ * So players are pooled. The least recently used one is released when the cap
+ * is reached, which costs that clip a cold start next time it is needed
+ * (M34-01 measured cold at roughly twice the jitter of warm) and costs
+ * nothing at all for the clips actually in rotation.
+ */
+export const MAX_RESIDENT_PLAYERS = 16
+
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
   private vocabulary: VoiceVocabulary
@@ -133,6 +147,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly speaker: Pick<typeof Speech, 'speak' | 'stop'>
   private readonly setAudioMode: typeof setAudioModeAsync
 
+  /**
+   * Resident players, in least-recently-used order.
+   *
+   * A `Map` iterates in insertion order, so re-inserting on use keeps the
+   * oldest key first and makes eviction a single `keys().next()`.
+   */
   private readonly players = new Map<string, AudioPlayer>()
   private readonly durations = new Map<string, number>()
   private pending: PendingGroup[] = []
@@ -184,36 +204,74 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       return
     }
 
-    const missing: VoiceAssetId[] = []
-    for (const form of PHRASE_FORMS) {
-      for (const id of VOICE_ASSET_IDS) {
-      const key = this.keyFor(id, form)
-      if (this.players.has(key)) continue
-      const source = this.manifest.assets[this.vocabulary][form][id]
+    // Warm the clips a round actually opens with, not every clip in every
+    // form: the pool cap means preloading everything would only evict most of
+    // it again, and holding that many tracks is what exhausted the device.
+    const warm: Array<[VoiceAssetId, PhraseForm]> = [
+      ['bell', 'standalone'],
+      ['tone-ready', 'standalone'],
+      ['tone-repeat', 'standalone'],
+      ['tone-warning', 'standalone'],
+      ...(['1', '2', '3', '4', '5', '6'] as VoiceAssetId[]).map(
+        (id) => [id, 'combo'] as [VoiceAssetId, PhraseForm],
+      ),
+    ]
+
+    let loaded = 0
+    for (const [id, form] of warm) {
+      if (this.playerFor(id, form)) loaded += 1
+    }
+
+    if (loaded === 0) {
+      this.failed = true
+      logger.warn('puncheokie.voice.unavailable', 'no clips loaded; running without voice', {})
+    }
+  }
+
+  /**
+   * The player for one clip, created on demand and kept in the pool.
+   *
+   * Returns `undefined` when the clip cannot be created at all, which is a
+   * missing asset rather than a full pool — eviction happens first, so a
+   * failure here is about the file.
+   */
+  private playerFor(id: VoiceAssetId, form: PhraseForm): AudioPlayer | undefined {
+    const key = this.keyFor(id, form)
+    const existing = this.players.get(key)
+    if (existing) {
+      // Re-insert so this key is now the most recently used.
+      this.players.delete(key)
+      this.players.set(key, existing)
+      return existing
+    }
+
+    while (this.players.size >= MAX_RESIDENT_PLAYERS) {
+      const oldest = this.players.keys().next()
+      if (oldest.done) break
+      const evicted = this.players.get(oldest.value)
+      this.players.delete(oldest.value)
       try {
-        const player = this.makePlayer(source)
-        this.players.set(key, player)
-        // Duration is read lazily rather than here. A player reports 0 until
-        // its asset has actually loaded, and reading it at construction time
-        // meant every clip fell back to the assumed length — which made
-        // combinations *slower* than a standalone word instead of tighter,
-        // and left the announcer unable to place a phrase at all.
-        this.cacheDuration(key, player)
+        evicted?.remove()
       } catch {
-        missing.push(id)
-      }
+        // Already gone; the point was to stop holding the track.
       }
     }
 
-    if (missing.length > 0) {
-      logger.warn('puncheokie.voice.clipsMissing', 'some clips did not load', {
-        vocabulary: safe(this.vocabulary),
-        missing: safe(missing.join(',')),
+    try {
+      const player = this.makePlayer(this.manifest.assets[this.vocabulary][form][id])
+      this.players.set(key, player)
+      // Duration is read lazily, not here. A player reports 0 until its asset
+      // has loaded, and reading it at construction meant every clip fell back
+      // to the assumed length.
+      this.cacheDuration(key, player)
+      return player
+    } catch (err) {
+      logger.warn('puncheokie.voice.clipMissing', 'clip did not load', {
+        asset: safe(id),
+        form: safe(form),
+        error: safe(String(err)),
       })
-    }
-    if (this.players.size === 0) {
-      this.failed = true
-      logger.warn('puncheokie.voice.unavailable', 'no clips loaded; running without voice', {})
+      return undefined
     }
   }
 
@@ -285,6 +343,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     const key = this.keyFor(id, form)
     const cached = this.durations.get(key)
     if (cached !== undefined) return cached
+    // Only a resident player can be measured; asking for one here would
+    // create a track just to read a number.
     const player = this.players.get(key)
     return player ? this.cacheDuration(key, player) : undefined
   }
@@ -433,7 +493,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   private emit(id: VoiceAssetId, priority: AudioPriority, form: PhraseForm = 'standalone'): void {
-    const player = this.players.get(this.keyFor(id, form))
+    const player = this.playerFor(id, form)
     if (!player) return
     this.requestFocus()
     try {

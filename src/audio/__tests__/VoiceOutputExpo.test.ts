@@ -342,17 +342,19 @@ describe('clip length is read once the asset has loaded', () => {
     }
   }
 
+  // Preload warms the digits in `combo` form — the form a combination is
+  // called in — so that is the form with a resident player to measure.
   it('reports nothing while the clip is still loading', async () => {
     const h = lateLoadingHarness()
     await h.output.preload()
-    expect(h.output.assetDurationMs('1')).toBeUndefined()
+    expect(h.output.assetDurationMs('1', 'combo')).toBeUndefined()
   })
 
   it('picks the length up once loading finishes', async () => {
     const h = lateLoadingHarness()
     await h.output.preload()
     h.load()
-    expect(h.output.assetDurationMs('1')).toBe(150)
+    expect(h.output.assetDurationMs('1', 'combo')).toBe(150)
   })
 
   it('never caches a zero as if it were the real length', async () => {
@@ -360,10 +362,16 @@ describe('clip length is read once the asset has loaded', () => {
     // session, which is exactly the bug this replaced.
     const h = lateLoadingHarness()
     await h.output.preload()
-    expect(h.output.assetDurationMs('1')).toBeUndefined()
+    expect(h.output.assetDurationMs('1', 'combo')).toBeUndefined()
     h.load()
-    expect(h.output.assetDurationMs('1')).toBe(150)
-    expect(h.output.assetDurationMs('1')).toBe(150)
+    expect(h.output.assetDurationMs('1', 'combo')).toBe(150)
+    expect(h.output.assetDurationMs('1', 'combo')).toBe(150)
+  })
+
+  it('does not measure a clip that has no resident player', () => {
+    // Creating a track just to read a number is what exhausted the device.
+    const h = lateLoadingHarness()
+    expect(h.output.assetDurationMs('cut-off-ring', 'standalone')).toBeUndefined()
   })
 })
 

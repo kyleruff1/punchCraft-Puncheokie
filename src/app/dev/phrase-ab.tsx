@@ -57,36 +57,57 @@ function gapsOf(asset: PhraseAsset): number[] {
 export default function PhraseAbScreen(): React.JSX.Element {
   const [cadence, setCadence] = useState<Cadence>('standard')
   const [playing, setPlaying] = useState<string | null>(null)
+  /** Surfaced rather than logged: a silent take must say why it was silent. */
+  const [note, setNote] = useState<string | null>(null)
   const outputRef = useRef<VoiceOutputExpo | null>(null)
   const phrasePlayerRef = useRef<AudioPlayer | null>(null)
 
   const play = useCallback(
     async (combination: string, which: 'concat' | 'phrase' | 'both') => {
       setPlaying(`${combination}:${which}`)
+      setNote(null)
       try {
         await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
-
-        const output = outputRef.current ?? new VoiceOutputExpo()
-        outputRef.current = output
-        await output.preload()
 
         const asset = phraseAssets.find(
           (a) => a.combination === combination && a.cadence === cadence,
         )
 
         if (which !== 'phrase') {
+          // The word pool is only built when take A is actually wanted.
+          // Loading it just to play a phrase is what exhausted the device's
+          // AudioTrack instances and made take B fail silently.
+          const output = outputRef.current ?? new VoiceOutputExpo()
+          outputRef.current = output
+          await output.preload()
           output.playPhrase(concatenatedIds(combination), undefined, COMBO_TIGHTNESS)
-          // Wait out the concatenated take before starting the other one.
           await sleep(Math.max(900, (asset?.durationMs ?? 900) + 200))
         }
-        if (which === 'both') await sleep(BETWEEN_TAKES_MS)
+        if (which === 'both') {
+          // Release the word players before the phrase needs a track of its
+          // own — the pool is capped, but the phrase player is outside it.
+          outputRef.current?.release()
+          await sleep(BETWEEN_TAKES_MS)
+        }
 
         if (which !== 'concat' && asset) {
           phrasePlayerRef.current?.remove()
           const player = createAudioPlayer(asset.module)
           phrasePlayerRef.current = player
+
+          // Wait for the clip to load. `play()` on a player that has not
+          // finished loading does nothing, and reports nothing — the same
+          // trap that made every clip fall back to an assumed duration.
+          for (let i = 0; i < 60 && !player.isLoaded; i += 1) await sleep(25)
+          if (!player.isLoaded) {
+            setNote(`${combination}: phrase clip never loaded`)
+            return
+          }
+
           player.play()
-          await sleep(asset.durationMs + 200)
+          await sleep(asset.durationMs + 250)
+          player.remove()
+          phrasePlayerRef.current = null
         }
       } finally {
         setPlaying(null)
@@ -104,6 +125,7 @@ export default function PhraseAbScreen(): React.JSX.Element {
         Same SAPI voice in both, so this tests concatenation rather than the synthesizer. A is the
         current per-word path; B is one rendered utterance.
       </Text>
+      {note ? <Text style={styles.warn}>{note}</Text> : null}
 
       <View style={styles.row}>
         {CADENCES.map((option) => (
@@ -210,4 +232,5 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.4 },
   buttonText: { fontSize: 13, fontWeight: '700', color: colors.textOnAccent },
   buttonAltText: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  warn: { fontSize: 12, color: colors.warning },
 })
