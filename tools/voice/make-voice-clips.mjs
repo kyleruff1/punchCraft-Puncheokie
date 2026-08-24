@@ -1,92 +1,93 @@
 /**
- * Generate the Voice Coach clip set (M34-04, D16).
+ * Generate the Voice Coach clip set (M34-04, D16) — per-word, in the persona.
  *
  * D16's rule is that **time-critical speech is never synthesized at runtime** —
  * the clips are rendered ahead of time and the app plays local files. This
- * script is the ahead-of-time step.
+ * script is the ahead-of-time step for the *single-word* clips: the per-token
+ * calls used by in-time delivery (a slow technical cadence) and the per-word
+ * fallback when a combination has no whole-phrase rendering.
  *
- * ## These are placeholders
+ * ## In the persona now, not SAPI
  *
- * D16 names Kokoro-82M as the shipping voice. This script uses Windows SAPI
- * instead, because it is offline, needs no model download, and produces real
- * WAV files today — which is what unblocks the player, the queue and the
- * manifest. The rule that matters (nothing synthesized at runtime) is
- * unaffected by which renderer produced the file.
- *
- * Swapping in Kokoro later means re-running a different generator over the
- * same word table and dropping the output in the same place. Nothing in
- * `src/audio` knows or cares which one made the file.
+ * These were Windows SAPI placeholders. They now come from the same settled
+ * Old-School Cornerman persona as the combinations — stone blend, theatrical
+ * contour, broadcast texture — so a technical round and the fallback path sound
+ * like the same coach, not a different one. Each word is a single-strike
+ * delivery: a clear, firm command that lands, rather than the shouted finish a
+ * combination ends on.
  *
  * ## Two vocabularies and two forms, one set of ids (D15)
  *
- * `numbers` says "one"; `names` says "jab". Same `VoiceAssetId`, different
- * clip — which is why the vocabulary belongs to the manifest and not to the
- * id.
+ * `numbers` says "one"; `names` says "jab". Same `VoiceAssetId`, different clip
+ * — which is why the vocabulary belongs to the manifest and not to the id. Each
+ * vocabulary is rendered twice more, as a **form**: `standalone` is a single
+ * command at a clear pace; `combo` is the same word inside a run, quicker. This
+ * is a different rendering, not the standalone clip played faster — speeding a
+ * clip up at runtime smears the consonants.
  *
- * Each vocabulary is rendered twice more, as a **form**:
+ * `3` is **"lead hook"**, not "left hook": a hook thrown with the lead hand is
+ * a left hook in orthodox and a right hook in southpaw, so "left" would be
+ * wrong every time a southpaw threw it.
  *
- * - `standalone` — a single command, called at a normal, clear pace.
- * - `combo` — the same word inside a combination, clipped and quicker, the
- *   way a coach rattles "one-two-three" rather than announcing three separate
- *   numbers.
- *
- * This is not the same word played faster at runtime; it is a different
- * rendering, so the consonants stay crisp instead of being smeared. Trimming
- * the gap between clips alone made combinations run together but not sound
- * any more like a coach calling them.
- *
- * Deliberate deviation from D15's example wording: `3` is **"lead hook"**, not
- * "left hook". A hook thrown with the lead hand is a left hook in orthodox and
- * a right hook in southpaw, so a clip that says "left" would be wrong every
- * time a southpaw threw it.
+ * Output paths and ids are unchanged, so `src/audio/voiceAssets/manifest.ts`
+ * needs no edit — only the audio behind each file changes.
  *
  * Run: node tools/voice/make-voice-clips.mjs
- * Requires: Windows PowerShell with System.Speech (built in).
+ * Requires: the Kokoro model files and ffmpeg — see tools/voice/README.md.
  */
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
+
+import { compileAdlib } from './prosody.mjs'
+import { textureChain } from './texture.mjs'
+import {
+  PRODUCTION_BLEND,
+  PRODUCTION_BLEND_NAME,
+  PRODUCTION_EXPRESSION,
+  PRODUCTION_TEXTURE,
+  RENDERER,
+} from './persona.mjs'
+import { measureDuration, trimEnds } from './wav.mjs'
 
 const OUT_ROOT = join('assets', 'voice')
 const SAMPLE_RATE = 44_100
 
+/** Aged drift — small enough to read as weathered rather than unsteady. */
+const DRIFT_SEMITONES = 0.14
+const DRIFT_HZ = 4.2
+
 /** Words that differ between vocabularies (D15). */
 const VOCABULARY_WORDS = {
-  numbers: {
-    1: 'one',
-    2: 'two',
-    3: 'three',
-    4: 'four',
-    5: 'five',
-    6: 'six',
-  },
+  numbers: { 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six' },
   names: {
-    1: 'jab',
-    2: 'cross',
-    3: 'lead hook',
-    4: 'rear hook',
-    5: 'lead uppercut',
-    6: 'rear uppercut',
+    1: 'Jab',
+    2: 'Cross',
+    3: 'Lead hook',
+    4: 'Rear hook',
+    5: 'Lead uppercut',
+    6: 'Rear uppercut',
   },
 }
 
 /** Words that are the same in both vocabularies. */
 const SHARED_WORDS = {
-  body: 'body',
-  slip: 'slip',
-  roll: 'roll',
-  duck: 'duck',
-  pull: 'pull',
-  'bob-weave': 'bob and weave',
-  pivot: 'pivot',
-  'step-off': 'step off',
-  circle: 'circle',
-  'cut-off-ring': 'cut off the ring',
-  reset: 'reset',
-  go: 'go',
-  stop: 'stop',
-  switch: 'switch',
+  body: 'Body',
+  slip: 'Slip',
+  roll: 'Roll',
+  duck: 'Duck',
+  pull: 'Pull',
+  'bob-weave': 'Bob and weave',
+  pivot: 'Pivot',
+  'step-off': 'Step off',
+  circle: 'Circle',
+  'cut-off-ring': 'Cut off the ring',
+  reset: 'Reset',
+  go: 'Go',
+  stop: 'Stop',
+  switch: 'Switch',
 }
 
 /**
@@ -104,104 +105,52 @@ const TONES = {
 }
 
 /**
- * Trim leading and trailing silence from a 16-bit PCM WAV, in place.
+ * Synthesis speed per form.
  *
- * The synthesiser pads every clip, and that padding is not cosmetic: the
- * player reports the *file* length, and the announcer schedules from it. A
- * word with 220 ms of silence baked onto the end makes the coach leave a
- * gap that no tightness setting can close, because the silence is inside the
- * clip rather than between them. Measured on the tablet: words were 85-148 ms
- * of audio inside ~370 ms files, and the combination sounded spaced no matter
- * what the tightness said.
- *
- * A short margin is kept at each end so nothing is clipped into.
+ * `combo` is faster because it is a word inside a run, not an announcement.
+ * Both are a single-strike delivery through `compileAdlib`; only the tempo
+ * differs, so the consonants stay crisp rather than being smeared at runtime.
  */
-function trimSilence(path, { thresholdRatio = 0.02, marginMs = 15 } = {}) {
-  const buffer = readFileSync(path)
-  if (buffer.length < 12 || buffer.toString('ascii', 0, 4) !== 'RIFF') {
-    return { trimmedMs: 0, keptMs: 0 }
-  }
+const FORM_SPEED = { standalone: 1.18, combo: 1.5 }
 
-  // Walk the chunk list rather than assuming a 44-byte header. The
-  // synthesiser emits `fact` and `LIST` chunks alongside `fmt ` and `data`,
-  // so a fixed offset points into the middle of metadata — which produced
-  // files the player accepted and then crashed on.
-  let offset = 12
-  let fmt = null
-  let data = null
-  while (offset + 8 <= buffer.length) {
-    const id = buffer.toString('ascii', offset, offset + 4)
-    const size = buffer.readUInt32LE(offset + 4)
-    const body = offset + 8
-    if (id === 'fmt ') {
-      fmt = {
-        channels: buffer.readUInt16LE(body + 2),
-        sampleRate: buffer.readUInt32LE(body + 4),
-        bitsPerSample: buffer.readUInt16LE(body + 14),
-      }
-    } else if (id === 'data') {
-      data = { start: body, size: Math.min(size, buffer.length - body) }
+function findFfmpeg() {
+  const candidates = [
+    'ffmpeg',
+    join(
+      homedir(),
+      'AppData/Local/Microsoft/WinGet/Packages',
+      'Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe',
+      'ffmpeg-9.0-full_build/bin/ffmpeg.exe',
+    ),
+  ]
+  for (const candidate of candidates) {
+    try {
+      execFileSync(candidate, ['-hide_banner', '-version'], { stdio: 'ignore' })
+      return candidate
+    } catch {
+      // Try the next one.
     }
-    // Chunks are word-aligned, so an odd size carries a pad byte.
-    offset = body + size + (size % 2)
   }
-
-  if (!fmt || !data || fmt.bitsPerSample !== 16) return { trimmedMs: 0, keptMs: 0 }
-
-  const bytesPerFrame = (fmt.bitsPerSample / 8) * fmt.channels
-  const frames = Math.floor(data.size / bytesPerFrame)
-  const threshold = 32_767 * thresholdRatio
-  const margin = Math.round((marginMs / 1000) * fmt.sampleRate)
-  const peakOf = (frame) => {
-    let peak = 0
-    for (let c = 0; c < fmt.channels; c += 1) {
-      const at = data.start + frame * bytesPerFrame + c * 2
-      peak = Math.max(peak, Math.abs(buffer.readInt16LE(at)))
-    }
-    return peak
-  }
-
-  let first = 0
-  while (first < frames && peakOf(first) < threshold) first += 1
-  let last = frames - 1
-  while (last > first && peakOf(last) < threshold) last -= 1
-  // Nothing above the threshold: leave the file alone rather than writing an
-  // empty clip, which would be worse than a padded one.
-  if (first >= last) {
-    return { trimmedMs: 0, keptMs: Math.round((frames / fmt.sampleRate) * 1000) }
-  }
-
-  const start = Math.max(0, first - margin)
-  const end = Math.min(frames - 1, last + margin)
-  const kept = buffer.subarray(
-    data.start + start * bytesPerFrame,
-    data.start + (end + 1) * bytesPerFrame,
-  )
-
-  // Rewritten as a canonical 44-byte file: one fmt chunk, one data chunk, and
-  // nothing else for a player to trip over.
-  const header = Buffer.alloc(44)
-  header.write('RIFF', 0)
-  header.writeUInt32LE(36 + kept.length, 4)
-  header.write('WAVE', 8)
-  header.write('fmt ', 12)
-  header.writeUInt32LE(16, 16)
-  header.writeUInt16LE(1, 20)
-  header.writeUInt16LE(fmt.channels, 22)
-  header.writeUInt32LE(fmt.sampleRate, 24)
-  header.writeUInt32LE(fmt.sampleRate * bytesPerFrame, 28)
-  header.writeUInt16LE(bytesPerFrame, 32)
-  header.writeUInt16LE(fmt.bitsPerSample, 34)
-  header.write('data', 36)
-  header.writeUInt32LE(kept.length, 40)
-  writeFileSync(path, Buffer.concat([header, kept]))
-
-  return {
-    trimmedMs: Math.round(((frames - (end - start + 1)) / fmt.sampleRate) * 1000),
-    keptMs: Math.round(((end - start + 1) / fmt.sampleRate) * 1000),
-  }
+  throw new Error('ffmpeg not found. winget install --id Gyan.FFmpeg (see tools/voice/README.md)')
 }
 
+const FFMPEG = findFfmpeg()
+
+/** Apply the production texture in place (single-strike profile). */
+function postProcess(path, finalAccentDb) {
+  const filters = textureChain(PRODUCTION_TEXTURE, { profile: 'single', finalAccentDb })
+  const temp = `${path}.p.wav`
+  execFileSync(
+    FFMPEG,
+    ['-hide_banner', '-loglevel', 'error', '-y', '-i', path, '-af', filters,
+      '-ar', '24000', '-ac', '1', temp],
+    { stdio: 'ignore' },
+  )
+  if (!existsSync(temp)) throw new Error(`ffmpeg produced nothing for ${path}`)
+  renameSync(temp, path)
+}
+
+/** A short synthesised tone. Unchanged — a bell is a bell in any voice. */
 function wavTone({ freqHz, durationMs, fadeOutMs }) {
   const samples = Math.round((durationMs / 1000) * SAMPLE_RATE)
   const fade = Math.round((fadeOutMs / 1000) * SAMPLE_RATE)
@@ -211,8 +160,8 @@ function wavTone({ freqHz, durationMs, fadeOutMs }) {
     let amp = 0.7
     const fromEnd = samples - i
     if (fromEnd < fade) amp *= fromEnd / fade
-    // A short attack ramp avoids the click an instant onset would give a
-    // tone the athlete hears hundreds of times a session.
+    // A short attack ramp avoids the click an instant onset would give a tone
+    // the athlete hears hundreds of times a session.
     if (i < 64) amp *= i / 64
     data.writeInt16LE(Math.round(Math.sin(2 * Math.PI * freqHz * t) * amp * 32_767), i * 2)
   }
@@ -233,81 +182,109 @@ function wavTone({ freqHz, durationMs, fadeOutMs }) {
   return Buffer.concat([header, data])
 }
 
-/**
- * Render every word in one PowerShell invocation.
- *
- * One process for the whole batch rather than one per clip: SAPI init costs
- * far more than the synthesis, and ~50 separate PowerShell launches would
- * take minutes for no benefit.
- */
-function speakBatch(jobs, rate) {
-  const lines = [
-    'Add-Type -AssemblyName System.Speech',
-    '$s = New-Object System.Speech.Synthesis.SpeechSynthesizer',
-    // A drill-sergeant call is clipped, not languid (D16 register).
-    `$s.Rate = ${rate}`,
-    "$s.SelectVoice('Microsoft David Desktop')",
-  ]
-  for (const { path, text } of jobs) {
-    lines.push(`$s.SetOutputToWaveFile('${path.replace(/'/g, "''")}')`)
-    lines.push(`$s.Speak('${text.replace(/'/g, "''")}')`)
-  }
-  lines.push('$s.SetOutputToNull()')
-  lines.push('$s.Dispose()')
-
-  execFileSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', lines.join('; ')], {
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-}
-
-/**
- * Speech rate per form.
- *
- * `combo` is faster because it is a word inside a run, not an announcement.
- * Tones are identical in both forms — a bell is a bell.
- */
-const FORM_RATE = { standalone: 2, combo: 5 }
+/* ------------------------------------------------------------------- build */
 
 const cwd = process.cwd()
-let count = 0
 
+// One plan per (word, form): a single-strike command that lands. `land` rather
+// than the persona's `shout` finish — a lone call is firm and clear, not a
+// shouted combination ending.
+const jobs = []
 for (const vocabulary of ['numbers', 'names']) {
   for (const form of ['standalone', 'combo']) {
     const dir = join(OUT_ROOT, vocabulary, form)
     mkdirSync(dir, { recursive: true })
-
-    const jobs = []
-    for (const [id, text] of Object.entries(VOCABULARY_WORDS[vocabulary])) {
-      jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
+    const words = { ...VOCABULARY_WORDS[vocabulary], ...SHARED_WORDS }
+    for (const [id, text] of Object.entries(words)) {
+      const plan = compileAdlib(`${text}!`, {
+        performance: 'work',
+        expression: PRODUCTION_EXPRESSION,
+        finish: 'land',
+      })
+      plan.speed = FORM_SPEED[form]
+      jobs.push({ id, vocabulary, form, plan, wav: join(cwd, dir, `${id}.wav`) })
     }
-    for (const [id, text] of Object.entries(SHARED_WORDS)) {
-      jobs.push({ path: join(cwd, dir, `${id}.wav`), text })
+  }
+}
+
+console.log(`Rendering ${jobs.length} word clips — ${RENDERER}…`)
+
+const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
+  input: JSON.stringify({
+    blends: { [PRODUCTION_BLEND_NAME]: PRODUCTION_BLEND },
+    jobs: jobs.map((j) => ({
+      path: j.wav,
+      text: j.plan.renderedText,
+      speed: j.plan.speed,
+      blend: PRODUCTION_BLEND_NAME,
+    })),
+  }),
+  encoding: 'utf8',
+  maxBuffer: 32 * 1024 * 1024,
+})
+for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
+  console.error(`  ${failure}`)
+}
+
+// Trim, then the contour + aged drift, then the texture — the same order the
+// combinations use, so a single word and a combination age identically.
+console.log('Trimming…')
+for (const job of jobs) {
+  if (existsSync(job.wav)) trimEnds(job.wav, { tailMs: 70 })
+}
+
+console.log('Applying the contour and aged drift…')
+const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour.py')], {
+  input: JSON.stringify(
+    jobs
+      .filter((j) => existsSync(j.wav))
+      .map((j) => ({
+        path: j.wav,
+        contour: j.plan.pitchContourSemitones,
+        shiftSemitones: j.plan.pitchShiftSemitones,
+        finish: j.plan.finishShape,
+        driftSemitones: DRIFT_SEMITONES,
+        driftHz: DRIFT_HZ,
+      })),
+  ),
+  encoding: 'utf8',
+  maxBuffer: 32 * 1024 * 1024,
+})
+for (const failure of contourOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
+  console.error(`  ${failure}`)
+}
+
+console.log(`Applying the ${PRODUCTION_TEXTURE} texture and writing tones…`)
+let count = 0
+for (const vocabulary of ['numbers', 'names']) {
+  for (const form of ['standalone', 'combo']) {
+    const dir = join(cwd, OUT_ROOT, vocabulary, form)
+    const forHere = jobs.filter((j) => j.vocabulary === vocabulary && j.form === form)
+
+    let durTotal = 0
+    for (const job of forHere) {
+      if (!existsSync(job.wav)) continue
+      postProcess(job.wav, job.plan.finalAccentDb)
+      durTotal += measureDuration(job.wav)
     }
 
-    speakBatch(jobs, FORM_RATE[form])
-
-    // Trim before anything measures these files. The tones are generated at
-    // exactly the length they should be, so only the spoken clips need it.
-    let trimmedTotal = 0
-    for (const job of jobs) trimmedTotal += trimSilence(job.path).trimmedMs
-
+    // Tones are generated at exactly the length they should be, spoken words
+    // are not — but they carry no id-specific voice, so they are written after.
     for (const [id, spec] of Object.entries(TONES)) {
       writeFileSync(join(dir, `${id}.wav`), wavTone(spec))
     }
 
-    const paths = [
-      ...jobs.map((j) => j.path),
-      ...Object.keys(TONES).map((t) => join(cwd, dir, `${t}.wav`)),
-    ]
+    const clipCount = forHere.length + Object.keys(TONES).length
     let bytes = 0
-    for (const path of paths) bytes += statSync(path).size
-    count += paths.length
+    for (const job of forHere) if (existsSync(job.wav)) bytes += statSync(job.wav).size
+    for (const id of Object.keys(TONES)) bytes += statSync(join(dir, `${id}.wav`)).size
+    count += clipCount
     console.log(
-      `${vocabulary.padEnd(8)} ${form.padEnd(10)} ${paths.length} clips  ${(bytes / 1024).toFixed(0)} KB  ` +
-        `(trimmed ${trimmedTotal} ms of silence)`,
+      `${vocabulary.padEnd(8)} ${form.padEnd(10)} ${clipCount} clips  ${(bytes / 1024).toFixed(0)} KB  ` +
+        `(mean word ${Math.round(durTotal / Math.max(1, forHere.length))} ms)`,
     )
   }
 }
 
 console.log(`\nWrote ${count} clips to ${OUT_ROOT}`)
-console.log('Placeholder voice (Windows SAPI). D16 ships Kokoro-82M — see the header note.')
+console.log(`Renderer: ${RENDERER}. Model files are gitignored — see tools/voice/README.md.`)
