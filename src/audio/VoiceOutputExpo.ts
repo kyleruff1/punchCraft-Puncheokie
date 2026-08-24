@@ -49,6 +49,7 @@ import {
   type PhraseForm,
   type VoiceAssetManifest,
 } from './voiceAssets/manifest'
+import { findPhraseAsset } from './voiceAssets/phraseManifest'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -162,6 +163,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private volumes: Volumes = { ...DEFAULT_VOLUMES }
   private failed = false
   private focusHeld = false
+  /**
+   * The player for the combination currently being called.
+   *
+   * Held outside the clip pool and replaced each time: a phrase is one file
+   * played once, so keeping a resident player per combination would consume
+   * the very AudioTrack budget the pool exists to protect.
+   */
+  private phrasePlayer: AudioPlayer | null = null
+  private phraseHandle: unknown = null
 
   constructor(opts: VoiceOutputExpoOptions = {}) {
     this.manifest = opts.manifest ?? voiceAssetManifest
@@ -333,6 +343,63 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   /**
+   * Length of a rendered combination, from its sidecar.
+   *
+   * Read from the manifest rather than from a player, so the announcer can
+   * place a phrase before anything has been loaded — the timing was measured
+   * at render time by the synthesizer itself.
+   */
+  combinationDurationMs(combination: string, cadence: string): number | undefined {
+    return findPhraseAsset(combination, cadence)?.durationMs
+  }
+
+  /**
+   * Play a whole combination as one utterance.
+   *
+   * Returns false when nothing has been rendered for it, which tells the
+   * announcer to fall back to the per-word path rather than leaving the
+   * combination uncalled.
+   */
+  playCombination(combination: string, cadence: string, atMs?: number): boolean {
+    if (this.failed) return false
+    const asset = findPhraseAsset(combination, cadence)
+    if (!asset) return false
+
+    const start = (): void => {
+      this.requestFocus()
+      try {
+        this.phrasePlayer?.remove()
+      } catch {
+        // Already gone.
+      }
+      try {
+        const player = this.makePlayer(asset.module)
+        this.phrasePlayer = player
+        player.volume = this.volumes.voice
+        player.play()
+      } catch (err) {
+        logger.warn('puncheokie.voice.phraseFailed', 'combination phrase did not play', {
+          combination: safe(combination),
+          cadence: safe(cadence),
+          error: safe(String(err)),
+        })
+      }
+    }
+
+    const delay = atMs === undefined ? 0 : atMs - this.clock()
+    if (delay <= 0) {
+      start()
+      return true
+    }
+    if (this.phraseHandle !== null) this.cancelScheduled(this.phraseHandle)
+    this.phraseHandle = this.schedule(() => {
+      this.phraseHandle = null
+      start()
+    }, delay)
+    return true
+  }
+
+  /**
    * How long a clip takes to say, once it has been loaded.
    *
    * Measured from the file rather than estimated. `CueAnnouncer` uses this to
@@ -452,6 +519,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // A phrase mid-flight is a queue as much as a sound: the clips not yet
     // started are exactly what `cancel` is for.
     if (this.sequence.some((step) => step.priority > belowPriority)) this.clearSequence()
+    // A scheduled combination has not started yet, so it is queue too.
+    if (belowPriority <= AUDIO_PRIORITY.punchCommand && this.phraseHandle !== null) {
+      this.cancelScheduled(this.phraseHandle)
+      this.phraseHandle = null
+    }
     if (belowPriority <= AUDIO_PRIORITY.metric) {
       try {
         this.speaker.stop()
@@ -475,6 +547,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
     this.clearSequence()
+    if (this.phraseHandle !== null) this.cancelScheduled(this.phraseHandle)
+    this.phraseHandle = null
+    try {
+      this.phrasePlayer?.remove()
+    } catch {
+      // Already gone.
+    }
+    this.phrasePlayer = null
     for (const player of this.players.values()) {
       try {
         player.remove()

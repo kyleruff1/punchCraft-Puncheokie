@@ -649,7 +649,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // events. Absent `voice`, nothing is constructed and the workout is
     // silent by construction rather than by a flag (doc §25).
     const announcer = voice
-      ? new CueAnnouncer({ policy: voice.policy, output: voice.output })
+      ? new CueAnnouncer({
+          policy: voice.policy,
+          output: voice.output,
+          // The recipe's cadence chooses which rendering of a combination is
+          // called — a phrase is a performance, so a faster round means a
+          // different recording rather than the same one played faster.
+          cadence: workout.recipe.cadenceProfile,
+        })
       : null
     announcerRef.current = announcer
 

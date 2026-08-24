@@ -35,7 +35,15 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync, statSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -85,38 +93,115 @@ const OUT_ROOT = join('assets', 'voice', 'phrases')
  */
 const CADENCES = {
   technical: { rate: '+15%', groupPauseMs: 260, finalEmphasis: 'moderate' },
-  standard: { rate: '+55%', groupPauseMs: 150, finalEmphasis: 'strong' },
-  pressure: { rate: '+90%', groupPauseMs: 90, finalEmphasis: 'strong' },
+  steady: { rate: '+45%', groupPauseMs: 170, finalEmphasis: 'strong' },
+  pressure: { rate: '+75%', groupPauseMs: 110, finalEmphasis: 'strong' },
+  sprint: { rate: '+100%', groupPauseMs: 70, finalEmphasis: 'strong' },
 }
 
-/** Spoken form of each token. `1B` never reaches the synthesizer as "one bee". */
-const SPOKEN = {
+/** Numbers, spelled so the synthesizer never reads a bare digit oddly. */
+const NUMBER_WORDS = {
   1: 'One',
   2: 'Two',
   3: 'Three',
   4: 'Four',
   5: 'Five',
   6: 'Six',
-  '1B': 'Body one',
-  '2B': 'Body two',
-  roll: 'Roll',
+}
+
+/** Defense and footwork words. Anything here is a transition, not a punch. */
+const MOVEMENT_WORDS = {
   slip: 'Slip',
+  roll: 'Roll',
+  duck: 'Duck',
+  pull: 'Pull',
+  'bob-weave': 'Bob and weave',
+  pivot: 'Pivot',
+  'step off': 'Step off',
+  'step-off': 'Step off',
+  circle: 'Circle',
+  'cut-off-ring': 'Cut off the ring',
+  reset: 'Reset',
+}
+
+const isMovement = (token) => MOVEMENT_WORDS[token] !== undefined
+
+/**
+ * Spoken form of one notation token.
+ *
+ * `2b` becomes "Body two", never "two bee" — a body shot has to reach the
+ * synthesizer as words a person would actually say (D10 keeps the *visual*
+ * notation exact; this is only what the voice says).
+ */
+function spokenFor(token) {
+  if (MOVEMENT_WORDS[token]) return MOVEMENT_WORDS[token]
+  const body = /^([1-6])b$/i.exec(token)
+  if (body) return `Body ${NUMBER_WORDS[Number(body[1])].toLowerCase()}`
+  return NUMBER_WORDS[Number(token)] ?? token
 }
 
 /**
- * The experiment set, grouped the way a coach would call them.
+ * Group a combination the way a coach would call it.
  *
- * Groups are entry / finish, which is what produces "One-two, three-TWO"
- * instead of four evenly stressed numbers.
+ * Punches pair up — entry, then finish — and a movement token stands alone
+ * because it *is* the transition between them. This is what turns 1-2-3-2
+ * into "One-two, three-TWO" rather than four evenly stressed numbers.
+ *
+ * Grouping lives here, at render time, and deliberately not in the domain:
+ * the grouping is baked into the audio, so a runtime copy of these rules
+ * would be a second source of truth that could disagree with the clip the
+ * athlete actually hears.
  */
-const PHRASES = [
-  { id: '1-2', groups: [['1', '2']] },
-  { id: '1-1-2', groups: [['1', '1'], ['2']] },
-  { id: '1-2-3-2', groups: [['1', '2'], ['3', '2']] },
-  { id: '1-2-roll-3-2', groups: [['1', '2'], ['roll'], ['3', '2']] },
-  { id: '1-1-2-3-2', groups: [['1', '1', '2'], ['3', '2']] },
-  { id: '1-2-5-2', groups: [['1', '2'], ['5', '2']] },
-]
+function groupTokens(tokens) {
+  const groups = []
+  let current = []
+  for (const token of tokens) {
+    if (isMovement(token)) {
+      if (current.length > 0) {
+        groups.push(current)
+        current = []
+      }
+      groups.push([token])
+      continue
+    }
+    current.push(token)
+    if (current.length === 2) {
+      groups.push(current)
+      current = []
+    }
+  }
+  if (current.length > 0) groups.push(current)
+  return groups
+}
+
+/**
+ * Every combination the authored workouts actually call.
+ *
+ * Read from the sample sources rather than kept as a second list here. A
+ * hand-maintained list drifts, and the failure is silent: the workout calls a
+ * combination, no phrase exists, and the coach quietly falls back to the
+ * per-word path that this whole change exists to replace.
+ *
+ * Single-token entries are skipped — one punch is a standalone clip, and
+ * rendering it as a "phrase" would just be the same word again.
+ */
+function combinationsFromSamples() {
+  const dir = join('src', 'domain', 'workout', 'samples')
+  const found = new Set()
+  for (const file of readdirSync(dir)) {
+    if (!file.endsWith('.ts')) continue
+    const source = readFileSync(join(dir, file), 'utf8')
+    for (const match of source.matchAll(/notation:\s*'([^']+)'/g)) {
+      const notation = match[1]
+      if (notation.split('-').length > 1) found.add(notation)
+    }
+  }
+  return [...found].sort()
+}
+
+const PHRASES = combinationsFromSamples().map((id) => ({
+  id,
+  groups: groupTokens(id.split('-').map((t) => t.trim())),
+}))
 
 /** Every token in order, for the sidecar. */
 const tokensOf = (phrase) => phrase.groups.flat()
@@ -134,7 +219,7 @@ function ssmlFor(phrase, cadence) {
 
   const groups = phrase.groups.map((group) => {
     const words = group.map((token) => {
-      const word = SPOKEN[token] ?? token
+      const word = spokenFor(token)
       const isLast = index === lastIndex
       index += 1
       return isLast
@@ -368,7 +453,7 @@ for (const job of jobs) {
   const wordMarks = []
   let markIndex = 0
   for (let t = 0; t < tokens.length; t += 1) {
-    const spoken = String(SPOKEN[tokens[t]] ?? tokens[t])
+    const spoken = spokenFor(tokens[t])
     const wordCount = spoken.split(' ').length
     const mark = rawMarks[markIndex]
     if (mark) {

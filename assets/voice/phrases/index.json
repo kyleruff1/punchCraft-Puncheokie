@@ -1,14 +1,14 @@
 [
   {
-    "cueId": "1-2.technical",
-    "combination": "1-2",
+    "cueId": "1-1.technical",
+    "combination": "1-1",
     "cadence": "technical",
-    "file": "1-2.technical.wav",
+    "file": "1-1.technical.wav",
     "tokens": [
       "1",
-      "2"
+      "1"
     ],
-    "durationMs": 680,
+    "durationMs": 772,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -17,46 +17,70 @@
       },
       {
         "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
+        "token": "1",
+        "offsetMs": 317
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2.standard",
-    "combination": "1-2",
-    "cadence": "standard",
-    "file": "1-2.standard.wav",
+    "cueId": "1-1.steady",
+    "combination": "1-1",
+    "cadence": "steady",
+    "file": "1-1.steady.wav",
     "tokens": [
       "1",
-      "2"
+      "1"
     ],
-    "durationMs": 624,
+    "durationMs": 739,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 31
       },
       {
         "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 234
+        "token": "1",
+        "offsetMs": 258
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2.pressure",
-    "combination": "1-2",
+    "cueId": "1-1.pressure",
+    "combination": "1-1",
     "cadence": "pressure",
-    "file": "1-2.pressure.wav",
+    "file": "1-1.pressure.wav",
     "tokens": [
       "1",
-      "2"
+      "1"
     ],
-    "durationMs": 603,
+    "durationMs": 700,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 204
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1.sprint",
+    "combination": "1-1",
+    "cadence": "sprint",
+    "file": "1-1.sprint.wav",
+    "tokens": [
+      "1",
+      "1"
+    ],
+    "durationMs": 697,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -65,8 +89,8 @@
       },
       {
         "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
+        "token": "1",
+        "offsetMs": 191
       }
     ],
     "renderer": "sapi-david-ssml"
@@ -102,31 +126,31 @@
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-1-2.standard",
+    "cueId": "1-1-2.steady",
     "combination": "1-1-2",
-    "cadence": "standard",
-    "file": "1-1-2.standard.wav",
+    "cadence": "steady",
+    "file": "1-1-2.steady.wav",
     "tokens": [
       "1",
       "1",
       "2"
     ],
-    "durationMs": 926,
+    "durationMs": 991,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 31
       },
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 227
+        "offsetMs": 258
       },
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 654
+        "offsetMs": 747
       }
     ],
     "renderer": "sapi-david-ssml"
@@ -141,7 +165,37 @@
       "1",
       "2"
     ],
-    "durationMs": 810,
+    "durationMs": 856,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 204
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 555
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1-2.sprint",
+    "combination": "1-1-2",
+    "cadence": "sprint",
+    "file": "1-1-2.sprint.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2"
+    ],
+    "durationMs": 800,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -156,7 +210,343 @@
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 487
+        "offsetMs": 473
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1-step off.technical",
+    "combination": "1-1-step off",
+    "cadence": "technical",
+    "file": "1-1-step off.technical.wav",
+    "tokens": [
+      "1",
+      "1",
+      "step off"
+    ],
+    "durationMs": 1824,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 317
+      },
+      {
+        "tokenIndex": 2,
+        "token": "step off",
+        "offsetMs": 1054
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1-step off.steady",
+    "combination": "1-1-step off",
+    "cadence": "steady",
+    "file": "1-1-step off.steady.wav",
+    "tokens": [
+      "1",
+      "1",
+      "step off"
+    ],
+    "durationMs": 1604,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 31
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 258
+      },
+      {
+        "tokenIndex": 2,
+        "token": "step off",
+        "offsetMs": 747
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1-step off.pressure",
+    "combination": "1-1-step off",
+    "cadence": "pressure",
+    "file": "1-1-step off.pressure.wav",
+    "tokens": [
+      "1",
+      "1",
+      "step off"
+    ],
+    "durationMs": 1476,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 204
+      },
+      {
+        "tokenIndex": 2,
+        "token": "step off",
+        "offsetMs": 555
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-1-step off.sprint",
+    "combination": "1-1-step off",
+    "cadence": "sprint",
+    "file": "1-1-step off.sprint.wav",
+    "tokens": [
+      "1",
+      "1",
+      "step off"
+    ],
+    "durationMs": 1418,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 191
+      },
+      {
+        "tokenIndex": 2,
+        "token": "step off",
+        "offsetMs": 473
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2.technical",
+    "combination": "1-2",
+    "cadence": "technical",
+    "file": "1-2.technical.wav",
+    "tokens": [
+      "1",
+      "2"
+    ],
+    "durationMs": 680,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 324
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2.steady",
+    "combination": "1-2",
+    "cadence": "steady",
+    "file": "1-2.steady.wav",
+    "tokens": [
+      "1",
+      "2"
+    ],
+    "durationMs": 644,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 31
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 265
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2.pressure",
+    "combination": "1-2",
+    "cadence": "pressure",
+    "file": "1-2.pressure.wav",
+    "tokens": [
+      "1",
+      "2"
+    ],
+    "durationMs": 609,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 211
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2.sprint",
+    "combination": "1-2",
+    "cadence": "sprint",
+    "file": "1-2.sprint.wav",
+    "tokens": [
+      "1",
+      "2"
+    ],
+    "durationMs": 603,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 198
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-3.technical",
+    "combination": "1-2-3",
+    "cadence": "technical",
+    "file": "1-2-3.technical.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3"
+    ],
+    "durationMs": 1324,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 324
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 985
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-3.steady",
+    "combination": "1-2-3",
+    "cadence": "steady",
+    "file": "1-2-3.steady.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3"
+    ],
+    "durationMs": 1129,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 31
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 265
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 706
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-3.pressure",
+    "combination": "1-2-3",
+    "cadence": "pressure",
+    "file": "1-2-3.pressure.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3"
+    ],
+    "durationMs": 994,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 211
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 514
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-3.sprint",
+    "combination": "1-2-3",
+    "cadence": "sprint",
+    "file": "1-2-3.sprint.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3"
+    ],
+    "durationMs": 943,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 198
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 439
       }
     ],
     "renderer": "sapi-david-ssml"
@@ -198,37 +588,37 @@
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2-3-2.standard",
+    "cueId": "1-2-3-2.steady",
     "combination": "1-2-3-2",
-    "cadence": "standard",
-    "file": "1-2-3-2.standard.wav",
+    "cadence": "steady",
+    "file": "1-2-3-2.steady.wav",
     "tokens": [
       "1",
       "2",
       "3",
       "2"
     ],
-    "durationMs": 1094,
+    "durationMs": 1184,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 31
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 234
+        "offsetMs": 265
       },
       {
         "tokenIndex": 2,
         "token": "3",
-        "offsetMs": 606
+        "offsetMs": 706
       },
       {
         "tokenIndex": 3,
         "token": "2",
-        "offsetMs": 840
+        "offsetMs": 968
       }
     ],
     "renderer": "sapi-david-ssml"
@@ -244,7 +634,43 @@
       "3",
       "2"
     ],
-    "durationMs": 953,
+    "durationMs": 1009,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 211
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 514
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 721
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-3-2.sprint",
+    "combination": "1-2-3-2",
+    "cadence": "sprint",
+    "file": "1-2-3-2.sprint.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 943,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -259,29 +685,27 @@
       {
         "tokenIndex": 2,
         "token": "3",
-        "offsetMs": 452
+        "offsetMs": 439
       },
       {
         "tokenIndex": 3,
         "token": "2",
-        "offsetMs": 638
+        "offsetMs": 625
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2-roll-3-2.technical",
-    "combination": "1-2-roll-3-2",
+    "cueId": "1-2-pivot.technical",
+    "combination": "1-2-pivot",
     "cadence": "technical",
-    "file": "1-2-roll-3-2.technical.wav",
+    "file": "1-2-pivot.technical.wav",
     "tokens": [
       "1",
       "2",
-      "roll",
-      "3",
-      "2"
+      "pivot"
     ],
-    "durationMs": 2022,
+    "durationMs": 1388,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -295,77 +719,83 @@
       },
       {
         "tokenIndex": 2,
-        "token": "roll",
+        "token": "pivot",
         "offsetMs": 985
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 1805
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 2143
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2-roll-3-2.standard",
-    "combination": "1-2-roll-3-2",
-    "cadence": "standard",
-    "file": "1-2-roll-3-2.standard.wav",
+    "cueId": "1-2-pivot.steady",
+    "combination": "1-2-pivot",
+    "cadence": "steady",
+    "file": "1-2-pivot.steady.wav",
     "tokens": [
       "1",
       "2",
-      "roll",
-      "3",
-      "2"
+      "pivot"
     ],
-    "durationMs": 1446,
+    "durationMs": 1201,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 31
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 234
+        "offsetMs": 265
       },
       {
         "tokenIndex": 2,
-        "token": "roll",
-        "offsetMs": 606
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 1102
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 1336
+        "token": "pivot",
+        "offsetMs": 706
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2-roll-3-2.pressure",
-    "combination": "1-2-roll-3-2",
+    "cueId": "1-2-pivot.pressure",
+    "combination": "1-2-pivot",
     "cadence": "pressure",
-    "file": "1-2-roll-3-2.pressure.wav",
+    "file": "1-2-pivot.pressure.wav",
     "tokens": [
       "1",
       "2",
-      "roll",
-      "3",
-      "2"
+      "pivot"
     ],
-    "durationMs": 1200,
+    "durationMs": 1066,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 211
+      },
+      {
+        "tokenIndex": 2,
+        "token": "pivot",
+        "offsetMs": 514
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2-pivot.sprint",
+    "combination": "1-2-pivot",
+    "cadence": "sprint",
+    "file": "1-2-pivot.sprint.wav",
+    "tokens": [
+      "1",
+      "2",
+      "pivot"
+    ],
+    "durationMs": 1013,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -379,35 +809,22 @@
       },
       {
         "tokenIndex": 2,
-        "token": "roll",
-        "offsetMs": 452
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 804
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 990
+        "token": "pivot",
+        "offsetMs": 439
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-1-2-3-2.technical",
-    "combination": "1-1-2-3-2",
+    "cueId": "1-2b.technical",
+    "combination": "1-2b",
     "cadence": "technical",
-    "file": "1-1-2-3-2.technical.wav",
+    "file": "1-2b.technical.wav",
     "tokens": [
       "1",
-      "1",
-      "2",
-      "3",
-      "2"
+      "2b"
     ],
-    "durationMs": 1625,
+    "durationMs": 1209,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -416,82 +833,70 @@
       },
       {
         "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 317
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 579
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 1247
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 1584
+        "token": "2b",
+        "offsetMs": 324
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-1-2-3-2.standard",
-    "combination": "1-1-2-3-2",
-    "cadence": "standard",
-    "file": "1-1-2-3-2.standard.wav",
+    "cueId": "1-2b.steady",
+    "combination": "1-2b",
+    "cadence": "steady",
+    "file": "1-2b.steady.wav",
     "tokens": [
       "1",
-      "1",
-      "2",
-      "3",
-      "2"
+      "2b"
     ],
-    "durationMs": 1229,
+    "durationMs": 1152,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 22
       },
       {
         "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 227
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 413
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 792
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 1026
+        "token": "2b",
+        "offsetMs": 256
       }
     ],
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-1-2-3-2.pressure",
-    "combination": "1-1-2-3-2",
+    "cueId": "1-2b.pressure",
+    "combination": "1-2b",
     "cadence": "pressure",
-    "file": "1-1-2-3-2.pressure.wav",
+    "file": "1-2b.pressure.wav",
     "tokens": [
       "1",
-      "1",
-      "2",
-      "3",
-      "2"
+      "2b"
     ],
-    "durationMs": 1058,
+    "durationMs": 1133,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 204
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b.sprint",
+    "combination": "1-2b",
+    "cadence": "sprint",
+    "file": "1-2b.sprint.wav",
+    "tokens": [
+      "1",
+      "2b"
+    ],
+    "durationMs": 1127,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -500,21 +905,594 @@
       },
       {
         "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 191
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3.technical",
+    "combination": "1-2b-3",
+    "cadence": "technical",
+    "file": "1-2b-3.technical.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3"
+    ],
+    "durationMs": 1626,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
         "token": "1",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 324
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1398
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3.steady",
+    "combination": "1-2b-3",
+    "cadence": "steady",
+    "file": "1-2b-3.steady.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3"
+    ],
+    "durationMs": 1357,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 22
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 256
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1021
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3.pressure",
+    "combination": "1-2b-3",
+    "cadence": "pressure",
+    "file": "1-2b-3.pressure.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3"
+    ],
+    "durationMs": 1180,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 204
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 768
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3.sprint",
+    "combination": "1-2b-3",
+    "cadence": "sprint",
+    "file": "1-2b-3.sprint.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3"
+    ],
+    "durationMs": 1113,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
         "offsetMs": 191
       },
       {
         "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 335
+        "token": "3",
+        "offsetMs": 670
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3-2.technical",
+    "combination": "1-2b-3-2",
+    "cadence": "technical",
+    "file": "1-2b-3-2.technical.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2"
+    ],
+    "durationMs": 1727,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 324
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1398
       },
       {
         "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 597
+        "token": "2",
+        "offsetMs": 1736
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3-2.steady",
+    "combination": "1-2b-3-2",
+    "cadence": "steady",
+    "file": "1-2b-3-2.steady.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2"
+    ],
+    "durationMs": 1407,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 22
       },
       {
-        "tokenIndex": 4,
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 256
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1021
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1289
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3-2.pressure",
+    "combination": "1-2b-3-2",
+    "cadence": "pressure",
+    "file": "1-2b-3-2.pressure.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2"
+    ],
+    "durationMs": 1186,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 204
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 763
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 975
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1-2b-3-2.sprint",
+    "combination": "1-2b-3-2",
+    "cadence": "sprint",
+    "file": "1-2b-3-2.sprint.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2"
+    ],
+    "durationMs": 1103,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 191
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 664
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 856
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1b-2-3-2.technical",
+    "combination": "1b-2-3-2",
+    "cadence": "technical",
+    "file": "1b-2-3-2.technical.wav",
+    "tokens": [
+      "1b",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1689,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 17
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 672
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1340
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1678
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1b-2-3-2.steady",
+    "combination": "1b-2-3-2",
+    "cadence": "steady",
+    "file": "1b-2-3-2.steady.wav",
+    "tokens": [
+      "1b",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1377,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 536
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 977
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1239
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1b-2-3-2.pressure",
+    "combination": "1b-2-3-2",
+    "cadence": "pressure",
+    "file": "1b-2-3-2.pressure.wav",
+    "tokens": [
+      "1b",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1172,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 19
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 427
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 744
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 948
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "1b-2-3-2.sprint",
+    "combination": "1b-2-3-2",
+    "cadence": "sprint",
+    "file": "1b-2-3-2.sprint.wav",
+    "tokens": [
+      "1b",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1069,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 8
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 372
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 626
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 809
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "2-3-6.technical",
+    "combination": "2-3-6",
+    "cadence": "technical",
+    "file": "2-3-6.technical.wav",
+    "tokens": [
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1591,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "2",
+        "offsetMs": 46
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 260
+      },
+      {
+        "tokenIndex": 2,
+        "token": "6",
+        "offsetMs": 1073
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "2-3-6.steady",
+    "combination": "2-3-6",
+    "cadence": "steady",
+    "file": "2-3-6.steady.wav",
+    "tokens": [
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1378,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "2",
+        "offsetMs": 45
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 217
+      },
+      {
+        "tokenIndex": 2,
+        "token": "6",
+        "offsetMs": 768
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "2-3-6.pressure",
+    "combination": "2-3-6",
+    "cadence": "pressure",
+    "file": "2-3-6.pressure.wav",
+    "tokens": [
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1236,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "2",
+        "offsetMs": 39
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 177
+      },
+      {
+        "tokenIndex": 2,
+        "token": "6",
+        "offsetMs": 570
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "2-3-6.sprint",
+    "combination": "2-3-6",
+    "cadence": "sprint",
+    "file": "2-3-6.sprint.wav",
+    "tokens": [
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1177,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "2",
+        "offsetMs": 37
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 161
+      },
+      {
+        "tokenIndex": 2,
+        "token": "6",
+        "offsetMs": 485
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-1-2.technical",
+    "combination": "roll-1-2",
+    "cadence": "technical",
+    "file": "roll-1-2.technical.wav",
+    "tokens": [
+      "roll",
+      "1",
+      "2"
+    ],
+    "durationMs": 1242,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 44
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 823
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1078
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-1-2.steady",
+    "combination": "roll-1-2",
+    "cadence": "steady",
+    "file": "roll-1-2.steady.wav",
+    "tokens": [
+      "roll",
+      "1",
+      "2"
+    ],
+    "durationMs": 1032,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 39
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 576
+      },
+      {
+        "tokenIndex": 2,
         "token": "2",
         "offsetMs": 783
       }
@@ -522,109 +1500,445 @@
     "renderer": "sapi-david-ssml"
   },
   {
-    "cueId": "1-2-5-2.technical",
-    "combination": "1-2-5-2",
-    "cadence": "technical",
-    "file": "1-2-5-2.technical.wav",
-    "tokens": [
-      "1",
-      "2",
-      "5",
-      "2"
-    ],
-    "durationMs": 1424,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "5",
-        "offsetMs": 985
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1350
-      }
-    ],
-    "renderer": "sapi-david-ssml"
-  },
-  {
-    "cueId": "1-2-5-2.standard",
-    "combination": "1-2-5-2",
-    "cadence": "standard",
-    "file": "1-2-5-2.standard.wav",
-    "tokens": [
-      "1",
-      "2",
-      "5",
-      "2"
-    ],
-    "durationMs": 1083,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 234
-      },
-      {
-        "tokenIndex": 2,
-        "token": "5",
-        "offsetMs": 606
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 867
-      }
-    ],
-    "renderer": "sapi-david-ssml"
-  },
-  {
-    "cueId": "1-2-5-2.pressure",
-    "combination": "1-2-5-2",
+    "cueId": "roll-1-2.pressure",
+    "combination": "roll-1-2",
     "cadence": "pressure",
-    "file": "1-2-5-2.pressure.wav",
+    "file": "roll-1-2.pressure.wav",
     "tokens": [
+      "roll",
       "1",
-      "2",
-      "5",
       "2"
     ],
-    "durationMs": 938,
+    "durationMs": 882,
     "wordMarks": [
       {
         "tokenIndex": 0,
-        "token": "1",
+        "token": "roll",
         "offsetMs": 32
       },
       {
         "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
+        "token": "1",
+        "offsetMs": 411
       },
       {
         "tokenIndex": 2,
-        "token": "5",
-        "offsetMs": 452
+        "token": "2",
+        "offsetMs": 569
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-1-2.sprint",
+    "combination": "roll-1-2",
+    "cadence": "sprint",
+    "file": "roll-1-2.sprint.wav",
+    "tokens": [
+      "roll",
+      "1",
+      "2"
+    ],
+    "durationMs": 822,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 485
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-3-2.technical",
+    "combination": "roll-3-2",
+    "cadence": "technical",
+    "file": "roll-3-2.technical.wav",
+    "tokens": [
+      "roll",
+      "3",
+      "2"
+    ],
+    "durationMs": 1317,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 44
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 823
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1154
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-3-2.steady",
+    "combination": "roll-3-2",
+    "cadence": "steady",
+    "file": "roll-3-2.steady.wav",
+    "tokens": [
+      "roll",
+      "3",
+      "2"
+    ],
+    "durationMs": 1092,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 39
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 576
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 838
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-3-2.pressure",
+    "combination": "roll-3-2",
+    "cadence": "pressure",
+    "file": "roll-3-2.pressure.wav",
+    "tokens": [
+      "roll",
+      "3",
+      "2"
+    ],
+    "durationMs": 937,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 32
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 411
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 618
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "roll-3-2.sprint",
+    "combination": "roll-3-2",
+    "cadence": "sprint",
+    "file": "roll-3-2.sprint.wav",
+    "tokens": [
+      "roll",
+      "3",
+      "2"
+    ],
+    "durationMs": 872,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 526
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-1-2.technical",
+    "combination": "slip-1-2",
+    "cadence": "technical",
+    "file": "slip-1-2.technical.wav",
+    "tokens": [
+      "slip",
+      "1",
+      "2"
+    ],
+    "durationMs": 1318,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 944
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1206
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-1-2.steady",
+    "combination": "slip-1-2",
+    "cadence": "steady",
+    "file": "slip-1-2.steady.wav",
+    "tokens": [
+      "slip",
+      "1",
+      "2"
+    ],
+    "durationMs": 1091,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 26
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 673
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 887
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-1-2.pressure",
+    "combination": "slip-1-2",
+    "cadence": "pressure",
+    "file": "slip-1-2.pressure.wav",
+    "tokens": [
+      "slip",
+      "1",
+      "2"
+    ],
+    "durationMs": 931,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 494
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 659
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-1-2.sprint",
+    "combination": "slip-1-2",
+    "cadence": "sprint",
+    "file": "slip-1-2.sprint.wav",
+    "tokens": [
+      "slip",
+      "1",
+      "2"
+    ],
+    "durationMs": 859,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 413
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 557
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-2-3-2.technical",
+    "combination": "slip-2-3-2",
+    "cadence": "technical",
+    "file": "slip-2-3-2.technical.wav",
+    "tokens": [
+      "slip",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1877,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 27
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 944
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1164
       },
       {
         "tokenIndex": 3,
         "token": "2",
-        "offsetMs": 660
+        "offsetMs": 1977
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-2-3-2.steady",
+    "combination": "slip-2-3-2",
+    "cadence": "steady",
+    "file": "slip-2-3-2.steady.wav",
+    "tokens": [
+      "slip",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1466,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 26
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 673
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 852
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1404
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-2-3-2.pressure",
+    "combination": "slip-2-3-2",
+    "cadence": "pressure",
+    "file": "slip-2-3-2.pressure.wav",
+    "tokens": [
+      "slip",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1201,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 25
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 494
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 638
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1031
+      }
+    ],
+    "renderer": "sapi-david-ssml"
+  },
+  {
+    "cueId": "slip-2-3-2.sprint",
+    "combination": "slip-2-3-2",
+    "cadence": "sprint",
+    "file": "slip-2-3-2.sprint.wav",
+    "tokens": [
+      "slip",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1079,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 413
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 537
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 861
       }
     ],
     "renderer": "sapi-david-ssml"

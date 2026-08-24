@@ -156,6 +156,20 @@ export interface VoiceOutputPort {
    */
   playPhrase?(ids: readonly VoiceAssetId[], atMs?: number, tightness?: number): void
   /**
+   * Play a whole combination as one recorded utterance.
+   *
+   * Returns true when a phrase asset existed and was scheduled. False means
+   * the caller should fall back to the per-word path — a combination the
+   * library has not been rendered for must still be called, just less well.
+   *
+   * The combination is a notation string (`formatCombo` output) and the
+   * cadence a profile id. The domain never learns which file that resolves
+   * to; that mapping belongs to the manifest.
+   */
+  playCombination?(combination: string, cadence: string, atMs?: number): boolean
+  /** Length of that utterance, so the announcer can place it. */
+  combinationDurationMs?(combination: string, cadence: string): number | undefined
+  /**
    * How long a clip takes to say, if the implementation knows.
    *
    * Optional because only a real audio backend can measure it, and a domain

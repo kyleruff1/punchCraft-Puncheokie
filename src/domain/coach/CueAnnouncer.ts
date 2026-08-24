@@ -51,6 +51,7 @@
 
 import { assetPriority } from './assetPriority'
 import { comboPhraseAssets } from './vocabulary'
+import { formatCombo } from '../workout/WorkoutTokens'
 import { AUDIO_PRIORITY, type VoiceAssetId, type VoiceOutputPort } from './VoiceOutputPort'
 import { shouldSpeak, voiceAllowed, type VoiceCoachPolicy } from './VoiceCoachPolicy'
 import type { CueEvent, SessionPhaseEvent } from '../programs/CueState'
@@ -109,6 +110,12 @@ export interface CueAnnouncerOptions {
    * which is the honest default when nothing has measured the clips yet.
    */
   assetDurationsMs?: Readonly<Partial<Record<VoiceAssetId, number>>>
+  /**
+   * Cadence profile id, used to pick which rendering of a combination to
+   * play. A phrase is a performance, so the cadence chooses a different
+   * recording rather than a different playback rate.
+   */
+  cadence?: string
   onSkip?: (skip: AnnouncerSkip) => void
 }
 
@@ -118,6 +125,7 @@ export class CueAnnouncer {
   private readonly leadTimes: AnnouncerLeadTimes
   private readonly durations: Readonly<Partial<Record<VoiceAssetId, number>>> | undefined
   private readonly onSkip: ((skip: AnnouncerSkip) => void) | undefined
+  private readonly cadence: string
 
   private playbackActive = false
   /** Phrase plans resolved at preview, so nothing is computed at announce. */
@@ -135,6 +143,7 @@ export class CueAnnouncer {
     this.leadTimes = opts.leadTimes ?? { ...DEFAULT_ANNOUNCE_LEAD_TIMES }
     this.durations = opts.assetDurationsMs
     this.onSkip = opts.onSkip
+    this.cadence = opts.cadence ?? 'steady'
   }
 
   setPolicy(p: VoiceCoachPolicy): void {
@@ -341,6 +350,14 @@ export class CueAnnouncer {
       return
     }
 
+    // A whole recorded utterance first. Only when the library has no
+    // rendering for this combination does the per-word path run — and that
+    // path is now a fallback rather than the design.
+    if (this.announceAsPhrase(cue, clockOffsetMs)) {
+      this.emitReadyTone(readyAt)
+      return
+    }
+
     const assets = this.prepared.get(cue.id) ?? comboPhraseAssets(cue.tokens)
     if (assets.length > 0) {
       const plan = this.planPhrase(cue, assets)
@@ -354,6 +371,43 @@ export class CueAnnouncer {
       }
     }
     this.emitReadyTone(readyAt)
+  }
+
+  /**
+   * Call the combination as one recorded utterance.
+   *
+   * Returns false when the library has no rendering for it, which is the
+   * signal to fall back to the per-word path.
+   *
+   * A phrase is placed to **finish** by the ready tone, exactly as the
+   * per-word path is — the call ends and then you throw. Unlike the per-word
+   * path there is nothing to compress: the performance is fixed in the file,
+   * so a phrase that cannot fit starts at the preview and runs slightly long
+   * rather than being trimmed into something that no longer sounds like a
+   * coach.
+   */
+  private announceAsPhrase(cue: CueInstance, clockOffsetMs: number): boolean {
+    const play = this.output.playCombination
+    if (!play) return false
+
+    const combination = formatCombo(cue.tokens)
+    const lengthMs = this.output.combinationDurationMs?.(combination, this.cadence)
+    if (lengthMs === undefined) return false
+
+    const finishBy = cue.scheduledStartMs - this.leadTimes.readyToneMs
+    let startAt = finishBy - lengthMs
+    if (startAt < cue.previewAt) {
+      this.onSkip?.({
+        cueId: cue.id,
+        reason: 'overruns',
+        phraseMs: lengthMs,
+        availableMs: finishBy - cue.previewAt,
+        tightness: 1,
+      })
+      startAt = cue.previewAt
+    }
+
+    return play.call(this.output, combination, this.cadence, startAt + clockOffsetMs)
   }
 
   private emitReadyTone(atMs: number): void {

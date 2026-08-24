@@ -539,6 +539,99 @@ describe('a metric never interrupts a combination (doc §18)', () => {
   })
 })
 
+describe('a rendered combination is preferred over per-word clips', () => {
+  /** A port that has a phrase for whatever it is asked for. */
+  function phraseHarness(
+    over: { has?: boolean; durationMs?: number } = {},
+  ): { port: RecordingPort; announcer: CueAnnouncer; calls: Array<[string, string, number?]> } {
+    const port = new RecordingPort()
+    const calls: Array<[string, string, number?]> = []
+    const has = over.has ?? true
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: (combination: string, cadence: string, atMs?: number) => {
+          if (!has) return false
+          calls.push([combination, cadence, atMs])
+          return true
+        },
+        combinationDurationMs: () => (has ? (over.durationMs ?? 600) : undefined),
+      }),
+      cadence: 'steady',
+    })
+    return { port, announcer, calls }
+  }
+
+  it('plays the whole utterance instead of the words', () => {
+    const h = phraseHarness()
+    h.announcer.onCueEvent(cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(2)] })))
+
+    expect(h.calls[0]?.[0]).toBe('1-2')
+    // The per-word path did not also run — that would double the call.
+    expect(h.port.calls.some((c) => c.kind === 'phrase')).toBe(false)
+    expect(h.port.assets()).toEqual(['tone-ready'])
+  })
+
+  it('asks for the cadence it was configured with', () => {
+    const h = phraseHarness()
+    h.announcer.onCueEvent(cueEvent('cue-announcing'))
+    expect(h.calls[0]?.[1]).toBe('steady')
+  })
+
+  it('places the phrase to finish by the ready tone', () => {
+    const c = cue()
+    const h = phraseHarness({ durationMs: 600 })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', c))
+    const finishBy = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+    expect(h.calls[0]?.[2]).toBe(finishBy - 600)
+  })
+
+  it('still rings the ready tone', () => {
+    const h = phraseHarness()
+    h.announcer.onCueEvent(cueEvent('cue-announcing'))
+    expect(h.port.assets()).toContain('tone-ready')
+  })
+
+  it('falls back to per-word when nothing has been rendered', () => {
+    // A combination the library has not been rendered for must still be
+    // called — less well, but never silently skipped.
+    const h = phraseHarness({ has: false })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(2)] })))
+
+    expect(h.calls).toEqual([])
+    const phrase = h.port.calls.find((x) => x.kind === 'phrase')
+    expect(phrase?.kind === 'phrase' && phrase.ids).toEqual(['1', '2'])
+  })
+
+  it('starts at the preview and reports an overrun rather than trimming', () => {
+    // The performance is fixed in the file; there is nothing to compress, so
+    // a long phrase runs late instead of being cut into something that no
+    // longer sounds like a coach.
+    const c = cue()
+    const skips: AnnouncerSkip[] = []
+    const port = new RecordingPort()
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: () => true,
+        combinationDurationMs: () => 5_000,
+      }),
+      cadence: 'steady',
+      onSkip: (s) => skips.push(s),
+    })
+    announcer.onCueEvent(cueEvent('cue-announcing', c))
+    expect(skips[0]?.reason).toBe('overruns')
+  })
+
+  it('says nothing at all while the D1 gate is shut', () => {
+    const h = phraseHarness()
+    h.announcer.setThirdPartyPlayback(true)
+    h.announcer.onCueEvent(cueEvent('cue-announcing'))
+    expect(h.calls).toEqual([])
+    expect(h.port.calls).toEqual([])
+  })
+})
+
 describe('a phrase is placed so it finishes before the combination (D15)', () => {
   it('starts early enough that the last word lands before the ready tone', () => {
     // This is what being in sync means for a coach: the call finishes and
