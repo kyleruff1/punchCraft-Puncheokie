@@ -116,11 +116,19 @@ describe('the doc §22 formulas', () => {
 })
 
 describe('decisions come only from onBoundary', () => {
+  it('reports the actual pace achieved so far, in punches per minute', () => {
+    const e = engine()
+    for (let i = 0; i < 90; i += 1) e.recordAccepted(1)
+    // 90 punches in 60 active seconds → 90 per minute.
+    expect(e.snapshot(60).achievedPace).toBe(90)
+  })
+
   it('gives snapshot no way to return a decision', () => {
     // Structural, not a convention: the return type has nowhere to put one.
     const e = engine()
     const snapshot = e.snapshot(60)
     expect(Object.keys(snapshot).sort()).toEqual([
+      'achievedPace',
       'projectedTotal',
       'remainingActiveSeconds',
       'remainingPunches',

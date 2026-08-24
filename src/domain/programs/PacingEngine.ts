@@ -38,6 +38,8 @@ export interface PacingSnapshot {
   remainingActiveSeconds: number
   /** Punches per minute needed to finish on target. */
   requiredPace: number
+  /** Punches per minute the athlete has actually thrown so far. */
+  achievedPace: number
   projectedTotal: number
 }
 
@@ -155,6 +157,7 @@ export class PacingEngine {
       remainingPunches,
       remainingActiveSeconds,
       requiredPace: Math.round(requiredPace * 10) / 10,
+      achievedPace: Math.round(achievedPerSecond * 60 * 10) / 10,
       projectedTotal,
     }
   }

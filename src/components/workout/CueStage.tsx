@@ -14,6 +14,7 @@ import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
 import { CoachBanner } from './CoachBanner'
+import { ComboFlourish } from './ComboFlourish'
 import { DefenseToken } from './DefenseToken'
 import { FootworkToken } from './FootworkToken'
 import { PunchToken } from './PunchToken'
@@ -47,6 +48,12 @@ export interface CueView {
    * (doc §14, §19.2). Falls back to `cue.id` when absent.
    */
   presentationKey?: string
+  /**
+   * Set (to a value that changes per completion) when this combination was just
+   * completed in sequence with the correct hands — fires the whole-combo
+   * flourish. Absent for an incomplete combo, which celebrates nothing.
+   */
+  comboCompleteKey?: string
 }
 
 export interface CueStageProps {
@@ -153,6 +160,12 @@ function CueRow(props: {
 
   return (
     <View style={styles.cueRow} testID={testID}>
+      {size === 'stage' ? (
+        <ComboFlourish
+          {...(view.comboCompleteKey === undefined ? {} : { fireKey: view.comboCompleteKey })}
+          reducedMotion={reducedMotion}
+        />
+      ) : null}
       <View style={styles.tokens}>
         {cue.tokens.map((token, index) =>
           renderToken(

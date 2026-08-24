@@ -55,8 +55,13 @@ export const OPTIONAL_TILES: readonly TileId[] = [
   'connection-completeness',
 ]
 
-/** D9: the rail caps here regardless of how many the athlete picked. */
-export const MAX_OPTIONAL_TILES = 4
+/**
+ * How many optional tiles render. Raised from D9's original four to the full
+ * optional set — Kyle wants a metric-heavy screen, and the landscape tablet
+ * rail scrolls, so the clutter concern D9 guarded against is a deliberate
+ * trade here.
+ */
+export const MAX_OPTIONAL_TILES = 8
 
 /** Tiles that cannot mean anything without tracker-reported velocity. */
 const VELOCITY_TILES: ReadonlySet<TileId> = new Set<TileId>(['peak-velocity', 'velocity-zone'])
@@ -76,6 +81,8 @@ export interface MetricsRailProps {
   counts: { total: number; left: number; right: number }
   roundGoal?: number
   requiredPace?: number
+  /** Punches per minute actually thrown so far — the rate achieved. */
+  actualPace?: number
   avgVelocity?: VelocityView
   lastVelocity?: VelocityView
   velocityAvailable: boolean
@@ -118,6 +125,7 @@ export function MetricsRail(props: MetricsRailProps): React.JSX.Element {
     counts,
     roundGoal,
     requiredPace,
+    actualPace,
     avgVelocity,
     lastVelocity,
     velocityAvailable,
@@ -165,6 +173,13 @@ export function MetricsRail(props: MetricsRailProps): React.JSX.Element {
         label="Punches"
         value={roundGoal === undefined ? String(counts.total) : `${counts.total} / ${roundGoal}`}
         emphasis
+      />
+
+      <Metric
+        testID="metric-rate"
+        label="Rate"
+        value={actualPace === undefined ? EM_DASH : `${Math.round(actualPace)}/min`}
+        caption="thrown so far"
       />
 
       <Metric

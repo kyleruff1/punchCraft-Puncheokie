@@ -15,6 +15,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { View } from 'react-native'
 
 import { useWorkoutRunner, TICK_INTERVAL_MS, type WorkoutRunner } from '../useWorkoutRunner'
+import type { HapticOutputPort, HapticStrike } from '@domain/coach/HapticOutputPort'
 import { DEFAULT_COUNTDOWN_MS } from '@domain/session/WorkoutSessionClock'
 import { createFakeClock, type FakeClock } from '@testing/fakeClock'
 import { defaultRecipe } from '@domain/workout/WorkoutRecipe'
@@ -121,6 +122,7 @@ interface Harness {
   emit(hand: PunchHand, velocityRaw?: number): void
   /** Start and run out the lead-in, leaving the session in round 1's work. */
   begin(): void
+  haptics: HapticStrike[]
   unmount(): void
 }
 
@@ -128,6 +130,8 @@ function mount(): Harness {
   const clock = createFakeClock()
   const source = new FakeSource(clock)
   const ref = React.createRef<WorkoutRunner>()
+  const haptics: HapticStrike[] = []
+  const hapticPort: HapticOutputPort = { strike: (kind) => haptics.push(kind) }
 
   function Probe(): React.JSX.Element {
     const runner = useWorkoutRunner({
@@ -135,6 +139,7 @@ function mount(): Harness {
       source,
       stance: 'orthodox',
       clock,
+      haptics: hapticPort,
     })
     useImperativeHandle(ref, () => runner, [runner])
     return <View />
@@ -160,6 +165,7 @@ function mount(): Harness {
     },
     source,
     clock,
+    haptics,
     step,
     emit: (hand, velocityRaw) => {
       act(() => {
@@ -373,6 +379,20 @@ describe('the lit cursor anticipates the next hit on the beat (responsiveness)',
     expect(sawFirstActive).toBe(true)
     expect(sawSecondActive).toBe(true)
     h.unmount()
+  })
+
+  it('does not celebrate a combo that was never completed', () => {
+    // Nothing thrown: every combo expires, never completes, so no combo haptic
+    // ever fires and no combo flourish is ever flagged.
+    const h = mount()
+    h.begin()
+    let sawFlourish = false
+    for (let i = 0; i < 60; i += 1) {
+      if (h.runner.readCues().current?.comboCompleteKey !== undefined) sawFlourish = true
+      h.step(25)
+    }
+    expect(h.haptics).not.toContain('combo')
+    expect(sawFlourish).toBe(false)
   })
 
   it('marks a token completed only when a punch actually lands', () => {

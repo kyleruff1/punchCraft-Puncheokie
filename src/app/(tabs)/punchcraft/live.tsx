@@ -42,6 +42,7 @@ import { useLive, useRecipe } from '@state/useWorkoutStore'
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
+import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
   PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
   createPlaybackDetector,
@@ -74,6 +75,13 @@ export default function LiveScreen(): React.JSX.Element {
   // Built once, never per render: the output owns players and a focus
   // request, and rebuilding it mid-workout would drop both.
   const output = React.useMemo(() => new VoiceOutputExpo(), [])
+  // Felt feedback, built once and gated by the haptics volume — turning it off
+  // in settings silences the motor rather than just muting a number.
+  const haptics = React.useMemo(() => new HapticOutputExpo(), [])
+
+  React.useEffect(() => {
+    haptics.setEnabled(volumes.haptics > 0)
+  }, [haptics, volumes.haptics])
 
   React.useEffect(() => {
     return () => {
@@ -116,6 +124,7 @@ export default function LiveScreen(): React.JSX.Element {
     // callback here would rebuild the cue engine on every render.
     onSessionEnded: setEndOutcome,
     voice,
+    haptics,
   })
 
   const startedRef = useRef(false)
@@ -243,6 +252,7 @@ export default function LiveScreen(): React.JSX.Element {
           counts={{ total: live.counts.total, left: live.counts.left, right: live.counts.right }}
           {...(roundGoal === undefined ? {} : { roundGoal })}
           {...(live.requiredPace === undefined ? {} : { requiredPace: live.requiredPace })}
+          {...(live.actualPace === undefined ? {} : { actualPace: live.actualPace })}
           {...(live.avgVelocity ? { avgVelocity: live.avgVelocity } : {})}
           {...(live.lastVelocity ? { lastVelocity: live.lastVelocity } : {})}
           velocityAvailable={live.velocityAvailable}
@@ -250,6 +260,9 @@ export default function LiveScreen(): React.JSX.Element {
           tiles={live.tiles}
           tileValues={{
             'combo-completion': `${live.counts.inCue}/${live.counts.inCueExpected}`,
+            'punches-last-15s': live.punchesLast15s ?? 0,
+            ...(live.peakVelocity ? { 'peak-velocity': Math.round(live.peakVelocity.value) } : {}),
+            ...(live.degraded === undefined ? { 'connection-completeness': 'OK' } : {}),
             ...(live.projectedTotal === undefined
               ? {}
               : { 'projected-final': live.projectedTotal }),

@@ -33,17 +33,22 @@ import type { Stance } from '@domain/workout/WorkoutTokens'
 import type { TileId } from '@components/workout/MetricsRail'
 
 /**
- * Default optional tiles — four, the D9 cap, chosen to be the ones that
- * mean something before any scoring exists (M33-02).
+ * Default optional tiles — the full set.
+ *
+ * Kyle wants a metric-heavy screen, so every optional tile is on by default
+ * (the rail's cap is raised to match). `left-right-balance` is omitted because
+ * the rail already shows left/right as an always-on metric — showing it twice
+ * wastes a slot on a number already on screen.
  */
 export const DEFAULT_TILES: TileId[] = [
-  // Deliberately NOT 'left-right-balance': the rail already shows left/right
-  // as an always-on metric, and having it twice wasted one of the four
-  // slots on a number already on screen.
-  'punches-last-15s',
-  'combo-completion',
-  'projected-final',
+  // `correct-hand-percent` is deliberately omitted: it carries the sequence
+  // label, and the score is punch count now, not a sequence grade.
   'peak-velocity',
+  'velocity-zone',
+  'combo-completion',
+  'punches-last-15s',
+  'projected-final',
+  'connection-completeness',
 ]
 
 export interface WorkoutStoreState {
@@ -182,6 +187,8 @@ export interface LiveState {
   /** Absent when the source reports no velocity — never rendered as zero. */
   lastVelocity?: LiveVelocity
   avgVelocity?: LiveVelocity
+  /** The hardest punch this session, in tracker units. */
+  peakVelocity?: LiveVelocity
   velocityAvailable: boolean
   capabilityTier: CapabilityTier
   tiles: TileId[]
@@ -191,6 +198,10 @@ export interface LiveState {
   extraCount: number
   /** Punches per minute needed to finish on target (doc §22). */
   requiredPace?: number
+  /** Punches per minute actually thrown so far — the rate achieved. */
+  actualPace?: number
+  /** Punches thrown in the last 15 s — a rolling sense of current output. */
+  punchesLast15s?: number
   /** Extrapolated from the rate achieved so far, not the rate being asked. */
   projectedTotal?: number
   /**

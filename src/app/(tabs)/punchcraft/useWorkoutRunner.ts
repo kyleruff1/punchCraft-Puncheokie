@@ -31,7 +31,7 @@ import { PacingEngine, type PacingCueText } from '@domain/programs/PacingEngine'
 import { CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
-import { expandTimeline, type CueInstance } from '@domain/programs/CueTimeline'
+import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
@@ -48,6 +48,8 @@ import { logger, safe } from '@diagnostics/logger'
 import { CueAnnouncer, deliveryForCadence } from '@domain/coach/CueAnnouncer'
 import { selectPerformanceState } from '@domain/coach/performanceState'
 import type { VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
+import type { HapticOutputPort } from '@domain/coach/HapticOutputPort'
+import { TIMING_TIGHT_MS } from '@domain/programs/cueScoring'
 import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
 import type { ThirdPartyPlaybackDetector } from '@audio/ThirdPartyPlaybackDetector'
 import { getWorkoutPersistence, type WorkoutPersistence } from '@storage/getWorkoutPersistence'
@@ -69,6 +71,25 @@ export const STORE_THROTTLE_MS = 100
  * more than needed even at flurry cadence.
  */
 export const RECENT_EVENT_WINDOW = 256
+
+/**
+ * Was a matched punch on the beat?
+ *
+ * Mirrors the matcher's own timing math — the punch's time against the token's
+ * scheduled moment (`scheduledStartMs + tokenOffsetsMs[tokenIndex]`) — using
+ * the same tight window the score uses (`TIMING_TIGHT_MS`, much tighter than
+ * the acceptance window). Gates the "good hit" haptic so a right-hand punch
+ * thrown late still counts for the combo but does not earn the reward buzz.
+ */
+function onTimeForMatch(
+  cue: CueInstance | undefined,
+  expected: ExpectedPunch,
+  eventTimeMs: number,
+): boolean {
+  if (!cue) return false
+  const dueMs = cue.scheduledStartMs + (cue.tokenOffsetsMs[expected.tokenIndex] ?? 0)
+  return Math.abs(eventTimeMs - dueMs) <= TIMING_TIGHT_MS
+}
 
 /**
  * `SessionTransition` → `SessionPhaseEvent`.
@@ -146,6 +167,12 @@ export interface UseWorkoutRunnerArgs {
     policy: VoiceCoachPolicy
     detector: ThirdPartyPlaybackDetector
   }
+  /**
+   * Felt feedback. Omit it and the workout is silent to the touch, the same
+   * way omitting `voice` makes it silent to the ear — a supported way to
+   * train, not a degraded one.
+   */
+  haptics?: HapticOutputPort
 }
 
 /** What the runner reports when a workout ends. */
@@ -169,6 +196,7 @@ interface CueRenderState {
   tokenStates: TokenVisualState[]
   repeatTotal: number
   affirmedTokenIndexes: number[]
+  comboCompleteKey?: string
   /**
    * A presentation identity stable across the reps of a block. Keyed on
    * `blockId` so the stage keeps the same nodes mounted while a repeated combo
@@ -179,7 +207,7 @@ interface CueRenderState {
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
-  const { workout, source, stance, persistence, onSessionEnded, voice } = args
+  const { workout, source, stance, persistence, onSessionEnded, voice, haptics } = args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
@@ -226,14 +254,24 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    * decides which token is highlighted as "throw this next".
    */
   const beatCursorRef = useRef(0)
+  /**
+   * The id of the cue whose combination was just completed in sequence, so the
+   * stage can play a one-shot whole-combo flourish. Keyed by cue id (which
+   * changes per rep) so each completed rep re-fires the celebration; cleared
+   * when the next cue starts.
+   */
+  const comboCompleteRef = useRef<string | null>(null)
   const velocitySumRef = useRef(0)
   const velocityCountRef = useRef(0)
+  const velocityMaxRef = useRef(0)
   const lastVelocityRef = useRef<LiveVelocity | undefined>(undefined)
   const lastStoreWriteRef = useRef(0)
   /** Active work seconds banked from completed rounds. */
   const completedActiveSecondsRef = useRef(0)
   const activeElapsedSecondsRef = useRef(0)
   const matcherRef = useRef<LiveCueMatcher | null>(null)
+  const hapticsRef = useRef<HapticOutputPort | undefined>(undefined)
+  hapticsRef.current = haptics
   const pacingRef = useRef<PacingEngine | null>(null)
   const pacingCueRef = useRef<PacingCueText | undefined>(undefined)
   /** Rows accumulated per settled cue, written in one transaction at the end. */
@@ -284,6 +322,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         repeatTotal: repeatTotals.get(cue.blockId) ?? 1,
         affirmedTokenIndexes: [...affirmedRef.current],
         presentationKey: cue.blockId,
+        // Present (and equal to the cue id) exactly when this cue was just
+        // completed in sequence, so the stage fires a one-shot flourish and
+        // re-fires it for each completed rep.
+        ...(comboCompleteRef.current === cue.id ? { comboCompleteKey: cue.id } : {}),
       }
     },
     [repeatTotals],
@@ -310,6 +352,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             } as LiveVelocity)
           : undefined
 
+      // Punches inside the last 15 s, from the bounded recent-event window.
+      const cutoff = clock.now() - 15_000
+      let last15s = 0
+      for (const e of recentEventsRef.current.values()) {
+        if (e.receivedMonotonicTimeMs >= cutoff) last15s += 1
+      }
       setLive({
         phase: session?.phase ?? 'idle',
         roundIndex: session?.roundIndex ?? -1,
@@ -321,16 +369,33 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         counts: { ...countsRef.current },
         extraCount: extrasRef.current,
         ...(pacing
-          ? { requiredPace: pacing.requiredPace, projectedTotal: pacing.projectedTotal }
+          ? {
+              requiredPace: pacing.requiredPace,
+              actualPace: pacing.achievedPace,
+              projectedTotal: pacing.projectedTotal,
+            }
           : {}),
+        punchesLast15s: last15s,
         pacingCue: pacingCueRef.current,
         sequenceScoreLabel: sequenceScoreLabel(capability.tier),
         velocityAvailable: capability.velocityAvailable,
         capabilityTier: capability.tier,
         sourceKind: source.id === 'sim' ? 'simulated' : 'tracker',
         ...(capability.velocityAvailable
-          ? { lastVelocity: lastVelocityRef.current, avgVelocity: avg }
-          : { lastVelocity: undefined, avgVelocity: undefined }),
+          ? {
+              lastVelocity: lastVelocityRef.current,
+              avgVelocity: avg,
+              ...(velocityMaxRef.current > 0
+                ? {
+                    peakVelocity: {
+                      value: velocityMaxRef.current,
+                      unit: 'tracker-unit',
+                      label: 'tracker-reported velocity',
+                    } as LiveVelocity,
+                  }
+                : {}),
+            }
+          : { lastVelocity: undefined, avgVelocity: undefined, peakVelocity: undefined }),
       })
     },
     [capability, clock, source.id, stance],
@@ -397,16 +462,23 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (event.type === 'cue-active') {
         // Shown, therefore realized — regardless of what the athlete threw.
         realizedBlocksRef.current.add(event.cue.blockId)
-        // A new combination: the per-cue credit and the beat cursor reset. A
-        // burst's target is its punch count; a sequence cue's is its
-        // expectation count.
+        // A new combination: the per-cue credit, the beat cursor and any combo
+        // celebration reset. A burst's target is its punch count; a sequence
+        // cue's is its expectation count.
         countsRef.current.inCue = 0
         beatCursorRef.current = 0
+        comboCompleteRef.current = null
         affirmedRef.current = []
         countsRef.current.inCueExpected =
           event.cue.scoring === 'count'
             ? (event.cue.countScored?.targetPunches ?? 0)
             : event.cue.expectedPunches.length
+      } else if (event.type === 'cue-completed') {
+        // The engine only completes a cue when every expectation was answered
+        // with the correct hand, in sequence — so this is exactly the "landed
+        // the whole combo" moment. `cue-expired` (partial) never reaches here.
+        comboCompleteRef.current = event.cue.id
+        hapticsRef.current?.strike('combo')
       }
       syncFromEngine()
       pushStore(true)
@@ -433,6 +505,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (capability.velocityAvailable && typeof event.velocityRaw === 'number') {
         velocitySumRef.current += event.velocityRaw
         velocityCountRef.current += 1
+        velocityMaxRef.current = Math.max(velocityMaxRef.current, event.velocityRaw)
         lastVelocityRef.current = {
           value: event.velocityRaw,
           unit: 'tracker-unit',
@@ -464,11 +537,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const onMatcherEvent = useCallback(
     (event: LiveMatcherEvent): void => {
       switch (event.type) {
-        case 'match':
+        case 'match': {
           // A hand mismatch still consumed the slot, so the combination
           // advances either way — but only a real match is credited to the
           // engine, which is what decides completed vs expired.
-          if (event.match.outcome === 'matched') {
+          const matched = event.match.outcome === 'matched'
+          if (matched) {
             engineRef.current?.notifyMatch(
               event.match.cueId,
               event.match.expectedIndex,
@@ -476,12 +550,19 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             )
           }
           countsRef.current.inCue = event.match.expectedIndex + 1
+          const expected = currentRef.current?.cue.expectedPunches[event.match.expectedIndex]
           // Reward only: nothing is recorded when the byte disagrees.
-          if (event.match.affirmed) {
-            const expected = currentRef.current?.cue.expectedPunches[event.match.expectedIndex]
-            if (expected) affirmedRef.current = [...affirmedRef.current, expected.tokenIndex]
+          if (event.match.affirmed && expected) {
+            affirmedRef.current = [...affirmedRef.current, expected.tokenIndex]
+          }
+          // Tiered per-hit haptic: a solid buzz for a right-hand hit on the
+          // beat, a stronger one when the strike type also agrees (rare on v1).
+          if (matched && expected) {
+            const onBeat = onTimeForMatch(currentRef.current?.cue, expected, event.match.eventTimeMs)
+            if (onBeat) hapticsRef.current?.strike(event.match.affirmed ? 'perfect' : 'good')
           }
           break
+        }
 
         case 'count':
           // Output during a burst: credited to the cue, not counted as an

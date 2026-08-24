@@ -302,20 +302,13 @@ describe('MetricsRail', () => {
     expect(nodes(tree, 'optional-tiles')).toHaveLength(0)
   })
 
-  it('renders at most four tiles however many are chosen (D9)', () => {
-    const six: TileId[] = [
-      'peak-velocity',
-      'velocity-zone',
-      'left-right-balance',
-      'correct-hand-percent',
-      'combo-completion',
-      'projected-final',
-    ]
-    const tree = render(<MetricsRail {...base} tiles={six} />)
-    const rendered = OPTIONAL_TILES.filter(
-      (id) => nodes(tree, `tile-${id}`).length > 0,
-    )
-    expect(rendered).toHaveLength(MAX_OPTIONAL_TILES)
+  it('renders the full optional set — a metric-heavy rail', () => {
+    // The cap was raised from D9's four to the whole optional set for a
+    // metric-heavy screen; with velocity available, every optional tile shows.
+    const tree = render(<MetricsRail {...base} tiles={[...OPTIONAL_TILES]} />)
+    const rendered = OPTIONAL_TILES.filter((id) => nodes(tree, `tile-${id}`).length > 0)
+    expect(rendered).toHaveLength(OPTIONAL_TILES.length)
+    expect(OPTIONAL_TILES.length).toBeLessThanOrEqual(MAX_OPTIONAL_TILES)
   })
 
   it('renders four when exactly four are chosen', () => {
@@ -374,7 +367,7 @@ describe('capability gating (doc §3, M32-02)', () => {
     expect(nodes(tree, 'tile-velocity-zone')).toHaveLength(0)
   })
 
-  it('does not let a hidden velocity tile consume one of the four slots', () => {
+  it('drops the hidden velocity tiles rather than rendering them empty', () => {
     const tiles: TileId[] = [
       'peak-velocity',
       'velocity-zone',
@@ -384,11 +377,11 @@ describe('capability gating (doc §3, M32-02)', () => {
       'projected-final',
     ]
     const tree = render(<MetricsRail {...base} tiles={tiles} />)
-    const rendered = OPTIONAL_TILES.filter(
-      (id) => nodes(tree, `tile-${id}`).length > 0,
-    )
-    expect(rendered).toHaveLength(MAX_OPTIONAL_TILES)
+    const rendered = OPTIONAL_TILES.filter((id) => nodes(tree, `tile-${id}`).length > 0)
+    // Velocity unavailable: the two velocity tiles are gone, the four others stay.
+    expect(rendered).toHaveLength(4)
     expect(rendered).not.toContain('peak-velocity')
+    expect(rendered).not.toContain('velocity-zone')
   })
 
   it('restores velocity surfaces when the source can report it', () => {

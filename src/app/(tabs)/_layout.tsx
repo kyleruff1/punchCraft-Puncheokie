@@ -2,6 +2,13 @@ import { Tabs } from 'expo-router'
 
 import { colors } from '@/theme/colors'
 
+/**
+ * Open on punchCraft, where the workouts are, rather than the Velocity Lab
+ * bench. `initialRouteName` pins the launch tab independently of declaration
+ * order, so the nav layout and every deep link are untouched.
+ */
+export const unstable_settings = { initialRouteName: 'punchcraft' }
+
 const tabScreenOptions = {
   headerShown: true,
   headerStyle: { backgroundColor: colors.surface },
