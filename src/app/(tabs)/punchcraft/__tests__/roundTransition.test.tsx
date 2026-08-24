@@ -351,3 +351,42 @@ describe('a repeated combo is presented once, not re-shown per rep (doc §14, §
     h.unmount()
   })
 })
+
+describe('the lit cursor anticipates the next hit on the beat (responsiveness)', () => {
+  it('walks the active token forward with no punch detected', () => {
+    // The fixture combo has two punches at different beat offsets. With nothing
+    // thrown, the highlight must still move from the first to the second on the
+    // beat — the whole point of not being hostage to the tracker readback.
+    const h = mount()
+    h.begin()
+
+    let sawFirstActive = false
+    let sawSecondActive = false
+    for (let i = 0; i < 60; i += 1) {
+      const states = h.runner.readCues().current?.tokenStates ?? []
+      if (states[0] === 'active') sawFirstActive = true
+      if (sawFirstActive && states[1] === 'active') sawSecondActive = true
+      // Nothing is emitted — no punch — so any advance is the beat alone.
+      h.step(25)
+    }
+
+    expect(sawFirstActive).toBe(true)
+    expect(sawSecondActive).toBe(true)
+    h.unmount()
+  })
+
+  it('marks a token completed only when a punch actually lands', () => {
+    // The beat moving past a token must not fake a completion — completed is
+    // reserved for a real credited hit.
+    const h = mount()
+    h.begin()
+    let sawAnyComplete = false
+    for (let i = 0; i < 60; i += 1) {
+      const states = h.runner.readCues().current?.tokenStates ?? []
+      if (states.includes('completed')) sawAnyComplete = true
+      h.step(25)
+    }
+    expect(sawAnyComplete).toBe(false)
+    h.unmount()
+  })
+})

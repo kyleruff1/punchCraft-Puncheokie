@@ -216,6 +216,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const nextRef = useRef<CueRenderState | null>(null)
 
   const countsRef = useRef({ total: 0, left: 0, right: 0, inCue: 0, inCueExpected: 0 })
+  /**
+   * How far the beat has walked into the current combination — the ordinal of
+   * the punch expected *now*, advanced by `token-due` on the cue clock.
+   *
+   * The lit cursor follows `max(credited, beatCursor)`, so it leads the athlete
+   * to the next hit on the beat instead of stalling on a punch the tracker
+   * never reported. Landing punches still fill the completed marks; this only
+   * decides which token is highlighted as "throw this next".
+   */
+  const beatCursorRef = useRef(0)
   const velocitySumRef = useRef(0)
   const velocityCountRef = useRef(0)
   const lastVelocityRef = useRef<LiveVelocity | undefined>(undefined)
@@ -331,17 +341,22 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     if (!engine) return
     const snap = engine.snapshot()
 
-    // Token states come from the engine's status plus which expectations
-    // have been credited — never from a timer of the screen's own.
+    // Completed marks come from what landed; the lit cursor comes from the
+    // later of what landed and where the beat has reached, so it anticipates
+    // the next hit instead of waiting on a punch the tracker may have dropped.
     const states = (cue: CueInstance | undefined, active: boolean): TokenVisualState[] => {
       if (!cue) return []
       const credited = countsRef.current.inCue
+      const cursor = Math.max(credited, beatCursorRef.current)
       return cue.tokens.map((token, index) => {
         if (token.kind !== 'punch') return active ? 'active' : 'upcoming'
         const punchOrdinal = cue.expectedPunches.findIndex((p) => p.tokenIndex === index)
         if (punchOrdinal < 0) return 'upcoming'
+        // Landed, in order: the greedy matcher fills expectations front to back.
         if (punchOrdinal < credited) return 'completed'
-        if (punchOrdinal === credited && active) return 'active'
+        // The one to throw now — led by the beat, so it moves on even when a
+        // punch was missed rather than freezing on it.
+        if (punchOrdinal === cursor && active) return 'active'
         return 'upcoming'
       })
     }
@@ -360,7 +375,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
   const onCueEvent = useCallback(
     (event: CueEvent): void => {
-      if (event.type === 'token-due') return
+      if (event.type === 'token-due') {
+        // The beat reached a token. If it is a punch, walk the lit cursor to
+        // it so the next hit lights up on time — the anticipatory guide the
+        // whole responsiveness fix rests on. Movement tokens are shown active
+        // by the cue status, so they need no cursor.
+        const ordinal = event.cue.expectedPunches.findIndex(
+          (p) => p.tokenIndex === event.tokenIndex,
+        )
+        if (ordinal > beatCursorRef.current) {
+          beatCursorRef.current = ordinal
+          syncFromEngine()
+          pushStore(true)
+        }
+        return
+      }
       // The matcher needs the window lifecycle to know which cue is open.
       matcherRef.current?.onCueEvent(event)
       // The announcer gates itself; the runner never decides what is spoken.
@@ -368,9 +397,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (event.type === 'cue-active') {
         // Shown, therefore realized — regardless of what the athlete threw.
         realizedBlocksRef.current.add(event.cue.blockId)
-        // A new combination: the per-cue credit resets. A burst's target is
-        // its punch count; a sequence cue's is its expectation count.
+        // A new combination: the per-cue credit and the beat cursor reset. A
+        // burst's target is its punch count; a sequence cue's is its
+        // expectation count.
         countsRef.current.inCue = 0
+        beatCursorRef.current = 0
         affirmedRef.current = []
         countsRef.current.inCueExpected =
           event.cue.scoring === 'count'
