@@ -258,6 +258,7 @@ the audition tool that produced each round is `tools/voice/make-audition.mjs`.
 | 1 | **Timbre** (voice blend) | aged-authoritative, aged-melodic, heavier-cornerman, more-theatrical | **aged-melodic** — `am_michael .45 / am_fenrir .25 / am_puck .2 / am_santa .1` |
 | 2 | **Expression** (pitch-contour depth) | measured, expressive, theatrical | **theatrical** — contour ×2.6 |
 | 3 | **Texture** (production chain) | current, chest, grit, close, broadcast | **broadcast** — band-limited, mid-forward, very loud |
+| 4 | **Finish** (ending inflection) | land, slam, shout, snap | **shout** — rises into the power punch and stays up |
 
 ### What each round established
 
@@ -294,12 +295,37 @@ The generator renders **one utterance per phrase and fans it out to every
 variant**, so an A/B compares bit-identical source audio: any difference heard
 is the chain under test, not a different synthesis take.
 
+### What round four established — the aggressive finish
+
+Aggression on the ending is almost entirely the **final punch's pitch move**.
+The downward finish turned out to be a dead lever: under theatrical the final
+fall is already clamped to the pitch floor, so asking for a bigger drop changes
+nothing (measured — `land`, `slam` and a deeper slam all end at the same
+clamped -3.4 st under push). The inflection that survives is the up-kick into
+the last strike and whether the phrase ends *up*. `shout` does both: it rises
+into the power punch and holds, which is also the truer read of an old
+cornerman calling the finish — the voice lifts into it, it does not sink.
+
+The finish is applied to the **measured last voiced region** of each clip, not
+to a normalized position. The first attempt placed the finish at a fixed
+fraction and it drifted off the actual word on longer combinations — measured,
+`shout` on `1-2-3-2` ended *lower* than `land`, the opposite of the intent,
+while the single `2b` (where the fraction happened to align) rose correctly
+(187 Hz vs 159 Hz). `pitch_contour.py` now finds the final run of voiced
+frames from the pitch track and shapes the ending there, so it lands on the
+power-punch syllable for a phrase of any length.
+
+Body shots (`1b`, `2b` → "Body one/two", never "two bee" — D10) were rendered
+in the same round: a soft-consonant word is what an aggressive finish is most
+likely to smear, so the two were tested together.
+
 ### Still open — texture polish
 
-`broadcast` won this round but is not the final word. Kyle flagged wanting more
-emphasis and aggression; the round settled the *category* (mid-forward, loud,
-PA-like), and the exact compression, saturation drive and EQ can still be
-tuned before the full library is committed.
+`broadcast` won round three, and the aggression Kyle asked for was delivered in
+round four by the `shout` finish rather than by retuning the chain. The
+broadcast compression, saturation drive and EQ can still be tuned before the
+full library is committed, but the finish carried most of the perceived
+aggression.
 
 ### Known gap, unchanged
 

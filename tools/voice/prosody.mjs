@@ -85,14 +85,20 @@ export function spokenFor(token, { vocabulary = 'numbers', cadence = 'steady' } 
   const digit = Number(body ? body[1] : key)
   if (!Number.isFinite(digit) || digit < 1 || digit > 6) return String(token)
 
-  let word
   if (vocabulary === 'techniques') {
     const entry = TECHNIQUE_WORDS[digit]
-    word = COMPACT_CADENCES.has(cadence) ? entry.compact : entry.full
-  } else {
-    word = NUMBER_WORDS[digit]
+    const word = COMPACT_CADENCES.has(cadence) ? entry.compact : entry.full
+    // The technique vocabulary names the target: "Body cross".
+    return body ? `Body ${word.toLowerCase()}` : word
   }
-  return body ? `Body ${word.toLowerCase()}` : word
+
+  const word = NUMBER_WORDS[digit]
+  // Punch-number callouts read the notation itself: 2b is "two bee", the
+  // shorthand a numbers coach actually says — not "body two", which is the
+  // technique phrasing. Spelled "bee" rather than "B" so it survives the
+  // interior-lowercasing in renderBody as /biː/; a lone lowercase "b" risks
+  // being read "buh".
+  return body ? `${word} bee` : word
 }
 
 /* ------------------------------------------------------------------ grouping */
@@ -194,11 +200,53 @@ export const CADENCE_SPEED = {
 
 /* ------------------------------------------------------------------- contour */
 
-/** A single command strikes: brief rise, strong fall, nothing else. */
+/**
+ * How the last punch is hit — the ending inflection.
+ *
+ * Aggression lives here more than anywhere else. But the downward finish is a
+ * dead lever under the theatrical setting: the final fall is already clamped
+ * to the pitch floor (see `MAX_ABS_SEMITONES`), so asking for a bigger drop
+ * changes nothing. The inflection that survives is the **up-kick before the
+ * punch** and whether the phrase ends *up* — a shout — instead of settling.
+ * That is also the truer read of an old cornerman on the power punch: the
+ * voice rises into it, it does not sink.
+ *
+ * `peakSt` is the lift just before the last strike; `endSt` is where the very
+ * last moment lands (positive = a rising shout); `accentDb` adds to the
+ * loudness punch the texture applies to the finish.
+ */
+/**
+ * `peakSt` is the lift into the last strike; `endSt` is where the final moment
+ * lands (positive = a rising shout); `accentDb` adds to the loudness punch.
+ *
+ * These are applied to the **measured last voiced region** of the clip, not to
+ * a normalized position, because the power-punch vowel does not sit at a fixed
+ * fraction of a phrase — on a longer combination a normalized "finish" point
+ * drifts off the actual word. The region is found from the pitch track in
+ * `pitch_contour.py`; the rest of the contour stays finish-neutral so the
+ * ending is shaped once, on the right syllable.
+ */
+export const FINISHES = {
+  /** The settled baseline: rise, then land hard. */
+  land: { peakSt: 1.5, endSt: -2.1, accentDb: 0 },
+  /** Louder and later, but still landing down — aggression by weight. */
+  slam: { peakSt: 1.6, endSt: -2.4, accentDb: 3.0 },
+  /** Rises into the punch and stays up: the corner shouting the finish. */
+  shout: { peakSt: 2.2, endSt: 2.6, accentDb: 3.0 },
+  /** Widest swing — hard up-kick, ends up, loudest. */
+  snap: { peakSt: 2.8, endSt: 1.4, accentDb: 3.5 },
+}
+
+/**
+ * A single command strikes: brief rise, then a neutral settle.
+ *
+ * The ending is owned by the finish region (below), same as a combination, so
+ * this stays neutral rather than baking in a fall the finish would fight.
+ */
 const SINGLE_CONTOUR = [
   { at: 0.0, st: 0.3 },
-  { at: 0.35, st: 0.7 },
-  { at: 1.0, st: -2.0 },
+  { at: 0.45, st: 0.9 },
+  { at: 1.0, st: 0.0 },
 ]
 
 /**
@@ -247,11 +295,12 @@ function contourForGroups(groups, depth) {
       return
     }
 
-    // Light on the entry, heavy on the strike that ends the group.
+    // Light on the entry, heavy on the strike that ends the group. The very
+    // last group stays neutral at its tail — the finish region owns the
+    // ending, applied to the measured word rather than an estimated position.
     points.push({ at: start + span * 0.08, st: index === 0 ? -0.5 : -0.25 })
     if (group.length > 1) points.push({ at: start + span * 0.42, st: -0.7 })
-    points.push({ at: end - span * 0.14, st: isLast ? 1.5 : 1.15 })
-    if (isLast) points.push({ at: 1.0, st: -2.1 })
+    points.push({ at: end - span * 0.14, st: 1.15 })
   })
 
   return points
@@ -396,8 +445,10 @@ export function compilePhrase({
   cadence = 'steady',
   performance = 'work',
   expression = 'theatrical',
+  finish = 'land',
 }) {
   const perf = PERFORMANCES[performance]
+  const fin = FINISHES[finish] ?? FINISHES.land
   const depth = (EXPRESSION[expression] ?? EXPRESSION.expressive) * perf.contourScale
   const groups = groupTokens(tokens)
   const strikes = tokens.filter((t) => !isMovement(t)).length
@@ -416,16 +467,24 @@ export function compilePhrase({
     cadence,
     performance,
     expression,
+    finish,
     groups: spokenGroups.map((g) => ({ tokens: g.tokens, accentLast: g.accentLast })),
     renderedText: `${renderBody(spokenGroups, perf)}${perf.ending}`,
     pitchContourSemitones: scaleContour(
-      contourForGroups(groups),
+      contourForGroups(groups, depth),
       depth,
       perf.pitchShiftSemitones,
     ),
+    // Depth-scaled finish targets, applied to the measured last voiced region
+    // by pitch_contour.py. Kept out of the normalized contour so the ending is
+    // shaped on the actual power-punch syllable, not an estimated position.
+    finishShape: {
+      peakSemitones: Math.round(fin.peakSt * depth * 100) / 100,
+      endSemitones: Math.round(fin.endSt * depth * 100) / 100,
+    },
     beats: beatsFor(groups, perf.beatMs),
     swing: SWING,
-    finalAccentDb: perf.finalAccentDb,
+    finalAccentDb: perf.finalAccentDb + fin.accentDb,
     pitchShiftSemitones: perf.pitchShiftSemitones,
     speed: Math.round((CADENCE_SPEED[cadence] ?? 1.15) * perf.speedScale * 100) / 100,
     /** A single strike is a different performance, not a short combination. */

@@ -7,7 +7,14 @@
  *
  * These lock the decisions that cost the most to rediscover.
  */
-import { compilePhrase, groupTokens, isMovement, spokenFor, EXPRESSION } from '../prosody.mjs'
+import {
+  compilePhrase,
+  groupTokens,
+  isMovement,
+  spokenFor,
+  EXPRESSION,
+  FINISHES,
+} from '../prosody.mjs'
 
 const roll = ['1', '2', 'roll', '3', '2']
 
@@ -22,8 +29,17 @@ describe('grouping', () => {
 })
 
 describe('spoken form', () => {
-  it('says a body shot the way a person would', () => {
-    expect(spokenFor('2b')).toBe('Body two')
+  it('reads a body shot as notation in the numbers vocabulary', () => {
+    // Punch-number callouts say the notation itself — "two bee" — not "body
+    // two", which is the technique phrasing. Never "two bee" as two separate
+    // wrong tokens: it is the digit then the letter, spelled to survive
+    // lowercasing.
+    expect(spokenFor('2b')).toBe('Two bee')
+    expect(spokenFor('6b')).toBe('Six bee')
+  })
+
+  it('names the target for a body shot in the techniques vocabulary', () => {
+    expect(spokenFor('2b', { vocabulary: 'techniques' })).toBe('Body cross')
   })
 
   it('names lead and rear, never left and right', () => {
@@ -82,12 +98,16 @@ describe('contour', () => {
     expect([...times]).toEqual([...times].sort((a, b) => a - b))
   })
 
-  it('ends on the hardest downward move', () => {
-    // A combination ends by landing, not by trailing off.
-    const points = contour()
-    const last = points[points.length - 1]
-    expect(last.normalizedTime).toBe(1)
-    expect(last.offset).toBeLessThan(Math.min(...points.slice(0, -1).map((p) => p.offset)))
+  it('leaves the ending to the finish region, not the normalized tail', () => {
+    // The ending inflection is applied to the measured last voiced region by
+    // pitch_contour.py, because the power-punch syllable does not sit at a
+    // fixed fraction of a phrase. So the normalized contour is finish-neutral
+    // and the finish targets travel separately.
+    const plan = compilePhrase({ tokens: roll })
+    expect(plan.finishShape).toEqual({
+      peakSemitones: expect.any(Number),
+      endSemitones: expect.any(Number),
+    })
   })
 
   it('puts the movement above the line and then below it', () => {
@@ -117,6 +137,35 @@ describe('contour', () => {
         }
       }
     }
+  })
+})
+
+describe('finish (ending inflection)', () => {
+  it('ends a shout up and lands the others down', () => {
+    const endOf = (f) => compilePhrase({ tokens: roll, performance: 'push', finish: f }).finishShape.endSemitones
+    expect(endOf('shout')).toBeGreaterThan(0)
+    expect(endOf('snap')).toBeGreaterThan(0)
+    expect(endOf('land')).toBeLessThan(0)
+    expect(endOf('slam')).toBeLessThan(0)
+  })
+
+  it('scales the finish with expression depth', () => {
+    // The finish targets are depth-scaled so they move with the rest of the
+    // performance rather than staying a fixed size as expression opens up.
+    const peak = (e) =>
+      compilePhrase({ tokens: roll, performance: 'push', expression: e, finish: 'snap' })
+        .finishShape.peakSemitones
+    expect(Math.abs(peak('theatrical'))).toBeGreaterThan(Math.abs(peak('measured')))
+  })
+
+  it('adds a loudness accent for the aggressive finishes', () => {
+    const accent = (f) => compilePhrase({ tokens: roll, performance: 'push', finish: f }).finalAccentDb
+    expect(accent('snap')).toBeGreaterThan(accent('land'))
+    expect(FINISHES.land.accentDb).toBe(0)
+  })
+
+  it('defaults to land', () => {
+    expect(compilePhrase({ tokens: roll }).finish).toBe('land')
   })
 })
 

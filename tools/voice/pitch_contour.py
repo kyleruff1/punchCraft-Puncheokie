@@ -66,6 +66,58 @@ def contour_offset(contour: list[dict], position: float) -> float:
     return float(contour[-1]["offset"])
 
 
+def last_voiced_region(sound: parselmouth.Sound) -> tuple[float, float] | None:
+    """The start and end time of the final run of voiced frames.
+
+    This is the power-punch syllable, located from the audio rather than
+    guessed from a token count — the synthesizer reports no word boundaries,
+    and on a longer combination a fixed fraction drifts off the actual word.
+    """
+    pitch = sound.to_pitch(time_step=0.01, pitch_floor=PITCH_FLOOR_HZ,
+                           pitch_ceiling=PITCH_CEILING_HZ)
+    frequencies = pitch.selected_array["frequency"]
+    times = pitch.xs()
+    voiced = [i for i, f in enumerate(frequencies) if f > 0]
+    if not voiced:
+        return None
+    end_index = voiced[-1]
+    start_index = end_index
+    # Walk back through the contiguous voiced run, tolerating the one- or
+    # two-frame unvoiced gaps inside a vowel.
+    gap = 0
+    for i in range(end_index - 1, -1, -1):
+        if frequencies[i] > 0:
+            start_index = i
+            gap = 0
+        else:
+            gap += 1
+            if gap > 3:
+                break
+    return float(times[start_index]), float(times[end_index])
+
+
+def finish_offset(finish: dict, region: tuple[float, float], time: float) -> float:
+    """The finish ramp at `time`, in semitones — zero outside the region.
+
+    Rises to `peakSemitones` around the vowel core, then to `endSemitones` at
+    the very end (positive ends up: a shout). Anchoring to the measured region
+    is what makes the ending inflection land on the last word for a phrase of
+    any length.
+    """
+    if not finish:
+        return 0.0
+    start, end = region
+    if time <= start or end <= start:
+        return 0.0
+    peak = float(finish.get("peakSemitones", 0.0))
+    tail = float(finish.get("endSemitones", 0.0))
+    frac = (time - start) / (end - start)
+    core = 0.45
+    if frac <= core:
+        return peak * (frac / core)
+    return peak + (tail - peak) * ((frac - core) / (1.0 - core))
+
+
 def apply(entry: dict) -> None:
     path = entry["path"]
     sound = parselmouth.Sound(path)
@@ -81,6 +133,9 @@ def apply(entry: dict) -> None:
     drift = float(entry.get("driftSemitones", 0.0))
     drift_hz = float(entry.get("driftHz", 4.0))
 
+    finish = entry.get("finish")
+    region = last_voiced_region(sound) if finish else None
+
     # Rewrite the tier on a fine grid so the movement is smooth rather than
     # stepped — a stepped contour is audible as a warble.
     steps = max(24, int(duration / 0.01))
@@ -88,6 +143,8 @@ def apply(entry: dict) -> None:
         position = index / steps
         time = position * duration
         semitones = shift + contour_offset(contour, position)
+        if region is not None:
+            semitones += finish_offset(finish, region, time)
         if drift > 0:
             semitones += drift * math.sin(2 * math.pi * drift_hz * time)
         semitones = max(-MAX_ABS_SEMITONES, min(MAX_ABS_SEMITONES, semitones))

@@ -45,31 +45,50 @@ import {
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { compilePhrase } from './prosody.mjs'
-import { TEXTURES, textureChain } from './texture.mjs'
-import { PRODUCTION_BLEND, PRODUCTION_BLEND_NAME, PRODUCTION_EXPRESSION } from './persona.mjs'
+import { compilePhrase, FINISHES } from './prosody.mjs'
+import { textureChain } from './texture.mjs'
+import {
+  PRODUCTION_BLEND,
+  PRODUCTION_BLEND_NAME,
+  PRODUCTION_EXPRESSION,
+  PRODUCTION_TEXTURE,
+} from './persona.mjs'
 
 const OUT_ROOT = join('assets', 'voice', 'audition')
 
 /* ------------------------------------------------------- the round under test */
 
-/** The dimension being compared. Everything below it is pinned. */
-const AXIS = 'texture'
-const VARIANTS = Object.keys(TEXTURES)
+/**
+ * Round four polishes **aggression** — the ending inflection.
+ *
+ * The downward finish is already clamped to the pitch floor under the
+ * theatrical setting, so a bigger drop is a dead lever; the inflection that
+ * survives is a harder up-kick into the last punch and whether the phrase ends
+ * *up* (a shout) rather than settling. That is the axis here.
+ *
+ * Texture is pinned to the round-three winner (broadcast) so the finish is
+ * heard through the production chain, and the phrase set is loaded with
+ * **body shots** (`1b`, `2b` → "Body one/two") — a soft-consonant word is
+ * exactly what an aggressive finish is most likely to smear, so the two are
+ * tested together on purpose.
+ */
+const AXIS = 'finish'
+const VARIANTS = Object.keys(FINISHES)
+const TEXTURE = PRODUCTION_TEXTURE
 
 /** Settled in rounds one and two; shared with the production generator. */
 const BLEND_NAME = PRODUCTION_BLEND_NAME
 const BLENDS = { [BLEND_NAME]: PRODUCTION_BLEND }
 const EXPRESSION = PRODUCTION_EXPRESSION
 
-const PHRASES = ['1', '1-2', '1-2-3-2', '1-2-roll-3-2', '1-slip-2', '2-3-2-roll-1-2']
+const PHRASES = ['2b', '1b', '1-2b', '2-3-2', '1-2-3-2', '1-2b-3-2']
 const VOCABULARIES = ['numbers', 'techniques']
 /**
  * `teach` is dropped this round.
  *
- * Texture is judged on the states that carry a round. A teaching call is the
- * one place where the chain is least under stress, so including it would
- * triple the listening without adding a way to tell the candidates apart.
+ * Aggression is judged on the states that carry a round. A teaching call is
+ * the one place a shouted finish would be wrong, so including it would only
+ * dilute the comparison.
  */
 const PERFORMANCES = ['work', 'push']
 /** One cadence for the audition: the persona, not the tempo, is under test. */
@@ -322,20 +341,21 @@ mkdirSync(OUT_ROOT, { recursive: true })
 const cwd = process.cwd()
 
 /**
- * One synthesis per phrase, fanned out to every variant.
+ * One synthesis per phrase, fanned out to every finish.
  *
- * Only the texture differs between variants, and it is applied last. Running
- * Kokoro once per variant would burn five times the render for identical
- * audio — and worse, it would make the comparison approximate: the drift
- * oscillator and the synthesizer's own variation mean two renders of the same
- * text are never bit-identical, so any difference heard could belong to the
- * take rather than to the chain. Sharing one source removes that doubt.
+ * The finish changes only the pitch contour and the final loudness — never the
+ * words, the beats or the trim. So Kokoro runs once per phrase and the take is
+ * shared across every finish: any difference heard is the ending under test,
+ * not a different synthesis. The contour is what varies, so it moves into the
+ * per-finish pass; render, beats and trim stay shared before it.
  */
 const sources = []
 for (const combination of PHRASES) {
   const tokens = combination.split('-').map((t) => t.trim())
   for (const vocabulary of VOCABULARIES) {
     for (const performance of PERFORMANCES) {
+      // The finish does not affect the text, so any finish compiles the shared
+      // source; the per-finish plans below carry the contour and accent.
       const plan = compilePhrase({
         tokens,
         vocabulary,
@@ -351,6 +371,7 @@ for (const combination of PHRASES) {
       sources.push({
         key,
         combination,
+        tokens,
         vocabulary,
         performance,
         plan,
@@ -379,27 +400,49 @@ for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL 
   console.error(`  ${failure}`)
 }
 
-// Beats before the contour: the contour is anchored to normalized positions,
-// so setting the pauses first is what keeps the accents landing on the right
-// words once the phrase has changed length.
-console.log('Setting movement beats…')
+// Beats and trim are finish-independent, so they happen once on the shared
+// source. Trim before the contour and texture, never after: heavy compression
+// lifts the echo tail and the noise floor, so trimming last reads that raised
+// tail as signal and keeps it — the bug that cost two earlier rounds.
+console.log('Setting movement beats and trimming…')
 for (const source of sources) {
   if (!existsSync(source.wav)) continue
   insertBeats(source.wav, source.plan.beats)
+  trimEnds(source.wav, source.plan.profile === 'single' ? { tailMs: 70 } : {})
 }
 
-console.log('Applying pitch contour and aged drift…')
+// One variant per finish: copy the shared source, then give it that finish's
+// contour and its accent-boosted texture.
+const variants = []
+for (const source of sources) {
+  if (!existsSync(source.wav)) continue
+  for (const variant of VARIANTS) {
+    const plan = compilePhrase({
+      tokens: source.tokens,
+      vocabulary: source.vocabulary,
+      cadence: CADENCE,
+      performance: source.performance,
+      expression: EXPRESSION,
+      finish: variant,
+    })
+    const file = `${source.key}.${variant}.wav`
+    const path = join(cwd, OUT_ROOT, file)
+    copyFileSync(source.wav, path)
+    variants.push({ source, variant, plan, file, path })
+  }
+}
+
+console.log('Applying the finish contour and aged drift…')
 const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour.py')], {
   input: JSON.stringify(
-    sources
-      .filter((s) => existsSync(s.wav))
-      .map((s) => ({
-        path: s.wav,
-        contour: s.plan.pitchContourSemitones,
-        shiftSemitones: s.plan.pitchShiftSemitones,
-        driftSemitones: DRIFT_SEMITONES,
-        driftHz: DRIFT_HZ,
-      })),
+    variants.map((v) => ({
+      path: v.path,
+      contour: v.plan.pitchContourSemitones,
+      shiftSemitones: v.plan.pitchShiftSemitones,
+      finish: v.plan.finishShape,
+      driftSemitones: DRIFT_SEMITONES,
+      driftHz: DRIFT_HZ,
+    })),
   ),
   encoding: 'utf8',
   maxBuffer: 32 * 1024 * 1024,
@@ -408,58 +451,43 @@ for (const failure of contourOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL
   console.error(`  ${failure}`)
 }
 
-// Trim before the texture, never after. Processing first was the bug that
-// cost two rounds: heavy compression lifts the echo tail and the noise floor,
-// so the trimmer then reads that raised tail as signal and keeps it. Every
-// single strike came out 150-300 ms long for that reason alone. Trimming the
-// shared source also means every variant starts from the same edit.
-console.log('Trimming…')
-for (const source of sources) {
-  if (!existsSync(source.wav)) continue
-  trimEnds(source.wav, source.plan.profile === 'single' ? { tailMs: 70 } : {})
+console.log(`Applying the ${TEXTURE} texture to ${variants.length} clips…`)
+const index = []
+for (const { source, variant, plan, file, path } of variants) {
+  if (!existsSync(path)) continue
+  try {
+    postProcess(path, {
+      texture: TEXTURE,
+      profile: plan.profile,
+      finalAccentDb: plan.finalAccentDb,
+    })
+  } catch (error) {
+    // One bad filtergraph must not take the round down; a missing variant is
+    // visible on the audition screen, a half-written index is not.
+    console.error(`  FAIL ${file}: ${error.message.split('\n')[0]}`)
+    rmSync(path, { force: true })
+    continue
+  }
+  index.push({
+    cueId: `${source.key}.${variant}`,
+    combination: source.combination,
+    axis: AXIS,
+    variant,
+    blend: BLEND_NAME,
+    expression: EXPRESSION,
+    texture: TEXTURE,
+    vocabulary: source.vocabulary,
+    performance: source.performance,
+    cadence: CADENCE,
+    file,
+    spokenText: plan.renderedText,
+    durationMs: measureDuration(path),
+    profile: plan.profile,
+    plan,
+  })
 }
 
-console.log(`Applying ${VARIANTS.length} textures…`)
-const index = []
-for (const source of sources) {
-  if (!existsSync(source.wav)) continue
-  for (const variant of VARIANTS) {
-    const key = `${source.key}.${variant}`
-    const file = `${key}.wav`
-    const path = join(cwd, OUT_ROOT, file)
-    copyFileSync(source.wav, path)
-    try {
-      postProcess(path, {
-        texture: variant,
-        profile: source.plan.profile,
-        finalAccentDb: source.plan.finalAccentDb,
-      })
-    } catch (error) {
-      // One bad filtergraph must not take the round down; a missing variant
-      // is visible on the audition screen, a half-written index is not.
-      console.error(`  FAIL ${key}: ${error.message.split('\n')[0]}`)
-      rmSync(path, { force: true })
-      continue
-    }
-    index.push({
-      cueId: key,
-      combination: source.combination,
-      axis: AXIS,
-      variant,
-      blend: BLEND_NAME,
-      expression: EXPRESSION,
-      vocabulary: source.vocabulary,
-      performance: source.performance,
-      cadence: CADENCE,
-      file,
-      spokenText: source.plan.renderedText,
-      durationMs: measureDuration(path),
-      profile: source.plan.profile,
-      plan: source.plan,
-    })
-  }
-  rmSync(source.wav, { force: true })
-}
+for (const source of sources) rmSync(source.wav, { force: true })
 
 writeFileSync(join(OUT_ROOT, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
 

@@ -36,6 +36,16 @@ export const PRODUCTION_BLEND = {
 export const PRODUCTION_EXPRESSION = 'theatrical'
 
 /**
+ * Finish — round four. The corner shouting the power punch.
+ *
+ * The ending rises into the last strike and stays up rather than settling
+ * down. The downward finish was a dead lever under theatrical (already clamped
+ * to the pitch floor), so aggression on the ending had to come from the
+ * up-kick and the shout, applied to the measured last voiced region.
+ */
+export const PRODUCTION_FINISH = 'shout'
+
+/**
  * Texture — round three.
  *
  * The corner shouting over a PA: band-limited, mid-forward, very loud. It won
