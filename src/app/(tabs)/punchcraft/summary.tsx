@@ -134,16 +134,6 @@ export default function SummaryScreen(props: SummaryScreenProps): React.JSX.Elem
             caption="tracker-reported velocity"
           />
         )}
-        {summary.handSequenceMatchPercent === undefined ? null : (
-          <Metric
-            testID="summary-sequence"
-            label="Sequence"
-            value={`${summary.handSequenceMatchPercent}%`}
-            // Resolved, never a literal — the tier decides what this may be
-            // called (D4).
-            caption={summary.sequenceScoreLabel}
-          />
-        )}
       </View>
 
       {/* Spec §8.5: say what the numbers are rather than letting a bare

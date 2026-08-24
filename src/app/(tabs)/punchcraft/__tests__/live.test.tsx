@@ -346,18 +346,12 @@ describe('matching surfaces (#188)', () => {
     expect(() => tree.root.findByProps({ testID: 'extra-count' })).not.toThrow()
   })
 
-  it('takes the sequence-score label from the store, never a literal', () => {
+  it('does not show a per-combo sequence score — the score is punch count', () => {
+    // The sequence label was dropped from the live strip: punch count (in the
+    // metrics rail) is the score, with left/right and velocity as analytics.
     const tree = render()
     drive({ phase: 'work', sequenceScoreLabel: 'hand-sequence match' })
-    expect(allText(tree).toLowerCase()).toContain('hand-sequence match')
-  })
-
-  it('would render technique match only if the tier ever allowed it', () => {
-    // Proves the string is resolved rather than hardcoded — no tier this
-    // hardware reaches produces it (D12).
-    const tree = render()
-    drive({ phase: 'work', sequenceScoreLabel: 'technique match' })
-    expect(allText(tree).toLowerCase()).toContain('technique match')
+    expect(allText(tree).toLowerCase()).not.toContain('hand-sequence match')
   })
 })
 

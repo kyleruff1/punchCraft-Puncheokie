@@ -170,19 +170,23 @@ describe('velocity is disclosed, not implied (spec §8.5, §4.3)', () => {
   })
 })
 
-describe('the sequence label is resolved, never asserted (D4)', () => {
-  it('says hand-sequence match at this tier', () => {
-    expect(allText(render(rows(20)))).toContain('hand-sequence match')
+describe('the score is punch count, not a per-combo sequence grade', () => {
+  // The sequence score was dropped from the surface: the athlete's score is
+  // punch count, with the left/right breakout and velocity kept as analytics.
+  // So the summary no longer shows a "Sequence" tile, and the D4 honesty tests
+  // that guarded its resolved label retire with it — the never-hardcode-a-claim
+  // property is still covered for the velocity label and the provenance line.
+  it('shows no sequence tile', () => {
+    expect(nodes(render(rows(20)), 'summary-sequence')).toHaveLength(0)
   })
 
-  it('never claims technique accuracy', () => {
+  it('never claims technique accuracy anywhere on the summary', () => {
     expect(allText(render(rows(20)))).not.toMatch(/technique accuracy/i)
   })
 
-  it('would say technique match only if the tier allowed it', () => {
-    // Proves the string is resolved rather than hardcoded.
-    const tree = render(rows(20, { capabilityTier: 'hand-distinct-type' }))
-    expect(allText(tree)).toContain('technique match')
+  it('still shows the left/right breakout and the punch count', () => {
+    const tree = render(rows(20))
+    expect(() => tree.root.findByProps({ testID: 'summary-left-right' })).not.toThrow()
   })
 })
 

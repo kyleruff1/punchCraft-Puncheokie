@@ -261,7 +261,6 @@ export default function LiveScreen(): React.JSX.Element {
           happened (spec §13.6). The label comes from the store so no surface
           can hardcode a technique claim (D4). */}
       <View style={styles.scoreStrip} testID="score-strip">
-        <Text style={styles.scoreLabel}>{live.sequenceScoreLabel}</Text>
         <Text style={styles.extras} testID="extra-count">
           {`Extra punches: ${live.extraCount}`}
         </Text>
@@ -409,13 +408,6 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingHorizontal: 12,
     paddingVertical: 4,
-  },
-  scoreLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
   },
   extras: { fontSize: 13, color: colors.textSecondary },
   pacingCue: { fontSize: 13, fontWeight: '700', color: colors.accent },
