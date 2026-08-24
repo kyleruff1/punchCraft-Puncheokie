@@ -69,9 +69,21 @@ const OUT_ROOT = join('assets', 'voice', 'phrases')
 /** Every cadence a combination may be called at. */
 const CADENCES = ['technical', 'steady', 'pressure', 'sprint']
 
-/** Pinned until the manifest key widens (see the header). */
-const VOCABULARY = 'numbers'
-const PERFORMANCE = 'work'
+/** Both callout vocabularies the athlete can choose between (Coach Callouts). */
+const VOCABULARIES = ['numbers', 'techniques']
+
+/**
+ * The three performance states, each with the finish that fits it.
+ *
+ * The persona finish is `shout`, but a shouted finish is wrong for a *teaching*
+ * call — teach lands soft and deliberate. So the finish is chosen per state
+ * rather than pinned globally: teach settles, work and push shout.
+ */
+const PERFORMANCES = [
+  { name: 'teach', finish: 'land' },
+  { name: 'work', finish: PRODUCTION_FINISH },
+  { name: 'push', finish: PRODUCTION_FINISH },
+]
 
 /** Aged drift — small enough to read as weathered rather than unsteady. */
 const DRIFT_SEMITONES = 0.14
@@ -199,28 +211,33 @@ const jobs = []
 for (const combination of combinationsFromSamples()) {
   const tokens = combination.split('-').map((t) => t.trim())
   for (const cadence of CADENCES) {
-    const plan = compilePhrase({
-      tokens,
-      vocabulary: VOCABULARY,
-      cadence,
-      performance: PERFORMANCE,
-      expression: PRODUCTION_EXPRESSION,
-      finish: PRODUCTION_FINISH,
-    })
-    jobs.push({
-      key: `${combination}.${cadence}`,
-      combination,
-      cadence,
-      tokens,
-      plan,
-      wav: join(cwd, OUT_ROOT, `${combination}.${cadence}.wav`),
-    })
+    for (const vocabulary of VOCABULARIES) {
+      for (const performance of PERFORMANCES) {
+        const plan = compilePhrase({
+          tokens,
+          vocabulary,
+          cadence,
+          performance: performance.name,
+          expression: PRODUCTION_EXPRESSION,
+          finish: performance.finish,
+        })
+        const key = `${combination}.${cadence}.${vocabulary}.${performance.name}`
+        jobs.push({
+          key,
+          combination,
+          cadence,
+          vocabulary,
+          performance: performance.name,
+          tokens,
+          plan,
+          wav: join(cwd, OUT_ROOT, `${key}.wav`),
+        })
+      }
+    }
   }
 }
 
-console.log(
-  `Rendering ${jobs.length} phrases — ${RENDERER}, ${VOCABULARY}/${PERFORMANCE}…`,
-)
+console.log(`Rendering ${jobs.length} phrases — ${RENDERER}…`)
 
 const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
   input: JSON.stringify({
@@ -284,7 +301,9 @@ for (const job of jobs) {
 
   // A token can be more than one word — "two bee" — so onsets are matched by
   // walking both lists rather than by index.
-  const wordCounts = job.tokens.map((t) => spokenFor(t, { vocabulary: VOCABULARY }).split(' ').length)
+  const wordCounts = job.tokens.map(
+    (t) => spokenFor(t, { vocabulary: job.vocabulary }).split(' ').length,
+  )
   const expectedWords = wordCounts.reduce((a, b) => a + b, 0)
   const onsets = measureWordOnsets(job.wav, expectedWords)
   const wordMarks = []
@@ -299,6 +318,8 @@ for (const job of jobs) {
     cueId: job.key,
     combination: job.combination,
     cadence: job.cadence,
+    vocabulary: job.vocabulary,
+    performance: job.performance,
     file: `${job.key}.wav`,
     tokens: job.tokens,
     durationMs,
@@ -307,10 +328,7 @@ for (const job of jobs) {
   })
 
   const kb = (statSync(job.wav).size / 1024).toFixed(0)
-  console.log(
-    `${job.key.padEnd(24)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB  ` +
-      `"${job.plan.renderedText}"`,
-  )
+  console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB`)
 }
 
 writeFileSync(join(OUT_ROOT, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
@@ -323,12 +341,16 @@ const lines = [
   ' *',
   ' * DO NOT EDIT — produced by `node tools/voice/make-phrase-clips.mjs`.',
   ' *',
-  ' * One clip per (combination, cadence), spoken by the settled Old-School',
-  ' * Cornerman persona. `wordMarks` is present for interface stability but is',
-  ' * usually empty — circle activation stays on the cue clock.',
+  ' * One clip per (combination, cadence, vocabulary, performance), spoken by',
+  ' * the settled Old-School Cornerman persona. `wordMarks` is present for',
+  ' * interface stability but is usually empty — circle activation stays on the',
+  ' * cue clock.',
   ' */',
   '',
   '/* eslint-disable @typescript-eslint/no-require-imports */',
+  '',
+  "export type CalloutVocabulary = 'numbers' | 'techniques'",
+  "export type PerformanceState = 'teach' | 'work' | 'push'",
   '',
   'export interface PhraseWordMark {',
   '  tokenIndex: number',
@@ -341,6 +363,8 @@ const lines = [
   '  cueId: string',
   '  combination: string',
   '  cadence: string',
+  '  vocabulary: CalloutVocabulary',
+  '  performance: PerformanceState',
   '  tokens: string[]',
   '  durationMs: number',
   '  wordMarks: PhraseWordMark[]',
@@ -357,6 +381,8 @@ for (const entry of index) {
     `    cueId: ${JSON.stringify(entry.cueId)},`,
     `    combination: ${JSON.stringify(entry.combination)},`,
     `    cadence: ${JSON.stringify(entry.cadence)},`,
+    `    vocabulary: ${JSON.stringify(entry.vocabulary)},`,
+    `    performance: ${JSON.stringify(entry.performance)},`,
     `    tokens: ${JSON.stringify(entry.tokens)},`,
     `    durationMs: ${entry.durationMs},`,
     `    wordMarks: ${JSON.stringify(entry.wordMarks)},`,
@@ -370,12 +396,25 @@ lines.push(
   '',
   '/* eslint-enable @typescript-eslint/no-require-imports */',
   '',
-  '/** Lookup by combination and cadence. */',
+  '/**',
+  ' * Lookup by combination and cadence, plus the callout vocabulary and the',
+  ' * performance state. Vocabulary and performance default to the production',
+  ' * baseline (numbers / work), so a caller that has not yet been widened still',
+  ' * resolves the same clip it always did.',
+  ' */',
   'export function findPhraseAsset(',
   '  combination: string,',
   '  cadence: string,',
+  "  vocabulary: CalloutVocabulary = 'numbers',",
+  "  performance: PerformanceState = 'work',",
   '): PhraseAsset | undefined {',
-  '  return phraseAssets.find((a) => a.combination === combination && a.cadence === cadence)',
+  '  return phraseAssets.find(',
+  '    (a) =>',
+  '      a.combination === combination &&',
+  '      a.cadence === cadence &&',
+  '      a.vocabulary === vocabulary &&',
+  '      a.performance === performance,',
+  '  )',
   '}',
   '',
 )
