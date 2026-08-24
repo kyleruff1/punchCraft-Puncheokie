@@ -47,8 +47,17 @@ const BASELINE_MS = 400
 const LISTEN_MS = 4_000
 /** A level this far above the floor counts as sound rather than room noise. */
 const ONSET_MARGIN_DB = 10
+/**
+ * How far below the loudest moment still counts as part of a word.
+ *
+ * The absolute floor alone is not enough: the recorder reports -160 dB before
+ * it has produced a real reading, and a threshold anchored to that sentinel
+ * sits so low that the entire recording reads as one unbroken word — which is
+ * exactly what the first run of this harness reported.
+ */
+const PEAK_RANGE_DB = 18
 /** Level must hold below the threshold this long before a new word can start. */
-const GAP_MS = 45
+const GAP_MS = 60
 
 interface Sample {
   atMs: number
@@ -66,14 +75,18 @@ interface Reading {
   words: Word[]
   gapsMs: number[]
   floorDb: number
+  peakDb: number
+  thresholdDb: number
   /** True when the last word ended at the moment listening stopped. */
   lastWordClipped: boolean
 }
 
-const median = (values: number[]): number => {
+/** Nearest-rank percentile, so every value returned is one that was measured. */
+const percentile = (values: number[], p: number): number => {
   if (values.length === 0) return -160
   const sorted = [...values].sort((a, b) => a - b)
-  return sorted[Math.floor(sorted.length / 2)] ?? -160
+  const rank = Math.max(0, Math.ceil((p / 100) * sorted.length) - 1)
+  return sorted[Math.min(sorted.length - 1, rank)] ?? -160
 }
 
 /**
@@ -83,8 +96,11 @@ const median = (values: number[]): number => {
  * been below it for `GAP_MS` — the hold is what stops a dip inside a syllable
  * from splitting one word into two.
  */
-function findWords(samples: Sample[], floorDb: number): Word[] {
-  const threshold = floorDb + ONSET_MARGIN_DB
+function findWords(samples: Sample[], floorDb: number, peakDb: number): Word[] {
+  // Two anchors, and the stricter wins. The floor guards against a quiet room
+  // being read as speech; the peak guards against the -160 sentinel dragging
+  // the threshold below everything.
+  const threshold = Math.max(floorDb + ONSET_MARGIN_DB, peakDb - PEAK_RANGE_DB)
   const words: Word[] = []
   let current: Word | null = null
   let belowSince: number | null = null
@@ -158,7 +174,6 @@ export default function CoachCadenceScreen(): React.JSX.Element {
           poll()
           await new Promise<void>((r) => setTimeout(r, POLL_MS))
         }
-        const floorDb = median(samples.map((s) => s.db))
         const playedAt = performance.now() - startedAt
 
         output.playPhrase(ids, undefined, tightness)
@@ -171,7 +186,13 @@ export default function CoachCadenceScreen(): React.JSX.Element {
         await recorder.stop()
 
         const after = samples.filter((s) => s.atMs >= playedAt)
-        const words = findWords(after, floorDb)
+        const levels = after.map((s) => s.db)
+        // The floor comes from the trace itself rather than the pre-playback
+        // window: the recorder needs a moment before it reports anything real,
+        // so that window is mostly sentinel values.
+        const floorDb = percentile(levels, 20)
+        const peakDb = Math.max(...levels, -160)
+        const words = findWords(after, floorDb, peakDb)
         const gapsMs = words
           .slice(1)
           .map((w, i) => Math.round(w.onsetMs - (words[i]?.onsetMs ?? w.onsetMs)))
@@ -190,10 +211,14 @@ export default function CoachCadenceScreen(): React.JSX.Element {
             })),
             gapsMs,
             floorDb: Math.round(floorDb),
+            peakDb: Math.round(peakDb),
+            thresholdDb: Math.round(Math.max(floorDb + ONSET_MARGIN_DB, peakDb - PEAK_RANGE_DB)),
             lastWordClipped,
           },
         ])
-        say(`${label}: ${words.length} words, floor ${Math.round(floorDb)} dB`)
+        say(
+          `${label}: ${words.length} words, floor ${Math.round(floorDb)} peak ${Math.round(peakDb)} dB`,
+        )
       } catch (err) {
         say(`FAILED: ${String(err)}`)
       } finally {
@@ -245,12 +270,13 @@ export default function CoachCadenceScreen(): React.JSX.Element {
         <View key={`${i}-${r.label}`} style={styles.result}>
           <Text style={styles.resultLabel}>{r.label}</Text>
           <Text style={styles.resultValue}>
-            {`${r.words.length} words  gaps ${r.gapsMs.join(', ') || '-'} ms  floor ${r.floorDb} dB`}
+            {`${r.words.length} words  gaps ${r.gapsMs.join(', ') || '-'} ms`}
           </Text>
           <Text style={styles.resultValue}>
-            {r.words
-              .map((w) => `[${w.onsetMs}-${w.endMs}ms ${w.peakDb}dB]`)
-              .join(' ')}
+            {`floor ${r.floorDb}  peak ${r.peakDb}  threshold ${r.thresholdDb} dB`}
+          </Text>
+          <Text style={styles.resultValue}>
+            {r.words.map((w) => `[${w.onsetMs}-${w.endMs}ms ${w.peakDb}dB]`).join(' ')}
           </Text>
           {r.lastWordClipped ? (
             <Text style={styles.warn}>last word may be cut off — listening ended too soon</Text>

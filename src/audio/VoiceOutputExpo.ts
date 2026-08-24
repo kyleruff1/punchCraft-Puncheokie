@@ -193,13 +193,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       try {
         const player = this.makePlayer(source)
         this.players.set(key, player)
-        // `duration` is in seconds and is only meaningful once loaded; a zero
-        // here falls back rather than producing a zero-length hold that would
-        // collapse the sequence back into simultaneous playback.
-        const seconds = player.duration
-        if (typeof seconds === 'number' && seconds > 0) {
-          this.durations.set(key, Math.round(seconds * 1000))
-        }
+        // Duration is read lazily rather than here. A player reports 0 until
+        // its asset has actually loaded, and reading it at construction time
+        // meant every clip fell back to the assumed length — which made
+        // combinations *slower* than a standalone word instead of tighter,
+        // and left the announcer unable to place a phrase at all.
+        this.cacheDuration(key, player)
       } catch {
         missing.push(id)
       }
@@ -283,7 +282,27 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * number there would misplace every call.
    */
   assetDurationMs(id: VoiceAssetId, form: PhraseForm = 'standalone'): number | undefined {
-    return this.durations.get(this.keyFor(id, form))
+    const key = this.keyFor(id, form)
+    const cached = this.durations.get(key)
+    if (cached !== undefined) return cached
+    const player = this.players.get(key)
+    return player ? this.cacheDuration(key, player) : undefined
+  }
+
+  /**
+   * Read a player's length, caching it once it becomes real.
+   *
+   * `duration` is in seconds and reads 0 until the asset has loaded, so a
+   * zero is "not yet known" rather than "instantaneous" and must not be
+   * cached — caching it would freeze every clip at the fallback length for
+   * the life of the session.
+   */
+  private cacheDuration(key: string, player: AudioPlayer): number | undefined {
+    const seconds = player.duration
+    if (typeof seconds !== 'number' || !(seconds > 0)) return undefined
+    const ms = Math.round(seconds * 1000)
+    this.durations.set(key, ms)
+    return ms
   }
 
   private queueGroup(group: PendingGroup, delay: number): void {

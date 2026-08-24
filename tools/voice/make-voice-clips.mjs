@@ -45,7 +45,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, writeFileSync, statSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const OUT_ROOT = join('assets', 'voice')
@@ -101,6 +101,105 @@ const TONES = {
   'tone-ready': { freqHz: 1_320, durationMs: 80, fadeOutMs: 20 },
   'tone-repeat': { freqHz: 990, durationMs: 60, fadeOutMs: 15 },
   'tone-warning': { freqHz: 520, durationMs: 300, fadeOutMs: 120 },
+}
+
+/**
+ * Trim leading and trailing silence from a 16-bit PCM WAV, in place.
+ *
+ * The synthesiser pads every clip, and that padding is not cosmetic: the
+ * player reports the *file* length, and the announcer schedules from it. A
+ * word with 220 ms of silence baked onto the end makes the coach leave a
+ * gap that no tightness setting can close, because the silence is inside the
+ * clip rather than between them. Measured on the tablet: words were 85-148 ms
+ * of audio inside ~370 ms files, and the combination sounded spaced no matter
+ * what the tightness said.
+ *
+ * A short margin is kept at each end so nothing is clipped into.
+ */
+function trimSilence(path, { thresholdRatio = 0.02, marginMs = 15 } = {}) {
+  const buffer = readFileSync(path)
+  if (buffer.length < 12 || buffer.toString('ascii', 0, 4) !== 'RIFF') {
+    return { trimmedMs: 0, keptMs: 0 }
+  }
+
+  // Walk the chunk list rather than assuming a 44-byte header. The
+  // synthesiser emits `fact` and `LIST` chunks alongside `fmt ` and `data`,
+  // so a fixed offset points into the middle of metadata — which produced
+  // files the player accepted and then crashed on.
+  let offset = 12
+  let fmt = null
+  let data = null
+  while (offset + 8 <= buffer.length) {
+    const id = buffer.toString('ascii', offset, offset + 4)
+    const size = buffer.readUInt32LE(offset + 4)
+    const body = offset + 8
+    if (id === 'fmt ') {
+      fmt = {
+        channels: buffer.readUInt16LE(body + 2),
+        sampleRate: buffer.readUInt32LE(body + 4),
+        bitsPerSample: buffer.readUInt16LE(body + 14),
+      }
+    } else if (id === 'data') {
+      data = { start: body, size: Math.min(size, buffer.length - body) }
+    }
+    // Chunks are word-aligned, so an odd size carries a pad byte.
+    offset = body + size + (size % 2)
+  }
+
+  if (!fmt || !data || fmt.bitsPerSample !== 16) return { trimmedMs: 0, keptMs: 0 }
+
+  const bytesPerFrame = (fmt.bitsPerSample / 8) * fmt.channels
+  const frames = Math.floor(data.size / bytesPerFrame)
+  const threshold = 32_767 * thresholdRatio
+  const margin = Math.round((marginMs / 1000) * fmt.sampleRate)
+  const peakOf = (frame) => {
+    let peak = 0
+    for (let c = 0; c < fmt.channels; c += 1) {
+      const at = data.start + frame * bytesPerFrame + c * 2
+      peak = Math.max(peak, Math.abs(buffer.readInt16LE(at)))
+    }
+    return peak
+  }
+
+  let first = 0
+  while (first < frames && peakOf(first) < threshold) first += 1
+  let last = frames - 1
+  while (last > first && peakOf(last) < threshold) last -= 1
+  // Nothing above the threshold: leave the file alone rather than writing an
+  // empty clip, which would be worse than a padded one.
+  if (first >= last) {
+    return { trimmedMs: 0, keptMs: Math.round((frames / fmt.sampleRate) * 1000) }
+  }
+
+  const start = Math.max(0, first - margin)
+  const end = Math.min(frames - 1, last + margin)
+  const kept = buffer.subarray(
+    data.start + start * bytesPerFrame,
+    data.start + (end + 1) * bytesPerFrame,
+  )
+
+  // Rewritten as a canonical 44-byte file: one fmt chunk, one data chunk, and
+  // nothing else for a player to trip over.
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0)
+  header.writeUInt32LE(36 + kept.length, 4)
+  header.write('WAVE', 8)
+  header.write('fmt ', 12)
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20)
+  header.writeUInt16LE(fmt.channels, 22)
+  header.writeUInt32LE(fmt.sampleRate, 24)
+  header.writeUInt32LE(fmt.sampleRate * bytesPerFrame, 28)
+  header.writeUInt16LE(bytesPerFrame, 32)
+  header.writeUInt16LE(fmt.bitsPerSample, 34)
+  header.write('data', 36)
+  header.writeUInt32LE(kept.length, 40)
+  writeFileSync(path, Buffer.concat([header, kept]))
+
+  return {
+    trimmedMs: Math.round(((frames - (end - start + 1)) / fmt.sampleRate) * 1000),
+    keptMs: Math.round(((end - start + 1) / fmt.sampleRate) * 1000),
+  }
 }
 
 function wavTone({ freqHz, durationMs, fadeOutMs }) {
@@ -187,6 +286,11 @@ for (const vocabulary of ['numbers', 'names']) {
 
     speakBatch(jobs, FORM_RATE[form])
 
+    // Trim before anything measures these files. The tones are generated at
+    // exactly the length they should be, so only the spoken clips need it.
+    let trimmedTotal = 0
+    for (const job of jobs) trimmedTotal += trimSilence(job.path).trimmedMs
+
     for (const [id, spec] of Object.entries(TONES)) {
       writeFileSync(join(dir, `${id}.wav`), wavTone(spec))
     }
@@ -199,7 +303,8 @@ for (const vocabulary of ['numbers', 'names']) {
     for (const path of paths) bytes += statSync(path).size
     count += paths.length
     console.log(
-      `${vocabulary.padEnd(8)} ${form.padEnd(10)} ${paths.length} clips  ${(bytes / 1024).toFixed(0)} KB`,
+      `${vocabulary.padEnd(8)} ${form.padEnd(10)} ${paths.length} clips  ${(bytes / 1024).toFixed(0)} KB  ` +
+        `(trimmed ${trimmedTotal} ms of silence)`,
     )
   }
 }

@@ -312,6 +312,61 @@ describe('a phrase plays as a sequence, not all at once', () => {
   })
 })
 
+describe('clip length is read once the asset has loaded', () => {
+  // Measured on the tablet: a three-word combination took 646 ms while a
+  // single standalone word took 201 ms — the combination was *slower* per
+  // word than saying one on its own. The cause was reading `duration` at
+  // construction, when a player still reports 0, so every hold silently used
+  // the assumed fallback length.
+  function lateLoadingHarness(): { output: VoiceOutputExpo; load: () => void } {
+    let seconds = 0
+    const output = new VoiceOutputExpo({
+      createPlayer: () =>
+        ({
+          get duration() {
+            return seconds
+          },
+          volume: 1,
+          seekTo: () => {},
+          play: () => {},
+          remove: () => {},
+        }) as never,
+      setAudioMode: (async () => undefined) as never,
+      speaker: { speak: () => {}, stop: () => {} } as never,
+    })
+    return {
+      output,
+      load: () => {
+        seconds = 0.15
+      },
+    }
+  }
+
+  it('reports nothing while the clip is still loading', async () => {
+    const h = lateLoadingHarness()
+    await h.output.preload()
+    expect(h.output.assetDurationMs('1')).toBeUndefined()
+  })
+
+  it('picks the length up once loading finishes', async () => {
+    const h = lateLoadingHarness()
+    await h.output.preload()
+    h.load()
+    expect(h.output.assetDurationMs('1')).toBe(150)
+  })
+
+  it('never caches a zero as if it were the real length', async () => {
+    // Caching the zero would freeze every clip at the fallback for the whole
+    // session, which is exactly the bug this replaced.
+    const h = lateLoadingHarness()
+    await h.output.preload()
+    expect(h.output.assetDurationMs('1')).toBeUndefined()
+    h.load()
+    expect(h.output.assetDurationMs('1')).toBe(150)
+    expect(h.output.assetDurationMs('1')).toBe(150)
+  })
+})
+
 describe('a combination is delivered in the combo form', () => {
   it('plays the clipped renderings for a multi-word call', async () => {
     // Not the standalone clip played faster — a separate, quicker recording,
