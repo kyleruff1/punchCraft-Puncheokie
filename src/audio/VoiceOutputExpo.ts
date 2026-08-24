@@ -38,6 +38,7 @@ import {
   AUDIO_PRIORITY,
   DEFAULT_VOLUMES,
   type AudioPriority,
+  type CombinationVoice,
   type ToneKind,
   type VoiceAssetId,
   type VoiceOutputPort,
@@ -349,8 +350,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * place a phrase before anything has been loaded — the timing was measured
    * at render time by the synthesizer itself.
    */
-  combinationDurationMs(combination: string, cadence: string): number | undefined {
-    return findPhraseAsset(combination, cadence)?.durationMs
+  combinationDurationMs(
+    combination: string,
+    cadence: string,
+    voice?: CombinationVoice,
+  ): number | undefined {
+    return findPhraseAsset(combination, cadence, voice?.vocabulary, voice?.performance)?.durationMs
   }
 
   /**
@@ -360,9 +365,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * announcer to fall back to the per-word path rather than leaving the
    * combination uncalled.
    */
-  playCombination(combination: string, cadence: string, atMs?: number): boolean {
+  playCombination(
+    combination: string,
+    cadence: string,
+    atMs?: number,
+    voice?: CombinationVoice,
+  ): boolean {
     if (this.failed) return false
-    const asset = findPhraseAsset(combination, cadence)
+    const asset = findPhraseAsset(combination, cadence, voice?.vocabulary, voice?.performance)
     if (!asset) return false
 
     const start = (): void => {

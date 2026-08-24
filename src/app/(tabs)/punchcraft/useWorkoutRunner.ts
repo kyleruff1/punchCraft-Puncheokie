@@ -656,6 +656,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // called — a phrase is a performance, so a faster round means a
           // different recording rather than the same one played faster.
           cadence: workout.recipe.cadenceProfile,
+          // Coach Callouts (D15). The policy names it `names`; the rendered
+          // library names the same vocabulary `techniques` — one canonical
+          // sequence, two spoken forms.
+          vocabulary: voice.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
         })
       : null
     announcerRef.current = announcer

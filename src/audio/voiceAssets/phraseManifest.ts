@@ -11,8 +11,7 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-export type CalloutVocabulary = 'numbers' | 'techniques'
-export type PerformanceState = 'teach' | 'work' | 'push'
+import type { CalloutVocabulary, PerformanceState } from '@domain/coach/VoiceOutputPort'
 
 export interface PhraseWordMark {
   tokenIndex: number

@@ -52,7 +52,14 @@
 import { assetPriority } from './assetPriority'
 import { comboPhraseAssets } from './vocabulary'
 import { formatCombo } from '../workout/WorkoutTokens'
-import { AUDIO_PRIORITY, type VoiceAssetId, type VoiceOutputPort } from './VoiceOutputPort'
+import {
+  AUDIO_PRIORITY,
+  type CalloutVocabulary,
+  type CombinationVoice,
+  type PerformanceState,
+  type VoiceAssetId,
+  type VoiceOutputPort,
+} from './VoiceOutputPort'
 import { shouldSpeak, voiceAllowed, type VoiceCoachPolicy } from './VoiceCoachPolicy'
 import type { CueEvent, SessionPhaseEvent } from '../programs/CueState'
 import type { CueInstance } from '../programs/CueTimeline'
@@ -116,6 +123,19 @@ export interface CueAnnouncerOptions {
    * recording rather than a different playback rate.
    */
   cadence?: string
+  /**
+   * Which callout vocabulary to speak (D15, Coach Callouts). Defaults to
+   * `numbers`. It is a rendering choice over the one canonical sequence, so it
+   * belongs here, not in the workout data.
+   */
+  vocabulary?: CalloutVocabulary
+  /**
+   * How to pick the performance state for a cue. The round context that
+   * decides teach / work / push (opening block, final seconds, pressure)
+   * lives upstream, so it is injected rather than derived here — the announcer
+   * stays pure. Defaults to `work`, the general in-round delivery.
+   */
+  performanceFor?: (cue: CueInstance) => PerformanceState
   onSkip?: (skip: AnnouncerSkip) => void
 }
 
@@ -126,6 +146,8 @@ export class CueAnnouncer {
   private readonly durations: Readonly<Partial<Record<VoiceAssetId, number>>> | undefined
   private readonly onSkip: ((skip: AnnouncerSkip) => void) | undefined
   private readonly cadence: string
+  private readonly vocabulary: CalloutVocabulary
+  private readonly performanceFor: (cue: CueInstance) => PerformanceState
 
   private playbackActive = false
   /** Phrase plans resolved at preview, so nothing is computed at announce. */
@@ -144,6 +166,8 @@ export class CueAnnouncer {
     this.durations = opts.assetDurationsMs
     this.onSkip = opts.onSkip
     this.cadence = opts.cadence ?? 'steady'
+    this.vocabulary = opts.vocabulary ?? 'numbers'
+    this.performanceFor = opts.performanceFor ?? (() => 'work')
   }
 
   setPolicy(p: VoiceCoachPolicy): void {
@@ -391,7 +415,11 @@ export class CueAnnouncer {
     if (!play) return false
 
     const combination = formatCombo(cue.tokens)
-    const lengthMs = this.output.combinationDurationMs?.(combination, this.cadence)
+    const voice: CombinationVoice = {
+      vocabulary: this.vocabulary,
+      performance: this.performanceFor(cue),
+    }
+    const lengthMs = this.output.combinationDurationMs?.(combination, this.cadence, voice)
     if (lengthMs === undefined) return false
 
     const finishBy = cue.scheduledStartMs - this.leadTimes.readyToneMs
@@ -407,7 +435,7 @@ export class CueAnnouncer {
       startAt = cue.previewAt
     }
 
-    return play.call(this.output, combination, this.cadence, startAt + clockOffsetMs)
+    return play.call(this.output, combination, this.cadence, startAt + clockOffsetMs, voice)
   }
 
   private emitReadyTone(atMs: number): void {

@@ -81,6 +81,36 @@ export type VoiceAssetId =
   | 'tone-repeat'
   | 'tone-warning'
 
+/**
+ * The callout vocabulary (D15) — which rendering of a combination is played.
+ *
+ * `numbers` says the notation ("one, two bee"); `techniques` names the moves
+ * ("jab, body cross"). It is a rendering choice over one canonical sequence,
+ * so it lives on the voice call, never in the workout data.
+ */
+export type CalloutVocabulary = 'numbers' | 'techniques'
+
+/**
+ * The performance state — the same call at three emotional levels.
+ *
+ * `teach` is warm and lands soft; `work` is the general in-round delivery;
+ * `push` leans on the athlete and shouts the finish. Chosen from round context
+ * by whoever drives the announcer, not baked into the workout.
+ */
+export type PerformanceState = 'teach' | 'work' | 'push'
+
+/**
+ * How a combination should be voiced — the axes beyond notation and cadence.
+ *
+ * Both optional: an implementation resolves the production baseline (numbers /
+ * work) when they are absent, so a caller that has not been widened still gets
+ * a valid call.
+ */
+export interface CombinationVoice {
+  vocabulary?: CalloutVocabulary
+  performance?: PerformanceState
+}
+
 /** Every id, for manifest completeness checks (M34-04). */
 export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   '1',
@@ -166,9 +196,18 @@ export interface VoiceOutputPort {
    * cadence a profile id. The domain never learns which file that resolves
    * to; that mapping belongs to the manifest.
    */
-  playCombination?(combination: string, cadence: string, atMs?: number): boolean
+  playCombination?(
+    combination: string,
+    cadence: string,
+    atMs?: number,
+    voice?: CombinationVoice,
+  ): boolean
   /** Length of that utterance, so the announcer can place it. */
-  combinationDurationMs?(combination: string, cadence: string): number | undefined
+  combinationDurationMs?(
+    combination: string,
+    cadence: string,
+    voice?: CombinationVoice,
+  ): number | undefined
   /**
    * How long a clip takes to say, if the implementation knows.
    *

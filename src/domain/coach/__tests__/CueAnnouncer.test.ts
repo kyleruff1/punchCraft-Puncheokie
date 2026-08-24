@@ -26,6 +26,7 @@ import { assetPriority } from '../assetPriority'
 import { defaultVoiceCoachPolicy, type VoiceCoachPolicy } from '../VoiceCoachPolicy'
 import {
   AUDIO_PRIORITY,
+  type CombinationVoice,
   type ToneKind,
   type VoiceAssetId,
   type VoiceOutputPort,
@@ -629,6 +630,58 @@ describe('a rendered combination is preferred over per-word clips', () => {
     h.announcer.onCueEvent(cueEvent('cue-announcing'))
     expect(h.calls).toEqual([])
     expect(h.port.calls).toEqual([])
+  })
+})
+
+describe('the callout vocabulary and performance reach the port (D15, Phase C)', () => {
+  /** Records the `voice` argument handed to the phrase methods. */
+  function voiceHarness(opts: {
+    vocabulary?: 'numbers' | 'techniques'
+    performanceFor?: (cue: CueInstance) => 'teach' | 'work' | 'push'
+  }): { announcer: CueAnnouncer; play: Array<CombinationVoice | undefined>; duration: Array<CombinationVoice | undefined> } {
+    const port = new RecordingPort()
+    const play: Array<CombinationVoice | undefined> = []
+    const duration: Array<CombinationVoice | undefined> = []
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: (_c: string, _cad: string, _at?: number, voice?: CombinationVoice) => {
+          play.push(voice)
+          return true
+        },
+        combinationDurationMs: (_c: string, _cad: string, voice?: CombinationVoice) => {
+          duration.push(voice)
+          return 600
+        },
+      }),
+      cadence: 'steady',
+      ...opts,
+    })
+    return { announcer, play, duration }
+  }
+
+  it('passes the configured vocabulary to both phrase methods', () => {
+    const h = voiceHarness({ vocabulary: 'techniques' })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(2)] })))
+    expect(h.play[0]?.vocabulary).toBe('techniques')
+    expect(h.duration[0]?.vocabulary).toBe('techniques')
+  })
+
+  it('defaults to numbers and the work state', () => {
+    const h = voiceHarness({})
+    h.announcer.onCueEvent(cueEvent('cue-announcing'))
+    expect(h.play[0]).toEqual({ vocabulary: 'numbers', performance: 'work' })
+  })
+
+  it('asks the injected selector for the performance state', () => {
+    // The round context that decides teach/work/push lives upstream, so the
+    // announcer takes a selector rather than deriving it.
+    const h = voiceHarness({ performanceFor: () => 'push' })
+    h.announcer.onCueEvent(cueEvent('cue-announcing'))
+    expect(h.play[0]?.performance).toBe('push')
+    // The duration lookup must use the *same* voice, or it would place a clip
+    // whose length belongs to a different recording.
+    expect(h.duration[0]?.performance).toBe('push')
   })
 })
 
