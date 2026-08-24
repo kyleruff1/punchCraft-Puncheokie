@@ -297,6 +297,18 @@ describe('punchCraft landing — the workout home', () => {
     press(tree, 'library-switch-by-round')
     expect(store().selectedSampleKey).toBe('switch-by-round')
   })
+
+  it('Build a workout mints a fresh seed and clears any library pick (M35)', () => {
+    // A built workout is generated from the recipe seed; each build should get
+    // a new seed so identical settings still produce a fresh session, and it
+    // must not run a previously-picked library sample.
+    const tree = render(<PunchCraftLanding />)
+    act(() => store().selectSample('switch-by-round'))
+    const before = store().recipe.seed
+    press(tree, 'setup-workout')
+    expect(store().selectedSampleKey).toBeUndefined()
+    expect(store().recipe.seed).not.toBe(before)
+  })
 })
 
 describe('Puncheokie landing — not shipped', () => {

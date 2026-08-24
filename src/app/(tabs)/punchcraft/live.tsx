@@ -37,8 +37,9 @@ import { SimControls } from '@components/workout/SimControls'
 import { colors } from '@/theme/colors'
 import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
-import { getSampleWorkout, threeRoundFundamentals } from '@domain/workout/samples'
-import { useLive, useSelectedSampleKey } from '@state/useWorkoutStore'
+import { getSampleWorkout } from '@domain/workout/samples'
+import { generateWorkout } from '@domain/workout/generateWorkout'
+import { useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
@@ -57,6 +58,7 @@ export default function LiveScreen(): React.JSX.Element {
   const router = useRouter()
   const navigation = useNavigation()
   const selectedSampleKey = useSelectedSampleKey()
+  const recipe = useRecipe()
   const live = useLive()
   const [confirmingStop, setConfirmingStop] = useState(false)
   /**
@@ -112,13 +114,13 @@ export default function LiveScreen(): React.JSX.Element {
   // (M33-01). The runner is written against the port and sees no difference.
   const { source, sim, connection } = useLivePunchSource(clock)
 
-  // The workout the athlete picked from the library, resolved from the store.
-  // Falls back to the fundamentals sample when nothing is selected (e.g. a bare
-  // "Build a workout" until the generator lands). The workout carries its own
+  // The workout to run: a library pick when the athlete chose one, otherwise a
+  // workout generated from the current recipe (M35). The generation is
+  // memoized on the recipe so it stays stable for the length of a run and only
+  // rebuilds when the recipe changes. Either way the workout carries its own
   // stance, so a switch-by-round sample opens in the stance it prescribes.
-  const workout = selectedSampleKey
-    ? getSampleWorkout(selectedSampleKey).workout
-    : threeRoundFundamentals
+  const generated = useMemo(() => generateWorkout(recipe), [recipe])
+  const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
   const runner = useWorkoutRunner({
     workout,
     source,

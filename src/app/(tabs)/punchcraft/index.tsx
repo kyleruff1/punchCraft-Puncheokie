@@ -16,6 +16,7 @@ import { useWorkoutStore } from '@state/useWorkoutStore'
 export default function PunchCraftLanding() {
   const samples = listSampleWorkouts()
   const selectSample = useWorkoutStore((s) => s.selectSample)
+  const startNewBuild = useWorkoutStore((s) => s.startNewBuild)
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
@@ -38,7 +39,14 @@ export default function PunchCraftLanding() {
       </Text>
 
       <Link href="/(tabs)/punchcraft/recipe" asChild>
-        <Pressable accessibilityRole="button" style={styles.primaryAction} testID="setup-workout">
+        <Pressable
+          accessibilityRole="button"
+          style={styles.primaryAction}
+          testID="setup-workout"
+          // Mint a fresh seed and drop any library pick, so the recipe opens on
+          // a new generated workout rather than the last one built or picked.
+          onPress={() => startNewBuild()}
+        >
           <Text style={styles.primaryActionText}>Build a workout</Text>
         </Pressable>
       </Link>
@@ -65,7 +73,7 @@ export default function PunchCraftLanding() {
           </Link>
         ))}
         <Text style={styles.sectionNote}>
-          More designed workouts arrive with the generator; these three are hand-authored.
+          These three are hand-authored; Build a workout generates a fresh one from your recipe.
         </Text>
       </View>
 

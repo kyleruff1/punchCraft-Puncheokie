@@ -64,8 +64,22 @@ export interface WorkoutStoreState {
   /** Patch the recipe; validation and summary are recomputed from the result. */
   setRecipe: (patch: Partial<WorkoutRecipe>) => void
   selectSample: (key: SampleWorkoutKey | undefined) => void
+  /**
+   * Begin a fresh built workout: mint a new seed and clear any library pick,
+   * so the generator produces a new session even at identical settings.
+   */
+  startNewBuild: () => void
   setAdvancedOpen: (open: boolean) => void
   resetRecipe: () => void
+}
+
+/**
+ * A fresh generator seed. The state layer may read the clock and `Math.random`
+ * — only `src/domain/**` is held to purity — and the seed it mints is what
+ * keeps the pure generator's output reproducible once chosen.
+ */
+function freshSeed(): string {
+  return `build-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 /**
@@ -97,6 +111,10 @@ export const useWorkoutStore = create<WorkoutStoreState>((set) => ({
 
   selectSample: (key) => {
     set({ selectedSampleKey: key })
+  },
+
+  startNewBuild: () => {
+    set((prev) => ({ ...derive({ ...prev.recipe, seed: freshSeed() }), selectedSampleKey: undefined }))
   },
 
   setAdvancedOpen: (open) => {
