@@ -17,10 +17,12 @@ import {
   COMBO_TIGHTNESS,
   CueAnnouncer,
   DEFAULT_ANNOUNCE_LEAD_TIMES,
+  deliveryForCadence,
   FINAL_WARNING_AT_MS,
   MIN_TIGHTNESS,
   SINGLE_TIGHTNESS,
   type AnnouncerSkip,
+  type CueDelivery,
 } from '../CueAnnouncer'
 import { assetPriority } from '../assetPriority'
 import { defaultVoiceCoachPolicy, type VoiceCoachPolicy } from '../VoiceCoachPolicy'
@@ -70,6 +72,9 @@ class RecordingPort implements VoiceOutputPort {
 
   assets(): VoiceAssetId[] {
     return this.calls.flatMap((c) => (c.kind === 'asset' ? [c.id] : []))
+  }
+  tones(): ToneKind[] {
+    return this.calls.flatMap((c) => (c.kind === 'tone' ? [c.tone] : []))
   }
   reset(): void {
     this.calls.length = 0
@@ -144,13 +149,17 @@ interface Harness {
   skips: AnnouncerSkip[]
 }
 
-function harness(over: Partial<VoiceCoachPolicy> = {}, opts: { durations?: boolean } = {}): Harness {
+function harness(
+  over: Partial<VoiceCoachPolicy> = {},
+  opts: { durations?: boolean; delivery?: CueDelivery } = {},
+): Harness {
   const port = new RecordingPort()
   const skips: AnnouncerSkip[] = []
   const announcer = new CueAnnouncer({
     policy: { ...defaultVoiceCoachPolicy(), ...over },
     output: port,
     onSkip: (s) => skips.push(s),
+    ...(opts.delivery ? { delivery: opts.delivery } : {}),
     // 400 ms a clip: two clips (800 ms) do not fit the 650 ms the fixture
     // leaves between the announce moment and the ready tone.
     ...(opts.durations
@@ -382,6 +391,49 @@ describe('each style calls the combination its own way (doc §18.1)', () => {
     h.port.reset()
     h.announcer.onCueEvent(tokenDue(c, 0))
     expect(h.port.calls).toEqual([])
+  })
+})
+
+describe('in-time delivery calls each punch as it lands (doc §18.1)', () => {
+  it('says nothing up front, then one token at a time', () => {
+    const h = harness({}, { delivery: 'in-time' })
+    const c = cue()
+    h.announcer.onCueEvent(cueEvent('cue-announcing', c))
+    // No phrase ahead of the throw — only the ready tone.
+    expect(h.port.assets()).toEqual(['tone-ready'])
+
+    h.port.reset()
+    h.announcer.onCueEvent(tokenDue(c, 0))
+    h.announcer.onCueEvent(tokenDue(c, 1))
+    expect(h.port.calls).toEqual([
+      { kind: 'asset', id: '1' },
+      { kind: 'asset', id: '2' },
+    ])
+  })
+
+  it('does not re-call a repeated combo — later reps are tone-marked, not spoken', () => {
+    const h = harness({}, { delivery: 'in-time' })
+    const rep1 = cue({ repeatIndex: 1 })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', rep1))
+    // Repeat mark + ready tone, no phrase.
+    expect(h.port.tones()).toContain('repeat')
+
+    h.port.reset()
+    // A token becoming due on a later rep must not speak — the combo was
+    // already called on the first rep.
+    h.announcer.onCueEvent(tokenDue(rep1, 0))
+    expect(h.port.calls).toEqual([])
+  })
+})
+
+describe('deliveryForCadence maps the cadence to the delivery (doc §18.1)', () => {
+  it('calls each punch in time only at the slow technical cadence', () => {
+    const inTime: CueDelivery = 'in-time'
+    const callAhead: CueDelivery = 'call-ahead'
+    expect(deliveryForCadence('technical')).toBe(inTime)
+    for (const fast of ['steady', 'pressure', 'sprint']) {
+      expect(deliveryForCadence(fast)).toBe(callAhead)
+    }
   })
 })
 

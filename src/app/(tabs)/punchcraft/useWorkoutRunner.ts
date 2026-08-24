@@ -45,7 +45,7 @@ import type { CueEvent, SessionPhaseEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
-import { CueAnnouncer } from '@domain/coach/CueAnnouncer'
+import { CueAnnouncer, deliveryForCadence } from '@domain/coach/CueAnnouncer'
 import { selectPerformanceState } from '@domain/coach/performanceState'
 import type { VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
 import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
@@ -700,6 +700,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               ? selectPerformanceState({ ...meta, cadenceProfile: workout.recipe.cadenceProfile })
               : 'work'
           },
+          // Call the combo ahead of the throw at speed; call each punch in time
+          // at a slow technical cadence (doc §18.1).
+          delivery: deliveryForCadence(workout.recipe.cadenceProfile),
         })
       : null
     announcerRef.current = announcer

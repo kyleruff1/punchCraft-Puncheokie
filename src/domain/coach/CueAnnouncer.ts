@@ -99,6 +99,24 @@ export interface AnnouncerLeadTimes {
  * tone — it is still spoken, because a combination nobody named is worse than
  * one named slightly late.
  */
+/**
+ * Whether the coach calls a combination ahead of the throw or in time with it.
+ * Selected by cadence (technical → `in-time`; steady/pressure/sprint →
+ * `call-ahead`).
+ */
+export type CueDelivery = 'call-ahead' | 'in-time'
+
+/**
+ * Pick the delivery from the cadence profile (doc §18.1).
+ *
+ * Only the slow `technical` cadence has room to call each punch as it lands;
+ * everything faster calls the whole combination ahead of the throw, because
+ * there is no gap to fit a per-token call into.
+ */
+export function deliveryForCadence(cadenceProfile: string): CueDelivery {
+  return cadenceProfile === 'technical' ? 'in-time' : 'call-ahead'
+}
+
 export interface AnnouncerSkip {
   cueId: string
   reason: 'compressed' | 'overruns'
@@ -136,6 +154,18 @@ export interface CueAnnouncerOptions {
    * stays pure. Defaults to `work`, the general in-round delivery.
    */
   performanceFor?: (cue: CueInstance) => PerformanceState
+  /**
+   * Whether the combination is called **ahead** of execution or **in time**
+   * with it (doc §18.1). `call-ahead` speaks the whole combination during the
+   * preview, finishing by the ready tone, and the athlete then throws it —
+   * right for faster cadences where there is no room to call each punch as it
+   * lands. `in-time` says nothing up front and lets each token be called the
+   * moment its node lights (via `onTokenDue`), which suits a slow technical
+   * cadence. Chosen by cadence upstream and injected; defaults to
+   * `call-ahead`. Does not change the repeat collapse — later reps are still
+   * marked with a tone, not re-called.
+   */
+  delivery?: CueDelivery
   onSkip?: (skip: AnnouncerSkip) => void
 }
 
@@ -148,6 +178,7 @@ export class CueAnnouncer {
   private readonly cadence: string
   private readonly vocabulary: CalloutVocabulary
   private readonly performanceFor: (cue: CueInstance) => PerformanceState
+  private readonly delivery: CueDelivery
 
   private playbackActive = false
   /** Phrase plans resolved at preview, so nothing is computed at announce. */
@@ -168,6 +199,7 @@ export class CueAnnouncer {
     this.cadence = opts.cadence ?? 'steady'
     this.vocabulary = opts.vocabulary ?? 'numbers'
     this.performanceFor = opts.performanceFor ?? (() => 'work')
+    this.delivery = opts.delivery ?? 'call-ahead'
   }
 
   setPolicy(p: VoiceCoachPolicy): void {
@@ -369,6 +401,16 @@ export class CueAnnouncer {
       return
     }
 
+    // In-time delivery (a slow technical cadence): nothing is said up front.
+    // Each token is called the moment its node lights, through `onTokenDue`,
+    // so the call lands on the punch instead of ahead of it. Later reps were
+    // already tone-marked above, and `onTokenDue` only calls tokens on the
+    // first rep, so this does not re-call a repeated combo.
+    if (this.delivery === 'in-time') {
+      this.emitReadyTone(readyAt)
+      return
+    }
+
     if (!this.speakable('punch-command')) {
       this.emitReadyTone(readyAt)
       return
@@ -530,7 +572,11 @@ export class CueAnnouncer {
   }
 
   private onTokenDue(cue: CueInstance, tokenIndex: number): void {
-    if (this.policy.style !== 'follow-the-call') return
+    // Two ways a token is spoken as it lands: the `follow-the-call` style, and
+    // `in-time` delivery on the first rep of a block. On later reps the combo
+    // is tone-marked, not re-called, so per-token speech is suppressed there.
+    const inTime = this.delivery === 'in-time' && cue.repeatIndex === 0
+    if (this.policy.style !== 'follow-the-call' && !inTime) return
     const token = cue.tokens[tokenIndex]
     if (!token) return
 
