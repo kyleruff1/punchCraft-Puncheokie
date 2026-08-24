@@ -288,6 +288,15 @@ describe('punchCraft landing — the workout home', () => {
       expect(allText(tree)).toContain(sample.name)
     }
   })
+
+  it('picking a library workout stores it so the run uses it, not the default', () => {
+    // The gap this closes: the live screen used to run a hardcoded sample. Now
+    // tapping a card records the selection, which the live screen reads.
+    const tree = render(<PunchCraftLanding />)
+    expect(store().selectedSampleKey).toBeUndefined()
+    press(tree, 'library-switch-by-round')
+    expect(store().selectedSampleKey).toBe('switch-by-round')
+  })
 })
 
 describe('Puncheokie landing — not shipped', () => {

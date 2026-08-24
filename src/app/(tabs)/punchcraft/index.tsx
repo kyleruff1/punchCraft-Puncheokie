@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { listSampleWorkouts } from '@domain/workout/samples'
+import { useWorkoutStore } from '@state/useWorkoutStore'
 
 /**
  * punchCraft — the workout home.
@@ -14,6 +15,7 @@ import { listSampleWorkouts } from '@domain/workout/samples'
  */
 export default function PunchCraftLanding() {
   const samples = listSampleWorkouts()
+  const selectSample = useWorkoutStore((s) => s.selectSample)
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
@@ -53,6 +55,9 @@ export default function PunchCraftLanding() {
               accessibilityRole="button"
               style={styles.libraryRow}
               testID={`library-${sample.key}`}
+              // Pick the workout before the recipe screen opens, so both the
+              // recipe and the live run use it rather than the default.
+              onPress={() => selectSample(sample.key)}
             >
               <Text style={styles.libraryName}>{sample.name}</Text>
               <Text style={styles.libraryDescription}>{sample.description}</Text>

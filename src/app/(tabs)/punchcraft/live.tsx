@@ -37,8 +37,8 @@ import { SimControls } from '@components/workout/SimControls'
 import { colors } from '@/theme/colors'
 import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
-import { threeRoundFundamentals } from '@domain/workout/samples'
-import { useLive, useRecipe } from '@state/useWorkoutStore'
+import { getSampleWorkout, threeRoundFundamentals } from '@domain/workout/samples'
+import { useLive, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
@@ -56,7 +56,7 @@ const LIVE_KEEP_AWAKE_TAG = 'punchcraft-live'
 export default function LiveScreen(): React.JSX.Element {
   const router = useRouter()
   const navigation = useNavigation()
-  const recipe = useRecipe()
+  const selectedSampleKey = useSelectedSampleKey()
   const live = useLive()
   const [confirmingStop, setConfirmingStop] = useState(false)
   /**
@@ -112,13 +112,17 @@ export default function LiveScreen(): React.JSX.Element {
   // (M33-01). The runner is written against the port and sees no difference.
   const { source, sim, connection } = useLivePunchSource(clock)
 
-  // The workout under test until the generator (M35) and the library picker
-  // hand one in. The recipe's stance still drives hand resolution.
-  const workout = threeRoundFundamentals
+  // The workout the athlete picked from the library, resolved from the store.
+  // Falls back to the fundamentals sample when nothing is selected (e.g. a bare
+  // "Build a workout" until the generator lands). The workout carries its own
+  // stance, so a switch-by-round sample opens in the stance it prescribes.
+  const workout = selectedSampleKey
+    ? getSampleWorkout(selectedSampleKey).workout
+    : threeRoundFundamentals
   const runner = useWorkoutRunner({
     workout,
     source,
-    stance: recipe.defaultStance,
+    stance: workout.recipe.defaultStance,
     clock,
     // `setEndOutcome` is stable, which the runner requires — an unstable
     // callback here would rebuild the cue engine on every render.
