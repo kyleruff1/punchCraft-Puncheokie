@@ -39,7 +39,19 @@ export function readWav(path) {
   return { buffer, fmt, data, bytesPerFrame, frames: Math.floor(data.size / bytesPerFrame) }
 }
 
-export function trimEnds(path, { headMs = 20, tailMs = 100, thresholdRatio = 0.02 } = {}) {
+/**
+ * Trim dead air from both ends.
+ *
+ * `thresholdRatio` is deliberately low and `headMs` generous. A speech onset
+ * ramps: the /w/ of "one", the burst-then-vowel of "two", the /d/ of "duck"
+ * all start well under a couple of percent of full scale and climb over tens
+ * of milliseconds. Detecting at 2% and keeping only 20ms before it cut that
+ * ramp away, so every clip began mid-sound — audibly truncated, and flatter,
+ * because the attack transient is most of what makes a call sound punched
+ * rather than spoken. Detecting at 0.4% with a 60ms margin keeps the attack
+ * while still removing the silence Kokoro leaves at the head.
+ */
+export function trimEnds(path, { headMs = 60, tailMs = 100, thresholdRatio = 0.004 } = {}) {
   const wav = readWav(path)
   if (!wav) return null
   const { buffer, fmt, data, bytesPerFrame, frames } = wav
