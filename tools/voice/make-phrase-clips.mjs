@@ -113,22 +113,31 @@ function findFfmpeg() {
 const FFMPEG = findFfmpeg()
 
 /**
- * Every combination the authored workouts actually call.
+ * Every combination the workout corpus can call.
  *
- * Read from the sample sources rather than kept as a second list here. A
+ * Scanned from the sources rather than kept as a second list here — a
  * hand-maintained list drifts silently: the workout calls a combination, no
  * phrase exists, and the coach falls back to the per-word path this whole file
- * exists to replace.
+ * exists to replace. Two sources feed it:
+ *
+ *   - the hand-authored samples (`samples/*.ts`), and
+ *   - the generator's motif library (`comboLibrary.ts`, M35) — the generator
+ *     emits those notations verbatim, so rendering them here is what gives a
+ *     generated workout the single-take persona voice instead of per-word.
  *
  * Single-token entries are skipped — one punch is a standalone clip, and
  * rendering it as a "phrase" would just be the same word again.
  */
-function combinationsFromSamples() {
+function combinationsFromCorpus() {
   const dir = join('src', 'domain', 'workout', 'samples')
+  const sources = readdirSync(dir)
+    .filter((file) => file.endsWith('.ts'))
+    .map((file) => join(dir, file))
+  sources.push(join('src', 'domain', 'workout', 'comboLibrary.ts'))
+
   const found = new Set()
-  for (const file of readdirSync(dir)) {
-    if (!file.endsWith('.ts')) continue
-    const source = readFileSync(join(dir, file), 'utf8')
+  for (const path of sources) {
+    const source = readFileSync(path, 'utf8')
     for (const match of source.matchAll(/notation:\s*'([^']+)'/g)) {
       const notation = match[1]
       if (notation.split('-').length > 1) found.add(notation)
@@ -207,8 +216,26 @@ function measureWordOnsets(path, expectedWords) {
 mkdirSync(OUT_ROOT, { recursive: true })
 const cwd = process.cwd()
 
+// `--only=<substr>` renders just the combinations containing the substring — a
+// fast smoke test of the pipeline (e.g. `--only=1-2` or `--only=slip`) without
+// waiting on the whole corpus.
+const onlyArg = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length)
+const combinations = combinationsFromCorpus().filter((c) => !onlyArg || c.includes(onlyArg))
+
+// `--list` prints the corpus and the clip count without rendering — a fast way
+// to see what a full render will cover after the motif library changes.
+if (process.argv.includes('--list')) {
+  const total = combinations.length * CADENCES.length * VOCABULARIES.length * PERFORMANCES.length
+  console.log(combinations.join('\n'))
+  console.log(
+    `\n${combinations.length} combinations × ${CADENCES.length} cadences × ` +
+      `${VOCABULARIES.length} vocab × ${PERFORMANCES.length} performances = ${total} clips`,
+  )
+  process.exit(0)
+}
+
 const jobs = []
-for (const combination of combinationsFromSamples()) {
+for (const combination of combinations) {
   const tokens = combination.split('-').map((t) => t.trim())
   for (const cadence of CADENCES) {
     for (const vocabulary of VOCABULARIES) {
@@ -329,6 +356,13 @@ for (const job of jobs) {
 
   const kb = (statSync(job.wav).size / 1024).toFixed(0)
   console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB`)
+}
+
+// A `--only` smoke render is a subset: writing the index or the app manifest
+// would drop every combination it did not render, so those writes are skipped.
+if (onlyArg) {
+  console.log(`\nSmoke render of ${index.length} clip(s) for --only=${onlyArg}; index and manifest left untouched.`)
+  process.exit(0)
 }
 
 writeFileSync(join(OUT_ROOT, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
