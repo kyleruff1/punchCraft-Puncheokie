@@ -1,33 +1,52 @@
 /**
  * Persona audition — the decisive listening test.
  *
- * Six phrases × four voice blends × two callout vocabularies × three
- * performance states = 144 short assets. Deliberately **not** the full
- * library: the point is to settle the persona before rendering hundreds of
- * clips that would all have to be thrown away if the blend is wrong.
+ * Deliberately **not** the full library. Each round settles exactly one
+ * question before hundreds of clips are rendered against an answer that turns
+ * out to be wrong, and the rounds are cumulative:
+ *
+ * 1. **Timbre** — four voice blends. `aged-melodic` won across every phrase.
+ * 2. **Expression** — three depths of pitch movement, plus real beats around
+ *    a defense token. `theatrical` won across every phrase.
+ * 3. **Texture** — the production chain. Under test now.
+ *
+ * One axis varies per round and everything else is pinned, because comparing
+ * two things at once tells you only that they differ. `AXIS` names the
+ * dimension and `VARIANTS` lists its values; the audition screen reads both
+ * from the generated manifest, so a new round needs no UI change.
  *
  * The phrase set is chosen to expose the things that actually differ:
  *
- * - `1` and `2` are single strikes, which use the striking profile rather
- *   than the flowing one.
+ * - `1` is a single strike, which uses the striking profile, not the flowing
+ *   one.
  * - `1-2` is the shortest real combination.
- * - `1-1-2` repeats a word, which is where concatenation used to fail.
  * - `1-2-3-2` is two groups — the "one-TWO | three-TWO" shape.
- * - `1-2-roll-3-2` breaks the melodic run with a defense and resumes it.
+ * - `1-2-roll-3-2` and `1-slip-2` break the melodic run and resume it.
+ * - `2-3-2-roll-1-2` ends on a movement, where there is nothing to resume.
  *
- * Pipeline per asset: compile a plan → Kokoro renders one utterance →
- * parselmouth applies the pitch contour and aged drift → ffmpeg applies the
- * gym production chain → trim only the outer silence.
+ * Pipeline per asset: compile a plan → Kokoro renders one utterance → the
+ * movement beats are set → parselmouth applies the pitch contour and aged
+ * drift → the outer silence is trimmed → ffmpeg applies the texture chain.
  *
  * Run: node tools/voice/make-audition.mjs
  */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { compilePhrase } from './prosody.mjs'
+import { TEXTURES, textureChain } from './texture.mjs'
 
 const OUT_ROOT = join('assets', 'voice', 'audition')
 
@@ -39,26 +58,30 @@ const OUT_ROOT = join('assets', 'voice', 'audition')
  * pre-selecting three: the fourth costs about thirty seconds, which is far
  * less than the cost of guessing wrong.
  */
-const BLENDS = {
-  'aged-melodic': { am_michael: 0.45, am_fenrir: 0.25, am_puck: 0.2, am_santa: 0.1 },
-}
+/* ------------------------------------------------------- the round under test */
 
-/**
- * Round two settles **expression**, not timbre.
- *
- * Round one compared four blends and aged-melodic won across every phrase, so
- * the blend axis is spent. What it also showed is that the winning voice was
- * still too flat, which is a prosody problem: a different blend would only
- * have produced a different monotone.
- *
- * The phrase set leans on movement tokens, because that is where the delivery
- * was weakest — the roll was being read as one more item in a list.
- */
-const EXPRESSIONS = ['measured', 'expressive', 'theatrical']
+/** The dimension being compared. Everything below it is pinned. */
+const AXIS = 'texture'
+const VARIANTS = Object.keys(TEXTURES)
+
+/** Settled in round one. */
+const BLEND_NAME = 'aged-melodic'
+const BLENDS = {
+  [BLEND_NAME]: { am_michael: 0.45, am_fenrir: 0.25, am_puck: 0.2, am_santa: 0.1 },
+}
+/** Settled in round two. */
+const EXPRESSION = 'theatrical'
 
 const PHRASES = ['1', '1-2', '1-2-3-2', '1-2-roll-3-2', '1-slip-2', '2-3-2-roll-1-2']
 const VOCABULARIES = ['numbers', 'techniques']
-const PERFORMANCES = ['teach', 'work', 'push']
+/**
+ * `teach` is dropped this round.
+ *
+ * Texture is judged on the states that carry a round. A teaching call is the
+ * one place where the chain is least under stress, so including it would
+ * triple the listening without adding a way to tell the candidates apart.
+ */
+const PERFORMANCES = ['work', 'push']
 /** One cadence for the audition: the persona, not the tempo, is under test. */
 const CADENCE = 'steady'
 
@@ -91,31 +114,9 @@ const FFMPEG = findFfmpeg()
 
 /* --------------------------------------------------------------- processing */
 
-/**
- * The gym production chain, plus formant scaling for age.
- *
- * A single strike is compressed harder and left drier than a combination: it
- * has to arrive like the coach just saw an opening, and a tail on a 300 ms
- * command only blurs the next one.
- */
-function postProcess(path, { profile, finalAccentDb }) {
-  const single = profile === 'single'
-  const filters = [
-    'highpass=f=120',
-    // Formant scale below 1 lengthens the vocal tract — the resonance of an
-    // older, heavier voice. Pitch is handled by Praat, so this shifts timbre
-    // only.
-    'rubberband=pitch=1.0:formant=preserved:pitchq=quality',
-    `acompressor=threshold=${single ? '-26dB' : '-24dB'}:ratio=${single ? 7 : 5}:attack=${single ? 2 : 4}:release=${single ? 60 : 80}:makeup=${single ? 5 : 4}`,
-    'equalizer=f=2400:width_type=o:width=1.0:g=4',
-    'equalizer=f=3800:width_type=o:width=1.0:g=3',
-    `asoftclip=type=tanh:param=${single ? 0.72 : 0.65}`,
-    // A gym, not a hall. Shorter still on singles.
-    single ? 'aecho=0.9:0.8:13:0.06' : 'aecho=0.9:0.75:17|29:0.12|0.07',
-    'alimiter=limit=0.95:attack=2:release=40',
-    `loudnorm=I=${(-15 + finalAccentDb * 0.25).toFixed(1)}:TP=-1.2:LRA=8`,
-    'afade=t=in:st=0:d=0.006',
-  ].join(',')
+/** Apply one texture's filtergraph, in place. See `texture.mjs`. */
+function postProcess(path, { texture, profile, finalAccentDb }) {
+  const filters = textureChain(texture, { profile, finalAccentDb })
 
   const temp = `${path}.p.wav`
   execFileSync(
@@ -330,66 +331,82 @@ function measureDuration(path) {
 mkdirSync(OUT_ROOT, { recursive: true })
 const cwd = process.cwd()
 
-const jobs = []
+/**
+ * One synthesis per phrase, fanned out to every variant.
+ *
+ * Only the texture differs between variants, and it is applied last. Running
+ * Kokoro once per variant would burn five times the render for identical
+ * audio — and worse, it would make the comparison approximate: the drift
+ * oscillator and the synthesizer's own variation mean two renders of the same
+ * text are never bit-identical, so any difference heard could belong to the
+ * take rather than to the chain. Sharing one source removes that doubt.
+ */
+const sources = []
 for (const combination of PHRASES) {
   const tokens = combination.split('-').map((t) => t.trim())
-  for (const blend of Object.keys(BLENDS)) {
-    for (const vocabulary of VOCABULARIES) {
-      for (const performance of PERFORMANCES) {
-        for (const expression of EXPRESSIONS) {
-          const plan = compilePhrase({ tokens, vocabulary, cadence: CADENCE, performance, expression })
-          // A lone command is a bark. At the combination speed it arrives as
-          // an announcement, which is the opposite of "the coach just saw an
-          // opening".
-          if (plan.profile === 'single') plan.speed = Math.round(plan.speed * 1.3 * 100) / 100
-          const key = `${combination}.${blend}.${vocabulary}.${performance}.${expression}`
-          jobs.push({
-            key,
-            combination,
-            blend,
-            vocabulary,
-            performance,
-            expression,
-            plan,
-            wav: join(cwd, OUT_ROOT, `${key}.wav`),
-          })
-        }
-      }
+  for (const vocabulary of VOCABULARIES) {
+    for (const performance of PERFORMANCES) {
+      const plan = compilePhrase({
+        tokens,
+        vocabulary,
+        cadence: CADENCE,
+        performance,
+        expression: EXPRESSION,
+      })
+      // A lone command is a bark. At the combination speed it arrives as an
+      // announcement, which is the opposite of "the coach just saw an
+      // opening".
+      if (plan.profile === 'single') plan.speed = Math.round(plan.speed * 1.3 * 100) / 100
+      const key = `${combination}.${vocabulary}.${performance}`
+      sources.push({
+        key,
+        combination,
+        vocabulary,
+        performance,
+        plan,
+        wav: join(cwd, OUT_ROOT, `_src.${key}.wav`),
+      })
     }
   }
 }
 
-console.log(`Rendering ${jobs.length} audition assets…`)
+console.log(`Rendering ${sources.length} phrases → ${sources.length * VARIANTS.length} assets…`)
 
 const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
   input: JSON.stringify({
     blends: BLENDS,
-    jobs: jobs.map((j) => ({ path: j.wav, text: j.plan.renderedText, speed: j.plan.speed, blend: j.blend })),
+    jobs: sources.map((s) => ({
+      path: s.wav,
+      text: s.plan.renderedText,
+      speed: s.plan.speed,
+      blend: BLEND_NAME,
+    })),
   }),
   encoding: 'utf8',
   maxBuffer: 32 * 1024 * 1024,
 })
-const renderFailures = renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))
-for (const failure of renderFailures) console.error(`  ${failure}`)
+for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
+  console.error(`  ${failure}`)
+}
 
-// Beats first: the contour is anchored to normalized positions, so setting
-// the pauses before it runs is what keeps the accents landing on the right
+// Beats before the contour: the contour is anchored to normalized positions,
+// so setting the pauses first is what keeps the accents landing on the right
 // words once the phrase has changed length.
 console.log('Setting movement beats…')
-for (const job of jobs) {
-  if (!existsSync(job.wav)) continue
-  insertBeats(job.wav, job.plan.beats)
+for (const source of sources) {
+  if (!existsSync(source.wav)) continue
+  insertBeats(source.wav, source.plan.beats)
 }
 
 console.log('Applying pitch contour and aged drift…')
 const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour.py')], {
   input: JSON.stringify(
-    jobs
-      .filter((j) => existsSync(j.wav))
-      .map((j) => ({
-        path: j.wav,
-        contour: j.plan.pitchContourSemitones,
-        shiftSemitones: j.plan.pitchShiftSemitones,
+    sources
+      .filter((s) => existsSync(s.wav))
+      .map((s) => ({
+        path: s.wav,
+        contour: s.plan.pitchContourSemitones,
+        shiftSemitones: s.plan.pitchShiftSemitones,
         driftSemitones: DRIFT_SEMITONES,
         driftHz: DRIFT_HZ,
       })),
@@ -397,33 +414,61 @@ const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour
   encoding: 'utf8',
   maxBuffer: 32 * 1024 * 1024,
 })
-const contourFailures = contourOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))
-for (const failure of contourFailures) console.error(`  ${failure}`)
+for (const failure of contourOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
+  console.error(`  ${failure}`)
+}
 
+// Trim before the texture, never after. Processing first was the bug that
+// cost two rounds: heavy compression lifts the echo tail and the noise floor,
+// so the trimmer then reads that raised tail as signal and keeps it. Every
+// single strike came out 150-300 ms long for that reason alone. Trimming the
+// shared source also means every variant starts from the same edit.
+console.log('Trimming…')
+for (const source of sources) {
+  if (!existsSync(source.wav)) continue
+  trimEnds(source.wav, source.plan.profile === 'single' ? { tailMs: 70 } : {})
+}
+
+console.log(`Applying ${VARIANTS.length} textures…`)
 const index = []
-for (const job of jobs) {
-  if (!existsSync(job.wav)) continue
-  // Trim first, process second. Processing first was the bug: heavy
-  // compression lifts the echo tail and the noise floor, so the trimmer then
-  // reads that raised tail as signal and keeps it. Every single strike came
-  // out 150-300 ms longer than its target for that reason alone.
-  trimEnds(job.wav, job.plan.profile === 'single' ? { tailMs: 70 } : {})
-  postProcess(job.wav, { profile: job.plan.profile, finalAccentDb: job.plan.finalAccentDb })
-  const durationMs = measureDuration(job.wav)
-  index.push({
-    cueId: job.key,
-    combination: job.combination,
-    blend: job.blend,
-    vocabulary: job.vocabulary,
-    performance: job.performance,
-    expression: job.expression,
-    cadence: CADENCE,
-    file: `${job.key}.wav`,
-    spokenText: job.plan.renderedText,
-    durationMs,
-    profile: job.plan.profile,
-    plan: job.plan,
-  })
+for (const source of sources) {
+  if (!existsSync(source.wav)) continue
+  for (const variant of VARIANTS) {
+    const key = `${source.key}.${variant}`
+    const file = `${key}.wav`
+    const path = join(cwd, OUT_ROOT, file)
+    copyFileSync(source.wav, path)
+    try {
+      postProcess(path, {
+        texture: variant,
+        profile: source.plan.profile,
+        finalAccentDb: source.plan.finalAccentDb,
+      })
+    } catch (error) {
+      // One bad filtergraph must not take the round down; a missing variant
+      // is visible on the audition screen, a half-written index is not.
+      console.error(`  FAIL ${key}: ${error.message.split('\n')[0]}`)
+      rmSync(path, { force: true })
+      continue
+    }
+    index.push({
+      cueId: key,
+      combination: source.combination,
+      axis: AXIS,
+      variant,
+      blend: BLEND_NAME,
+      expression: EXPRESSION,
+      vocabulary: source.vocabulary,
+      performance: source.performance,
+      cadence: CADENCE,
+      file,
+      spokenText: source.plan.renderedText,
+      durationMs: measureDuration(path),
+      profile: source.plan.profile,
+      plan: source.plan,
+    })
+  }
+  rmSync(source.wav, { force: true })
 }
 
 writeFileSync(join(OUT_ROOT, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
@@ -443,10 +488,10 @@ const lines = [
   'export interface AuditionAsset {',
   '  cueId: string',
   '  combination: string',
-  '  blend: string',
+  '  variant: string',
+  '  axis: string',
   '  vocabulary: string',
   '  performance: string',
-  '  expression: string',
   '  spokenText: string',
   '  durationMs: number',
   '  profile: string',
@@ -460,10 +505,10 @@ for (const entry of index) {
     '  {',
     `    cueId: ${JSON.stringify(entry.cueId)},`,
     `    combination: ${JSON.stringify(entry.combination)},`,
-    `    blend: ${JSON.stringify(entry.blend)},`,
+    `    variant: ${JSON.stringify(entry.variant)},`,
+    `    axis: ${JSON.stringify(entry.axis)},`,
     `    vocabulary: ${JSON.stringify(entry.vocabulary)},`,
     `    performance: ${JSON.stringify(entry.performance)},`,
-    `    expression: ${JSON.stringify(entry.expression)},`,
     `    spokenText: ${JSON.stringify(entry.spokenText)},`,
     `    durationMs: ${entry.durationMs},`,
     `    profile: ${JSON.stringify(entry.profile)},`,
@@ -479,11 +524,28 @@ const outOfRange = singles.filter((e) => e.durationMs < 220 || e.durationMs > 34
 let bytes = 0
 for (const entry of index) bytes += statSync(join(cwd, OUT_ROOT, entry.file)).size
 
-console.log(`\n${index.length}/${jobs.length} assets, ${(bytes / 1024 / 1024).toFixed(1)} MB`)
-console.log(`singles within the 220-340 ms target: ${singles.length - outOfRange.length}/${singles.length}`)
-if (outOfRange.length > 0) {
+const expected = sources.length * VARIANTS.length
+console.log(`\n${index.length}/${expected} assets, ${(bytes / 1024 / 1024).toFixed(1)} MB`)
+
+// Broken out per variant, because the whole point of the round is that they
+// differ — a texture that quietly runs long is a timing problem rather than a
+// matter of taste, and it would hide inside a single average.
+const mean = (list) =>
+  list.length === 0 ? 0 : Math.round(list.reduce((a, e) => a + e.durationMs, 0) / list.length)
+for (const variant of VARIANTS) {
+  const of = index.filter((e) => e.variant === variant)
+  if (of.length === 0) {
+    console.log(`  ${variant.padEnd(10)} MISSING`)
+    continue
+  }
   console.log(
-    `  outside: ${outOfRange.slice(0, 6).map((e) => `${e.cueId} ${e.durationMs}ms`).join(', ')}`,
+    `  ${variant.padEnd(10)} ${of.length} assets   ` +
+      `singles ~${mean(of.filter((e) => e.profile === 'single'))}ms   ` +
+      `combos ~${mean(of.filter((e) => e.profile !== 'single'))}ms`,
   )
 }
+
+console.log(
+  `\nsingles within the 220-340 ms target: ${singles.length - outOfRange.length}/${singles.length}`,
+)
 console.log('Wrote src/audio/voiceAssets/auditionManifest.ts')

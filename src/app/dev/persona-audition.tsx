@@ -1,23 +1,24 @@
 /**
- * Persona audition — round two: expression. **Dev route.**
+ * Persona audition. **Dev route.**
  *
- * Round one compared four blends and aged-melodic won across the board, so the
- * timbre question is settled and that axis is gone. What remained was that the
- * winning voice was still too flat — which no blend would have fixed, because
- * a different voice only gives a different monotone.
+ * One axis at a time, everything else pinned — comparing two things at once
+ * tells you only that they differ. The generator decides which axis is under
+ * test and writes it into the manifest, so this screen never needs editing
+ * between rounds: it reads `axis`, groups by `variant`, and lays out whatever
+ * it finds.
  *
- * So this compares **three depths of pitch movement** on the one voice, plus
- * the reworked movement handling: a real beat on either side of a defense
- * token, and the token itself landing hard instead of sitting in the list.
+ * Settled so far: **timbre** (aged-melodic, round one) and **expression**
+ * (theatrical, round two, with real beats around a defense token).
  *
  * Run it **with music playing**. Every one of these clips has to survive a
  * gym mix, and a voice that reads beautifully in silence can vanish under a
  * track.
  *
- * What to listen for: whether the accents land on the right punches, whether
- * the beat around the roll reads as a break or as a stumble, final-punch
- * authority, and — the one that only shows up on repeat — whether the
- * theatrical setting becomes tiring after twenty calls.
+ * What to listen for, in rough order of how expensive it is to get wrong:
+ * whether *three*, *five* and *slip* stay intelligible over the mix; whether
+ * the voice reads as weathered rather than merely processed; final-punch
+ * authority; and — the one that only shows up on repeat — whether it becomes
+ * tiring after twenty calls.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -35,7 +36,9 @@ const uniq = (values: readonly string[]): string[] => [...new Set(values)]
 const PHRASES = uniq(auditionAssets.map((a) => a.combination))
 const VOCABULARIES = uniq(auditionAssets.map((a) => a.vocabulary))
 const PERFORMANCES = uniq(auditionAssets.map((a) => a.performance))
-const EXPRESSIONS = uniq(auditionAssets.map((a) => a.expression))
+const VARIANTS = uniq(auditionAssets.map((a) => a.variant))
+/** Named by the generator, so a new round retitles this screen by itself. */
+const AXIS = auditionAssets[0]?.axis ?? 'variant'
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -84,11 +87,11 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   }, [])
 
   const selectionFor = useCallback(
-    (combination: string, expression: string): AuditionAsset | undefined =>
+    (combination: string, variant: string): AuditionAsset | undefined =>
       auditionAssets.find(
         (a) =>
           a.combination === combination &&
-          a.expression === expression &&
+          a.variant === variant &&
           a.vocabulary === vocabulary &&
           a.performance === performance,
       ),
@@ -98,8 +101,8 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   const compareExpressions = useCallback(
     async (combination: string): Promise<void> => {
       setNote(null)
-      for (const expression of EXPRESSIONS) {
-        const asset = selectionFor(combination, expression)
+      for (const variant of VARIANTS) {
+        const asset = selectionFor(combination, variant)
         if (!asset) continue
         await playOne(asset)
         await sleep(BETWEEN_TAKES_MS)
@@ -110,13 +113,13 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   )
 
   const comparePerformances = useCallback(
-    async (combination: string, expression: string): Promise<void> => {
+    async (combination: string, variant: string): Promise<void> => {
       setNote(null)
       for (const state of PERFORMANCES) {
         const asset = auditionAssets.find(
           (a) =>
             a.combination === combination &&
-            a.expression === expression &&
+            a.variant === variant &&
             a.vocabulary === vocabulary &&
             a.performance === state,
         )
@@ -134,7 +137,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   }, [])
 
   const sample = useMemo(
-    () => selectionFor(PHRASES[0] ?? '', EXPRESSIONS[0] ?? ''),
+    () => selectionFor(PHRASES[0] ?? '', VARIANTS[0] ?? ''),
     [selectionFor],
   )
 
@@ -142,7 +145,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
       <Stack.Screen options={{ title: 'Persona audition' }} />
 
-      <Text style={styles.heading}>Old-School Cornerman — expression</Text>
+      <Text style={styles.heading}>{`Old-School Cornerman — ${AXIS}`}</Text>
       <Text style={styles.note}>
         aged-melodic, at three depths of pitch movement. Play with music running; each row plays
         the same phrase across all three back to back, so the comparison is direct rather than
@@ -186,7 +189,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
       {sample ? <Text style={styles.detail}>{`e.g. ${sample.spokenText}`}</Text> : null}
 
       {PHRASES.map((combination) => {
-        const first = selectionFor(combination, EXPRESSIONS[0] ?? '')
+        const first = selectionFor(combination, VARIANTS[0] ?? '')
         return (
           <View key={combination} style={styles.card}>
             <Text style={styles.cardTitle}>{combination}</Text>
@@ -200,19 +203,19 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
               onPress={() => void compareExpressions(combination)}
               style={[styles.button, nowPlaying !== null && styles.buttonDisabled]}
             >
-              <Text style={styles.buttonText}>Compare all three</Text>
+              <Text style={styles.buttonText}>{`Compare all ${VARIANTS.length}`}</Text>
             </Pressable>
 
             <View style={styles.row}>
-              {EXPRESSIONS.map((expression) => {
-                const asset = selectionFor(combination, expression)
+              {VARIANTS.map((variant) => {
+                const asset = selectionFor(combination, variant)
                 const playing = nowPlaying === asset?.cueId
                 return (
                   <Pressable
                     accessibilityRole="button"
                     disabled={!asset || nowPlaying !== null}
-                    key={expression}
-                    onLongPress={() => void comparePerformances(combination, expression)}
+                    key={variant}
+                    onLongPress={() => void comparePerformances(combination, variant)}
                     onPress={() => asset && void playOne(asset).then(() => setNowPlaying(null))}
                     style={[
                       styles.blendButton,
@@ -220,7 +223,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
                       (!asset || nowPlaying !== null) && styles.buttonDisabled,
                     ]}
                   >
-                    <Text style={styles.blendText}>{expression}</Text>
+                    <Text style={styles.blendText}>{variant}</Text>
                     <Text style={styles.blendHint}>
                       {asset ? `${asset.durationMs} ms` : 'missing'}
                     </Text>
@@ -233,9 +236,9 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
       })}
 
       <Text style={styles.note}>
-        Long-press an expression to hear teach / work / push back to back at that depth. The
-        contrast between states matters as much as the depth, and the beat around a defense token
-        is deliberately widest in teach and tightest in push.
+        {`Long-press to hear ${PERFORMANCES.join(' / ')} back to back for that ${AXIS}. The ` +
+          'contrast between states matters as much as the variant itself, and the beat around a ' +
+          'defense token is deliberately widest in teach and tightest in push.'}
       </Text>
     </ScrollView>
   )
