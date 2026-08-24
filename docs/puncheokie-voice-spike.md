@@ -243,3 +243,66 @@ Listed plainly rather than left to be discovered:
   attached. Release is expected to be no worse, but it is untested.
 - **Permanent focus loss handling** (a call arriving mid-workout) — deferred to
   M34-04, where the queue that must survive it lives.
+
+---
+
+## Persona rounds — the settled Old-School Cornerman
+
+Three axes, each decided by a listening judgement on the tablet **over workout
+music**, one axis varied per round with the others pinned. The winners are the
+single source of truth in [`tools/voice/persona.mjs`](../tools/voice/persona.mjs);
+the audition tool that produced each round is `tools/voice/make-audition.mjs`.
+
+| Round | Axis | Candidates | Winner |
+|---|---|---|---|
+| 1 | **Timbre** (voice blend) | aged-authoritative, aged-melodic, heavier-cornerman, more-theatrical | **aged-melodic** — `am_michael .45 / am_fenrir .25 / am_puck .2 / am_santa .1` |
+| 2 | **Expression** (pitch-contour depth) | measured, expressive, theatrical | **theatrical** — contour ×2.6 |
+| 3 | **Texture** (production chain) | current, chest, grit, close, broadcast | **broadcast** — band-limited, mid-forward, very loud |
+
+### What each round established
+
+**Timbre.** Interpolating voice-style tensors is not linear in perceived age,
+so the four blends were hypotheses judged by ear. `am_santa` is age colour
+only, never the clarity foundation.
+
+**Expression.** The contour is built from the *actual groups* — the rise lands
+on the second punch of a pair, the fall on the finish — rather than from a
+fixed curve interpolated across the phrase. A movement token takes the
+opposite shape: above the line, then hard below it, which is what breaks the
+melodic run at a defense instead of absorbing it. Expression multiplies the
+whole contour, so depth is dialled without re-authoring control points.
+
+The defense **beat** is set in the rendered audio, not left to the
+synthesizer. Measured across six spellings, only an ellipsis produces a pause
+Kokoro actually renders; a comma produced no measurable gap at all, which is
+why `, roll,` disappeared into the run. The trailing gap stayed at 40 ms
+regardless of spelling, so the exit beat is set by lengthening the silence
+already present — before the reverb stage, so the room tail fills it. It is one
+utterance throughout; nothing is stitched.
+
+**Texture.** Fixed a defect the earlier chain carried silently:
+`rubberband=pitch=1.0:formant=preserved` is a no-op, because formant scaling
+only applies when the pitch shifts — so the aging had been pitch and
+saturation with no vocal-tract work at all. Real formant scaling
+(`asetrate` + resample + `rubberband`) now lengthens the tract while Praat's
+contour is left intact. Measured on a single strike, the `chest` chain moved
+the spectral centroid **2131 → 1859 Hz** and lifted 120–400 Hz energy from
+22.9 % to 27.5 %; the winning `broadcast` chain moves 1–2.5 kHz energy from
+~20 % to ~29 % — the mid-forward "cutting through the mix" signature that won.
+
+The generator renders **one utterance per phrase and fans it out to every
+variant**, so an A/B compares bit-identical source audio: any difference heard
+is the chain under test, not a different synthesis take.
+
+### Still open — texture polish
+
+`broadcast` won this round but is not the final word. Kyle flagged wanting more
+emphasis and aggression; the round settled the *category* (mid-forward, loud,
+PA-like), and the exact compression, saturation drive and EQ can still be
+tuned before the full library is committed.
+
+### Known gap, unchanged
+
+Kokoro reports no word boundaries and natural delivery leaves no envelope gaps
+to measure, so circle activation stays on the cue clock. Playback-driven
+visuals still need a forced aligner — the one thing SAPI did better.

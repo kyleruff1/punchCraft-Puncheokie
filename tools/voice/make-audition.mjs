@@ -47,30 +47,20 @@ import { join } from 'node:path'
 
 import { compilePhrase } from './prosody.mjs'
 import { TEXTURES, textureChain } from './texture.mjs'
+import { PRODUCTION_BLEND, PRODUCTION_BLEND_NAME, PRODUCTION_EXPRESSION } from './persona.mjs'
 
 const OUT_ROOT = join('assets', 'voice', 'audition')
 
-/**
- * Candidate personas.
- *
- * Weights are hypotheses to be judged by ear — voice-embedding interpolation
- * is not linear in perceived age. All four are rendered rather than
- * pre-selecting three: the fourth costs about thirty seconds, which is far
- * less than the cost of guessing wrong.
- */
 /* ------------------------------------------------------- the round under test */
 
 /** The dimension being compared. Everything below it is pinned. */
 const AXIS = 'texture'
 const VARIANTS = Object.keys(TEXTURES)
 
-/** Settled in round one. */
-const BLEND_NAME = 'aged-melodic'
-const BLENDS = {
-  [BLEND_NAME]: { am_michael: 0.45, am_fenrir: 0.25, am_puck: 0.2, am_santa: 0.1 },
-}
-/** Settled in round two. */
-const EXPRESSION = 'theatrical'
+/** Settled in rounds one and two; shared with the production generator. */
+const BLEND_NAME = PRODUCTION_BLEND_NAME
+const BLENDS = { [BLEND_NAME]: PRODUCTION_BLEND }
+const EXPRESSION = PRODUCTION_EXPRESSION
 
 const PHRASES = ['1', '1-2', '1-2-3-2', '1-2-roll-3-2', '1-slip-2', '2-3-2-roll-1-2']
 const VOCABULARIES = ['numbers', 'techniques']
