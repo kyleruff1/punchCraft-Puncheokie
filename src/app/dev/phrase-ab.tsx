@@ -31,8 +31,14 @@ import type { VoiceAssetId } from '@domain/coach/VoiceOutputPort'
 /** Gap between the two takes, long enough that they do not blur together. */
 const BETWEEN_TAKES_MS = 900
 
-const CADENCES = ['technical', 'standard', 'pressure'] as const
-type Cadence = (typeof CADENCES)[number]
+/**
+ * Derived from the rendered assets rather than hard-coded.
+ *
+ * A hand-written list here silently went stale the moment the cadences were
+ * renamed to match the app's real profiles, and every row read "no phrase
+ * asset at this cadence" while the assets sat right there on disk.
+ */
+const CADENCES = [...new Set(phraseAssets.map((a) => a.cadence))]
 
 /** Combinations in the experiment set, in the order they were authored. */
 const COMBINATIONS = [...new Set(phraseAssets.map((a) => a.combination))]
@@ -55,7 +61,7 @@ function gapsOf(asset: PhraseAsset): number[] {
 }
 
 export default function PhraseAbScreen(): React.JSX.Element {
-  const [cadence, setCadence] = useState<Cadence>('standard')
+  const [cadence, setCadence] = useState<string>(CADENCES.includes('steady') ? 'steady' : (CADENCES[0] ?? ''))
   const [playing, setPlaying] = useState<string | null>(null)
   /** Surfaced rather than logged: a silent take must say why it was silent. */
   const [note, setNote] = useState<string | null>(null)
