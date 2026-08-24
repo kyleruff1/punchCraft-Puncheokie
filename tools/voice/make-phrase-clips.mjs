@@ -92,11 +92,21 @@ const OUT_ROOT = join('assets', 'voice', 'phrases')
  * groups rather than four beats.
  */
 const CADENCES = {
-  technical: { rate: '+15%', groupPauseMs: 260, finalEmphasis: 'moderate' },
-  steady: { rate: '+45%', groupPauseMs: 170, finalEmphasis: 'strong' },
-  pressure: { rate: '+75%', groupPauseMs: 110, finalEmphasis: 'strong' },
-  sprint: { rate: '+100%', groupPauseMs: 70, finalEmphasis: 'strong' },
+  technical: { speed: 1.0, groupSeparator: ', ', ending: '.' },
+  steady: { speed: 1.15, groupSeparator: ', ', ending: '!' },
+  pressure: { speed: 1.32, groupSeparator: ', ', ending: '!' },
+  sprint: { speed: 1.5, groupSeparator: ' ', ending: '!' },
 }
+
+/**
+ * The voice.
+ *
+ * A male American voice that reads as someone talking rather than an
+ * assistant announcing. Changing this changes every clip, so it belongs to
+ * the cache key alongside the renderer (D16).
+ */
+const VOICE = 'am_michael'
+const RENDERER = `kokoro-${VOICE}`
 
 /** Numbers, spelled so the synthesizer never reads a bare digit oddly. */
 const NUMBER_WORDS = {
@@ -212,32 +222,13 @@ const tokensOf = (phrase) => phrase.groups.flat()
  * The last token carries the emphasis because a combination ends on its power
  * punch, and a coach lands on it.
  */
-function ssmlFor(phrase, cadence) {
-  const tokens = tokensOf(phrase)
-  const lastIndex = tokens.length - 1
-  let index = 0
-
-  const groups = phrase.groups.map((group) => {
-    const words = group.map((token) => {
-      const word = spokenFor(token)
-      const isLast = index === lastIndex
-      index += 1
-      return isLast
-        ? `<emphasis level="${cadence.finalEmphasis}">${word}</emphasis>`
-        : word
-    })
-    // Space, not comma. SAPI reads a comma as a substantial pause — measured
-    // at ~980 ms between "One" and "two" — which made the gaps *inside* a
-    // group twice the gap between groups and inverted the whole grouping.
-    // Words inside a group run together; only the group break separates.
-    return words.join(' ')
-  })
-
-  const body = groups.join(`<break time="${cadence.groupPauseMs}ms"/>`)
-  return (
-    `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">` +
-    `<prosody rate="${cadence.rate}">${body}</prosody></speak>`
-  )
+function textFor(phrase, cadence) {
+  const groups = phrase.groups.map((group) => group.map(spokenFor).join(' '))
+  // Kokoro has no SSML, so the prosody is in the text: a space runs words
+  // together inside a group, a comma separates the entry from the finish, and
+  // the ending punctuation is what lands the final punch. At sprint the comma
+  // goes too — there is no breath left to take.
+  return `${groups.join(cadence.groupSeparator)}${cadence.ending}`
 }
 
 /* --------------------------------------------------------------- trimming */
@@ -346,11 +337,31 @@ function trimEnds(path, { thresholdRatio = 0.02, headMs = 25, tailMs = 90 } = {}
 function postProcess(path, durationMs) {
   const fadeOutStart = Math.max(0, durationMs / 1000 - 0.012)
   const filters = [
-    'highpass=f=110',
-    'acompressor=threshold=-18dB:ratio=3:attack=5:release=90:makeup=2',
-    'equalizer=f=3000:width_type=o:width=1.2:g=3',
-    'alimiter=limit=0.94:attack=2:release=40',
-    'loudnorm=I=-16:TP=-1.5:LRA=9',
+    // Rumble only muddies the low end; a command voice lives above it.
+    'highpass=f=120',
+
+    // Aggressive on purpose. A coach across a gym is *projecting*, and what
+    // makes that read is every word arriving at the same forward level —
+    // not the last punch of a combination being quieter than the first.
+    'acompressor=threshold=-24dB:ratio=6:attack=3:release=70:makeup=4',
+
+    // Presence, where intelligibility lives. Two narrow lifts rather than one
+    // wide one, so the voice gets clearer without getting shrill.
+    'equalizer=f=2400:width_type=o:width=1.0:g=4',
+    'equalizer=f=3800:width_type=o:width=1.0:g=3',
+
+    // A very small amount of saturation — the thickness of someone raising
+    // their voice, not distortion. Past about 0.75 it starts sounding broken
+    // rather than loud, and a broken number is an unusable one.
+    'asoftclip=type=tanh:param=0.65',
+
+    // A gym, not a hall. Two early reflections at 17 and 29 ms with low decay
+    // put the voice in a room; anything longer smears short numbers into each
+    // other, which is the one thing a punch call cannot afford.
+    'aecho=0.9:0.75:17|29:0.12|0.07',
+
+    'alimiter=limit=0.95:attack=2:release=40',
+    'loudnorm=I=-15:TP=-1.2:LRA=8',
     'afade=t=in:st=0:d=0.008',
     `afade=t=out:st=${fadeOutStart.toFixed(3)}:d=0.012`,
   ].join(',')
@@ -368,52 +379,97 @@ function postProcess(path, durationMs) {
 /* -------------------------------------------------------------- synthesis */
 
 /**
- * Render every phrase in one PowerShell process, capturing word marks.
+ * Render every phrase in one Kokoro process.
  *
- * `SpeakProgress` fires per word with the audio offset the synthesizer itself
- * used — which is the timing the live screen needs, measured at the source
- * rather than inferred from a recording.
+ * One process for the whole batch: loading the 325 MB model costs far more
+ * than synthesising a phrase, so paying it once matters. A phrase that fails
+ * is reported and skipped rather than taking the batch down with it.
  */
 function renderAll(jobs) {
-  const lines = [
-    'Add-Type -AssemblyName System.Speech',
-    '$s = New-Object System.Speech.Synthesis.SpeechSynthesizer',
-    "$s.SelectVoice('Microsoft David Desktop')",
-    '$marks = New-Object System.Collections.ArrayList',
-    '$handler = { param($sender, $e)',
-    '  [void]$marks.Add("$($e.AudioPosition.TotalMilliseconds)|$($e.Text)")',
-    '}',
-    '$s.add_SpeakProgress($handler)',
-  ]
-  for (const job of jobs) {
-    lines.push(`Write-Output "JOB ${job.key}"`)
-    lines.push('$marks.Clear()')
-    lines.push(`$s.SetOutputToWaveFile('${job.wav.replace(/'/g, "''")}')`)
-    lines.push(`$s.SpeakSsml('${job.ssml.replace(/'/g, "''")}')`)
-    lines.push('$s.SetOutputToNull()')
-    lines.push('foreach ($m in $marks) { Write-Output "MARK $m" }')
+  const spec = jobs.map((job) => ({
+    path: job.wav,
+    text: job.text,
+    speed: job.speed,
+    voice: VOICE,
+  }))
+
+  const out = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
+    input: JSON.stringify(spec),
+    encoding: 'utf8',
+    maxBuffer: 16 * 1024 * 1024,
+  })
+
+  const failures = []
+  for (const line of out.split(/\r?\n/)) {
+    if (line.startsWith('FAIL ')) failures.push(line.slice(5))
   }
-  lines.push('$s.Dispose()')
+  if (failures.length > 0) {
+    for (const failure of failures) console.error(`  render failed: ${failure}`)
+  }
+  return failures.length
+}
 
-  const out = execFileSync(
-    'powershell.exe',
-    ['-NoProfile', '-NonInteractive', '-Command', lines.join('; ')],
-    { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
-  )
+/**
+ * Word onsets, measured from the rendered audio.
+ *
+ * Kokoro exposes no per-word timing, so the onsets are read back off the
+ * clip. That is sound here in a way it would not be in production: this is
+ * clean synthesized audio with no room and no other source, measured once at
+ * build time — not a microphone guessing during a workout.
+ *
+ * Returns `[]` when the number of detected words does not match the number
+ * expected. A wrong mark would light the wrong circle, and no marks at all is
+ * a visibly missing sidecar rather than a subtly wrong one.
+ */
+function measureWordOnsets(path, expectedWords) {
+  const buffer = readFileSync(path)
+  if (buffer.length < 44 || buffer.toString('ascii', 0, 4) !== 'RIFF') return []
 
-  const byKey = new Map()
-  let current = null
-  for (const raw of out.split(/\r?\n/)) {
-    const line = raw.trim()
-    if (line.startsWith('JOB ')) {
-      current = line.slice(4)
-      byKey.set(current, [])
-    } else if (line.startsWith('MARK ') && current) {
-      const [ms, ...text] = line.slice(5).split('|')
-      byKey.get(current)?.push({ offsetMs: Math.round(Number(ms)), text: text.join('|') })
+  // Post-processing rewrites a canonical 44-byte header, so the layout is
+  // known by this point.
+  const channels = buffer.readUInt16LE(22)
+  const sampleRate = buffer.readUInt32LE(24)
+  const bytesPerFrame = 2 * channels
+  const frames = Math.floor((buffer.length - 44) / bytesPerFrame)
+
+  const peakAt = (frame) => {
+    let peak = 0
+    for (let c = 0; c < channels; c += 1) {
+      peak = Math.max(peak, Math.abs(buffer.readInt16LE(44 + frame * bytesPerFrame + c * 2)))
+    }
+    return peak
+  }
+
+  // A 10 ms envelope, so a syllable does not fragment into several onsets.
+  const window = Math.round(sampleRate * 0.01)
+  const envelope = []
+  for (let f = 0; f < frames; f += window) {
+    let peak = 0
+    for (let i = f; i < Math.min(f + window, frames); i += 1) peak = Math.max(peak, peakAt(i))
+    envelope.push({ atMs: Math.round((f / sampleRate) * 1000), peak })
+  }
+
+  const loudest = envelope.reduce((m, e) => Math.max(m, e.peak), 0)
+  const threshold = loudest * 0.12
+  const minGapWindows = 5 // 50 ms below threshold ends a word
+
+  const onsets = []
+  let inWord = false
+  let belowFor = 0
+  for (const point of envelope) {
+    if (point.peak >= threshold) {
+      if (!inWord) {
+        onsets.push(point.atMs)
+        inWord = true
+      }
+      belowFor = 0
+    } else if (inWord) {
+      belowFor += 1
+      if (belowFor >= minGapWindows) inWord = false
     }
   }
-  return byKey
+
+  return onsets.length === expectedWords ? onsets : []
 }
 
 /* ------------------------------------------------------------------- main */
@@ -429,13 +485,14 @@ for (const phrase of PHRASES) {
       key,
       phrase,
       cadenceName,
-      ssml: ssmlFor(phrase, cadence),
+      text: textFor(phrase, cadence),
+      speed: cadence.speed,
       wav: join(cwd, OUT_ROOT, `${key}.wav`),
     })
   }
 }
 
-const marksByKey = renderAll(jobs)
+const failed = renderAll(jobs)
 
 const index = []
 for (const job of jobs) {
@@ -444,26 +501,21 @@ for (const job of jobs) {
   const trimmed = trimEnds(job.wav)
   if (trimmed) postProcess(job.wav, trimmed.durationMs)
   const tokens = tokensOf(job.phrase)
-  const rawMarks = marksByKey.get(job.key) ?? []
-  const headTrimMs = trimmed?.headTrimMs ?? 0
 
-  // One mark per token, in order. SAPI reports a mark per *word*, and
-  // "Body one" is two words for one token, so marks are matched by walking
-  // both lists rather than by index.
+  // A token can be more than one word — "Body two" — so the onsets are
+  // matched by walking both lists rather than by index.
+  const wordCounts = tokens.map((t) => spokenFor(t).split(' ').length)
+  const expectedWords = wordCounts.reduce((a, b) => a + b, 0)
+  const onsets = measureWordOnsets(job.wav, expectedWords)
+
   const wordMarks = []
-  let markIndex = 0
+  let wordIndex = 0
   for (let t = 0; t < tokens.length; t += 1) {
-    const spoken = spokenFor(tokens[t])
-    const wordCount = spoken.split(' ').length
-    const mark = rawMarks[markIndex]
-    if (mark) {
-      wordMarks.push({
-        tokenIndex: t,
-        token: tokens[t],
-        offsetMs: Math.max(0, mark.offsetMs - headTrimMs),
-      })
+    const onset = onsets[wordIndex]
+    if (onset !== undefined) {
+      wordMarks.push({ tokenIndex: t, token: tokens[t], offsetMs: onset })
     }
-    markIndex += wordCount
+    wordIndex += wordCounts[t]
   }
 
   index.push({
@@ -474,7 +526,7 @@ for (const job of jobs) {
     tokens,
     durationMs: trimmed?.durationMs ?? 0,
     wordMarks,
-    renderer: 'sapi-david-ssml',
+    renderer: RENDERER,
   })
 
   const kb = (statSync(job.wav).size / 1024).toFixed(0)
@@ -559,4 +611,16 @@ writeFileSync(join('src', 'audio', 'voiceAssets', 'phraseManifest.ts'), lines.jo
 
 console.log(`\nWrote ${jobs.length} phrases + index.json to ${OUT_ROOT}`)
 console.log('Wrote src/audio/voiceAssets/phraseManifest.ts')
-console.log('Same SAPI voice as the per-word clips — this isolates concatenation from the voice.')
+if (failed > 0) console.error(`${failed} phrase(s) failed to render`)
+
+const withMarks = index.filter((entry) => entry.wordMarks.length > 0).length
+if (withMarks < index.length) {
+  console.log(
+    `
+Word marks: ${withMarks}/${index.length}. Kokoro exposes no per-word timing, and a ` +
+      'natural delivery runs words together, so there are no envelope gaps to measure. ' +
+      'Circle activation stays on the cue clock until a renderer that reports word ' +
+      'boundaries (Azure) or a forced aligner is in play.',
+  )
+}
+console.log(`Renderer: ${RENDERER}. Model files are gitignored — see tools/voice/README.md.`)

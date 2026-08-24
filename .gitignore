@@ -56,3 +56,6 @@ btsnoop_hci.log
 
 # Local Claude Code session state
 .claude/
+
+# Kokoro model files — ~350MB, downloaded by tools/voice/README, never committed.
+tools/voice/models/

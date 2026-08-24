@@ -8,20 +8,20 @@
       "1",
       "1"
     ],
-    "durationMs": 772,
+    "durationMs": 751,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 27
+        "offsetMs": 0
       },
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 317
+        "offsetMs": 702
       }
     ],
-    "renderer": "sapi-david-ssml"
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1.steady",
@@ -32,20 +32,9 @@
       "1",
       "1"
     ],
-    "durationMs": 739,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 258
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 637,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1.pressure",
@@ -56,20 +45,9 @@
       "1",
       "1"
     ],
-    "durationMs": 700,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 204
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 581,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1.sprint",
@@ -80,20 +58,9 @@
       "1",
       "1"
     ],
-    "durationMs": 697,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 191
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 497,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-2.technical",
@@ -105,25 +72,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1207,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 317
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1054
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1010,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-2.steady",
@@ -135,25 +86,9 @@
       "1",
       "2"
     ],
-    "durationMs": 991,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 258
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 747
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 920,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-2.pressure",
@@ -165,25 +100,9 @@
       "1",
       "2"
     ],
-    "durationMs": 856,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 204
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 555
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 807,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-2.sprint",
@@ -195,25 +114,9 @@
       "1",
       "2"
     ],
-    "durationMs": 800,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 191
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 473
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 650,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-step off.technical",
@@ -225,25 +128,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1824,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 317
-      },
-      {
-        "tokenIndex": 2,
-        "token": "step off",
-        "offsetMs": 1054
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1257,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-step off.steady",
@@ -255,25 +142,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1604,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 258
-      },
-      {
-        "tokenIndex": 2,
-        "token": "step off",
-        "offsetMs": 747
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1189,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-step off.pressure",
@@ -285,25 +156,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1476,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 204
-      },
-      {
-        "tokenIndex": 2,
-        "token": "step off",
-        "offsetMs": 555
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1034,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-1-step off.sprint",
@@ -315,25 +170,9 @@
       "1",
       "step off"
     ],
-    "durationMs": 1418,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 191
-      },
-      {
-        "tokenIndex": 2,
-        "token": "step off",
-        "offsetMs": 473
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 808,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2.technical",
@@ -344,20 +183,9 @@
       "1",
       "2"
     ],
-    "durationMs": 680,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 839,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2.steady",
@@ -368,20 +196,9 @@
       "1",
       "2"
     ],
-    "durationMs": 644,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 265
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 697,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2.pressure",
@@ -392,20 +209,9 @@
       "1",
       "2"
     ],
-    "durationMs": 609,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 211
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 665,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2.sprint",
@@ -416,20 +222,9 @@
       "1",
       "2"
     ],
-    "durationMs": 603,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 583,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3.technical",
@@ -441,25 +236,9 @@
       "2",
       "3"
     ],
-    "durationMs": 1324,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 985
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1067,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3.steady",
@@ -471,25 +250,9 @@
       "2",
       "3"
     ],
-    "durationMs": 1129,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 265
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 706
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 960,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3.pressure",
@@ -501,25 +264,9 @@
       "2",
       "3"
     ],
-    "durationMs": 994,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 211
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 514
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 869,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3.sprint",
@@ -531,25 +278,9 @@
       "2",
       "3"
     ],
-    "durationMs": 943,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 439
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 712,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3-2.technical",
@@ -562,30 +293,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1430,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 985
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1316
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1287,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3-2.steady",
@@ -598,30 +308,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1184,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 265
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 706
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 968
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1134,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3-2.pressure",
@@ -634,30 +323,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1009,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 211
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 514
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 721
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1013,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-3-2.sprint",
@@ -670,30 +338,9 @@
       "3",
       "2"
     ],
-    "durationMs": 943,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 439
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 625
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 803,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-pivot.technical",
@@ -705,25 +352,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1388,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "pivot",
-        "offsetMs": 985
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1041,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-pivot.steady",
@@ -735,25 +366,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1201,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 31
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 265
-      },
-      {
-        "tokenIndex": 2,
-        "token": "pivot",
-        "offsetMs": 706
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 960,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-pivot.pressure",
@@ -765,25 +380,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1066,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 211
-      },
-      {
-        "tokenIndex": 2,
-        "token": "pivot",
-        "offsetMs": 514
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 864,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2-pivot.sprint",
@@ -795,25 +394,9 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1013,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 198
-      },
-      {
-        "tokenIndex": 2,
-        "token": "pivot",
-        "offsetMs": 439
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 689,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b.technical",
@@ -824,20 +407,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 1209,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 324
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1128,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b.steady",
@@ -848,20 +420,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 1152,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 22
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 256
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 946,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b.pressure",
@@ -872,20 +433,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 1133,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 204
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 856,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b.sprint",
@@ -896,20 +446,9 @@
       "1",
       "2b"
     ],
-    "durationMs": 1127,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 191
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 754,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3.technical",
@@ -921,25 +460,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1626,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1398
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1349,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3.steady",
@@ -951,25 +474,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1357,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 22
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 256
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1021
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1191,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3.pressure",
@@ -981,25 +488,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1180,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 204
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 768
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1100,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3.sprint",
@@ -1011,25 +502,9 @@
       "2b",
       "3"
     ],
-    "durationMs": 1113,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 191
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 670
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 930,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3-2.technical",
@@ -1042,30 +517,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1727,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 324
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1398
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1736
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1572,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3-2.steady",
@@ -1078,30 +532,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1407,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 22
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 256
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1021
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1289
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1412,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3-2.pressure",
@@ -1114,30 +547,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1186,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 204
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 763
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 975
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1277,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1-2b-3-2.sprint",
@@ -1150,30 +562,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1103,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 191
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 664
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 856
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1003,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1b-2-3-2.technical",
@@ -1186,30 +577,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1689,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1b",
-        "offsetMs": 17
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 672
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1340
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1678
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1551,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1b-2-3-2.steady",
@@ -1222,30 +592,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1377,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1b",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 536
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 977
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1239
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1367,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1b-2-3-2.pressure",
@@ -1258,30 +607,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1172,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1b",
-        "offsetMs": 19
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 427
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 744
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 948
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1216,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "1b-2-3-2.sprint",
@@ -1294,30 +622,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1069,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1b",
-        "offsetMs": 8
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 372
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 626
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 809
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 942,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "2-3-6.technical",
@@ -1329,25 +636,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1591,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "2",
-        "offsetMs": 46
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 260
-      },
-      {
-        "tokenIndex": 2,
-        "token": "6",
-        "offsetMs": 1073
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1118,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "2-3-6.steady",
@@ -1359,25 +650,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1378,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "2",
-        "offsetMs": 45
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 217
-      },
-      {
-        "tokenIndex": 2,
-        "token": "6",
-        "offsetMs": 768
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1016,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "2-3-6.pressure",
@@ -1389,25 +664,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1236,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "2",
-        "offsetMs": 39
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 177
-      },
-      {
-        "tokenIndex": 2,
-        "token": "6",
-        "offsetMs": 570
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 875,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "2-3-6.sprint",
@@ -1419,25 +678,9 @@
       "3",
       "6"
     ],
-    "durationMs": 1177,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "2",
-        "offsetMs": 37
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 161
-      },
-      {
-        "tokenIndex": 2,
-        "token": "6",
-        "offsetMs": 485
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 699,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-1-2.technical",
@@ -1449,25 +692,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1242,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 44
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 823
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1078
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1032,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-1-2.steady",
@@ -1479,25 +706,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1032,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 39
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 576
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 783
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 963,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-1-2.pressure",
@@ -1509,25 +720,9 @@
       "1",
       "2"
     ],
-    "durationMs": 882,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 411
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 569
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 804,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-1-2.sprint",
@@ -1539,25 +734,9 @@
       "1",
       "2"
     ],
-    "durationMs": 822,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 340
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 485
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 708,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-3-2.technical",
@@ -1569,25 +748,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1317,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 44
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 823
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1154
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1145,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-3-2.steady",
@@ -1599,25 +762,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1092,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 39
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 576
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 838
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1003,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-3-2.pressure",
@@ -1629,25 +776,9 @@
       "3",
       "2"
     ],
-    "durationMs": 937,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 32
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 411
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 618
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 865,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "roll-3-2.sprint",
@@ -1659,25 +790,9 @@
       "3",
       "2"
     ],
-    "durationMs": 872,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 340
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 526
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 739,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-1-2.technical",
@@ -1689,25 +804,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1318,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 944
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1206
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1108,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-1-2.steady",
@@ -1719,25 +818,9 @@
       "1",
       "2"
     ],
-    "durationMs": 1091,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 26
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 673
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 887
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1013,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-1-2.pressure",
@@ -1749,25 +832,9 @@
       "1",
       "2"
     ],
-    "durationMs": 931,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 494
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 659
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 837,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-1-2.sprint",
@@ -1779,25 +846,9 @@
       "1",
       "2"
     ],
-    "durationMs": 859,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 413
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 557
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 736,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-2-3-2.technical",
@@ -1810,30 +861,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1877,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 27
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 944
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 1164
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1977
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1329,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-2-3-2.steady",
@@ -1846,30 +876,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1466,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 26
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 673
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 852
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1404
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1213,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-2-3-2.pressure",
@@ -1882,30 +891,9 @@
       "3",
       "2"
     ],
-    "durationMs": 1201,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 25
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 494
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 638
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1031
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 1033,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   },
   {
     "cueId": "slip-2-3-2.sprint",
@@ -1918,29 +906,8 @@
       "3",
       "2"
     ],
-    "durationMs": 1079,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "slip",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 413
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 537
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 861
-      }
-    ],
-    "renderer": "sapi-david-ssml"
+    "durationMs": 867,
+    "wordMarks": [],
+    "renderer": "kokoro-am_michael"
   }
 ]

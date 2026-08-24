@@ -122,8 +122,9 @@ export default function PhraseAbScreen(): React.JSX.Element {
 
       <Text style={styles.heading}>Whole phrase vs concatenated</Text>
       <Text style={styles.note}>
-        Same SAPI voice in both, so this tests concatenation rather than the synthesizer. A is the
-        current per-word path; B is one rendered utterance.
+        A is the per-word fallback path (SAPI clips run together). B is one whole utterance
+        rendered by Kokoro. Two variables now differ — concatenation and the voice — because
+        experiment 1 already settled the first: whole-phrase won on every cadence.
       </Text>
       {note ? <Text style={styles.warn}>{note}</Text> : null}
 
