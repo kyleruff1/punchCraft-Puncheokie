@@ -146,6 +146,32 @@ function combinationsFromCorpus() {
   return [...found].sort()
 }
 
+/** A synchronous sleep, so a retry loop can back off without going async. */
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/**
+ * `renameSync` with a short backoff on Windows lock errors.
+ *
+ * Windows briefly holds a handle on a freshly-written file — the Search
+ * indexer or Defender scanning it — and a rename onto it then fails EPERM/
+ * EBUSY. It cleared on its own within a beat, so a few retries turn a batch
+ * that lost ~20 clips to a lock race into a clean 744/744.
+ */
+function renameWithRetry(from, to, attempts = 10) {
+  for (let i = 0; ; i++) {
+    try {
+      renameSync(from, to)
+      return
+    } catch (err) {
+      const transient = err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES'
+      if (!transient || i >= attempts - 1) throw err
+      sleepMs(100 * (i + 1))
+    }
+  }
+}
+
 /** Apply the production texture in place. See `texture.mjs`. */
 function postProcess(path, { profile, finalAccentDb }) {
   const filters = textureChain(PRODUCTION_TEXTURE, { profile, finalAccentDb })
@@ -157,7 +183,7 @@ function postProcess(path, { profile, finalAccentDb }) {
     { stdio: 'ignore' },
   )
   if (!existsSync(temp)) throw new Error(`ffmpeg produced nothing for ${path}`)
-  renameSync(temp, path)
+  renameWithRetry(temp, path)
 }
 
 /**
@@ -222,6 +248,12 @@ const cwd = process.cwd()
 const onlyArg = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length)
 const combinations = combinationsFromCorpus().filter((c) => !onlyArg || c.includes(onlyArg))
 
+// `--manifest-only` skips synthesis and rebuilds index.json + the app manifest
+// from the clips already on disk. It exists to recover from a partial render
+// (a Windows lock race that dropped a clip or two) without re-synthesizing the
+// whole corpus — measure what is on disk, write the manifest, done.
+const manifestOnly = process.argv.includes('--manifest-only')
+
 // `--list` prints the corpus and the clip count without rendering — a fast way
 // to see what a full render will cover after the motif library changes.
 if (process.argv.includes('--list')) {
@@ -264,6 +296,7 @@ for (const combination of combinations) {
   }
 }
 
+if (!manifestOnly) {
 console.log(`Rendering ${jobs.length} phrases — ${RENDERER}…`)
 
 const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
@@ -313,16 +346,19 @@ const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour
 for (const failure of contourOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
   console.error(`  ${failure}`)
 }
+} // end if (!manifestOnly)
 
-console.log(`Applying the ${PRODUCTION_TEXTURE} texture…`)
+console.log(manifestOnly ? 'Rebuilding manifest from clips on disk…' : `Applying the ${PRODUCTION_TEXTURE} texture…`)
 const index = []
 for (const job of jobs) {
   if (!existsSync(job.wav)) continue
-  try {
-    postProcess(job.wav, { profile: job.plan.profile, finalAccentDb: job.plan.finalAccentDb })
-  } catch (error) {
-    console.error(`  FAIL ${job.key}: ${error.message.split('\n')[0]}`)
-    continue
+  if (!manifestOnly) {
+    try {
+      postProcess(job.wav, { profile: job.plan.profile, finalAccentDb: job.plan.finalAccentDb })
+    } catch (error) {
+      console.error(`  FAIL ${job.key}: ${error.message.split('\n')[0]}`)
+      continue
+    }
   }
   const durationMs = measureDuration(job.wav)
 

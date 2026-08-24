@@ -744,6 +744,438 @@
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
+    "cueId": "1-1-2-3-2.technical.numbers.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-1-2-3-2.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1900,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.technical.numbers.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-1-2-3-2.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1582,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.technical.numbers.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-1-2-3-2.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1547,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.technical.techniques.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-1-2-3-2.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 2689,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.technical.techniques.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-1-2-3-2.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 2084,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.technical.techniques.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-1-2-3-2.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1952,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.numbers.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-1-2-3-2.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1738,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.numbers.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-1-2-3-2.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1491,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.numbers.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-1-2-3-2.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1319,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.techniques.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-1-2-3-2.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 2388,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.techniques.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-1-2-3-2.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1911,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.steady.techniques.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-1-2-3-2.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1737,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.numbers.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-1-2-3-2.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1606,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.numbers.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-1-2-3-2.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1190,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.numbers.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-1-2-3-2.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1017,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.techniques.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-1-2-3-2.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1977,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.techniques.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-1-2-3-2.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1533,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.pressure.techniques.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-1-2-3-2.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1163,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.numbers.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-1-2-3-2.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1346,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.numbers.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-1-2-3-2.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 994,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.numbers.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-1-2-3-2.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 955,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.techniques.teach",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-1-2-3-2.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1774,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.techniques.work",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-1-2-3-2.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1163,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-1-2-3-2.sprint.techniques.push",
+    "combination": "1-1-2-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-1-2-3-2.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "1",
+      "2",
+      "3",
+      "2"
+    ],
+    "durationMs": 1124,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
     "cueId": "1-1-step off.technical.numbers.teach",
     "combination": "1-1-step off",
     "cadence": "technical",
@@ -1484,6 +1916,390 @@
       "2"
     ],
     "durationMs": 575,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.numbers.teach",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-1.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1212,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.numbers.work",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-1.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1101,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.numbers.push",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-1.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1006,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.techniques.teach",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-1.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1614,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.techniques.work",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-1.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1366,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.technical.techniques.push",
+    "combination": "1-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-1.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1265,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.numbers.teach",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-1.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1087,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.numbers.work",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-1.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 981,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.numbers.push",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-1.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 901,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.techniques.teach",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-1.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1466,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.techniques.work",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-1.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1204,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.steady.techniques.push",
+    "combination": "1-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-1.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1142,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.numbers.teach",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-1.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1007,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.numbers.work",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-1.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 847,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.numbers.push",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-1.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 737,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.techniques.teach",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-1.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1258,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.techniques.work",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-1.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1102,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.pressure.techniques.push",
+    "combination": "1-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-1.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 896,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.numbers.teach",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-1.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 917,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.numbers.work",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-1.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 737,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.numbers.push",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-1.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 704,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.techniques.teach",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-1.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 1214,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.techniques.work",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-1.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 877,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-1.sprint.techniques.push",
+    "combination": "1-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-1.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "1"
+    ],
+    "durationMs": 822,
     "wordMarks": [],
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
@@ -2276,6 +3092,2022 @@
       "2"
     ],
     "durationMs": 908,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.numbers.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-2-1.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1935,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.numbers.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-2-1.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1657,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.numbers.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-2-1.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1536,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.techniques.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-2-1.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 2735,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.techniques.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-2-1.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 2120,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.technical.techniques.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-2-1.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1900,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.numbers.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-2-1.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1821,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.numbers.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-2-1.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1493,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.numbers.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-2-1.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1358,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.techniques.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-2-1.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 2409,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.techniques.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-2-1.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1849,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.steady.techniques.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-2-1.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1737,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.numbers.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-2-1.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1597,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.numbers.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-2-1.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1315,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.numbers.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-2-1.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1056,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.techniques.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-2-1.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1903,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.techniques.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-2-1.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1513,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.pressure.techniques.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-2-1.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1224,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.numbers.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-2-1.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1504,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.numbers.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-2-1.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1056,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.numbers.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-2-1.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1019,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.techniques.teach",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-2-1.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1762,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.techniques.work",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-2-1.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1209,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-2-1.sprint.techniques.push",
+    "combination": "1-2-3-2-1",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-2-1.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "2",
+      "1"
+    ],
+    "durationMs": 1137,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.numbers.teach",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-6.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1566,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.numbers.work",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-6.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1447,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.numbers.push",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-6.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1391,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.techniques.teach",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-6.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 2253,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.techniques.work",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-6.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 2013,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.technical.techniques.push",
+    "combination": "1-2-3-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-6.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1953,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.numbers.teach",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-6.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1446,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.numbers.work",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-6.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1334,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.numbers.push",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-6.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1187,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.techniques.teach",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-6.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 2141,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.techniques.work",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-6.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1934,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.steady.techniques.push",
+    "combination": "1-2-3-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-6.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1729,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.numbers.teach",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-6.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1322,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.numbers.work",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-6.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1164,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.numbers.push",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-6.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 936,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.techniques.teach",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-6.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1623,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.techniques.work",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-6.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1407,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.pressure.techniques.push",
+    "combination": "1-2-3-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-6.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1083,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.numbers.teach",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-6.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1163,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.numbers.work",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-6.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 936,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.numbers.push",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-6.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 904,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.techniques.teach",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-6.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1516,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.techniques.work",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-6.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1083,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-6.sprint.techniques.push",
+    "combination": "1-2-3-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-6.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "6"
+    ],
+    "durationMs": 1019,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.numbers.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-pivot.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1914,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.numbers.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-pivot.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1556,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.numbers.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-pivot.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1462,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.techniques.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-pivot.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 2181,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.techniques.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-pivot.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1861,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.technical.techniques.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-pivot.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1722,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.numbers.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-pivot.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1711,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.numbers.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-pivot.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1475,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.numbers.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-pivot.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1358,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.techniques.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-pivot.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1977,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.techniques.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-pivot.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1766,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.steady.techniques.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-pivot.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1515,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.numbers.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-pivot.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1580,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.numbers.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-pivot.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1391,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.numbers.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-pivot.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 955,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.techniques.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-pivot.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1667,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.techniques.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-pivot.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1380,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.pressure.techniques.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-pivot.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1022,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.numbers.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-3-pivot.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1489,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.numbers.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-3-pivot.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 955,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.numbers.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-3-pivot.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 860,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.techniques.teach",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-3-pivot.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1516,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.techniques.work",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-3-pivot.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 1022,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-3-pivot.sprint.techniques.push",
+    "combination": "1-2-3-pivot",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-3-pivot.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "3",
+      "pivot"
+    ],
+    "durationMs": 970,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.numbers.teach",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-5.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1412,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.numbers.work",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-5.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1164,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.numbers.push",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-5.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1046,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.techniques.teach",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-5.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1739,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.techniques.work",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-5.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1593,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.technical.techniques.push",
+    "combination": "1-2-5",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-5.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1447,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.numbers.teach",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-5.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1153,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.numbers.work",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-5.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1038,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.numbers.push",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-5.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 908,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.techniques.teach",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-5.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1617,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.techniques.work",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-5.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1426,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.steady.techniques.push",
+    "combination": "1-2-5",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-5.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1352,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.numbers.teach",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-5.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1066,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.numbers.work",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-5.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 932,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.numbers.push",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-5.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 772,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.techniques.teach",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-5.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1392,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.techniques.work",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-5.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1185,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.pressure.techniques.push",
+    "combination": "1-2-5",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-5.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 991,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.numbers.teach",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-5.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 967,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.numbers.work",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-5.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 772,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.numbers.push",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-5.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 685,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.techniques.teach",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-5.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 1299,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.techniques.work",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-5.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 991,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-5.sprint.techniques.push",
+    "combination": "1-2-5",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-5.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "5"
+    ],
+    "durationMs": 944,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.numbers.teach",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-circle.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1647,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.numbers.work",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-circle.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1449,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.numbers.push",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-circle.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1310,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.techniques.teach",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-circle.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1859,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.techniques.work",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-circle.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1633,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.technical.techniques.push",
+    "combination": "1-2-circle",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-circle.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1495,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.numbers.teach",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-circle.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1525,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.numbers.work",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-circle.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1343,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.numbers.push",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-circle.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1187,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.techniques.teach",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-circle.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1707,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.techniques.work",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-circle.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1503,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.steady.techniques.push",
+    "combination": "1-2-circle",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-circle.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1381,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.numbers.teach",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-circle.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1408,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.numbers.work",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-circle.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1249,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.numbers.push",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-circle.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1039,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.techniques.teach",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-circle.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1573,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.techniques.work",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-circle.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1392,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.pressure.techniques.push",
+    "combination": "1-2-circle",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-circle.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1091,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.numbers.teach",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2-circle.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1315,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.numbers.work",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2-circle.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1099,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.numbers.push",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2-circle.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 971,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.techniques.teach",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2-circle.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1511,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.techniques.work",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2-circle.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1151,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2-circle.sprint.techniques.push",
+    "combination": "1-2-circle",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2-circle.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2",
+      "circle"
+    ],
+    "durationMs": 1058,
     "wordMarks": [],
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
@@ -3912,6 +6744,1248 @@
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
+    "cueId": "1-2b-3-2b.technical.numbers.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2b-3-2b.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2043,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.technical.numbers.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2b-3-2b.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1818,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.technical.numbers.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2b-3-2b.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1652,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.technical.techniques.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2b-3-2b.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2744,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.technical.techniques.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2b-3-2b.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2387,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.technical.techniques.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2b-3-2b.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2314,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.numbers.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2b-3-2b.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1880,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.numbers.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2b-3-2b.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1627,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.numbers.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2b-3-2b.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1451,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.techniques.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2b-3-2b.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2557,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.techniques.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2b-3-2b.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2249,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.steady.techniques.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2b-3-2b.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2111,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.numbers.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2b-3-2b.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1617,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.numbers.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2b-3-2b.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1429,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.numbers.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2b-3-2b.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1144,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.techniques.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2b-3-2b.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 2119,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.techniques.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2b-3-2b.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1787,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.pressure.techniques.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2b-3-2b.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1382,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.numbers.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-2b-3-2b.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1501,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.numbers.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-2b-3-2b.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1140,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.numbers.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-2b-3-2b.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1031,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.techniques.teach",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-2b-3-2b.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1963,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.techniques.work",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-2b-3-2b.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1382,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-2b-3-2b.sprint.techniques.push",
+    "combination": "1-2b-3-2b",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-2b-3-2b.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "2b",
+      "3",
+      "2b"
+    ],
+    "durationMs": 1269,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.numbers.teach",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-4-3-2.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1780,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.numbers.work",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-4-3-2.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1495,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.numbers.push",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-4-3-2.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1430,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.techniques.teach",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-4-3-2.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 2192,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.techniques.work",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-4-3-2.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1830,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.technical.techniques.push",
+    "combination": "1-4-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-4-3-2.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1767,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.numbers.teach",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-4-3-2.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1471,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.numbers.work",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-4-3-2.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1405,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.numbers.push",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-4-3-2.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1223,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.techniques.teach",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-4-3-2.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1938,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.techniques.work",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-4-3-2.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1748,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.steady.techniques.push",
+    "combination": "1-4-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-4-3-2.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1635,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.numbers.teach",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-4-3-2.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1365,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.numbers.work",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-4-3-2.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1164,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.numbers.push",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-4-3-2.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 953,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.techniques.teach",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-4-3-2.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1618,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.techniques.work",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-4-3-2.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1416,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.pressure.techniques.push",
+    "combination": "1-4-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-4-3-2.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1048,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.numbers.teach",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-4-3-2.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1219,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.numbers.work",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-4-3-2.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 953,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.numbers.push",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-4-3-2.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 906,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.techniques.teach",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-4-3-2.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1497,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.techniques.work",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-4-3-2.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1048,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-4-3-2.sprint.techniques.push",
+    "combination": "1-4-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-4-3-2.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "4",
+      "3",
+      "2"
+    ],
+    "durationMs": 1001,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.numbers.teach",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-6.technical.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1020,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 750
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.numbers.work",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-6.technical.numbers.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 881,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 610
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.numbers.push",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-6.technical.numbers.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 818,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 580
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.techniques.teach",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-6.technical.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1497,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.techniques.work",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-6.technical.techniques.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1274,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.technical.techniques.push",
+    "combination": "1-6",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-6.technical.techniques.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1193,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 730
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.numbers.teach",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-6.steady.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 895,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 640
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.numbers.work",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-6.steady.numbers.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 810,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.numbers.push",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-6.steady.numbers.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 692,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.techniques.teach",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-6.steady.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1293,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "6",
+        "offsetMs": 810
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.techniques.work",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-6.steady.techniques.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1171,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.steady.techniques.push",
+    "combination": "1-6",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-6.steady.techniques.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1107,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.numbers.teach",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-6.pressure.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 801,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.numbers.work",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-6.pressure.numbers.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 685,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.numbers.push",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-6.pressure.numbers.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 642,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.techniques.teach",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-6.pressure.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 1050,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.techniques.work",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-6.pressure.techniques.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 956,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.pressure.techniques.push",
+    "combination": "1-6",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-6.pressure.techniques.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 795,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.numbers.teach",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "1-6.sprint.numbers.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 686,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.numbers.work",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "1-6.sprint.numbers.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 642,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.numbers.push",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "1-6.sprint.numbers.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 603,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.techniques.teach",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "1-6.sprint.techniques.teach.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 947,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.techniques.work",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "1-6.sprint.techniques.work.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 773,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "1-6.sprint.techniques.push",
+    "combination": "1-6",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "1-6.sprint.techniques.push.wav",
+    "tokens": [
+      "1",
+      "6"
+    ],
+    "durationMs": 702,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
     "cueId": "1b-2-3-2.technical.numbers.teach",
     "combination": "1b-2-3-2",
     "cadence": "technical",
@@ -4320,6 +8394,366 @@
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
   {
+    "cueId": "2-3.technical.numbers.teach",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "2-3.technical.numbers.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 1072,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.technical.numbers.work",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "2-3.technical.numbers.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 941,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.technical.numbers.push",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "2-3.technical.numbers.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 885,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.technical.techniques.teach",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "2-3.technical.techniques.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 1282,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.technical.techniques.work",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "2-3.technical.techniques.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 1140,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.technical.techniques.push",
+    "combination": "2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "2-3.technical.techniques.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 988,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.numbers.teach",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "2-3.steady.numbers.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 921,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.numbers.work",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "2-3.steady.numbers.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 856,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.numbers.push",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "2-3.steady.numbers.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 770,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.techniques.teach",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "2-3.steady.techniques.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 1144,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.techniques.work",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "2-3.steady.techniques.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 994,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.steady.techniques.push",
+    "combination": "2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "2-3.steady.techniques.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 915,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.numbers.teach",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "2-3.pressure.numbers.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 856,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.numbers.work",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "2-3.pressure.numbers.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 769,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.numbers.push",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "2-3.pressure.numbers.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 704,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.techniques.teach",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "2-3.pressure.techniques.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 838,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.techniques.work",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "2-3.pressure.techniques.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 746,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.pressure.techniques.push",
+    "combination": "2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "2-3.pressure.techniques.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 662,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.numbers.teach",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "2-3.sprint.numbers.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 729,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.numbers.work",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "2-3.sprint.numbers.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 704,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.numbers.push",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "2-3.sprint.numbers.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 590,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.techniques.teach",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "2-3.sprint.techniques.teach.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 765,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.techniques.work",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "2-3.sprint.techniques.work.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 662,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "2-3.sprint.techniques.push",
+    "combination": "2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "2-3.sprint.techniques.push.wav",
+    "tokens": [
+      "2",
+      "3"
+    ],
+    "durationMs": 579,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
     "cueId": "2-3-6.technical.numbers.teach",
     "combination": "2-3-6",
     "cadence": "technical",
@@ -4716,6 +9150,1270 @@
       "6"
     ],
     "durationMs": 852,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.numbers.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "bob and weave-3-2.technical.numbers.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1881,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.numbers.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "bob and weave-3-2.technical.numbers.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1526,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.numbers.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "bob and weave-3-2.technical.numbers.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1495,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.techniques.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "bob and weave-3-2.technical.techniques.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 2253,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.techniques.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "bob and weave-3-2.technical.techniques.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1763,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.technical.techniques.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "bob and weave-3-2.technical.techniques.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1668,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.numbers.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "bob and weave-3-2.steady.numbers.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1627,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.numbers.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "bob and weave-3-2.steady.numbers.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1495,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.numbers.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "bob and weave-3-2.steady.numbers.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1291,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.techniques.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "bob and weave-3-2.steady.techniques.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1976,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.techniques.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "bob and weave-3-2.steady.techniques.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1668,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.steady.techniques.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "bob and weave-3-2.steady.techniques.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1535,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.numbers.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "bob and weave-3-2.pressure.numbers.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1569,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.numbers.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "bob and weave-3-2.pressure.numbers.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1234,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.numbers.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "bob and weave-3-2.pressure.numbers.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1022,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.techniques.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "bob and weave-3-2.pressure.techniques.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1626,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.techniques.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "bob and weave-3-2.pressure.techniques.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1313,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.pressure.techniques.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "bob and weave-3-2.pressure.techniques.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1040,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.numbers.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "bob and weave-3-2.sprint.numbers.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1416,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.numbers.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "bob and weave-3-2.sprint.numbers.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1022,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.numbers.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "bob and weave-3-2.sprint.numbers.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 987,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.techniques.teach",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "bob and weave-3-2.sprint.techniques.teach.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1440,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.techniques.work",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "bob and weave-3-2.sprint.techniques.work.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 1015,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "bob and weave-3-2.sprint.techniques.push",
+    "combination": "bob and weave-3-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "bob and weave-3-2.sprint.techniques.push.wav",
+    "tokens": [
+      "bob and weave",
+      "3",
+      "2"
+    ],
+    "durationMs": 981,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.numbers.teach",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "duck-2-3.technical.numbers.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1669,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 730
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.numbers.work",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "duck-2-3.technical.numbers.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1469,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 280
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 610
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.numbers.push",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "duck-2-3.technical.numbers.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1259,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.techniques.teach",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "duck-2-3.technical.techniques.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1846,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1090
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.techniques.work",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "duck-2-3.technical.techniques.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1609,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 280
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 950
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.technical.techniques.push",
+    "combination": "duck-2-3",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "duck-2-3.technical.techniques.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1404,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.numbers.teach",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "duck-2-3.steady.numbers.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1557,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 280
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 680
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.numbers.work",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "duck-2-3.steady.numbers.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1294,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 210
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 510
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.numbers.push",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "duck-2-3.steady.numbers.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1151,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.techniques.teach",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "duck-2-3.steady.techniques.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1699,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "duck",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 300
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1040
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.techniques.work",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "duck-2-3.steady.techniques.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1437,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.steady.techniques.push",
+    "combination": "duck-2-3",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "duck-2-3.steady.techniques.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1298,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.numbers.teach",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "duck-2-3.pressure.numbers.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1363,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.numbers.work",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "duck-2-3.pressure.numbers.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1181,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.numbers.push",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "duck-2-3.pressure.numbers.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 993,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.techniques.teach",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "duck-2-3.pressure.techniques.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1354,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.techniques.work",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "duck-2-3.pressure.techniques.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1160,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.pressure.techniques.push",
+    "combination": "duck-2-3",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "duck-2-3.pressure.techniques.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 969,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.numbers.teach",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "duck-2-3.sprint.numbers.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1271,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.numbers.work",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "duck-2-3.sprint.numbers.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1048,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.numbers.push",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "duck-2-3.sprint.numbers.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 943,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.techniques.teach",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "duck-2-3.sprint.techniques.teach.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 1261,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.techniques.work",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "duck-2-3.sprint.techniques.work.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 989,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "duck-2-3.sprint.techniques.push",
+    "combination": "duck-2-3",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "duck-2-3.sprint.techniques.push.wav",
+    "tokens": [
+      "duck",
+      "2",
+      "3"
+    ],
+    "durationMs": 934,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.numbers.teach",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "pull-1-2.technical.numbers.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1584,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.numbers.work",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "pull-1-2.technical.numbers.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1400,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.numbers.push",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "pull-1-2.technical.numbers.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1217,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.techniques.teach",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "pull-1-2.technical.techniques.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1735,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.techniques.work",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "pull-1-2.technical.techniques.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1522,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.technical.techniques.push",
+    "combination": "pull-1-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "pull-1-2.technical.techniques.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1392,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.numbers.teach",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "pull-1-2.steady.numbers.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1447,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.numbers.work",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "pull-1-2.steady.numbers.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1275,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.numbers.push",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "pull-1-2.steady.numbers.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1120,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.techniques.teach",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "pull-1-2.steady.techniques.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1604,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.techniques.work",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "pull-1-2.steady.techniques.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1452,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.steady.techniques.push",
+    "combination": "pull-1-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "pull-1-2.steady.techniques.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1303,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.numbers.teach",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "pull-1-2.pressure.numbers.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1323,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.numbers.work",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "pull-1-2.pressure.numbers.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1144,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.numbers.push",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "pull-1-2.pressure.numbers.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 948,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.techniques.teach",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "pull-1-2.pressure.techniques.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1501,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.techniques.work",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "pull-1-2.pressure.techniques.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1326,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.pressure.techniques.push",
+    "combination": "pull-1-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "pull-1-2.pressure.techniques.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1038,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.numbers.teach",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "pull-1-2.sprint.numbers.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1216,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.numbers.work",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "pull-1-2.sprint.numbers.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1008,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.numbers.push",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "pull-1-2.sprint.numbers.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 885,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.techniques.teach",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "pull-1-2.sprint.techniques.teach.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1404,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.techniques.work",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "pull-1-2.sprint.techniques.work.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 1098,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "pull-1-2.sprint.techniques.push",
+    "combination": "pull-1-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "pull-1-2.sprint.techniques.push.wav",
+    "tokens": [
+      "pull",
+      "1",
+      "2"
+    ],
+    "durationMs": 968,
     "wordMarks": [],
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
@@ -6140,6 +11838,564 @@
       "2"
     ],
     "durationMs": 1000,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.numbers.teach",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "slip-2.technical.numbers.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1496,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 850
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.numbers.work",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "slip-2.technical.numbers.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1303,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 730
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.numbers.push",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "slip-2.technical.numbers.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1115,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 930
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.techniques.teach",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "slip-2.technical.techniques.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1500,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.techniques.work",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "slip-2.technical.techniques.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1299,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 990
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.technical.techniques.push",
+    "combination": "slip-2",
+    "cadence": "technical",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "slip-2.technical.techniques.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1154,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 900
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.numbers.teach",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "slip-2.steady.numbers.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1325,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 1110
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.numbers.work",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "slip-2.steady.numbers.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1168,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 620
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.numbers.push",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "slip-2.steady.numbers.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1022,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 830
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.techniques.teach",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "slip-2.steady.techniques.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1349,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 1050
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.techniques.work",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "slip-2.steady.techniques.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1193,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 940
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.steady.techniques.push",
+    "combination": "slip-2",
+    "cadence": "steady",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "slip-2.steady.techniques.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1066,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 820
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.numbers.teach",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "slip-2.pressure.numbers.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1233,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 690
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.numbers.work",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "slip-2.pressure.numbers.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1082,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 890
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.numbers.push",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "slip-2.pressure.numbers.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 761,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.techniques.teach",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "slip-2.pressure.techniques.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1279,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 1020
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.techniques.work",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "slip-2.pressure.techniques.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1057,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 900
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.pressure.techniques.push",
+    "combination": "slip-2",
+    "cadence": "pressure",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "slip-2.pressure.techniques.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 741,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.numbers.teach",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "teach",
+    "file": "slip-2.sprint.numbers.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1117,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 620
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.numbers.work",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "work",
+    "file": "slip-2.sprint.numbers.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 922,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 460
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.numbers.push",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "numbers",
+    "performance": "push",
+    "file": "slip-2.sprint.numbers.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 674,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.techniques.teach",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "teach",
+    "file": "slip-2.sprint.techniques.teach.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 1157,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 0
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 910
+      }
+    ],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.techniques.work",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "work",
+    "file": "slip-2.sprint.techniques.work.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 732,
+    "wordMarks": [],
+    "renderer": "kokoro-stone-theatrical-broadcast"
+  },
+  {
+    "cueId": "slip-2.sprint.techniques.push",
+    "combination": "slip-2",
+    "cadence": "sprint",
+    "vocabulary": "techniques",
+    "performance": "push",
+    "file": "slip-2.sprint.techniques.push.wav",
+    "tokens": [
+      "slip",
+      "2"
+    ],
+    "durationMs": 663,
     "wordMarks": [],
     "renderer": "kokoro-stone-theatrical-broadcast"
   },
