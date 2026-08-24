@@ -147,10 +147,10 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
 
       <Text style={styles.heading}>{`Old-School Cornerman — ${AXIS}`}</Text>
       <Text style={styles.note}>
-        aged-melodic, at three depths of pitch movement. Play with music running; each row plays
-        the same phrase across all three back to back, so the comparison is direct rather than
-        from memory. Judge the phrases with a defense token hardest — the beat and the hard
-        landing are what changed.
+        {`Play with music running. Each row plays the same phrase across all ${VARIANTS.length} ` +
+          'back to back, so the comparison is direct rather than from memory. Every variant is ' +
+          'built from the same synthesized take, so anything you hear is the chain under test, ' +
+          'not a different reading of the line.'}
       </Text>
       {note ? <Text style={styles.warn}>{note}</Text> : null}
 
