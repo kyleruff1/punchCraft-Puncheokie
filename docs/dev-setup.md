@@ -17,6 +17,15 @@ Windows 11 workstation + a physical Android tablet. The tablet is the BLE centra
 - `adb` from platform-tools, ADB debug over USB enabled on the tablet.
 - `gh` 2.92.0 authenticated as `kyleruff1` with scopes `gist, project, read:org, repo, workflow`.
 - Netlify CLI 27 and Claude Code 2.1 are installed globally but not required for this project.
+- **ffmpeg 9.0** (`winget install --id Gyan.FFmpeg`) — required only to
+  *regenerate* Voice Coach clips, not to build or run the app. The generated
+  clips are committed, so a fresh checkout needs ffmpeg only if the voice
+  changes.
+
+  winget installs it without refreshing the current shell's `PATH`, so a new
+  terminal is needed before `ffmpeg` resolves by name.
+  `tools/voice/make-phrase-clips.mjs` looks in both places and fails with the
+  install command rather than silently skipping post-processing.
 
 ## Repository identity
 
