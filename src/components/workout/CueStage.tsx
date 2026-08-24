@@ -40,6 +40,13 @@ export interface CueView {
    * it. M32-08 supplies it by counting the cues sharing a `blockId`.
    */
   repeatTotal?: number
+  /**
+   * A presentation identity stable across the reps of a block. When present it
+   * keys the token nodes instead of `cue.id`, so a repeated combo stays mounted
+   * — shown once with an advancing counter rather than re-animating each rep
+   * (doc §14, §19.2). Falls back to `cue.id` when absent.
+   */
+  presentationKey?: string
 }
 
 export interface CueStageProps {
@@ -63,8 +70,12 @@ function renderToken(
   size: 'stage' | 'preview',
   reducedMotion: boolean,
   affirmed: boolean,
+  presentationKey: string,
 ): React.JSX.Element | null {
-  const key = `${cue.id}-${index}`
+  // React identity is block-stable so a repeated combo does not remount each
+  // rep; the affirmation re-trigger stays rep-varying (`cue.id` changes per
+  // rep) so the gold burst fires again when a punch lands on the next rep.
+  const key = `${presentationKey}-${index}`
   switch (token.kind) {
     case 'punch':
       return (
@@ -137,6 +148,7 @@ function CueRow(props: {
 }): React.JSX.Element {
   const { view, size, reducedMotion, testID } = props
   const { cue } = view
+  const presentationKey = view.presentationKey ?? cue.id
   const coachTokens = cue.tokens.filter((t) => t.kind === 'coach')
 
   return (
@@ -151,6 +163,7 @@ function CueRow(props: {
             size,
             reducedMotion,
             view.affirmedTokenIndexes?.includes(index) ?? false,
+            presentationKey,
           ),
         )}
       </View>

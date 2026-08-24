@@ -324,3 +324,30 @@ describe('the session machine gains no states (spec §18.1, D6)', () => {
     h.unmount()
   })
 })
+
+describe('a repeated combo is presented once, not re-shown per rep (doc §14, §19.2)', () => {
+  it('keeps a block-stable presentation key and never duplicates it in Next', () => {
+    // The round's only block repeats twice, so the engine's "next" is the
+    // second rep of the same combo. Across the whole round the runner must
+    // never hand the stage a Next that duplicates the current combo, and the
+    // presentation identity must be the block, not the per-rep cue id.
+    const h = mount()
+    h.begin()
+
+    let sawRepeatedBlock = false
+    for (let i = 0; i < 40; i += 1) {
+      const { current, next } = h.runner.readCues()
+      if (current) {
+        expect(current.presentationKey).toBe(current.cue.blockId)
+        if ((current.repeatTotal ?? 1) > 1) sawRepeatedBlock = true
+      }
+      // Never the same block in both zones — that is the duplicate the
+      // collapse removes.
+      if (current && next) expect(next.cue.blockId).not.toBe(current.cue.blockId)
+      h.step(100)
+    }
+
+    expect(sawRepeatedBlock).toBe(true)
+    h.unmount()
+  })
+})

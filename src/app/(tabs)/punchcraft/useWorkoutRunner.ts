@@ -169,6 +169,13 @@ interface CueRenderState {
   tokenStates: TokenVisualState[]
   repeatTotal: number
   affirmedTokenIndexes: number[]
+  /**
+   * A presentation identity stable across the reps of a block. Keyed on
+   * `blockId` so the stage keeps the same nodes mounted while a repeated combo
+   * runs — the combo is shown once and the counter advances, rather than the
+   * whole row remounting and re-animating each rep (doc §14, §19.2).
+   */
+  presentationKey: string
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
@@ -266,6 +273,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         tokenStates: states ?? cue.tokens.map(() => 'upcoming' as const),
         repeatTotal: repeatTotals.get(cue.blockId) ?? 1,
         affirmedTokenIndexes: [...affirmedRef.current],
+        presentationKey: cue.blockId,
       }
     },
     [repeatTotals],
@@ -340,7 +348,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
     const isActive = snap.status === 'active' || snap.status === 'accepting'
     currentRef.current = renderStateFor(snap.current, states(snap.current, isActive))
-    nextRef.current = renderStateFor(snap.next)
+    // Hide "Next" while a repeated combo runs: the engine's next is just the
+    // next rep of the same block, so showing it duplicates what is already on
+    // screen. The next *distinct* block previews normally once the reps finish.
+    const nextIsSameBlock =
+      snap.next !== undefined && snap.next.blockId === snap.current?.blockId
+    nextRef.current = nextIsSameBlock ? null : renderStateFor(snap.next)
   }, [renderStateFor])
 
   // -------------------------------------------------------------------------
