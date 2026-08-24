@@ -40,13 +40,23 @@ const OUT_ROOT = join('assets', 'voice', 'audition')
  * less than the cost of guessing wrong.
  */
 const BLENDS = {
-  'aged-authoritative': { am_michael: 0.55, am_fenrir: 0.25, am_santa: 0.2 },
   'aged-melodic': { am_michael: 0.45, am_fenrir: 0.25, am_puck: 0.2, am_santa: 0.1 },
-  'heavier-cornerman': { am_fenrir: 0.45, am_michael: 0.35, am_santa: 0.2 },
-  'more-theatrical': { am_michael: 0.4, am_puck: 0.35, am_fenrir: 0.15, am_santa: 0.1 },
 }
 
-const PHRASES = ['1', '2', '1-2', '1-1-2', '1-2-3-2', '1-2-roll-3-2']
+/**
+ * Round two settles **expression**, not timbre.
+ *
+ * Round one compared four blends and aged-melodic won across every phrase, so
+ * the blend axis is spent. What it also showed is that the winning voice was
+ * still too flat, which is a prosody problem: a different blend would only
+ * have produced a different monotone.
+ *
+ * The phrase set leans on movement tokens, because that is where the delivery
+ * was weakest — the roll was being read as one more item in a list.
+ */
+const EXPRESSIONS = ['measured', 'expressive', 'theatrical']
+
+const PHRASES = ['1', '1-2', '1-2-3-2', '1-2-roll-3-2', '1-slip-2', '2-3-2-roll-1-2']
 const VOCABULARIES = ['numbers', 'techniques']
 const PERFORMANCES = ['teach', 'work', 'push']
 /** One cadence for the audition: the persona, not the tempo, is under test. */
@@ -199,6 +209,108 @@ function trimEnds(path, { headMs = 20, tailMs = 100, thresholdRatio = 0.02 } = {
 }
 
 /**
+ * Set the beats around a movement token, in the rendered audio.
+ *
+ * ## Why this is not concatenation
+ *
+ * The objection to stitching words together stands: separately synthesized
+ * clips never sound like one person. Nothing is stitched here. This is a
+ * single Kokoro utterance, and the only edit is **lengthening a silence the
+ * synthesizer already produced** — the timbre, the breath and the pitch
+ * contour run continuously across it.
+ *
+ * It runs before the production chain on purpose. The reverb is applied
+ * afterwards, so the room tail decays across the inserted gap; inserting
+ * digital silence into a finished, reverberant clip would read as a dropout.
+ *
+ * The cut point is found by searching for the quietest moment near the
+ * estimated boundary rather than trusting the estimate, because the estimate
+ * comes from token weights and the truth comes from the audio. A search that
+ * lands slightly off lengthens a pause; an arithmetic cut that lands slightly
+ * off clips a consonant.
+ */
+function insertBeats(path, beats) {
+  if (!beats || beats.length === 0) return
+  const wav = readWav(path)
+  if (!wav) return
+  const { buffer, fmt, data, bytesPerFrame, frames } = wav
+  if (fmt.channels !== 1) return
+
+  const rate = fmt.sampleRate
+  const sampleAt = (frame) => buffer.readInt16LE(data.start + frame * bytesPerFrame)
+  const windowFrames = Math.max(1, Math.round(rate * 0.008))
+  const energy = (centre) => {
+    let sum = 0
+    const from = Math.max(0, centre - windowFrames)
+    const to = Math.min(frames - 1, centre + windowFrames)
+    for (let f = from; f <= to; f += 1) sum += Math.abs(sampleAt(f))
+    return sum / Math.max(1, to - from + 1)
+  }
+
+  const quietLevel = 32_767 * 0.02
+  const searchFrames = Math.round(rate * 0.18)
+
+  const cuts = []
+  for (const beat of beats) {
+    const estimate = Math.round(beat.at * frames)
+    let best = estimate
+    let bestEnergy = Infinity
+    for (
+      let f = Math.max(windowFrames, estimate - searchFrames);
+      f <= Math.min(frames - 1 - windowFrames, estimate + searchFrames);
+      f += windowFrames
+    ) {
+      const value = energy(f)
+      if (value < bestEnergy) {
+        bestEnergy = value
+        best = f
+      }
+    }
+
+    // How much silence is already there, so a beat is set to a length rather
+    // than blindly extended by a fixed amount.
+    let from = best
+    while (from > 0 && Math.abs(sampleAt(from)) < quietLevel) from -= 1
+    let to = best
+    while (to < frames - 1 && Math.abs(sampleAt(to)) < quietLevel) to += 1
+    const existingMs = ((to - from) / rate) * 1000
+
+    const padMs = Math.max(0, beat.targetMs - existingMs)
+    if (padMs < 10) continue
+    cuts.push({ frame: best, padFrames: Math.round((padMs / 1000) * rate) })
+  }
+  if (cuts.length === 0) return
+
+  cuts.sort((a, b) => a.frame - b.frame)
+  const pieces = []
+  let cursor = 0
+  for (const cut of cuts) {
+    if (cut.frame < cursor) continue
+    pieces.push(buffer.subarray(data.start + cursor * bytesPerFrame, data.start + cut.frame * bytesPerFrame))
+    pieces.push(Buffer.alloc(cut.padFrames * bytesPerFrame))
+    cursor = cut.frame
+  }
+  pieces.push(buffer.subarray(data.start + cursor * bytesPerFrame, data.start + frames * bytesPerFrame))
+  const body = Buffer.concat(pieces)
+
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0)
+  header.writeUInt32LE(36 + body.length, 4)
+  header.write('WAVE', 8)
+  header.write('fmt ', 12)
+  header.writeUInt32LE(16, 16)
+  header.writeUInt16LE(1, 20)
+  header.writeUInt16LE(fmt.channels, 22)
+  header.writeUInt32LE(rate, 24)
+  header.writeUInt32LE(rate * bytesPerFrame, 28)
+  header.writeUInt16LE(bytesPerFrame, 32)
+  header.writeUInt16LE(fmt.bitsPerSample, 34)
+  header.write('data', 36)
+  header.writeUInt32LE(body.length, 40)
+  writeFileSync(path, Buffer.concat([header, body]))
+}
+
+/**
  * Duration of the finished file.
  *
  * Parses the chunk list rather than assuming a 44-byte header — ffmpeg writes
@@ -224,13 +336,24 @@ for (const combination of PHRASES) {
   for (const blend of Object.keys(BLENDS)) {
     for (const vocabulary of VOCABULARIES) {
       for (const performance of PERFORMANCES) {
-        const plan = compilePhrase({ tokens, vocabulary, cadence: CADENCE, performance })
-        // A lone command is a bark. At the combination speed it arrives as an
-        // announcement, which is the opposite of "the coach just saw an
-        // opening".
-        if (plan.profile === 'single') plan.speed = Math.round(plan.speed * 1.3 * 100) / 100
-        const key = `${combination}.${blend}.${vocabulary}.${performance}`
-        jobs.push({ key, combination, blend, vocabulary, performance, plan, wav: join(cwd, OUT_ROOT, `${key}.wav`) })
+        for (const expression of EXPRESSIONS) {
+          const plan = compilePhrase({ tokens, vocabulary, cadence: CADENCE, performance, expression })
+          // A lone command is a bark. At the combination speed it arrives as
+          // an announcement, which is the opposite of "the coach just saw an
+          // opening".
+          if (plan.profile === 'single') plan.speed = Math.round(plan.speed * 1.3 * 100) / 100
+          const key = `${combination}.${blend}.${vocabulary}.${performance}.${expression}`
+          jobs.push({
+            key,
+            combination,
+            blend,
+            vocabulary,
+            performance,
+            expression,
+            plan,
+            wav: join(cwd, OUT_ROOT, `${key}.wav`),
+          })
+        }
       }
     }
   }
@@ -248,6 +371,15 @@ const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.
 })
 const renderFailures = renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))
 for (const failure of renderFailures) console.error(`  ${failure}`)
+
+// Beats first: the contour is anchored to normalized positions, so setting
+// the pauses before it runs is what keeps the accents landing on the right
+// words once the phrase has changed length.
+console.log('Setting movement beats…')
+for (const job of jobs) {
+  if (!existsSync(job.wav)) continue
+  insertBeats(job.wav, job.plan.beats)
+}
 
 console.log('Applying pitch contour and aged drift…')
 const contourOut = execFileSync('python', [join('tools', 'voice', 'pitch_contour.py')], {
@@ -284,6 +416,7 @@ for (const job of jobs) {
     blend: job.blend,
     vocabulary: job.vocabulary,
     performance: job.performance,
+    expression: job.expression,
     cadence: CADENCE,
     file: `${job.key}.wav`,
     spokenText: job.plan.renderedText,
@@ -313,6 +446,7 @@ const lines = [
   '  blend: string',
   '  vocabulary: string',
   '  performance: string',
+  '  expression: string',
   '  spokenText: string',
   '  durationMs: number',
   '  profile: string',
@@ -329,6 +463,7 @@ for (const entry of index) {
     `    blend: ${JSON.stringify(entry.blend)},`,
     `    vocabulary: ${JSON.stringify(entry.vocabulary)},`,
     `    performance: ${JSON.stringify(entry.performance)},`,
+    `    expression: ${JSON.stringify(entry.expression)},`,
     `    spokenText: ${JSON.stringify(entry.spokenText)},`,
     `    durationMs: ${entry.durationMs},`,
     `    profile: ${JSON.stringify(entry.profile)},`,

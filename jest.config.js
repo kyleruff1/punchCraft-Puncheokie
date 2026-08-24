@@ -1,6 +1,18 @@
+const expoPreset = require('jest-expo/jest-preset')
+
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // The preset only transforms `.[jt]sx?`, so `tools/voice/prosody.mjs` reaches
+  // jest as raw ESM and fails on its first `export`. Spreading the preset's map
+  // rather than replacing it keeps the asset transformers intact — a bare
+  // `transform` key overrides the preset outright, which silently breaks every
+  // image and audio import in the suite.
+  transform: {
+    ...expoPreset.transform,
+    '^.+\\.mjs$': expoPreset.transform['\\.[jt]sx?$'],
+  },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'json', 'node'],
   // Two exclusions, for different reasons:
   //
   // - `.claude/worktrees/**` holds git worktrees for parallel agent

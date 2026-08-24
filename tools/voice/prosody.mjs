@@ -143,7 +143,8 @@ export const PERFORMANCES = {
     ending: '.',
     groupSeparator: '... ',
     finalAccentDb: 1.2,
-    contourScale: 0.7,
+    contourScale: 0.9,
+    beatMs: 280,
     pitchShiftSemitones: -0.5,
   },
   work: {
@@ -152,17 +153,35 @@ export const PERFORMANCES = {
     groupSeparator: ', ',
     finalAccentDb: 2.2,
     contourScale: 1.0,
+    beatMs: 210,
     pitchShiftSemitones: -0.85,
   },
   push: {
     speedScale: 1.12,
     ending: '!',
-    // No breath left to take between groups.
-    groupSeparator: ' ',
+    // A comma still, even here. Running the groups together was flatter, not
+    // more urgent: without the break there is nothing for the accent to land
+    // against.
+    groupSeparator: ', ',
     finalAccentDb: 3.0,
-    contourScale: 1.25,
+    contourScale: 1.2,
+    beatMs: 150,
     pitchShiftSemitones: -1.1,
   },
+}
+
+/**
+ * How far the pitch actually moves.
+ *
+ * The first pass was audibly too flat — the contour was there but shallow
+ * enough to read as an even delivery. Expression multiplies the whole curve,
+ * so the sing-song can be dialled without re-authoring every control point.
+ */
+export const EXPRESSION = {
+  measured: 1.0,
+  expressive: 1.9,
+  /** Chosen by ear over music, across every phrase in the round-two audition. */
+  theatrical: 2.6,
 }
 
 /** Base synthesis speed per cadence, before the performance scales it. */
@@ -175,47 +194,90 @@ export const CADENCE_SPEED = {
 
 /* ------------------------------------------------------------------- contour */
 
-/**
- * Normalized pitch contours: rise → settle → rise higher → hard finish.
- *
- * This is where the sing-song lives. It should read as a coach projecting,
- * never as singing, which is why the final fall is the largest move — a
- * combination ends by landing, not by trailing off.
- */
-const CONTOURS = {
-  2: [
-    { at: 0.0, st: -0.4 },
-    { at: 0.48, st: 0.7 },
-    { at: 1.0, st: -1.3 },
-  ],
-  3: [
-    { at: 0.0, st: -0.2 },
-    { at: 0.45, st: 0.9 },
-    { at: 1.0, st: -1.4 },
-  ],
-  4: [
-    { at: 0.0, st: -0.3 },
-    { at: 0.22, st: 0.8 },
-    { at: 0.48, st: -0.2 },
-    { at: 0.72, st: 1.0 },
-    { at: 1.0, st: -1.5 },
-  ],
-}
-
 /** A single command strikes: brief rise, strong fall, nothing else. */
 const SINGLE_CONTOUR = [
   { at: 0.0, st: 0.3 },
-  { at: 0.35, st: 0.6 },
-  { at: 1.0, st: -1.8 },
+  { at: 0.35, st: 0.7 },
+  { at: 1.0, st: -2.0 },
 ]
 
-function contourFor(strikeCount, scale) {
-  const base =
-    strikeCount <= 1 ? SINGLE_CONTOUR : (CONTOURS[Math.min(strikeCount, 4)] ?? CONTOURS[4])
-  return base.map((point) => ({
-    normalizedTime: point.at,
-    offset: Math.round(point.st * scale * 100) / 100,
-  }))
+/**
+ * Build the contour from the **actual groups**, not from a strike count.
+ *
+ * The first pass interpolated a fixed curve across the whole phrase, so its
+ * peaks landed wherever they happened to fall rather than on the words that
+ * carry the accent. Anchoring each control point to a group boundary is what
+ * makes the rise arrive *on* the second punch of a pair and the fall land *on*
+ * the finish.
+ *
+ * A movement token gets the opposite shape from a punch pair: it comes in
+ * above the line and drops hard below it. That drop is the interruption — it
+ * is why the melodic run breaks at the roll instead of absorbing it as one
+ * more item in a list.
+ */
+export function groupSpans(groups) {
+  // A movement is short in words but long in time, because of the beats on
+  // either side of it. Weighting it above one token keeps the following group
+  // from starting early.
+  const weights = groups.map((g) => (isMovement(g[0]) ? 1.4 : g.length))
+  const total = weights.reduce((a, b) => a + b, 0) || 1
+  const spans = []
+  let cursor = 0
+  groups.forEach((group, index) => {
+    const span = weights[index] / total
+    spans.push({ start: cursor, end: cursor + span, span, movement: isMovement(group[0]), index })
+    cursor += span
+  })
+  return spans
+}
+
+function contourForGroups(groups, depth) {
+  if (groups.length === 1 && groups[0].length === 1 && !isMovement(groups[0][0])) {
+    return SINGLE_CONTOUR.map((p) => ({ at: p.at, st: p.st }))
+  }
+
+  const points = []
+  groups.forEach((group, index) => {
+    const { start, end, span } = groupSpans(groups)[index]
+    const isLast = index === groups.length - 1
+
+    if (isMovement(group[0])) {
+      points.push({ at: start + span * 0.15, st: 1.3 })
+      points.push({ at: end - span * 0.1, st: -1.2 })
+      return
+    }
+
+    // Light on the entry, heavy on the strike that ends the group.
+    points.push({ at: start + span * 0.08, st: index === 0 ? -0.5 : -0.25 })
+    if (group.length > 1) points.push({ at: start + span * 0.42, st: -0.7 })
+    points.push({ at: end - span * 0.14, st: isLast ? 1.5 : 1.15 })
+    if (isLast) points.push({ at: 1.0, st: -2.1 })
+  })
+
+  return points
+}
+
+/**
+ * What Praat can resynthesize before it starts to sound processed.
+ *
+ * `pitch_contour.py` clamps to this too, and that is the point: without the
+ * same limit here the plan written into the sidecar would claim a move the
+ * audio never made. The theatrical setting on a four-strike phrase asks for
+ * about -6 st on the final fall and gets -4.5, so the sidecar has to say -4.5.
+ */
+const MAX_ABS_SEMITONES = 4.5
+
+function scaleContour(points, depth, shift) {
+  const clamp = (value) =>
+    Math.max(-MAX_ABS_SEMITONES - shift, Math.min(MAX_ABS_SEMITONES - shift, value))
+  return points
+    .map((p) => ({
+      normalizedTime: Math.round(Math.max(0, Math.min(1, p.at)) * 1000) / 1000,
+      offset: Math.round(clamp(p.st * depth) * 100) / 100,
+    }))
+    // Praat interpolates between points in order; an out-of-order pair would
+    // silently produce a flat segment rather than an error.
+    .sort((a, b) => a.normalizedTime - b.normalizedTime)
 }
 
 /* ------------------------------------------------------------------ compiler */
@@ -249,6 +311,79 @@ function lowercaseInterior(text) {
 }
 
 /**
+ * Real air on both sides of a movement token.
+ *
+ * A comma gave the roll exactly the weight of any other word in the list,
+ * which is why it read as `one two roll three two` rather than as a break.
+ * The beat before it stops the run; the beat after it restarts one.
+ */
+const MOVEMENT_BEAT = '... '
+
+/**
+ * Assemble the spoken line, group by group.
+ *
+ * Two things happen here that a plain `join` cannot do: the separator depends
+ * on **which** boundary it sits at, and a movement takes its own terminal
+ * punctuation. That `!` is what makes the synthesizer land the word hard
+ * instead of trailing it into the next group, and it restores sentence case
+ * for the group that follows.
+ */
+function renderBody(spokenGroups, perf) {
+  let out = ''
+  let capitalize = true
+
+  spokenGroups.forEach((group, index) => {
+    if (index > 0) {
+      const atMovement =
+        isMovement(group.tokens[0]) || isMovement(spokenGroups[index - 1].tokens[0])
+      out += atMovement ? MOVEMENT_BEAT : perf.groupSeparator
+    }
+
+    // Sentence case, not Title Case On Every Word. Capitalising each word
+    // invites the synthesizer to treat every one as its own emphatic unit,
+    // which is the evenly-stressed delivery this system exists to avoid.
+    const inner = lowercaseInterior(group.text)
+    out += capitalize
+      ? inner.charAt(0).toUpperCase() + inner.slice(1)
+      : inner.charAt(0).toLowerCase() + inner.slice(1)
+
+    const interruption = isMovement(group.tokens[0]) && index < spokenGroups.length - 1
+    if (interruption) out += '!'
+    // The group after a beat starts a new sentence, and so does the movement
+    // itself — a lowercase word after an ellipsis is read as a continuation,
+    // which is the one thing the interruption must not be.
+    capitalize =
+      interruption ||
+      (index + 1 < spokenGroups.length && isMovement(spokenGroups[index + 1].tokens[0]))
+  })
+
+  return out
+}
+
+/**
+ * Where the phrase must stop, and for how long.
+ *
+ * The synthesizer will not give both beats on its own: an ellipsis buys a
+ * real pause *before* a word, but nothing after it — measured across six
+ * spellings, the trailing gap stayed at 40 ms whether the word was followed
+ * by `!`, `.`, `--` or a doubled ellipsis. So the entry beat is asked for in
+ * the text and the exit beat is set here, in the rendered audio.
+ *
+ * These positions are approximate on purpose. The inserter searches for the
+ * quietest point nearby rather than cutting at the arithmetic estimate, so a
+ * drifting estimate lengthens a silence instead of clipping a consonant.
+ */
+function beatsFor(groups, beatMs) {
+  const beats = []
+  for (const span of groupSpans(groups)) {
+    if (!span.movement) continue
+    if (span.index > 0) beats.push({ at: span.start, targetMs: beatMs })
+    if (span.index < groups.length - 1) beats.push({ at: span.end, targetMs: beatMs })
+  }
+  return beats
+}
+
+/**
  * Compile a canonical token sequence into a performance plan.
  *
  * The plan is written into the sidecar alongside the audio, so every clip
@@ -260,35 +395,35 @@ export function compilePhrase({
   vocabulary = 'numbers',
   cadence = 'steady',
   performance = 'work',
+  expression = 'theatrical',
 }) {
   const perf = PERFORMANCES[performance]
+  const depth = (EXPRESSION[expression] ?? EXPRESSION.expressive) * perf.contourScale
   const groups = groupTokens(tokens)
   const strikes = tokens.filter((t) => !isMovement(t)).length
 
   const spokenGroups = groups.map((group) => ({
     tokens: group,
     // The last token of a punch pair carries the accent; a lone movement
-    // token does not, because it is punctuation rather than a landing.
+    // token does not, because it is a landing of a different kind.
     accentLast: group.length > 1 || !isMovement(group[0]),
     text: group.map((t) => spokenFor(t, { vocabulary, cadence })).join(' '),
   }))
-
-  // Sentence case, not Title Case On Every Word. Capitalisation is for
-  // readability here and nothing else — the acoustic stress comes from the
-  // contour, the gain shaping and the voice, never from a capital letter.
-  const body = spokenGroups
-    .map((g, i) => (i === 0 ? g.text : g.text.charAt(0).toLowerCase() + g.text.slice(1)))
-    .join(perf.groupSeparator)
-  const renderedText = `${lowercaseInterior(body)}${perf.ending}`
 
   return {
     canonicalTokens: [...tokens],
     calloutMode: vocabulary,
     cadence,
     performance,
+    expression,
     groups: spokenGroups.map((g) => ({ tokens: g.tokens, accentLast: g.accentLast })),
-    renderedText,
-    pitchContourSemitones: contourFor(strikes, perf.contourScale),
+    renderedText: `${renderBody(spokenGroups, perf)}${perf.ending}`,
+    pitchContourSemitones: scaleContour(
+      contourForGroups(groups),
+      depth,
+      perf.pitchShiftSemitones,
+    ),
+    beats: beatsFor(groups, perf.beatMs),
     swing: SWING,
     finalAccentDb: perf.finalAccentDb,
     pitchShiftSemitones: perf.pitchShiftSemitones,

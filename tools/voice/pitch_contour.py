@@ -39,7 +39,10 @@ PITCH_FLOOR_HZ = 60.0
 PITCH_CEILING_HZ = 320.0
 # Manipulation quality degrades badly outside a sensible ratio range; a
 # combination should never need more than a couple of semitones either way.
-MAX_ABS_SEMITONES = 3.0
+# Raised from 3.0 once the contour gained an expression multiplier: at the
+# theatrical setting a four-strike phrase asks for close to +/-4 st, and
+# clamping at 3.0 silently flattened exactly the peaks under test.
+MAX_ABS_SEMITONES = 4.5
 
 
 def semitones_to_ratio(semitones: float) -> float:

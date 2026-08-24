@@ -1,20 +1,23 @@
 /**
- * Persona audition — the decisive listening test. **Dev route.**
+ * Persona audition — round two: expression. **Dev route.**
  *
- * Four candidate voice blends × two callout vocabularies × three performance
- * states, over six phrases. The whole point is comparison, so the controls
- * pick a phrase and then play the **same phrase across all four blends back
- * to back** — judging a voice in isolation is how you end up choosing the
- * first one you heard.
+ * Round one compared four blends and aged-melodic won across the board, so the
+ * timbre question is settled and that axis is gone. What remained was that the
+ * winning voice was still too flat — which no blend would have fixed, because
+ * a different voice only gives a different monotone.
+ *
+ * So this compares **three depths of pitch movement** on the one voice, plus
+ * the reworked movement handling: a real beat on either side of a defense
+ * token, and the token itself landing hard instead of sitting in the list.
  *
  * Run it **with music playing**. Every one of these clips has to survive a
  * gym mix, and a voice that reads beautifully in silence can vanish under a
  * track.
  *
- * What to listen for: perceived age, intelligibility, sing-song character,
- * forward momentum, final-punch authority, warmth between commands,
- * distinctness of one/two/three/five, defense-command clarity, and — the one
- * that only shows up on repeat — fatigue after hearing it many times.
+ * What to listen for: whether the accents land on the right punches, whether
+ * the beat around the roll reads as a break or as a stumble, final-punch
+ * authority, and — the one that only shows up on repeat — whether the
+ * theatrical setting becomes tiring after twenty calls.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -29,10 +32,10 @@ const BETWEEN_TAKES_MS = 700
 
 const uniq = (values: readonly string[]): string[] => [...new Set(values)]
 
-const BLENDS = uniq(auditionAssets.map((a) => a.blend))
 const PHRASES = uniq(auditionAssets.map((a) => a.combination))
 const VOCABULARIES = uniq(auditionAssets.map((a) => a.vocabulary))
 const PERFORMANCES = uniq(auditionAssets.map((a) => a.performance))
+const EXPRESSIONS = uniq(auditionAssets.map((a) => a.expression))
 
 const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
@@ -81,22 +84,22 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   }, [])
 
   const selectionFor = useCallback(
-    (combination: string, blend: string): AuditionAsset | undefined =>
+    (combination: string, expression: string): AuditionAsset | undefined =>
       auditionAssets.find(
         (a) =>
           a.combination === combination &&
-          a.blend === blend &&
+          a.expression === expression &&
           a.vocabulary === vocabulary &&
           a.performance === performance,
       ),
     [vocabulary, performance],
   )
 
-  const compareBlends = useCallback(
+  const compareExpressions = useCallback(
     async (combination: string): Promise<void> => {
       setNote(null)
-      for (const blend of BLENDS) {
-        const asset = selectionFor(combination, blend)
+      for (const expression of EXPRESSIONS) {
+        const asset = selectionFor(combination, expression)
         if (!asset) continue
         await playOne(asset)
         await sleep(BETWEEN_TAKES_MS)
@@ -107,13 +110,13 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
   )
 
   const comparePerformances = useCallback(
-    async (combination: string, blend: string): Promise<void> => {
+    async (combination: string, expression: string): Promise<void> => {
       setNote(null)
       for (const state of PERFORMANCES) {
         const asset = auditionAssets.find(
           (a) =>
             a.combination === combination &&
-            a.blend === blend &&
+            a.expression === expression &&
             a.vocabulary === vocabulary &&
             a.performance === state,
         )
@@ -130,16 +133,21 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
     void setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
   }, [])
 
-  const sample = useMemo(() => selectionFor(PHRASES[0] ?? '', BLENDS[0] ?? ''), [selectionFor])
+  const sample = useMemo(
+    () => selectionFor(PHRASES[0] ?? '', EXPRESSIONS[0] ?? ''),
+    [selectionFor],
+  )
 
   return (
     <ScrollView style={styles.root} contentContainerStyle={styles.container}>
       <Stack.Screen options={{ title: 'Persona audition' }} />
 
-      <Text style={styles.heading}>Old-School Cornerman — blend audition</Text>
+      <Text style={styles.heading}>Old-School Cornerman — expression</Text>
       <Text style={styles.note}>
-        Play with music running. Each row plays the same phrase across all four blends back to
-        back, so the comparison is direct rather than from memory.
+        aged-melodic, at three depths of pitch movement. Play with music running; each row plays
+        the same phrase across all three back to back, so the comparison is direct rather than
+        from memory. Judge the phrases with a defense token hardest — the beat and the hard
+        landing are what changed.
       </Text>
       {note ? <Text style={styles.warn}>{note}</Text> : null}
 
@@ -178,7 +186,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
       {sample ? <Text style={styles.detail}>{`e.g. ${sample.spokenText}`}</Text> : null}
 
       {PHRASES.map((combination) => {
-        const first = selectionFor(combination, BLENDS[0] ?? '')
+        const first = selectionFor(combination, EXPRESSIONS[0] ?? '')
         return (
           <View key={combination} style={styles.card}>
             <Text style={styles.cardTitle}>{combination}</Text>
@@ -189,22 +197,22 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
             <Pressable
               accessibilityRole="button"
               disabled={nowPlaying !== null}
-              onPress={() => void compareBlends(combination)}
+              onPress={() => void compareExpressions(combination)}
               style={[styles.button, nowPlaying !== null && styles.buttonDisabled]}
             >
-              <Text style={styles.buttonText}>Compare all 4 blends</Text>
+              <Text style={styles.buttonText}>Compare all three</Text>
             </Pressable>
 
             <View style={styles.row}>
-              {BLENDS.map((blend) => {
-                const asset = selectionFor(combination, blend)
+              {EXPRESSIONS.map((expression) => {
+                const asset = selectionFor(combination, expression)
                 const playing = nowPlaying === asset?.cueId
                 return (
                   <Pressable
                     accessibilityRole="button"
                     disabled={!asset || nowPlaying !== null}
-                    key={blend}
-                    onLongPress={() => void comparePerformances(combination, blend)}
+                    key={expression}
+                    onLongPress={() => void comparePerformances(combination, expression)}
                     onPress={() => asset && void playOne(asset).then(() => setNowPlaying(null))}
                     style={[
                       styles.blendButton,
@@ -212,7 +220,7 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
                       (!asset || nowPlaying !== null) && styles.buttonDisabled,
                     ]}
                   >
-                    <Text style={styles.blendText}>{blend.replace(/-/g, ' ')}</Text>
+                    <Text style={styles.blendText}>{expression}</Text>
                     <Text style={styles.blendHint}>
                       {asset ? `${asset.durationMs} ms` : 'missing'}
                     </Text>
@@ -225,8 +233,9 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
       })}
 
       <Text style={styles.note}>
-        Long-press a blend to hear teach / work / push back to back for that voice — the contrast
-        between states matters as much as the voice itself.
+        Long-press an expression to hear teach / work / push back to back at that depth. The
+        contrast between states matters as much as the depth, and the beat around a defense token
+        is deliberately widest in teach and tightest in push.
       </Text>
     </ScrollView>
   )
