@@ -8,7 +8,34 @@
  * All of this is build-time only; nothing here ships in the app.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs'
+import { readFileSync, renameSync, writeFileSync } from 'node:fs'
+
+/** A synchronous sleep, so a retry loop can back off without going async. */
+function sleepMs(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
+}
+
+/**
+ * `renameSync` with a short backoff on Windows lock errors.
+ *
+ * Windows briefly holds a handle on a freshly-written file — the Search
+ * indexer or Defender scanning it — and a rename onto it then fails EPERM/
+ * EBUSY. It clears on its own within a beat, so a few retries turn a batch
+ * that silently loses clips to a lock race into a clean run. Every renderer
+ * that writes through a temp file needs this, which is why it lives here.
+ */
+export function renameWithRetry(from, to, attempts = 10) {
+  for (let i = 0; ; i++) {
+    try {
+      renameSync(from, to)
+      return
+    } catch (err) {
+      const transient = err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES'
+      if (!transient || i >= attempts - 1) throw err
+      sleepMs(100 * (i + 1))
+    }
+  }
+}
 
 /** Parse a 16-bit PCM WAV by walking its chunk list. */
 export function readWav(path) {

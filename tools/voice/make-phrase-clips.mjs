@@ -55,7 +55,7 @@ import { join } from 'node:path'
 import { compilePhrase, spokenFor } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
 import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
-import { insertBeats, measureDuration, readWav, trimEnds } from './wav.mjs'
+import { insertBeats, measureDuration, readWav, renameWithRetry, trimEnds } from './wav.mjs'
 
 /**
  * The persona to render, via `--persona=<id>`; the active one by default.
@@ -171,32 +171,6 @@ function combinationsFromCorpus() {
     }
   }
   return [...found].sort()
-}
-
-/** A synchronous sleep, so a retry loop can back off without going async. */
-function sleepMs(ms) {
-  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms)
-}
-
-/**
- * `renameSync` with a short backoff on Windows lock errors.
- *
- * Windows briefly holds a handle on a freshly-written file — the Search
- * indexer or Defender scanning it — and a rename onto it then fails EPERM/
- * EBUSY. It cleared on its own within a beat, so a few retries turn a batch
- * that lost ~20 clips to a lock race into a clean 744/744.
- */
-function renameWithRetry(from, to, attempts = 10) {
-  for (let i = 0; ; i++) {
-    try {
-      renameSync(from, to)
-      return
-    } catch (err) {
-      const transient = err.code === 'EPERM' || err.code === 'EBUSY' || err.code === 'EACCES'
-      if (!transient || i >= attempts - 1) throw err
-      sleepMs(100 * (i + 1))
-    }
-  }
 }
 
 /** Apply the production texture in place. See `texture.mjs`. */

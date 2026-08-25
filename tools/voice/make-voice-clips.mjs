@@ -9,12 +9,14 @@
  *
  * ## In the persona now, not SAPI
  *
- * These were Windows SAPI placeholders. They now come from the same settled
- * Old-School Cornerman persona as the combinations — stone blend, theatrical
- * contour, broadcast texture — so a technical round and the fallback path sound
- * like the same coach, not a different one. Each word is a single-strike
- * delivery: a clear, firm command that lands, rather than the shouted finish a
- * combination ends on.
+ * These were Windows SAPI placeholders. They now come from the same active
+ * persona as the combinations — whichever engine and voice `persona.mjs`
+ * selects — so a technical round and the fallback path sound like the same
+ * coach, not a different one. That consistency is the whole reason this script
+ * follows the phrase generator's engine: a fallback that speaks in a different
+ * voice is worse than no fallback, because it reads as a bug rather than a
+ * limitation. Each word is a single-strike delivery: a clear, firm command that
+ * lands, rather than the shouted finish a combination ends on.
  *
  * ## Two vocabularies and two forms, one set of ids (D15)
  *
@@ -33,7 +35,9 @@
  * needs no edit — only the audio behind each file changes.
  *
  * Run: node tools/voice/make-voice-clips.mjs
- * Requires: the Kokoro model files and ffmpeg — see tools/voice/README.md.
+ * Requires: ffmpeg, plus whatever the active persona's engine needs — the
+ * Chatterbox venv and a CUDA GPU, or the Kokoro model files. See
+ * tools/voice/README.md.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -44,13 +48,17 @@ import { join } from 'node:path'
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
 import {
+  CHATTERBOX_TEMPO_CALIBRATION,
+  ENGINE,
+  EXAGGERATION,
   PRODUCTION_BLEND,
   PRODUCTION_BLEND_NAME,
   PRODUCTION_EXPRESSION,
   PRODUCTION_TEXTURE,
+  REFERENCE_VOICE,
   RENDERER,
 } from './persona.mjs'
-import { measureDuration, trimEnds } from './wav.mjs'
+import { measureDuration, trimEnds, renameWithRetry } from './wav.mjs'
 
 const OUT_ROOT = join('assets', 'voice')
 const SAMPLE_RATE = 44_100
@@ -136,6 +144,13 @@ function findFfmpeg() {
 
 const FFMPEG = findFfmpeg()
 
+/**
+ * The interpreter that has Chatterbox and a CUDA build of PyTorch. Not the
+ * repo's default `python` — see tools/voice/README.md.
+ */
+const CHATTERBOX_PYTHON =
+  process.env.CHATTERBOX_PYTHON ?? 'F:/voice-tools/venv/Scripts/python.exe'
+
 /** Apply the production texture in place (single-strike profile). */
 function postProcess(path, finalAccentDb) {
   const filters = textureChain(PRODUCTION_TEXTURE, { profile: 'single', finalAccentDb })
@@ -147,7 +162,7 @@ function postProcess(path, finalAccentDb) {
     { stdio: 'ignore' },
   )
   if (!existsSync(temp)) throw new Error(`ffmpeg produced nothing for ${path}`)
-  renameSync(temp, path)
+  renameWithRetry(temp, path)
 }
 
 /** A short synthesised tone. Unchanged — a bell is a bell in any voice. */
@@ -209,21 +224,64 @@ for (const vocabulary of ['numbers', 'names']) {
 
 console.log(`Rendering ${jobs.length} word clips — ${RENDERER}…`)
 
-const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
-  input: JSON.stringify({
-    blends: { [PRODUCTION_BLEND_NAME]: PRODUCTION_BLEND },
-    jobs: jobs.map((j) => ({
-      path: j.wav,
-      text: j.plan.renderedText,
-      speed: j.plan.speed,
-      blend: PRODUCTION_BLEND_NAME,
-    })),
-  }),
-  encoding: 'utf8',
-  maxBuffer: 32 * 1024 * 1024,
-})
+const renderOut =
+  ENGINE === 'chatterbox'
+    ? execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
+        input: JSON.stringify({
+          reference: REFERENCE_VOICE,
+          // A lone word is the working call, not a teaching one and not the
+          // shouted end of a combination — the same `work` state the plans are
+          // compiled at above.
+          jobs: jobs.map((j) => ({
+            path: j.wav,
+            text: j.plan.renderedText,
+            ...(EXAGGERATION.work ?? {}),
+          })),
+        }),
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      })
+    : execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
+        input: JSON.stringify({
+          blends: { [PRODUCTION_BLEND_NAME]: PRODUCTION_BLEND },
+          jobs: jobs.map((j) => ({
+            path: j.wav,
+            text: j.plan.renderedText,
+            speed: j.plan.speed,
+            blend: PRODUCTION_BLEND_NAME,
+          })),
+        }),
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      })
 for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
   console.error(`  ${failure}`)
+}
+
+// Chatterbox has no speed control, so the form's tempo is applied afterwards —
+// formant-preserving, so clipping a word for the `combo` form does not raise
+// its pitch into a different voice. Without this a word inside a run would run
+// as long as an announcement.
+if (ENGINE === 'chatterbox') {
+  console.log('Fitting tempo per form…')
+  for (const job of jobs) {
+    if (!existsSync(job.wav)) continue
+    const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
+    if (!Number.isFinite(rate) || Math.abs(rate - 1) < 0.02) continue
+    const temp = `${job.wav}.t.wav`
+    try {
+      execFileSync(
+        FFMPEG,
+        ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav,
+          '-af', `rubberband=tempo=${rate.toFixed(3)}:formant=preserved:pitchq=quality`,
+          '-ar', '24000', '-ac', '1', temp],
+        { stdio: 'ignore' },
+      )
+      if (existsSync(temp)) renameWithRetry(temp, job.wav)
+    } catch (error) {
+      console.error(`  FAIL tempo ${job.vocabulary}/${job.form}/${job.id}: ${error.message.split('\n')[0]}`)
+    }
+  }
 }
 
 // Trim, then the contour + aged drift, then the texture — the same order the
