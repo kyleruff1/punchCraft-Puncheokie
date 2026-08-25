@@ -30,7 +30,7 @@ describe('summarizeRecipe — doc §8.2 line classes', () => {
   it('opens with duration, rounds and goal', () => {
     const { lines } = summarize({ durationMinutes: 30, totalPunchGoal: 1800 })
     expect(lines[0]).toContain('30 minutes')
-    expect(lines[0]).toContain('7 rounds')
+    expect(lines[0]).toContain('6 rounds')
     expect(lines[0]).toContain('1,800')
   })
 
@@ -70,8 +70,8 @@ describe('summarizeRecipe — doc §8.2 line classes', () => {
   })
 
   it('computes the pace against active minutes, not session minutes', () => {
-    // 1000 punches over 20 session minutes is only 15 ACTIVE minutes -> 67/min.
-    expect(summarize({ durationMinutes: 20, totalPunchGoal: 1000 }).expectedActivePace).toBe(67)
+    // 1000 punches over 20 session minutes is only 16 ACTIVE minutes -> 63/min.
+    expect(summarize({ durationMinutes: 20, totalPunchGoal: 1000 }).expectedActivePace).toBe(63)
   })
 })
 

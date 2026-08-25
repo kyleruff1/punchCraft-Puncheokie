@@ -75,10 +75,11 @@ describe('generateWorkout — targets and structure', () => {
     expect(scoredRounds(workout.schedule)).toHaveLength(schedule.scoredRoundCount)
   })
 
-  it('includes a non-scored warm-up and cooldown for a 30-minute workout', () => {
+  it('closes with a non-scored cooldown and scores exactly the rounds', () => {
+    // No warm-up at any duration since D21 — see roundSchedule's SHAPES.
     const workout = generateWorkout(recipe({ durationMinutes: 30 }))
     const kinds = workout.schedule.map((r) => r.kind)
-    expect(kinds[0]).toBe('warm-up')
+    expect(kinds[0]).toBe('round')
     expect(kinds[kinds.length - 1]).toBe('cooldown')
     for (const round of workout.schedule) {
       expect(round.countsTowardGoal).toBe(round.kind === 'round')

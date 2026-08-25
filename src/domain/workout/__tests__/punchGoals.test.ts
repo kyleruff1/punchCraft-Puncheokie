@@ -109,11 +109,11 @@ describe('impliedTargets — doc §10 20-minute vectors', () => {
   const schedule20 = buildRoundSchedule(20)
 
   it.each([
-    [800, 160, 53],
-    [1000, 200, 67],
-    [1200, 240, 80],
-    [1500, 300, 100],
-    [2000, 400, 133],
+    [800, 200, 50],
+    [1000, 250, 63],
+    [1200, 300, 75],
+    [1500, 375, 94],
+    [2000, 500, 125],
   ])('a %i goal is %i per round and about %i per active minute', (goal, perRound, perMinute) => {
     const targets = impliedTargets(goal, schedule20)
     expect(targets.perScoredRound).toBe(perRound)
@@ -121,16 +121,16 @@ describe('impliedTargets — doc §10 20-minute vectors', () => {
   })
 
   it('computes the rate against active seconds, not total session time', () => {
-    // 20 minutes of session is only 15 minutes of punching; using session
-    // time would understate the required pace by a quarter.
+    // 20 minutes of session is only 16 minutes of punching; using session
+    // time would understate the required pace by a fifth.
     const targets = impliedTargets(1000, schedule20)
-    expect(targets.activePunchesPerMinute).toBeCloseTo(1000 / 15, 6)
+    expect(targets.activePunchesPerMinute).toBeCloseTo(1000 / 16, 6)
     expect(targets.activePunchesPerMinute).not.toBeCloseTo(1000 / 20, 3)
   })
 
-  it('excludes warm-up and cooldown from the per-round divisor', () => {
+  it('excludes the cooldown from the per-round divisor', () => {
     const schedule30 = buildRoundSchedule(30)
-    expect(impliedTargets(1500, schedule30).perScoredRound).toBeCloseTo(1500 / 7, 6)
+    expect(impliedTargets(1500, schedule30).perScoredRound).toBeCloseTo(1500 / 6, 6)
   })
 })
 

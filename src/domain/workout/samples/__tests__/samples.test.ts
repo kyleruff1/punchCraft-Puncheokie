@@ -140,9 +140,9 @@ describe('three-round-fundamentals reproduces the doc §4 fragment', () => {
     expect(threeRoundFundamentals.recipe.seed).toBe('fundamentals-2026-08-22')
   })
 
-  it('names round 1 "Jab and cross rhythm" and runs 3:00 work / 1:00 rest', () => {
+  it('names round 1 "Jab and cross rhythm" and runs 4:00 work / 1:00 rest', () => {
     expect(round1.theme).toBe('Jab and cross rhythm')
-    expect(round1.workDurationMs).toBe(180_000)
+    expect(round1.workDurationMs).toBe(240_000)
     expect(round1.restAfterMs).toBe(60_000)
   })
 

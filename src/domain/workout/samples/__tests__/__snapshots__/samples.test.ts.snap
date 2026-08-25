@@ -48,6 +48,28 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       },
       {
         "id": "j1-b5",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 48,
+        "tokens": [
+          "1@0",
+          "1@0.6",
+        ],
+      },
+      {
+        "id": "j1-b6",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+        ],
+      },
+      {
+        "id": "j1-b7",
         "kind": "active-recovery",
         "repeat": null,
         "stance": "inherit",
@@ -57,7 +79,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 94,
+    "target": 162,
     "theme": "Establish the jab",
   },
   {
@@ -99,33 +121,6 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       },
       {
         "id": "j2-b4",
-        "kind": "repeated-combo",
-        "repeat": 12,
-        "stance": "inherit",
-        "targetPunches": null,
-        "tokens": [
-          "1@0",
-          "2@0.7",
-        ],
-      },
-      {
-        "id": "j2-b5",
-        "kind": "active-recovery",
-        "repeat": null,
-        "stance": "inherit",
-        "targetPunches": 7,
-        "tokens": [
-          "1@0",
-        ],
-      },
-    ],
-    "target": 117,
-    "theme": "Double-jab entries",
-  },
-  {
-    "blocks": [
-      {
-        "id": "j3-b1",
         "kind": "defense-counter",
         "repeat": null,
         "stance": "inherit",
@@ -137,7 +132,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j3-b2",
+        "id": "j2-b5",
         "kind": "repeated-combo",
         "repeat": 8,
         "stance": "inherit",
@@ -149,18 +144,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j3-b3",
-        "kind": "volume-burst",
-        "repeat": null,
-        "stance": "inherit",
-        "targetPunches": 66,
-        "tokens": [
-          "1@0",
-          "2@0.65",
-        ],
-      },
-      {
-        "id": "j3-b4",
+        "id": "j2-b6",
         "kind": "defense-counter",
         "repeat": null,
         "stance": "inherit",
@@ -172,7 +156,18 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j3-b5",
+        "id": "j2-b7",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 66,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+        ],
+      },
+      {
+        "id": "j2-b8",
         "kind": "active-recovery",
         "repeat": null,
         "stance": "inherit",
@@ -182,13 +177,13 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 101,
-    "theme": "Jab into the counter",
+    "target": 187,
+    "theme": "Double jabs into the counter",
   },
   {
     "blocks": [
       {
-        "id": "j4-b1",
+        "id": "j3-b1",
         "kind": "repeated-combo",
         "repeat": 8,
         "stance": "inherit",
@@ -200,7 +195,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j4-b2",
+        "id": "j3-b2",
         "kind": "repeated-combo",
         "repeat": 6,
         "stance": "inherit",
@@ -213,7 +208,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j4-b3",
+        "id": "j3-b3",
         "kind": "volume-burst",
         "repeat": null,
         "stance": "inherit",
@@ -224,7 +219,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j4-b4",
+        "id": "j3-b4",
         "kind": "repeated-combo",
         "repeat": 8,
         "stance": "inherit",
@@ -236,7 +231,30 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j4-b5",
+        "id": "j3-b5",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@0.65",
+          "3@1.4",
+        ],
+      },
+      {
+        "id": "j3-b6",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 58,
+        "tokens": [
+          "1@0",
+          "2@0.6",
+        ],
+      },
+      {
+        "id": "j3-b7",
         "kind": "active-recovery",
         "repeat": null,
         "stance": "inherit",
@@ -246,13 +264,13 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 142,
+    "target": 224,
     "theme": "Body-to-head changes",
   },
   {
     "blocks": [
       {
-        "id": "j5-b1",
+        "id": "j4-b1",
         "kind": "repeated-combo",
         "repeat": 8,
         "stance": "inherit",
@@ -265,7 +283,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j5-b2",
+        "id": "j4-b2",
         "kind": "volume-burst",
         "repeat": null,
         "stance": "inherit",
@@ -277,7 +295,19 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j5-b3",
+        "id": "j4-b3",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6",
+          "3@1.25",
+        ],
+      },
+      {
+        "id": "j4-b4",
         "kind": "volume-burst",
         "repeat": null,
         "stance": "inherit",
@@ -288,7 +318,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
       {
-        "id": "j5-b4",
+        "id": "j4-b5",
         "kind": "open-pressure",
         "repeat": null,
         "stance": "inherit",
@@ -299,7 +329,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 256,
+    "target": 286,
     "theme": "Final high-volume round",
   },
 ]

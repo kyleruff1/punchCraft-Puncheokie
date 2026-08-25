@@ -275,7 +275,8 @@ describe('edge cases', () => {
   })
 
   it('computes an average rate over scored rounds only', () => {
-    // Three 3-minute rounds: 27 punches over 9 minutes = 3/min.
-    expect(summary().avgRatePerMin).toBe(3)
+    // Three 4-minute rounds (D21): 27 punches over 12 minutes = 2.25/min,
+    // reported to one decimal.
+    expect(summary().avgRatePerMin).toBe(2.3)
   })
 })

@@ -103,7 +103,7 @@ const rounds: ProgramRound[] = ROUND_PLAN.map((plan, index) => {
     kind: 'round',
     countsTowardGoal: true,
     theme: plan.theme,
-    workDurationMs: 180_000,
+    workDurationMs: 240_000,
     restAfterMs: isLast ? 0 : 60_000,
     targetPunches: roundPunchCount(blocks),
     blocks,
@@ -111,7 +111,7 @@ const rounds: ProgramRound[] = ROUND_PLAN.map((plan, index) => {
 })
 
 const totalGoal = rounds.reduce((sum, r) => sum + r.targetPunches, 0)
-const activeMinutes = (rounds.length * 180_000) / 60_000
+const activeMinutes = (rounds.length * 240_000) / 60_000
 
 export const switchByRound: GeneratedWorkout = {
   id: 'switch-by-round',

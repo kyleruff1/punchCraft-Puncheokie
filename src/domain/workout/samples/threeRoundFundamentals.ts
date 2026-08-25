@@ -25,7 +25,7 @@ import { GENERATOR_VERSION } from '../versions'
 import { layBlocks, roundPunchCount, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.steady.nominalBpm
-const WORK_MS = 180_000
+const WORK_MS = 240_000
 const REST_MS = 60_000
 
 /** Round 1 — the doc §4 fragment, then range-finding volume. */
