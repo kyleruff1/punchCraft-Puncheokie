@@ -324,9 +324,31 @@ for (const combination of combinations) {
  * take has the right number of syllables. 250-800ms per word covers a rushed
  * call and a leisurely one; anything outside is either dropped or padded.
  */
-function phraseBoundsMs(words) {
+function finalBoundsMs(words) {
   const n = Math.max(1, words)
-  return { minDurationMs: 250 * n, maxDurationMs: 800 * n + 200 }
+  return { minMs: 250 * n, maxMs: 800 * n + 200 }
+}
+
+/**
+ * Bounds passed to Chatterbox, scaled up by the tempo-fit rate that will
+ * shrink the clip afterwards.
+ *
+ * Rubberband tempo>1 shortens playback, so the FINAL wav is roughly
+ * Chatterbox output ÷ rate. If we want the final "one, two" to land in
+ * [500, 1800] ms and the rate is 1.55 (sprint cadence), Chatterbox has to
+ * produce [775, 2790] ms — otherwise the first render's bounds hold before
+ * tempo fit but the final wav ends up at 450ms and reads as compressed.
+ * Same words, same fit; the scaling is what makes the window a promise
+ * about the file the athlete hears rather than one about the intermediate.
+ */
+function chatterboxBoundsForJob(job) {
+  const { minMs, maxMs } = finalBoundsMs(job.spokenWordCount)
+  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
+  const scale = Number.isFinite(rate) && rate > 0 ? rate : 1
+  return {
+    minDurationMs: Math.round(minMs * scale),
+    maxDurationMs: Math.round(maxMs * scale),
+  }
 }
 
 if (!manifestOnly) {
@@ -341,7 +363,7 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work),
-            ...phraseBoundsMs(j.spokenWordCount),
+            ...chatterboxBoundsForJob(j),
           })),
         }),
         encoding: 'utf8',
