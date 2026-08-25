@@ -14,18 +14,20 @@
  * "the app loaded" and "the app opened".
  *
  * A tap continues immediately; otherwise a short auto-advance carries the
- * athlete in. Kept small — this is not a marketing page, it is a room
- * you walk through.
+ * athlete in. The logo is the whole content — the wordmark is baked into it,
+ * so there is no separate title to keep in sync.
  */
 
 import React, { useEffect, useRef } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 
 import { colors } from '@/theme/colors'
 
-const AUTO_ADVANCE_MS = 1_500
+const AUTO_ADVANCE_MS = 1_800
 const DESTINATION = '/(tabs)/punchcraft' as const
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const LOGO = require('../../assets/branding/punchcraft-logo.png') as number
 
 export default function SplashScreen(): React.JSX.Element {
   const router = useRouter()
@@ -53,8 +55,12 @@ export default function SplashScreen(): React.JSX.Element {
       testID="splash-screen"
     >
       <View style={styles.center}>
-        <Text style={styles.title}>punchCraft</Text>
-        <Text style={styles.tagline}>Build a workout · Own the round</Text>
+        <Image
+          source={LOGO}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="punchCraft"
+        />
       </View>
       <Text style={styles.hint}>Tap to continue</Text>
     </Pressable>
@@ -67,23 +73,20 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   center: {
+    // Bounded so a landscape tablet keeps the logo the primary object rather
+    // than stretching to fill and losing the wordmark's proportions.
+    width: '100%',
+    maxWidth: 720,
+    aspectRatio: 5 / 3, // matches the 2000×1200 source
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
   },
-  title: {
-    fontSize: 44,
-    fontWeight: '800',
-    color: colors.accent,
-    letterSpacing: 1.0,
-  },
-  tagline: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+  logo: {
+    width: '100%',
+    height: '100%',
   },
   hint: {
     position: 'absolute',
