@@ -3,14 +3,23 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 
+/**
+ * Fallback for a URL that resolves to no route.
+ *
+ * Sends the athlete to punchCraft rather than Velocity Lab — that is where
+ * the workout lives. Velocity Lab is a diagnostic bench, not the front door,
+ * and landing an unrecognised deep link on the diagnostic bench was
+ * confusing every time it happened. The splash at `/` is what the app
+ * ordinarily opens on; this is only for a link that missed altogether.
+ */
 export default function NotFound() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: 'Not found' }} />
       <Text style={styles.title}>Route not found</Text>
-      <Link href="/(tabs)/velocity-lab" asChild>
+      <Link href="/(tabs)/punchcraft" asChild>
         <Pressable style={styles.linkButton}>
-          <Text style={styles.linkButtonText}>Go to Velocity Lab</Text>
+          <Text style={styles.linkButtonText}>Go to punchCraft</Text>
         </Pressable>
       </Link>
     </View>

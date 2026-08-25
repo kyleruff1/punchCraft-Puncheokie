@@ -33,6 +33,10 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <Stack screenOptions={stackScreenOptions}>
+          {/* Splash comes first so the app opens on itself, not on the tabs
+              layout's first render — and any deep link that resolves to `/`
+              lands here rather than falling to `+not-found`. */}
+          <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Settings' }} />
           <Stack.Screen
