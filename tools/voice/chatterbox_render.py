@@ -10,8 +10,16 @@ Reads a JSON spec on stdin:
     {
       "reference": "tools/voice/reference/cornerman-reference.wav",
       "jobs": [{"path": "...", "text": "...", "exaggeration": 0.7,
-                "cfgWeight": 0.4}]
+                "cfgWeight": 0.4, "maxDurationMs": 900}]
     }
+
+`maxDurationMs` is optional and enables a best-of-N retry. Chatterbox is
+markedly unstable on very short inputs: measured, a bare "Five!" rendered at
+2.20s on one run and 0.80s on the next from identical settings, and no
+`cfg_weight` fixed it — the model simply sometimes keeps generating. A single
+spoken digit that lasts three seconds cannot be scheduled against a beat, so
+jobs that know their plausible length ask for a bound and the renderer keeps
+generating until a take fits, falling back to the shortest it saw.
 
 Prints `OK <path> <durationMs>` or `FAIL <path> <message>` per job, so one bad
 job never sinks a batch, then `DONE <n> in <s>s`.
@@ -67,20 +75,36 @@ def main() -> int:
 
     started = time.time()
     jobs = spec["jobs"]
+    attempts_cap = int(spec.get("attempts", 5))
+
     for entry in jobs:
         path = entry["path"]
+        max_ms = entry.get("maxDurationMs")
+        attempts = attempts_cap if max_ms else 1
         try:
-            wav = model.generate(
-                entry["text"],
-                audio_prompt_path=reference,
-                exaggeration=float(entry.get("exaggeration", 0.7)),
-                cfg_weight=float(entry.get("cfgWeight", 0.4)),
-            )
-            samples = wav.detach().cpu().numpy()
-            if samples.ndim > 1:
-                samples = samples.squeeze()
+            best = None  # (samples, duration_ms) — the shortest take seen
+            for attempt in range(attempts):
+                wav = model.generate(
+                    entry["text"],
+                    audio_prompt_path=reference,
+                    exaggeration=float(entry.get("exaggeration", 0.7)),
+                    cfg_weight=float(entry.get("cfgWeight", 0.4)),
+                )
+                samples = wav.detach().cpu().numpy()
+                if samples.ndim > 1:
+                    samples = samples.squeeze()
+                duration_ms = len(samples) / model.sr * 1000
+                if best is None or duration_ms < best[1]:
+                    best = (samples, duration_ms)
+                if max_ms is None or duration_ms <= float(max_ms):
+                    break
+
+            samples, duration_ms = best
             sf.write(path, samples.astype(np.float32), model.sr)
-            print(f"OK {path} {round(len(samples) / model.sr * 1000)}", flush=True)
+            # Report an over-long take rather than letting it pass silently — a
+            # call that cannot fit its beat is a defect, not a variation.
+            over = "" if max_ms is None or duration_ms <= float(max_ms) else f" OVER {round(float(max_ms))}"
+            print(f"OK {path} {round(duration_ms)}{over}", flush=True)
         except Exception as exc:
             print(f"FAIL {path} {exc}", flush=True)
 

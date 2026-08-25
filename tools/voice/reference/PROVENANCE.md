@@ -9,46 +9,46 @@ rather than left in a commit message.
 
 | | |
 |---|---|
-| Work | *Treasure Island* by Robert Louis Stevenson — LibriVox **full-cast dramatic reading** |
-| Archive item | [`treasure_island_dram_1306_librivox`](https://archive.org/details/treasure_island_dram_1306_librivox) |
-| File | `treasureisland_20_stevenson.mp3` (Chapter 20, "Silver's Embassy") |
-| Extract | 300.0 s – 315.0 s, resampled to 24 kHz mono |
-| SHA-256 | `e2fdf76f196f3db9a53a52b49378c86be6ce2ab563d5ec897954c538828f5cdc` |
+| Origin | **Original recording by Kyle Ruff**, the project owner, performing the coach |
+| Recorded | 2026-08-24 |
+| Source file | `chatterbox_boxing_coach.wav` — 30.4s, 16 kHz mono |
+| Extract | 4.65 s – 20.65 s (16 s), resampled to 24 kHz mono |
+| SHA-256 | `0e43cae5002b3a307526ec4388b3776b7fdec079556fe0c43bf450720a06ed81` |
 
+The extract skips 4.65 s of leading silence and takes sixteen seconds of
+continuous speech — comfortably inside the 7–20 s Chatterbox clones best from.
 Reproduce with:
 
 ```bash
-ffmpeg -ss 300 -t 15 -i treasureisland_20_stevenson.mp3 -ar 24000 -ac 1 cornerman-reference.wav
+ffmpeg -ss 4.65 -t 16 -i chatterbox_boxing_coach.wav -ar 24000 -ac 1 cornerman-reference.wav
 ```
 
 ## Licensing
 
-**CC0 1.0 Universal** (public domain dedication) —
-`http://creativecommons.org/publicdomain/zero/1.0/`, as recorded on the archive
-item's metadata.
-
-Two independent reasons the audio is free of copyright:
-
-1. **The text** — Stevenson died in 1894; *Treasure Island* (1883) is long out
-   of copyright worldwide.
-2. **The recording** — LibriVox volunteers dedicate their recordings to the
-   public domain (CC0). That dedication covers derivative use, which is what
-   voice cloning is.
+**Owned outright.** The reference is the project owner's own voice, recorded for
+this purpose. No third-party rights attach to the recording, the performance or
+the voice itself, so the rendered corpus carries no licensing obligation and no
+attribution requirement.
 
 ## Why this reference and not another
 
-Deliberately **not** a recognisable performance by an identifiable actor. Voices
-such as Mickey Goldmill (Burgess Meredith) or Painty the Pirate (Patrick Pinney,
-a Viacom/Paramount character) were considered and rejected: cloning them would
-engage both the underlying rights in the character and the performer's own
-voice and publicity rights, which survive the performer in several
-jurisdictions. The archetype — a boisterous, theatrical, bellowing showman — is
-not ownable; a specific person's voice is. This reference gets the archetype
-from a source that carries no such claim.
+Deliberately **not** a recognisable performance by an identifiable actor.
+Voices such as Mickey Goldmill (Burgess Meredith) and Painty the Pirate (Patrick
+Pinney, a Viacom/Paramount character) were considered and rejected: cloning them
+would engage both the rights in the character and the performer's own voice and
+publicity rights, which survive the performer in several jurisdictions.
+
+Public-domain archive material was auditioned next — a US Army bayonet-drill
+instructor (1938, a government work) and Long John Silver from a CC0 LibriVox
+dramatic reading of *Treasure Island*. Both were legally clean but read as
+restrained: an archive is full of people **reading**, and the brief called for
+someone **performing** — a boisterous showman bellowing at a crowd. An original
+recording was the shortest path to that, and it is the cleanest provenance
+available.
 
 ## If this file changes
 
 Changing the reference changes the voice of every clip in the corpus. Treat it
 like a decoder version: update this file, bump `PERSONA_VERSION` in
-`persona.mjs`, and re-render the whole corpus so no clip is left in the old
+`personas.mjs`, and re-render the whole corpus so no clip is left in the old
 voice.

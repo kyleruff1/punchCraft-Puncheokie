@@ -121,6 +121,24 @@ const TONES = {
  */
 const FORM_SPEED = { standalone: 1.18, combo: 1.5 }
 
+/**
+ * The longest a spoken command may plausibly run, before the tempo fit.
+ *
+ * A per-token call has to land on a beat, and the fastest cadence gives it
+ * about 430ms — so a digit that renders at three seconds is not a stylistic
+ * variation, it is unusable. Chatterbox is genuinely unstable on inputs this
+ * short: measured, a bare "Five!" came back at 2.20s on one run and 0.80s on
+ * the next from identical settings, and no `cfg_weight` removed the spread.
+ * The renderer therefore takes a bound and keeps generating until a take fits.
+ *
+ * Scaled by word count so "cut off the ring" is not held to a digit's budget,
+ * and by form because a combo word is clipped tighter than an announcement.
+ */
+function maxWordMs(words, form) {
+  const base = form === 'combo' ? 620 : 780
+  return base + Math.max(0, words - 1) * 300
+}
+
 function findFfmpeg() {
   const candidates = [
     'ffmpeg',
@@ -217,7 +235,15 @@ for (const vocabulary of ['numbers', 'names']) {
         finish: 'land',
       })
       plan.speed = FORM_SPEED[form]
-      jobs.push({ id, vocabulary, form, plan, wav: join(cwd, dir, `${id}.wav`) })
+      jobs.push({
+        id,
+        vocabulary,
+        form,
+        plan,
+        // "Cut off the ring" needs a longer budget than "Five" — see maxWordMs.
+        words: text.trim().split(/\s+/).length,
+        wav: join(cwd, dir, `${id}.wav`),
+      })
     }
   }
 }
@@ -236,6 +262,7 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION.work ?? {}),
+            maxDurationMs: maxWordMs(j.words, j.form),
           })),
         }),
         encoding: 'utf8',

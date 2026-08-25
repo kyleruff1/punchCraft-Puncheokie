@@ -89,17 +89,25 @@ const CADENCES = ['technical', 'steady', 'pressure', 'sprint']
 const VOCABULARIES = ['numbers', 'techniques']
 
 /**
- * The three performance states, each with the finish that fits it.
+ * The performance states this persona renders, each with the finish that fits
+ * it — narrowed by `persona.performances` when the persona does not
+ * differentiate them.
  *
- * The persona finish is `shout`, but a shouted finish is wrong for a *teaching*
- * call — teach lands soft and deliberate. So the finish is chosen per state
- * rather than pinned globally: teach settles, work and push shout.
+ * The full set is teach / work / push, where a shouted finish is wrong for a
+ * *teaching* call so teach settles while work and push shout. The shipped
+ * cornerman renders **push alone**: the calmer deliveries auditioned as tame,
+ * and rendering three identical variants would triple the corpus for no audible
+ * difference. `performanceFor` still selects a state at runtime, so restoring
+ * the axis is a re-render rather than a rewrite.
  */
-const PERFORMANCES = [
+const ALL_PERFORMANCES = [
   { name: 'teach', finish: 'land' },
   { name: 'work', finish: PRODUCTION_FINISH },
   { name: 'push', finish: PRODUCTION_FINISH },
 ]
+const PERFORMANCES = PERSONA.performances
+  ? ALL_PERFORMANCES.filter((p) => PERSONA.performances.includes(p.name))
+  : ALL_PERFORMANCES
 
 /** Aged drift — small enough to read as weathered rather than unsteady. */
 const DRIFT_SEMITONES = 0.14
@@ -517,6 +525,12 @@ lines.push(
   ' * performance state and the voice. Vocabulary and performance default to the',
   ' * production baseline (numbers / work) and the persona to the shipped voice,',
   ' * so a caller that has not been widened still resolves the clip it always did.',
+  ' *',
+  ' * **The performance is a preference, not a requirement.** A persona may render',
+  ' * one delivery for every state (the shipped cornerman renders push alone), so',
+  ' * an exact miss falls back to whatever performance that combination does have',
+  ' * rather than returning undefined — which would drop the caller to the',
+  ' * per-word path and change the voice mid-workout.',
   ' */',
   'export function findPhraseAsset(',
   '  combination: string,',
@@ -525,14 +539,14 @@ lines.push(
   "  performance: PerformanceState = 'work',",
   '  persona: string = DEFAULT_PERSONA,',
   '): PhraseAsset | undefined {',
-  '  return phraseAssets.find(',
+  '  const matches = phraseAssets.filter(',
   '    (a) =>',
   '      a.persona === persona &&',
   '      a.combination === combination &&',
   '      a.cadence === cadence &&',
-  '      a.vocabulary === vocabulary &&',
-  '      a.performance === performance,',
+  '      a.vocabulary === vocabulary,',
   '  )',
+  '  return matches.find((a) => a.performance === performance) ?? matches[0]',
   '}',
   '',
   '/** Every persona present in the manifest, for a voice picker. */',

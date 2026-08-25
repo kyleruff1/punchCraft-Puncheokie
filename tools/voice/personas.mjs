@@ -39,19 +39,32 @@ export const PERSONAS = {
   cornerman: {
     id: 'cornerman',
     label: 'Old-School Cornerman',
-    version: 'cornerman-3',
+    version: 'cornerman-4',
     engine: 'chatterbox',
     reference: 'tools/voice/reference/cornerman-reference.wav',
     /**
      * Performance state → Chatterbox intensity. `exaggeration` is how hard the
      * line is performed; `cfgWeight` trades fidelity-to-reference against
      * freedom, and lower reads looser and more urgent.
+     *
+     * **Every state is push.** The calmer settings were auditioned and read as
+     * tame — a workout coach is not a narrator, and there is no moment in a
+     * round where the athlete wants the corner to ease off. The three states
+     * survive as a selection axis (`performanceFor` still chooses one) so a
+     * future persona can differentiate them by re-rendering rather than by
+     * re-architecting, but they currently all resolve to the same delivery.
      */
     intensity: {
-      teach: { exaggeration: 0.4, cfgWeight: 0.5 },
-      work: { exaggeration: 0.7, cfgWeight: 0.4 },
+      teach: { exaggeration: 1.0, cfgWeight: 0.3 },
+      work: { exaggeration: 1.0, cfgWeight: 0.3 },
       push: { exaggeration: 1.0, cfgWeight: 0.3 },
     },
+    /**
+     * The single performance rendered, since all three intensities are equal
+     * and the finish is shared. Cuts the corpus to a third — 248 clips rather
+     * than 744, and ~15MB of shipped audio rather than ~46MB.
+     */
+    performances: ['push'],
     /**
      * Chatterbox has no speed control and runs roughly twice as long as Kokoro
      * for the same call, which a cue window will not tolerate. The plan's
