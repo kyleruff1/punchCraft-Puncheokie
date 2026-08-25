@@ -41,12 +41,13 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
+import { FORM_SPEED, SHARED_WORDS, TONES, VOCABULARY_WORDS, maxWordMs } from './wordCorpus.mjs'
 import {
   CHATTERBOX_TEMPO_CALIBRATION,
   ENGINE,
@@ -66,86 +67,6 @@ const SAMPLE_RATE = 44_100
 /** Aged drift — small enough to read as weathered rather than unsteady. */
 const DRIFT_SEMITONES = 0.14
 const DRIFT_HZ = 4.2
-
-/** Words that differ between vocabularies (D15). */
-const VOCABULARY_WORDS = {
-  numbers: { 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five', 6: 'Six' },
-  names: {
-    1: 'Jab',
-    2: 'Cross',
-    3: 'Lead hook',
-    4: 'Rear hook',
-    5: 'Lead uppercut',
-    6: 'Rear uppercut',
-  },
-}
-
-/** Words that are the same in both vocabularies. */
-const SHARED_WORDS = {
-  body: 'Body',
-  slip: 'Slip',
-  roll: 'Roll',
-  duck: 'Duck',
-  pull: 'Pull',
-  'bob-weave': 'Bob and weave',
-  pivot: 'Pivot',
-  'step-off': 'Step off',
-  circle: 'Circle',
-  'cut-off-ring': 'Cut off the ring',
-  reset: 'Reset',
-  go: 'Go',
-  stop: 'Stop',
-  switch: 'Switch',
-  // Coast announcements (D23). Whole sentences rather than words: "coast for
-  // half a minute" is one instruction, and stitching it from parts at run time
-  // is what D16 forbids. The lengths and their wording are mirrored in
-  // `src/domain/workout/coast.ts`, which a test holds to this list.
-  'coast-15': 'Coast for fifteen seconds',
-  'coast-30': 'Coast for half a minute',
-  'coast-45': 'Coast for forty-five seconds',
-  'coast-60': 'Coast for a minute',
-}
-
-/**
- * Tones are sounds, not words, so they are synthesised rather than spoken —
- * and they are identical in both vocabularies.
- *
- * The bell is a longer, lower ring; the ready tone is short and high so it
- * reads as "now" rather than as a word.
- */
-const TONES = {
-  bell: { freqHz: 660, durationMs: 400, fadeOutMs: 250 },
-  'tone-ready': { freqHz: 1_320, durationMs: 80, fadeOutMs: 20 },
-  'tone-repeat': { freqHz: 990, durationMs: 60, fadeOutMs: 15 },
-  'tone-warning': { freqHz: 520, durationMs: 300, fadeOutMs: 120 },
-}
-
-/**
- * Synthesis speed per form.
- *
- * `combo` is faster because it is a word inside a run, not an announcement.
- * Both are a single-strike delivery through `compileAdlib`; only the tempo
- * differs, so the consonants stay crisp rather than being smeared at runtime.
- */
-const FORM_SPEED = { standalone: 1.18, combo: 1.5 }
-
-/**
- * The longest a spoken command may plausibly run, before the tempo fit.
- *
- * A per-token call has to land on a beat, and the fastest cadence gives it
- * about 430ms — so a digit that renders at three seconds is not a stylistic
- * variation, it is unusable. Chatterbox is genuinely unstable on inputs this
- * short: measured, a bare "Five!" came back at 2.20s on one run and 0.80s on
- * the next from identical settings, and no `cfg_weight` removed the spread.
- * The renderer therefore takes a bound and keeps generating until a take fits.
- *
- * Scaled by word count so "cut off the ring" is not held to a digit's budget,
- * and by form because a combo word is clipped tighter than an announcement.
- */
-function maxWordMs(words, form) {
-  const base = form === 'combo' ? 620 : 780
-  return base + Math.max(0, words - 1) * 300
-}
 
 function findFfmpeg() {
   const candidates = [
@@ -227,6 +148,33 @@ function wavTone({ freqHz, durationMs, fadeOutMs }) {
 
 const cwd = process.cwd()
 
+// `--only-ids=<id1,id2,…>` renders just the named word ids (e.g. `2,go`) in
+// every vocabulary × form — the hotfix path for a flagged word clip.
+const onlyIdsArg = process.argv
+  .find((a) => a.startsWith('--only-ids='))
+  ?.slice('--only-ids='.length)
+const onlyIds = onlyIdsArg
+  ? new Set(
+      onlyIdsArg
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    )
+  : null
+
+/**
+ * The shortest a spoken command may plausibly run, after the tempo fit —
+ * scaled back up to the pre-fit take the renderer judges. Words had no floor
+ * at all until the QA loop landed, which is why a dropped syllable in "Lead
+ * uppercut" was invisible: the take was short, quiet and *plausible*. The
+ * floor is loose (180ms a word on the final file) because the ASR gate is
+ * the real syllable check; this just spares the gate obvious junk.
+ */
+function minWordMs(words, form) {
+  const rate = FORM_SPEED[form] * CHATTERBOX_TEMPO_CALIBRATION
+  return Math.round(180 * words * rate)
+}
+
 // One plan per (word, form): a single-strike command that lands. `land` rather
 // than the persona's `shout` finish — a lone call is firm and clear, not a
 // shouted combination ending.
@@ -237,6 +185,7 @@ for (const vocabulary of ['numbers', 'names']) {
     mkdirSync(dir, { recursive: true })
     const words = { ...VOCABULARY_WORDS[vocabulary], ...SHARED_WORDS }
     for (const [id, text] of Object.entries(words)) {
+      if (onlyIds && !onlyIds.has(id)) continue
       const plan = compileAdlib(`${text}!`, {
         performance: 'work',
         expression: PRODUCTION_EXPRESSION,
@@ -270,7 +219,10 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION.work ?? {}),
+            minDurationMs: minWordMs(j.words, j.form),
             maxDurationMs: maxWordMs(j.words, j.form),
+            // The ASR gate: a take must transcribe as the scripted word.
+            expectText: j.plan.renderedText,
           })),
         }),
         encoding: 'utf8',
@@ -291,6 +243,25 @@ const renderOut =
       })
 for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
   console.error(`  ${failure}`)
+}
+
+// Keep the renderer's per-candidate story (see make-phrase-clips.mjs) — the
+// silent SHORT/OVER discard is how garbled clips shipped unnoticed.
+const verdicts = renderOut
+  .split(/\r?\n/)
+  .filter((l) => l.startsWith('VERDICT '))
+  .map((l) => JSON.parse(l.slice('VERDICT '.length)))
+if (verdicts.length > 0) {
+  mkdirSync(join('tools', 'analysis'), { recursive: true })
+  writeFileSync(
+    join('tools', 'analysis', 'render-report-words.json'),
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), verdicts }, null, 1)}\n`,
+  )
+  const rejected = verdicts.filter((v) => !v.accepted)
+  console.log(`ASR gate: ${verdicts.length - rejected.length}/${verdicts.length} takes accepted.`)
+  for (const v of rejected) {
+    console.warn(`  gate fallback ${v.path} (score ${v.score ?? 'n/a'}, ${v.attempts} attempts)`)
+  }
 }
 
 // Chatterbox has no speed control, so the form's tempo is applied afterwards —

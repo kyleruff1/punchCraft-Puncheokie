@@ -40,18 +40,11 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { CADENCES, VOCABULARIES, combinationsFromCorpus, finalBoundsMs } from './corpus.mjs'
 import { compilePhrase, spokenFor } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
 import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
@@ -81,12 +74,6 @@ const PRODUCTION_FINISH = PERSONA.finish
 const PRODUCTION_TEXTURE = PERSONA.texture
 const PRODUCTION_BLEND_NAME = PERSONA.blendName ?? PERSONAS.stone.blendName
 const PRODUCTION_BLEND = PERSONA.blend ?? PERSONAS.stone.blend
-
-/** Every cadence a combination may be called at. */
-const CADENCES = ['technical', 'steady', 'pressure', 'sprint']
-
-/** Both callout vocabularies the athlete can choose between (Coach Callouts). */
-const VOCABULARIES = ['numbers', 'techniques']
 
 /**
  * The performance states this persona renders, each with the finish that fits
@@ -146,40 +133,6 @@ const FFMPEG = findFfmpeg()
  */
 const CHATTERBOX_PYTHON =
   process.env.CHATTERBOX_PYTHON ?? 'F:/voice-tools/venv/Scripts/python.exe'
-
-/**
- * Every combination the workout corpus can call.
- *
- * Scanned from the sources rather than kept as a second list here — a
- * hand-maintained list drifts silently: the workout calls a combination, no
- * phrase exists, and the coach falls back to the per-word path this whole file
- * exists to replace. Two sources feed it:
- *
- *   - the hand-authored samples (`samples/*.ts`), and
- *   - the generator's motif library (`comboLibrary.ts`, M35) — the generator
- *     emits those notations verbatim, so rendering them here is what gives a
- *     generated workout the single-take persona voice instead of per-word.
- *
- * Single-token entries are skipped — one punch is a standalone clip, and
- * rendering it as a "phrase" would just be the same word again.
- */
-function combinationsFromCorpus() {
-  const dir = join('src', 'domain', 'workout', 'samples')
-  const sources = readdirSync(dir)
-    .filter((file) => file.endsWith('.ts'))
-    .map((file) => join(dir, file))
-  sources.push(join('src', 'domain', 'workout', 'comboLibrary.ts'))
-
-  const found = new Set()
-  for (const path of sources) {
-    const source = readFileSync(path, 'utf8')
-    for (const match of source.matchAll(/notation:\s*'([^']+)'/g)) {
-      const notation = match[1]
-      if (notation.split('-').length > 1) found.add(notation)
-    }
-  }
-  return [...found].sort()
-}
 
 /** Apply the production texture in place. See `texture.mjs`. */
 function postProcess(path, { profile, finalAccentDb }) {
@@ -257,6 +210,36 @@ const cwd = process.cwd()
 const onlyArg = process.argv.find((a) => a.startsWith('--only='))?.slice('--only='.length)
 const combinations = combinationsFromCorpus().filter((c) => !onlyArg || c.includes(onlyArg))
 
+// `--only-keys=<k1,k2,…>` renders exactly the named clips (full keys like
+// `1-2b.steady.numbers.push`) — the hotfix path: re-render what the validator
+// flagged, nothing else. Like `--only`, a subset render skips the index and
+// manifest writes; follow with `--manifest-only` to refresh them from disk.
+const onlyKeysArg = process.argv
+  .find((a) => a.startsWith('--only-keys='))
+  ?.slice('--only-keys='.length)
+const onlyKeys = onlyKeysArg
+  ? new Set(
+      onlyKeysArg
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean),
+    )
+  : null
+
+/**
+ * Per-clip render overrides — the "generated differently" lever for phrases
+ * Chatterbox keeps garbling. Keyed by full clip key; fields: `text` (respelled
+ * spoken text — becomes both what is rendered and what the ASR gate expects),
+ * `cfgWeight`, `exaggeration`, `attempts`, `minMs`/`maxMs` (final-file bounds,
+ * pre tempo-fit scaling). Absent file = no overrides.
+ */
+function loadOverrides() {
+  const path = join('tools', 'voice', 'overrides.json')
+  if (!existsSync(path)) return {}
+  return JSON.parse(readFileSync(path, 'utf8'))
+}
+const OVERRIDES = loadOverrides()
+
 // `--manifest-only` skips synthesis and rebuilds index.json + the app manifest
 // from the clips already on disk. It exists to recover from a partial render
 // (a Windows lock race that dropped a clip or two) without re-synthesizing the
@@ -275,7 +258,7 @@ if (process.argv.includes('--list')) {
   process.exit(0)
 }
 
-const jobs = []
+const allJobs = []
 for (const combination of combinations) {
   const tokens = combination.split('-').map((t) => t.trim())
   for (const cadence of CADENCES) {
@@ -298,7 +281,9 @@ for (const combination of combinations) {
           (sum, t) => sum + spokenFor(t, { vocabulary }).split(' ').length,
           0,
         )
-        jobs.push({
+        const override = OVERRIDES[key] ?? {}
+        if (override.text) plan.renderedText = override.text
+        allJobs.push({
           key,
           combination,
           cadence,
@@ -306,6 +291,7 @@ for (const combination of combinations) {
           performance: performance.name,
           tokens,
           plan,
+          override,
           spokenWordCount,
           wav: join(cwd, OUT_ROOT, `${key}.wav`),
         })
@@ -314,19 +300,13 @@ for (const combination of combinations) {
   }
 }
 
-/**
- * Plausible duration window for a spoken phrase of `words` words.
- *
- * A window rather than a ceiling because Chatterbox drops syllables just as
- * often as it runs long — a "one, two" that comes back at 370ms has lost the
- * "two", and shipped this way it read as unintelligible barking after tempo
- * fit. Bounding both ends lets the best-of-N retry keep rolling until the
- * take has the right number of syllables. 250-800ms per word covers a rushed
- * call and a leisurely one; anything outside is either dropped or padded.
- */
-function finalBoundsMs(words) {
-  const n = Math.max(1, words)
-  return { minMs: 250 * n, maxMs: 800 * n + 200 }
+// The hotfix subset: exactly the flagged keys, nothing else.
+const jobs = onlyKeys ? allJobs.filter((j) => onlyKeys.has(j.key)) : allJobs
+if (onlyKeys) {
+  const known = new Set(allJobs.map((j) => j.key))
+  for (const key of onlyKeys) {
+    if (!known.has(key)) console.warn(`WARNING: --only-keys names unknown clip ${key}`)
+  }
 }
 
 /**
@@ -342,7 +322,10 @@ function finalBoundsMs(words) {
  * about the file the athlete hears rather than one about the intermediate.
  */
 function chatterboxBoundsForJob(job) {
-  const { minMs, maxMs } = finalBoundsMs(job.spokenWordCount)
+  const base = finalBoundsMs(job.spokenWordCount)
+  // Overrides speak in final-file terms, same as the base window.
+  const minMs = job.override?.minMs ?? base.minMs
+  const maxMs = job.override?.maxMs ?? base.maxMs
   const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
   const scale = Number.isFinite(rate) && rate > 0 ? rate : 1
   return {
@@ -364,6 +347,13 @@ const renderOut =
             text: j.plan.renderedText,
             ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work),
             ...chatterboxBoundsForJob(j),
+            // The ASR gate: a take must transcribe as the scripted words.
+            expectText: j.plan.renderedText,
+            ...(j.override.cfgWeight !== undefined ? { cfgWeight: j.override.cfgWeight } : {}),
+            ...(j.override.exaggeration !== undefined
+              ? { exaggeration: j.override.exaggeration }
+              : {}),
+            ...(j.override.attempts !== undefined ? { attempts: j.override.attempts } : {}),
           })),
         }),
         encoding: 'utf8',
@@ -384,6 +374,29 @@ const renderOut =
       })
 for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
   console.error(`  ${failure}`)
+}
+
+// The renderer tells the story of every job — every candidate's duration,
+// transcript and score — in VERDICT lines. Keep it: the silent SHORT/OVER
+// discard is how garbled clips shipped unnoticed the first time.
+const verdicts = renderOut
+  .split(/\r?\n/)
+  .filter((l) => l.startsWith('VERDICT '))
+  .map((l) => JSON.parse(l.slice('VERDICT '.length)))
+if (verdicts.length > 0) {
+  mkdirSync(join('tools', 'analysis'), { recursive: true })
+  writeFileSync(
+    join('tools', 'analysis', 'render-report.json'),
+    `${JSON.stringify({ generatedAt: new Date().toISOString(), verdicts }, null, 1)}\n`,
+  )
+  const rejected = verdicts.filter((v) => !v.accepted)
+  console.log(
+    `ASR gate: ${verdicts.length - rejected.length}/${verdicts.length} takes accepted; ` +
+      `report at tools/analysis/render-report.json`,
+  )
+  for (const v of rejected) {
+    console.warn(`  gate fallback ${v.path} (score ${v.score ?? 'n/a'}, ${v.attempts} attempts)`)
+  }
 }
 
 // Chatterbox has no speed control and renders roughly twice as long as Kokoro
@@ -491,10 +504,15 @@ for (const job of jobs) {
   console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB`)
 }
 
-// A `--only` smoke render is a subset: writing the index or the app manifest
-// would drop every combination it did not render, so those writes are skipped.
-if (onlyArg) {
-  console.log(`\nSmoke render of ${index.length} clip(s) for --only=${onlyArg}; index and manifest left untouched.`)
+// A `--only`/`--only-keys` render is a subset: writing the index or the app
+// manifest would drop every combination it did not render, so those writes
+// are skipped — follow a hotfix with `--manifest-only` to refresh both from
+// the full set on disk.
+if (onlyArg || onlyKeys) {
+  console.log(
+    `\nSubset render of ${index.length} clip(s); index and manifest left untouched — ` +
+      `run with --manifest-only to refresh them.`,
+  )
   process.exit(0)
 }
 
