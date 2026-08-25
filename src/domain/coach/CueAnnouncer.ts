@@ -241,6 +241,15 @@ export class CueAnnouncer {
 
       case 'cue-active':
         this.inCombo = true
+        // A count-scored cue (volume-burst, open-pressure, coast) is
+        // announced once at cue-announcing and then the athlete throws for
+        // its whole window — 30-80 seconds, in the workouts the generator
+        // has been producing. That was landing as long silent stretches
+        // where the athlete lost the rhythm they were told to hold. Schedule
+        // periodic re-calls of the motif across the window so the coach
+        // re-anchors it every few seconds without the athlete having to
+        // remember.
+        this.scheduleBurstRefires(e.cue, e.nowMs - e.workElapsedMs)
         break
 
       case 'token-due':
@@ -485,6 +494,59 @@ export class CueAnnouncer {
     // permission as the call itself.
     if (!this.speakable('punch-command')) return
     this.output.playAsset('tone-ready', atMs)
+  }
+
+  /**
+   * How often to re-call the motif during a count-scored burst, in ms.
+   *
+   * Six seconds is short enough that the pattern stays present for an
+   * athlete drifting into a rhythm and long enough that it does not stack on
+   * top of itself even at the fastest combos. Tunable by ear on the bag; the
+   * companion `MIN_BURST_MS_FOR_REFIRE` avoids re-firing on a burst so
+   * short the initial call already covers it.
+   */
+  private static readonly BURST_REFIRE_INTERVAL_MS = 6_000
+  private static readonly MIN_BURST_MS_FOR_REFIRE = 10_000
+  /** How close to the end to stop re-firing, so the last call finishes cleanly. */
+  private static readonly BURST_TAIL_QUIET_MS = 1_500
+
+  /**
+   * Re-fire the motif every few seconds during a count-scored burst.
+   *
+   * The initial call at `cue-announcing` names the pair once. This adds the
+   * periodic anchoring the athlete needs across the burst window so the
+   * coach does not go silent for a minute while they are still throwing.
+   * Every call is scheduled up front — the announcer owns no timers.
+   *
+   * Voice-permission is checked once at the start, since a burst is a single
+   * combination in the D18 sense; the gate opening or closing mid-burst is
+   * not a moment to change what the athlete is doing.
+   */
+  private scheduleBurstRefires(cue: CueInstance, clockOffsetMs: number): void {
+    if (cue.scoring !== 'count') return
+    if (!this.speakable('punch-command')) return
+    const play = this.output.playCombination
+    if (!play) return
+
+    const windowMs = cue.windowEndMs - cue.scheduledStartMs
+    if (windowMs < CueAnnouncer.MIN_BURST_MS_FOR_REFIRE) return
+
+    const combination = formatCombo(cue.tokens)
+    const voice: CombinationVoice = {
+      vocabulary: this.vocabulary,
+      performance: this.performanceFor(cue),
+    }
+    const clipMs = this.output.combinationDurationMs?.(combination, this.cadence, voice)
+    if (clipMs === undefined) return
+
+    const lastStart = cue.windowEndMs - clipMs - CueAnnouncer.BURST_TAIL_QUIET_MS
+    for (
+      let at = cue.scheduledStartMs + CueAnnouncer.BURST_REFIRE_INTERVAL_MS;
+      at <= lastStart;
+      at += CueAnnouncer.BURST_REFIRE_INTERVAL_MS
+    ) {
+      play.call(this.output, combination, this.cadence, at + clockOffsetMs, voice)
+    }
   }
 
   /**

@@ -978,3 +978,96 @@ describe('a policy change takes effect immediately', () => {
     expect(h.port.calls).toEqual([])
   })
 })
+
+describe('a count-scored burst re-anchors the motif periodically', () => {
+  // The point: a 30-80s volume-burst that named the motif once and then went
+  // silent left the athlete without a rhythm reminder. Under D18 they still
+  // have to keep throwing, so the coach should re-call the motif every few
+  // seconds rather than dropping out.
+  interface Scheduled {
+    combination: string
+    atMs: number | undefined
+  }
+  function burstHarness(windowMs: number): {
+    announcer: CueAnnouncer
+    scheduled: Scheduled[]
+    port: RecordingPort
+  } {
+    const port = new RecordingPort()
+    const scheduled: Scheduled[] = []
+    // A minimal RecordingPort augmented with the two methods the announcer
+    // needs to schedule refires: a phrase length and a combination player.
+    const output = Object.assign(port, {
+      playCombination: (combination: string, _c: string, atMs?: number) => {
+        scheduled.push({ combination, atMs })
+        return true
+      },
+      combinationDurationMs: () => 600,
+    })
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output,
+      cadence: 'steady',
+    })
+    const c: CueInstance = {
+      ...cue(),
+      scoring: 'count',
+      countScored: { targetPunches: 20, countdownMs: 3_000 },
+      windowStartMs: cue().scheduledStartMs,
+      windowEndMs: cue().scheduledStartMs + windowMs,
+      scheduledEndMs: cue().scheduledStartMs + windowMs,
+    }
+    announcer.onCueEvent(cueEvent('cue-announcing', c))
+    scheduled.length = 0 // discard the initial announce; we care about refires
+    announcer.onCueEvent(cueEvent('cue-active', c))
+    return { announcer, scheduled, port }
+  }
+
+  it('schedules a re-call every ~6 seconds across a long burst', () => {
+    // A 45s window at 6s interval fits about seven re-fires, each landing
+    // before the tail-quiet buffer.
+    const h = burstHarness(45_000)
+    expect(h.scheduled.length).toBeGreaterThan(3)
+    expect(h.scheduled.length).toBeLessThan(10)
+
+    // Every re-fire falls inside the window and leaves room for the clip
+    // and the tail buffer to finish before it closes.
+    const c = cue()
+    for (const s of h.scheduled) {
+      expect(s.atMs).toBeDefined()
+      const atCue = (s.atMs ?? 0) - (cueEvent('cue-active', c).nowMs - cueEvent('cue-active', c).workElapsedMs)
+      expect(atCue).toBeGreaterThan(c.scheduledStartMs)
+    }
+  })
+
+  it('does not re-fire on a short burst the initial call already covers', () => {
+    // A 6s window: the initial announce says the motif, and re-firing so
+    // close to the end would stack the same phrase on itself.
+    const h = burstHarness(6_000)
+    expect(h.scheduled).toEqual([])
+  })
+
+  it('does not schedule refires on a sequence-scored cue', () => {
+    // The re-fire path exists for count-scored bursts, not for enumerated
+    // combos where every token is spoken as it comes due.
+    const port = new RecordingPort()
+    const scheduled: Array<{ atMs?: number }> = []
+    const output = Object.assign(port, {
+      playCombination: (_c: string, _cad: string, atMs?: number) => {
+        scheduled.push({ atMs })
+        return true
+      },
+      combinationDurationMs: () => 600,
+    })
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output,
+      cadence: 'steady',
+    })
+    const c = { ...cue(), windowEndMs: cue().scheduledStartMs + 45_000 }
+    announcer.onCueEvent(cueEvent('cue-announcing', c))
+    scheduled.length = 0
+    announcer.onCueEvent(cueEvent('cue-active', c))
+    expect(scheduled).toEqual([])
+  })
+})

@@ -181,6 +181,31 @@ function spanWith(specs: readonly BlockSpec[], candidate: BlockSpec, bpm: number
  * sized by the punch deficit while still filling the clock. Skips itself if
  * there is not a musically useful window left.
  */
+/**
+ * A count-scored burst should be **long enough to work through** and **not
+ * so long the athlete stands around**.
+ *
+ * The first pass sized these blocks purely from leftover time — a round with
+ * 84 s of remaining budget and a 9-punch volume target became a 76-second
+ * burst asking for one punch every 8 seconds. That is not a burst, it is dead
+ * time, and on the tablet it landed as "the coach went quiet forever". The
+ * upper cap here (~24 s at steady, ~17 s at sprint) makes a burst read as one
+ * push rather than a whole round; the lower gate skips bursts too small to
+ * even be worth calling.
+ */
+const MAX_BURST_DURATION_BEATS = 40
+/** Below this many punches a burst adds nothing beyond a call — skip it. */
+const MIN_BURST_TARGET_PUNCHES = 8
+/**
+ * Target beats per punch inside a burst.
+ *
+ * Sets the *natural* duration: a 15-punch burst at 3 beats/punch is 45 beats,
+ * capped at the max above. Chosen to match the pattern a burst calls: a two-
+ * punch motif re-thrown every ~1.5 seconds keeps the athlete working without
+ * asking them to sprint past the clip.
+ */
+const BEATS_PER_BURST_PUNCH = 3
+
 function addCountBlock(
   specs: BlockSpec[],
   id: string,
@@ -191,10 +216,18 @@ function addCountBlock(
   bpm: number,
   budgetMs: number,
 ): void {
-  if (targetPunches <= 0) return
+  if (targetPunches < MIN_BURST_TARGET_PUNCHES) return
+
   const remainingMs = budgetMs - blocksSpanMs(layBlocks(specs, bpm))
-  const durationBeats = Math.floor(msToBeats(remainingMs * 0.9, bpm))
-  if (durationBeats < 4) return
+  const availableBeats = Math.floor(msToBeats(remainingMs * 0.9, bpm))
+  if (availableBeats < 4) return
+
+  // Sized to the punches, not to whatever time is left over. A round that
+  // ends with time to spare simply ends early — silence at the tail is not
+  // a defect the workout has to fill.
+  const wantedBeats = Math.max(8, targetPunches * BEATS_PER_BURST_PUNCH)
+  const durationBeats = Math.min(wantedBeats, availableBeats, MAX_BURST_DURATION_BEATS)
+
   const spec = volumeSpec(id, kind, motif, durationBeats, targetPunches, gapBeats)
   if (spanWith(specs, spec, bpm) <= budgetMs) specs.push(spec)
 }
@@ -231,8 +264,26 @@ function buildScoredRound(
 
   // The high-goal rule: past the intelligibility ceiling, part of the round
   // has to become count-measured rather than naming every punch.
-  const density = assessDensity(target, workDurationMs, averageLength(comboMotifs))
-  const volumePunches = density.needsVolumeBlocks ? Math.round(target * density.suggestedVolumeShare) : 0
+  //
+  // Averaging over the pool's raw motif lengths underestimates the true
+  // generated combo length — generation escalates and prefers weighted picks
+  // rather than a flat mean — so it fired volume bursts at pace targets that
+  // enumerated combos could actually meet. Bias the assumed length up toward
+  // the complexity ceiling to reflect what generation will actually pick,
+  // which pulls the density check back down toward the ceiling from above.
+  const assumedComboLength = Math.max(
+    averageLength(comboMotifs),
+    Math.min(lengthCeilingAt(p), recipe.maximumComboPunches) * 0.7,
+  )
+  const density = assessDensity(target, workDurationMs, assumedComboLength)
+  const rawVolumePunches = density.needsVolumeBlocks
+    ? Math.round(target * density.suggestedVolumeShare)
+    : 0
+  // A burst smaller than the floor is not really a burst — it is a handful of
+  // punches dressed as one, and the block reads as dead time. Fold it back
+  // into the combo target instead so the round is either enumerated all the
+  // way through or has a real burst; nothing in between.
+  const volumePunches = rawVolumePunches >= MIN_BURST_TARGET_PUNCHES ? rawVolumePunches : 0
   // Reserve the between-rounds breather so the realized count tracks the goal
   // instead of overshooting it by the closer. The final round's pressure
   // finisher is sized from whatever deficit remains, below.
