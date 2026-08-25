@@ -411,8 +411,10 @@ describe('in-time delivery calls each punch as it lands (doc §18.1)', () => {
     ])
   })
 
-  it('does not re-call a repeated combo — later reps are tone-marked, not spoken', () => {
-    const h = harness({}, { delivery: 'in-time' })
+  it('does not re-call a repeated combo under shorthand — later reps are tone-marked, not spoken', () => {
+    // Pinned to `coach-shorthand`: the repeat collapse belongs to that style
+    // alone. The default is now Call and Go (D22), which re-calls every rep.
+    const h = harness({ style: 'coach-shorthand' }, { delivery: 'in-time' })
     const rep1 = cue({ repeatIndex: 1 })
     h.announcer.onCueEvent(cueEvent('cue-announcing', rep1))
     // Repeat mark + ready tone, no phrase.

@@ -93,6 +93,20 @@ describe('the D1 gate (spec §13.5, §14.6)', () => {
   })
 })
 
+describe('the shipped defaults (D22, D18)', () => {
+  it('calls every set rather than beeping repetitions', () => {
+    // Coach Shorthand beeps every repetition after the first (§18.1). Against
+    // generated workouts, whose blocks repeat two to four times, that made most
+    // calls tones rather than speech — which is what moved the default.
+    expect(defaultVoiceCoachPolicy().style).toBe('call-and-go')
+  })
+
+  it('speaks technique names, not numbers', () => {
+    // Names teach while they call; numbers stay one tap away in settings.
+    expect(defaultVoiceCoachPolicy().vocabulary).toBe('names')
+  })
+})
+
 describe('mode off silences everything (doc §25)', () => {
   it('yields no true for any category', () => {
     const p = policy({ mode: 'off' })

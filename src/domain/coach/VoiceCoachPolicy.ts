@@ -49,12 +49,27 @@ export interface VoiceCoachPolicy {
   finalTenSecondWarning: boolean
 }
 
-/** Doc §18.1 recommends Coach Shorthand for normal and high-volume work. */
+/**
+ * Defaults (D22, D18).
+ *
+ * **Call and Go, not Coach Shorthand.** §18.1 recommended shorthand — speak a
+ * combination once, beep the repetitions — on the reasoning that repeating a
+ * call the athlete has already heard is nagging. That held for hand-authored
+ * workouts; against generated ones it produced a coach that beeped more than it
+ * spoke, because the generator emits blocks of two to four repetitions. Under
+ * the Set model a repeated block is one Set rather than N repetitions, so the
+ * premise largely dissolves, and where a Set does recur it is called. Shorthand
+ * stays available as a setting.
+ *
+ * **Names, not numbers.** The athlete-facing default is technique names — "jab,
+ * cross, lead hook" — because it teaches while it calls. Numbers remain one tap
+ * away for anyone who already thinks in them.
+ */
 export function defaultVoiceCoachPolicy(): VoiceCoachPolicy {
   return {
     mode: 'standard',
-    style: 'coach-shorthand',
-    vocabulary: 'numbers',
+    style: 'call-and-go',
+    vocabulary: 'names',
     // D1. The default is the whole point: it is never true unless asked for.
     overlayOptIn: false,
     metricAnnouncements: 'round-summary',
