@@ -148,7 +148,13 @@ const SEQUENCE_KINDS = new Set<WorkoutBlock['kind']>([
 ])
 
 /** Block kinds judged on tracker count rather than a named sequence (doc §14). */
-const COUNT_SCORED_KINDS = new Set<WorkoutBlock['kind']>(['volume-burst', 'open-pressure'])
+// `coast` joins these (D23): it asks for output over a stated time rather
+// than naming punches, so it expands to one cue with no expectations.
+const COUNT_SCORED_KINDS = new Set<WorkoutBlock['kind']>([
+  'volume-burst',
+  'open-pressure',
+  'coast',
+])
 
 /**
  * Lead-in before a burst starts counting.

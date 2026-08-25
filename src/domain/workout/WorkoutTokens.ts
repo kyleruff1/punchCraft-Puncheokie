@@ -41,7 +41,20 @@ export type WorkoutToken =
   | { kind: 'footwork'; command: FootworkCommand; beatOffset: number }
   | { kind: 'coach'; command: CoachCommand; beatOffset: number }
 
-/** The seven block kinds from doc §14. */
+/**
+ * Doc §14's seven block kinds, plus `coast` (D23).
+ *
+ * **Coast** establishes a back-and-forth between two shots and lets the athlete
+ * hold it for a stated time — "coast for half a minute" — rather than naming
+ * every punch through the stretch. It is how the coach stops calling without a
+ * tone standing in for the calls (D22): the rhythm is spoken once and
+ * understood, so silence afterwards means "keep the pattern", not "guess what
+ * comes next".
+ *
+ * It is count-scored like `volume-burst` — output is what it asks for — but is
+ * its own kind rather than a flag on one, because it says something different
+ * to the athlete and shows something different on screen.
+ */
 export type BlockKind =
   | 'exact-combo'
   | 'repeated-combo'
@@ -50,6 +63,7 @@ export type BlockKind =
   | 'footwork-exit'
   | 'active-recovery'
   | 'open-pressure'
+  | 'coast'
 
 export interface WorkoutBlock {
   id: string

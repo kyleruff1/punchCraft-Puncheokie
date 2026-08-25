@@ -45,7 +45,7 @@ const VOLUME_BLOCK_WEIGHT: Record<WorkoutFocus, number> = {
   movement: 1.35,
 }
 
-const COUNT_SCORED_KINDS = new Set(['volume-burst', 'open-pressure'])
+const COUNT_SCORED_KINDS = new Set(['volume-burst', 'open-pressure', 'coast'])
 
 /**
  * Weight one round by how much punching it can actually hold: its active

@@ -76,6 +76,14 @@ export type VoiceAssetId =
   | 'stop'
   | 'switch'
   | 'bell'
+  // Coast announcements (D23) — the whole instruction in one clip, because
+  // "coast for half a minute" is a sentence rather than a word, and stitching
+  // it from parts at run time is exactly what D16 forbids. Lengths live in
+  // `domain/workout/coast.ts`.
+  | 'coast-15'
+  | 'coast-30'
+  | 'coast-45'
+  | 'coast-60'
   // Tones, which are sounds rather than words in either vocabulary.
   | 'tone-ready'
   | 'tone-repeat'
@@ -134,6 +142,10 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'stop',
   'switch',
   'bell',
+  'coast-15',
+  'coast-30',
+  'coast-45',
+  'coast-60',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

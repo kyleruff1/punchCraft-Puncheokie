@@ -96,6 +96,14 @@ const SHARED_WORDS = {
   go: 'Go',
   stop: 'Stop',
   switch: 'Switch',
+  // Coast announcements (D23). Whole sentences rather than words: "coast for
+  // half a minute" is one instruction, and stitching it from parts at run time
+  // is what D16 forbids. The lengths and their wording are mirrored in
+  // `src/domain/workout/coast.ts`, which a test holds to this list.
+  'coast-15': 'Coast for fifteen seconds',
+  'coast-30': 'Coast for half a minute',
+  'coast-45': 'Coast for forty-five seconds',
+  'coast-60': 'Coast for a minute',
 }
 
 /**

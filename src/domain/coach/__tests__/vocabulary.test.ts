@@ -78,7 +78,8 @@ describe('the asset set covers the whole token vocabulary', () => {
 
   it('lists every id exactly once', () => {
     expect(new Set(VOICE_ASSET_IDS).size).toBe(VOICE_ASSET_IDS.length)
-    expect(VOICE_ASSET_IDS).toHaveLength(24)
+    // 24 core (punches, defense, footwork, session, tones) + 4 coast announcements (D23).
+    expect(VOICE_ASSET_IDS).toHaveLength(28)
   })
 })
 
