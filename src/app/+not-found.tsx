@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { Wordmark } from '@/components/branding/Wordmark'
 import { colors } from '@/theme/colors'
 
 /**
@@ -18,8 +19,9 @@ export default function NotFound() {
       <Stack.Screen options={{ title: 'Not found' }} />
       <Text style={styles.title}>Route not found</Text>
       <Link href="/(tabs)/punchcraft" asChild>
-        <Pressable style={styles.linkButton}>
-          <Text style={styles.linkButtonText}>Go to punchCraft</Text>
+        <Pressable style={styles.linkButton} accessibilityLabel="Go to punchCraft">
+          <Text style={styles.linkButtonText}>Go to </Text>
+          <Wordmark app="punchCraft" size="sm" />
         </Pressable>
       </Link>
     </View>
@@ -37,6 +39,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
   linkButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderWidth: 1,

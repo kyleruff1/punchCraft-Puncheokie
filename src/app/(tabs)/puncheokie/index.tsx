@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
@@ -17,6 +18,7 @@ export default function PuncheokieLanding() {
       <Stack.Screen
         options={{
           title: 'Puncheokie',
+          headerTitle: () => <Wordmark app="puncheokie" size="sm" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -27,7 +29,7 @@ export default function PuncheokieLanding() {
         }}
       />
       <TrackerBadgesRow />
-      <Text style={styles.title}>Puncheokie</Text>
+      <Wordmark app="puncheokie" size="md" style={styles.brand} />
       <Text style={styles.paragraph}>Punch-along mode — follow the called combinations.</Text>
       <View style={styles.placeholder} testID="coming-soon">
         <Text style={styles.placeholderText}>Coming soon.</Text>
@@ -40,7 +42,7 @@ export default function PuncheokieLanding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
-  title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
+  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   placeholder: {
     marginTop: 4,

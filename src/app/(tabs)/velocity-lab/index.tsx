@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 
@@ -25,6 +26,7 @@ export default function VelocityLabLanding() {
       <Stack.Screen
         options={{
           title: 'Velocity Lab',
+          headerTitle: () => <Wordmark app="velocityLab" size="sm" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -37,7 +39,7 @@ export default function VelocityLabLanding() {
 
       <TrackerBadgesRow />
 
-      <Text style={styles.title}>Velocity Lab</Text>
+      <Wordmark app="velocityLab" size="md" style={styles.brand} />
       <Text style={styles.paragraph}>
         Raw tracker frames, timestamps, and velocity — no workout, no scoring.
       </Text>
@@ -73,7 +75,7 @@ export default function VelocityLabLanding() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 16, backgroundColor: colors.background },
-  title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
+  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   hint: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' },
   linkRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },

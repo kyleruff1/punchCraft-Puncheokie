@@ -1,6 +1,7 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { listSampleWorkouts } from '@domain/workout/samples'
@@ -23,6 +24,7 @@ export default function PunchCraftLanding() {
       <Stack.Screen
         options={{
           title: 'punchCraft',
+          headerTitle: () => <Wordmark app="punchCraft" size="sm" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -33,7 +35,7 @@ export default function PunchCraftLanding() {
         }}
       />
       <TrackerBadgesRow />
-      <Text style={styles.title}>punchCraft</Text>
+      <Wordmark app="punchCraft" size="md" style={styles.brand} />
       <Text style={styles.paragraph}>
         Build or run cued combinations on the tablet&apos;s own clock, tracked by punch count.
       </Text>
@@ -90,7 +92,7 @@ export default function PunchCraftLanding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
-  title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
+  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
   primaryAction: {
     marginTop: 4,
