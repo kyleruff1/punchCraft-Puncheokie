@@ -24,7 +24,7 @@
  * (spec §13.5, D1).
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
@@ -53,6 +53,14 @@ import type { SimScriptId } from '@simulation/scripts'
 
 /** Tag for the keep-awake lock this screen owns; see the header note. */
 const LIVE_KEEP_AWAKE_TAG = 'punchcraft-live'
+
+/**
+ * Workout backdrop art (§17, D17). The wide-format hero from the branding
+ * kit — fist on the left, cyan spikes fading into dark negative space that
+ * the cue stage sits over. Not audio-reactive; not a signal — ambience only.
+ */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const BACKDROP = require('../../../../assets/branding/backdrop-landscape.png') as number
 
 export default function LiveScreen(): React.JSX.Element {
   const router = useRouter()
@@ -188,6 +196,28 @@ export default function LiveScreen(): React.JSX.Element {
       {/* Header hidden: the zones are the chrome, and a nav bar would eat
           the width the cue stage needs (doc §19). */}
       <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Workout backdrop (§17, D17) — ambience, never a signal.
+          - Static image: doc §17 permits an animated backdrop but starts
+            unanimated by design, and D17 forbids it from being audio-reactive.
+          - Scrim on top: a semi-opaque black layer sets a contrast floor so
+            the cue stage stays readable at any brightness of the underlying
+            art. Doc §7's contrast rule is not negotiable — a beautiful
+            backdrop that costs a missed hit is a defect.
+          - `pointerEvents: 'none'` on both: nothing behind the stage may
+            steal a tap from the athlete.
+          The whole layer sits *behind* every zone that follows because it is
+          declared before them in the tree; nothing needs to reason about
+          z-index. */}
+      <View style={styles.backdropLayer} pointerEvents="none">
+        <Image
+          source={BACKDROP}
+          style={styles.backdropImage}
+          resizeMode="cover"
+          accessibilityLabel=""
+        />
+        <View style={styles.backdropScrim} />
+      </View>
 
       {/* Exit is the escape hatch — always visible, corner of the screen so
           it never falls under the athlete's grip, small enough not to steal
@@ -418,6 +448,28 @@ export default function LiveScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  /**
+   * Contrast floor for the backdrop.
+   *
+   * 0.72 opacity of the base background sits the underlying art at roughly
+   * 28% presence — enough to feel like a room, dim enough that the cue
+   * tokens keep the same contrast ratio they had against a flat background.
+   * Doc §7's minimum contrast is not negotiable; a beautiful backdrop that
+   * costs a missed hit is a defect (D17).
+   */
+  backdropLayer: {
+    ...StyleSheet.absoluteFill,
+  },
+  backdropImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+  },
+  backdropScrim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.background,
+    opacity: 0.72,
+  },
   body: { flex: 1, flexDirection: 'row' },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   startButton: {
