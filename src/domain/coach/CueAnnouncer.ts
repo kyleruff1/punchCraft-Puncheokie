@@ -387,12 +387,12 @@ export class CueAnnouncer {
     // phrase, so it is emitted whatever the style does with the words.
     const readyAt = cue.scheduledStartMs - this.leadTimes.readyToneMs + clockOffsetMs
 
-    if (this.policy.style === 'coach-shorthand' && cue.repeatIndex > 0) {
-      // Doc §18.1: the combination is spoken once; repetitions are beeps.
-      this.output.tone('repeat')
-      this.emitReadyTone(readyAt)
-      return
-    }
+    // A repeated combination is called every time it comes round. It used to be
+    // spoken once and beeped thereafter under `coach-shorthand` (doc §18.1),
+    // which is exactly the behaviour D22 retired: a tone tells the athlete that
+    // something is expected without telling them what, and with generated
+    // workouts repeating a block two to four times it meant most calls were
+    // beeps. Every punch asked for is now named.
 
     // `follow-the-call` says each token as it becomes due, so there is no
     // phrase here — only the tone.

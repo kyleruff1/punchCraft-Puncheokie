@@ -349,15 +349,19 @@ describe('each style calls the combination its own way (doc §18.1)', () => {
     ])
   })
 
-  it('coach-shorthand speaks the combination once and beeps the repeats', () => {
-    const h = harness({ style: 'coach-shorthand' })
+  it('calls a repeated combination every time, never beeping a repetition', () => {
+    // The retired `coach-shorthand` spoke a combination once and marked each
+    // repetition with a tone. A beep says something is expected without saying
+    // what, and generated workouts repeat a block two to four times, so most
+    // calls became tones. Every repetition is now called (D22).
+    const h = harness()
     runCue(h, cue({ repeatIndex: 0 }))
     expect(h.port.assets()).toContain('1')
 
     h.port.reset()
     runCue(h, cue({ id: 'cue-2', repeatIndex: 1 }))
-    expect(h.port.calls).toContainEqual({ kind: 'tone', tone: 'repeat' })
-    expect(h.port.assets()).not.toContain('1')
+    expect(h.port.assets()).toContain('1')
+    expect(h.port.tones()).not.toContain('repeat')
   })
 
   it('follow-the-call says nothing up front and one token at a time', () => {
@@ -411,20 +415,14 @@ describe('in-time delivery calls each punch as it lands (doc §18.1)', () => {
     ])
   })
 
-  it('does not re-call a repeated combo under shorthand — later reps are tone-marked, not spoken', () => {
-    // Pinned to `coach-shorthand`: the repeat collapse belongs to that style
-    // alone. The default is now Call and Go (D22), which re-calls every rep.
-    const h = harness({ style: 'coach-shorthand' }, { delivery: 'in-time' })
+  it('never marks a repetition with a tone instead of calling it', () => {
+    // In-time delivery says each punch as it comes due rather than calling the
+    // combination up front, so the check is that no repeat tone stands in for
+    // a word anywhere (D22).
+    const h = harness({}, { delivery: 'in-time' })
     const rep1 = cue({ repeatIndex: 1 })
     h.announcer.onCueEvent(cueEvent('cue-announcing', rep1))
-    // Repeat mark + ready tone, no phrase.
-    expect(h.port.tones()).toContain('repeat')
-
-    h.port.reset()
-    // A token becoming due on a later rep must not speak — the combo was
-    // already called on the first rep.
-    h.announcer.onCueEvent(tokenDue(rep1, 0))
-    expect(h.port.calls).toEqual([])
+    expect(h.port.tones()).not.toContain('repeat')
   })
 })
 

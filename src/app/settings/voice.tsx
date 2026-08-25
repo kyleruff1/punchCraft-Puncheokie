@@ -43,9 +43,8 @@ const MODES: Array<{ value: VoiceMode; label: string; hint: string }> = [
 ]
 
 const STYLES: Array<{ value: VoiceStyle; label: string; hint: string }> = [
-  { value: 'call-and-go', label: 'Call and Go', hint: 'Full combination, then a ready tone' },
-  { value: 'follow-the-call', label: 'Follow the Call', hint: 'One punch at a time' },
-  { value: 'coach-shorthand', label: 'Coach Shorthand', hint: 'Called once, then beeps' },
+  { value: 'call-and-go', label: 'Call and Go', hint: 'The whole combination, called before you throw it' },
+  { value: 'follow-the-call', label: 'Follow the Call', hint: 'Each punch called as it comes up' },
   { value: 'minimal', label: 'Minimal', hint: 'Round events only' },
 ]
 

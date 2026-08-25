@@ -22,6 +22,7 @@ import { create } from 'zustand'
 
 import {
   defaultVoiceCoachPolicy,
+  normalizeVoiceStyle,
   type VoiceCoachPolicy,
 } from '@domain/coach/VoiceCoachPolicy'
 import { DEFAULT_VOLUMES, type Volumes } from '@domain/coach/VoiceOutputPort'
@@ -71,10 +72,18 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
     repository = repo
     // `read` merges over the defaults, so a policy stored before a field
     // existed comes back complete rather than missing it.
-    const policy = repo.read<VoiceCoachPolicy>(
+    const stored = repo.read<VoiceCoachPolicy>(
       SETTINGS_KEYS.voicePolicy,
       defaultVoiceCoachPolicy(),
     )
+    // A saved setting outlives the release that wrote it, so a retired style
+    // has to be migrated rather than merely removed — an install carrying
+    // `coach-shorthand` would otherwise keep beeping its repetitions with no
+    // control left in the UI to explain why (D22).
+    const style = normalizeVoiceStyle(stored.style)
+    const policy = style === stored.style ? stored : { ...stored, style }
+    if (policy !== stored) persistPolicy(policy)
+
     const volumes = repo.read<Volumes>(SETTINGS_KEYS.voiceVolumes, { ...DEFAULT_VOLUMES })
     set({ policy, volumes, loaded: true })
   },

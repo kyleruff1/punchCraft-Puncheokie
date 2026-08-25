@@ -85,7 +85,7 @@ describe('the D1 gate (spec §13.5, §14.6)', () => {
 
   it('never has a style or vocabulary that opens it', () => {
     // Choosing a vocabulary is not consent to speak over music (D15).
-    const styles: VoiceStyle[] = ['call-and-go', 'follow-the-call', 'coach-shorthand', 'minimal']
+    const styles: VoiceStyle[] = ['call-and-go', 'follow-the-call', 'minimal']
     for (const style of styles) {
       expect(voiceAllowed(policy({ style, vocabulary: 'names' }), true)).toBe(false)
       expect(voiceAllowed(policy({ style, vocabulary: 'numbers' }), true)).toBe(false)

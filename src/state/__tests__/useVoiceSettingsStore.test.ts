@@ -76,6 +76,49 @@ describe('the D1 opt-in defaults off and stays off (spec §13.5)', () => {
   })
 })
 
+describe('a retired style is migrated on load (D22)', () => {
+  it('moves an install off coach-shorthand rather than leaving it beeping', () => {
+    // The style is gone from the UI, so an install still carrying it would beep
+    // its repetitions forever with no control left to explain why. This is the
+    // path that fixes a device that has already stored the old value — the
+    // athlete never has to know it happened.
+    const h = harness()
+    h.repo.write(SETTINGS_KEYS.voicePolicy, {
+      ...defaultVoiceCoachPolicy(),
+      style: 'coach-shorthand',
+    })
+
+    __resetVoiceSettingsForTests()
+    useVoiceSettingsStore.getState().load(h.repo)
+
+    expect(useVoiceSettingsStore.getState().policy.style).toBe('call-and-go')
+  })
+
+  it('writes the migration back, so it happens once rather than every launch', () => {
+    const h = harness()
+    h.repo.write(SETTINGS_KEYS.voicePolicy, {
+      ...defaultVoiceCoachPolicy(),
+      style: 'coach-shorthand',
+    })
+
+    __resetVoiceSettingsForTests()
+    useVoiceSettingsStore.getState().load(h.repo)
+
+    const stored = h.repo.read(SETTINGS_KEYS.voicePolicy, defaultVoiceCoachPolicy())
+    expect(stored.style).toBe('call-and-go')
+  })
+
+  it('leaves a style that still exists alone', () => {
+    const h = harness()
+    h.store().setPolicy({ style: 'follow-the-call' })
+
+    __resetVoiceSettingsForTests()
+    useVoiceSettingsStore.getState().load(h.repo)
+
+    expect(useVoiceSettingsStore.getState().policy.style).toBe('follow-the-call')
+  })
+})
+
 describe('settings survive a restart', () => {
   it('reloads the policy the athlete chose', () => {
     const h = harness()

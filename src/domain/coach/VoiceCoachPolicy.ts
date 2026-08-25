@@ -23,7 +23,41 @@
 export type VoiceMode = 'off' | 'minimal' | 'standard' | 'full'
 
 /** How it speaks — the four behaviours of doc §18.1. */
-export type VoiceStyle = 'call-and-go' | 'follow-the-call' | 'coach-shorthand' | 'minimal'
+/**
+ * How much the coach speaks.
+ *
+ * **Every punch the athlete is asked to throw is called.** `call-and-go` names
+ * the whole combination before it; `follow-the-call` names each punch as it
+ * comes due. `minimal` speaks only round events — deliberately quiet, and the
+ * one style that is silent by choice rather than substituting for a call.
+ *
+ * `coach-shorthand` is gone (D22). It spoke a combination once and marked every
+ * repetition with a beep, which is the one thing this vocabulary must not do:
+ * a tone standing in for a punch tells the athlete something is expected
+ * without telling them what. Persisted values are migrated on read — see
+ * `normalizeVoiceStyle`.
+ */
+export type VoiceStyle = 'call-and-go' | 'follow-the-call' | 'minimal'
+
+/** Styles that were once selectable and must still be readable from storage. */
+const RETIRED_STYLES: Record<string, VoiceStyle> = {
+  // Beeped its repetitions instead of calling them (D22).
+  'coach-shorthand': 'call-and-go',
+}
+
+/**
+ * A stored style, mapped onto one that still exists.
+ *
+ * A saved setting outlives the release that wrote it, so removing a style is
+ * not enough — an install carrying `coach-shorthand` would otherwise keep
+ * beeping forever, and the athlete would have no control that explains why.
+ */
+export function normalizeVoiceStyle(style: string): VoiceStyle {
+  if (style in RETIRED_STYLES) return RETIRED_STYLES[style] as VoiceStyle
+  return style === 'call-and-go' || style === 'follow-the-call' || style === 'minimal'
+    ? style
+    : 'call-and-go'
+}
 
 /**
  * Which words it uses (D15).
