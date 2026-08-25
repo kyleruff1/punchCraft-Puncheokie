@@ -17,6 +17,7 @@ import {
 } from '@ble/BleManagerFacade'
 import { replaceSinks } from '@diagnostics/logger'
 import { createFakeClock } from '@testing/fakeClock'
+import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { useTrackerStore, type SlotState } from '@state/useTrackerStore'
 import { getLive, useLiveStore } from '@state/useWorkoutStore'
 import { degradedText, useLivePunchSource, type LivePunchSource } from '../useLivePunchSource'
@@ -52,7 +53,12 @@ function render(): void {
 }
 
 function slot(deviceId: string, state: SlotState['state']): SlotState {
-  return { deviceId, state }
+  // Stamp liveness by default: `'ready'` alone no longer means "usable" —
+  // the auto-connect probe requires evidence a frame has actually arrived,
+  // otherwise it treats the slot as a phantom left over from a killed
+  // process and force-disconnects it (D24). Tests that want a live slot
+  // must say so explicitly.
+  return { deviceId, state, lastEventAtMs: systemMonotonicClock().now() }
 }
 
 function setSlots(left: SlotState | null, right: SlotState | null): void {

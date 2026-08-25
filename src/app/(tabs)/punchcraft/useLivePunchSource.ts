@@ -26,6 +26,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 import { getBleManager } from '@ble/BleManagerFacade'
+import { autoConnectKnownTrackers } from '@ble/autoConnectTrackers'
 import { logger, safe } from '@diagnostics/logger'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { MonotonicClock } from '@domain/time/MonotonicClock'
@@ -35,7 +36,7 @@ import { getProtocolRegistry } from '@protocol/ProtocolRegistry'
 import '@protocol/fightcamp-v1'
 import { TrackerPunchEventSource } from '@protocol/TrackerPunchEventSource'
 import { SimulatedPunchSource } from '@simulation/SimulatedPunchSource'
-import { useLeftSlot, useRightSlot, type SlotState } from '@state/useTrackerStore'
+import { noteSlotEvent, useLeftSlot, useRightSlot, type SlotState } from '@state/useTrackerStore'
 import { setLive } from '@state/useWorkoutStore'
 import type { LiveConnectionState } from '@components/workout/RoundTopBar'
 
@@ -155,6 +156,46 @@ export function useLivePunchSource(clock: MonotonicClock): LivePunchSource {
   useEffect(() => {
     setLive({ degraded })
   }, [degraded])
+
+  // Fire an auto-connect pass when the live screen opens. `useAutoConnectOnLaunch`
+  // runs once at process start, but if trackers went stale mid-workout (Metro
+  // reload, a killed process, a tracker that slept) the athlete needs the
+  // reclaim path to try again the moment they walk back onto the bag. The pass
+  // is idempotent — if both slots are actually live and receiving events, the
+  // probe skips them.
+  useEffect(() => {
+    void autoConnectKnownTrackers({ timeoutMs: 10_000 })
+      .then((result) => {
+        if (result.scanError) {
+          logger.info('autoconnect.live.skipped', 'live-screen auto-connect could not scan', {
+            errorMessage: safe(result.scanError),
+          })
+        }
+      })
+      .catch((err) => {
+        logger.warn('autoconnect.live.error', 'live-screen auto-connect threw', {
+          errorMessage: safe(String(err)),
+        })
+      })
+  }, [])
+
+  // Stamp the slot as live whenever a punch arrives. This is what the
+  // auto-connect probe reads: a `'ready'` state alone cannot tell a real
+  // connection from a phantom left over from a killed process, so we require
+  // proof-of-life. Only the tracker source produces meaningful liveness
+  // signal; the simulator would falsely mark slots the tablet is not
+  // physically connected to.
+  useEffect(() => {
+    if (chosen.kind !== 'tracker') return
+    const off = chosen.source.subscribe((event) => {
+      if (event.hand === 'left' || event.hand === 'right') {
+        noteSlotEvent(event.hand, event.receivedMonotonicTimeMs)
+      }
+    })
+    return () => {
+      off()
+    }
+  }, [chosen])
 
   return useMemo(
     () => ({ source: chosen.source, kind: chosen.kind, sim: chosen.sim, connection }),

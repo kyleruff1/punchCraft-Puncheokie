@@ -1,129 +1,25 @@
 import { Link, Stack } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
-import { getTrackerCoordinator, type TrackerSlotHand } from '@/ble/TrackerCoordinator'
-import type { AdvertisementSnapshot } from '@/ble/bleTypes'
 import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
-import { useLeftSlot, useRightSlot } from '@/state/useTrackerStore'
-import type { SlotState } from '@/state/useTrackerStore'
-import { autoConnectKnownTrackers } from '@ble/autoConnectTrackers'
 import { colors } from '@/theme/colors'
 
-type PickerState =
-  | { status: 'idle' }
-  | { status: 'scanning'; hand: TrackerSlotHand }
-  | { status: 'picking'; hand: TrackerSlotHand; results: AdvertisementSnapshot[] }
-  | { status: 'connecting'; hand: TrackerSlotHand; deviceName: string }
-  | { status: 'error'; hand: TrackerSlotHand; message: string }
-
-function sortAdvertisements(list: AdvertisementSnapshot[]): AdvertisementSnapshot[] {
-  return [...list].sort((a, b) => {
-    const aNamed = a.name && a.name.length > 0 ? 0 : 1
-    const bNamed = b.name && b.name.length > 0 ? 0 : 1
-    if (aNamed !== bNamed) return aNamed - bNamed
-    const aRssi = a.rssi ?? -999
-    const bRssi = b.rssi ?? -999
-    return bRssi - aRssi
-  })
-}
-
-/** Recognizes a FightCamp v1 tracker by advertised name (truncated to
- * "FightCam") OR by the confirmed primary service UUID (H01). Both are
- * accepted so the filter still works if a firmware revision changes the
- * advertised name but keeps the service. */
-const FIGHTCAM_SERVICE_UUID = 'ca280069-5470-4e34-94dd-caf160200b29'
-function isFightCam(ad: AdvertisementSnapshot): boolean {
-  if (ad.name && /fightcam/i.test(ad.name)) return true
-  return ad.serviceUuids.some((u) => u.toLowerCase() === FIGHTCAM_SERVICE_UUID)
-}
-
+/**
+ * Velocity Lab landing.
+ *
+ * The connect controls used to live here: a "Connect both" button, and a
+ * per-hand picker that let the athlete pick a device from a scan. All three
+ * are gone. Blue is always the left tracker and red is always the right one
+ * (`src/ble/knownTrackers.ts`), so there is no choice to make; auto-connect
+ * runs at process launch and again when the live workout screen opens, and
+ * the tracker badges at the top of the screen double as manual reconnect
+ * buttons for the case where something went stale.
+ *
+ * What remains here is the diagnostic surface — the spike, the protocol probe
+ * and the live-events view — behind the same shared badges row, so the athlete
+ * can see and reclaim tracker state from any tab.
+ */
 export default function VelocityLabLanding() {
-  const leftSlot = useLeftSlot()
-  const rightSlot = useRightSlot()
-  const [picker, setPicker] = useState<PickerState>({ status: 'idle' })
-  const [fightCamOnly, setFightCamOnly] = useState(true)
-  const [autoConnect, setAutoConnect] = useState<{ busy: boolean; message: string | null }>({
-    busy: false,
-    message: null,
-  })
-
-  // Both trackers have a permanent slot (blue -> left, red -> right), so
-  // there is nothing to choose — one scan binds whichever are advertising.
-  // This is the manual retry for the pass that already ran at launch.
-  async function connectBoth() {
-    setAutoConnect({ busy: true, message: null })
-    const result = await autoConnectKnownTrackers({ timeoutMs: 12_000 })
-    if (result.scanError) {
-      setAutoConnect({ busy: false, message: `Scan failed: ${result.scanError}` })
-      return
-    }
-    const missing = result.outcomes.filter((o) => o.status === 'not-found')
-    const failed = result.outcomes.filter((o) => o.status === 'failed')
-    if (failed.length > 0) {
-      setAutoConnect({
-        busy: false,
-        message: `Could not connect ${failed.map((f) => f.hand).join(' + ')}: ${failed[0]?.errorMessage ?? 'unknown error'}`,
-      })
-      return
-    }
-    if (missing.length > 0) {
-      // Almost always means the tracker is asleep — they need a firm tap.
-      setAutoConnect({
-        busy: false,
-        message: `Not advertising: ${missing.map((m) => m.hand).join(' + ')}. Tap the tracker to wake it, then retry.`,
-      })
-      return
-    }
-    setAutoConnect({ busy: false, message: null })
-  }
-
-  async function startScan(hand: TrackerSlotHand) {
-    setPicker({ status: 'scanning', hand })
-    try {
-      const coordinator = getTrackerCoordinator()
-      const results = await coordinator.scan({ timeoutMs: 12000 })
-      setPicker({ status: 'picking', hand, results: sortAdvertisements(results) })
-    } catch (err) {
-      setPicker({
-        status: 'error',
-        hand,
-        message: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
-
-  async function pickDevice(hand: TrackerSlotHand, snap: AdvertisementSnapshot) {
-    // Show the friendly slot name in the badge / buttons rather than the
-    // raw advertised BLE name ("FightCam"). The underlying deviceId still
-    // uniquely identifies the tracker for the storage layer.
-    const friendlyName = hand === 'left' ? 'L Punch' : 'R Punch'
-    setPicker({ status: 'connecting', hand, deviceName: friendlyName })
-    try {
-      const coordinator = getTrackerCoordinator()
-      await coordinator.connectSlot(hand, snap.deviceId, friendlyName)
-      setPicker({ status: 'idle' })
-    } catch (err) {
-      setPicker({
-        status: 'error',
-        hand,
-        message: err instanceof Error ? err.message : String(err),
-      })
-    }
-  }
-
-  function cancelPicker() {
-    setPicker({ status: 'idle' })
-  }
-
-  const activeHand: TrackerSlotHand | null = picker.status === 'idle' ? null : picker.hand
-
-  // The "Connect both" affordance disappears once both slots hold a usable
-  // connection; per-hand buttons remain for reassigning an individual slot.
-  const isUsable = (s: SlotState | null): boolean =>
-    !!s && (s.state === 'ready' || s.state === 'streaming')
-  const bothConnected = isUsable(leftSlot) && isUsable(rightSlot)
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Stack.Screen
@@ -145,130 +41,9 @@ export default function VelocityLabLanding() {
       <Text style={styles.paragraph}>
         Raw tracker frames, timestamps, and velocity — no workout, no scoring.
       </Text>
-
-      {!bothConnected ? (
-        <View style={styles.autoConnectBlock}>
-          <Pressable
-            style={[styles.primaryButton, autoConnect.busy && styles.primaryButtonBusy]}
-            onPress={() => { void connectBoth() }}
-            disabled={autoConnect.busy || picker.status !== 'idle'}
-            accessibilityRole="button"
-            accessibilityLabel="Connect both trackers"
-          >
-            <Text style={styles.primaryButtonText}>
-              {autoConnect.busy ? 'Scanning for trackers…' : 'Connect both trackers'}
-            </Text>
-          </Pressable>
-          {autoConnect.message ? (
-            <Text style={styles.autoConnectNote}>{autoConnect.message}</Text>
-          ) : (
-            <Text style={styles.autoConnectHint}>
-              Blue is always left, red is always right — no need to pick.
-            </Text>
-          )}
-        </View>
-      ) : null}
-
-      <View style={styles.buttonRow}>
-        <Pressable
-          style={[styles.connectButton, activeHand === 'left' && styles.connectButtonActive]}
-          onPress={() => startScan('left')}
-          disabled={picker.status !== 'idle'}
-        >
-          <Text style={styles.connectButtonText}>
-            Connect Left{leftSlot?.name ? ` (${leftSlot.name})` : ''}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.connectButton, activeHand === 'right' && styles.connectButtonActive]}
-          onPress={() => startScan('right')}
-          disabled={picker.status !== 'idle'}
-        >
-          <Text style={styles.connectButtonText}>
-            Connect Right{rightSlot?.name ? ` (${rightSlot.name})` : ''}
-          </Text>
-        </Pressable>
-      </View>
-
-      {picker.status !== 'idle' && (
-        <View style={styles.pickerCard}>
-          <View style={styles.pickerHeader}>
-            <Text style={styles.pickerTitle}>
-              {picker.hand === 'left' ? 'Connect Left' : 'Connect Right'}
-            </Text>
-            <Pressable onPress={cancelPicker} style={styles.cancelButton}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </Pressable>
-          </View>
-
-          {picker.status === 'scanning' && (
-            <View style={styles.pickerBody}>
-              <ActivityIndicator />
-              <Text style={styles.pickerBodyText}>Scanning for trackers…</Text>
-            </View>
-          )}
-
-          {picker.status === 'connecting' && (
-            <View style={styles.pickerBody}>
-              <ActivityIndicator />
-              <Text style={styles.pickerBodyText}>Connecting to {picker.deviceName}…</Text>
-            </View>
-          )}
-
-          {picker.status === 'error' && (
-            <View style={styles.pickerBody}>
-              <Text style={styles.errorText}>Error: {picker.message}</Text>
-              <Pressable onPress={() => startScan(picker.hand)} style={styles.retryButton}>
-                <Text style={styles.retryButtonText}>Retry scan</Text>
-              </Pressable>
-            </View>
-          )}
-
-          {picker.status === 'picking' && (
-            <View style={styles.pickerBody}>
-              <Pressable
-                onPress={() => setFightCamOnly((v) => !v)}
-                style={styles.filterRow}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: fightCamOnly }}
-              >
-                <View style={[styles.checkboxBox, fightCamOnly && styles.checkboxBoxOn]}>
-                  {fightCamOnly ? <Text style={styles.checkboxTick}>✓</Text> : null}
-                </View>
-                <Text style={styles.filterLabel}>
-                  Only FightCam trackers ({picker.results.filter(isFightCam).length}/{picker.results.length})
-                </Text>
-              </Pressable>
-              {(() => {
-                const visible = fightCamOnly ? picker.results.filter(isFightCam) : picker.results
-                if (visible.length === 0) {
-                  return (
-                    <Text style={styles.pickerBodyText}>
-                      {fightCamOnly ? 'No FightCam trackers in range. Uncheck the filter to see everything.' : 'No devices in range.'}
-                    </Text>
-                  )
-                }
-                return visible.map((snap) => (
-                  <Pressable
-                    key={snap.deviceId}
-                    style={styles.deviceRow}
-                    onPress={() => pickDevice(picker.hand, snap)}
-                  >
-                    <Text style={styles.deviceName}>{snap.name ?? 'Unnamed tracker'}</Text>
-                    <Text style={styles.deviceMeta}>
-                      RSSI {snap.rssi ?? '—'}
-                      {snap.serviceUuids.length > 0 ? ` · ${snap.serviceUuids.length} svc` : ''}
-                    </Text>
-                  </Pressable>
-                ))
-              })()}
-              <Pressable onPress={() => startScan(picker.hand)} style={styles.retryButton}>
-                <Text style={styles.retryButtonText}>Rescan</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-      )}
+      <Text style={styles.hint}>
+        Trackers connect automatically. Tap a badge above to reconnect one that has gone quiet.
+      </Text>
 
       <View style={styles.linkRow}>
         <Link href="/(tabs)/velocity-lab/spike" asChild>
@@ -300,93 +75,15 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 16, backgroundColor: colors.background },
   title: { fontSize: 28, fontWeight: '700', color: colors.textPrimary },
   paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
-  buttonRow: { flexDirection: 'row', gap: 12 },
-  autoConnectBlock: { gap: 8 },
-  primaryButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-  },
-  primaryButtonBusy: { backgroundColor: colors.surfaceElevated },
-  primaryButtonText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
-  autoConnectHint: { fontSize: 13, color: colors.textSecondary },
-  autoConnectNote: { fontSize: 13, color: colors.warning },
-  connectButton: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-  },
-  connectButtonActive: { borderColor: colors.accent, backgroundColor: colors.accentSurface },
-  connectButtonText: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  pickerCard: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 12,
-    gap: 12,
-    backgroundColor: colors.surface,
-  },
-  pickerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  pickerTitle: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  cancelButton: { paddingVertical: 6, paddingHorizontal: 10 },
-  cancelButtonText: { fontSize: 14, fontWeight: '600', color: colors.accent },
-  pickerBody: { gap: 10 },
-  pickerBodyText: { fontSize: 14, color: colors.textSecondary },
-  errorText: { fontSize: 14, color: colors.danger },
-  deviceRow: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 6,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-  },
-  deviceName: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  deviceMeta: { fontSize: 13, color: colors.textSecondary },
-  retryButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 6,
-    backgroundColor: colors.surface,
-  },
-  retryButtonText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  linkRow: { gap: 12, marginTop: 8 },
+  hint: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' },
+  linkRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   linkButton: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    paddingHorizontal: 14,
     borderRadius: 8,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.surfaceElevated,
   },
-  linkButtonText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  linkButtonText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
   headerLink: { paddingHorizontal: 12 },
   headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
-  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
-  checkboxBox: {
-    width: 22,
-    height: 22,
-    borderWidth: 2,
-    borderColor: colors.borderStrong,
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.surface,
-  },
-  checkboxBoxOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  checkboxTick: { color: colors.textOnAccent, fontSize: 14, fontWeight: '800', lineHeight: 16 },
-  filterLabel: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 })

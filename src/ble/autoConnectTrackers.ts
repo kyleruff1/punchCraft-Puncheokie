@@ -25,6 +25,7 @@ import { getTrackerCoordinator, type TrackerSlotHand } from '@ble/TrackerCoordin
 import { findKnownTracker, KNOWN_TRACKERS } from '@ble/knownTrackers'
 import { getTrackerSlots } from '@state/useTrackerStore'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
+import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 
 export interface AutoConnectOutcome {
   hand: TrackerSlotHand
@@ -43,12 +44,36 @@ export interface AutoConnectResult {
 
 const READY_STATES = new Set(['ready', 'streaming'])
 
-/** True when a slot already holds a usable connection to the expected device. */
-function slotAlreadyUsable(hand: TrackerSlotHand, address: string): boolean {
+/**
+ * How long a `'ready'` slot may go silent before we stop trusting the state.
+ *
+ * Chosen for the situation this whole function exists to survive: the app
+ * process gets killed (or Metro reloads) mid-workout, so the store rehydrates
+ * to `'ready'` from before the crash while the real GATT link is long gone.
+ * The trackers themselves fall back to slow-blink advertising within seconds.
+ * Ten seconds is long enough that a live tracker between throws will not be
+ * mistaken for stale, and short enough that a phantom `'ready'` on launch is
+ * caught before the athlete taps Start.
+ */
+const STALE_AFTER_MS = 10_000
+
+/**
+ * True when a slot already holds a usable connection to the expected device.
+ *
+ * "Usable" here means the store says ready **and** we have evidence — a punch
+ * frame or an explicit liveness stamp — inside the freshness window. Without
+ * the second half, a `'ready'` value left behind by a killed process short-
+ * circuits auto-connect forever and there is no path back onto the bag. That
+ * was the bug this reads as slow-blinking trackers with the app looking
+ * connected but no punches landing.
+ */
+function slotAlreadyUsable(hand: TrackerSlotHand, address: string, nowMs: number): boolean {
   const slot = getTrackerSlots()[hand]
   if (!slot) return false
   if (slot.deviceId.toUpperCase() !== address.toUpperCase()) return false
-  return READY_STATES.has(slot.state)
+  if (!READY_STATES.has(slot.state)) return false
+  if (slot.lastEventAtMs === undefined) return false
+  return nowMs - slot.lastEventAtMs <= STALE_AFTER_MS
 }
 
 let inFlight: Promise<AutoConnectResult> | null = null
@@ -76,9 +101,11 @@ export function isAutoConnectInFlight(): boolean {
 
 async function runAutoConnect(options: { timeoutMs?: number }): Promise<AutoConnectResult> {
   const timeoutMs = options.timeoutMs ?? 10_000
+  const nowMs = systemMonotonicClock().now()
 
-  // Short-circuit before touching the radio if everything is already up.
-  const pending = KNOWN_TRACKERS.filter((t) => !slotAlreadyUsable(t.hand, t.address))
+  // Short-circuit before touching the radio if everything is genuinely up —
+  // "genuinely" measured against `lastEventAtMs`, not just `state`.
+  const pending = KNOWN_TRACKERS.filter((t) => !slotAlreadyUsable(t.hand, t.address, nowMs))
   if (pending.length === 0) {
     return {
       outcomes: KNOWN_TRACKERS.map((t) => ({
@@ -91,6 +118,33 @@ async function runAutoConnect(options: { timeoutMs?: number }): Promise<AutoConn
   }
 
   const coordinator = getTrackerCoordinator()
+
+  // A pending slot that the store still thinks is `'ready'` is the phantom
+  // case: the OS holds a cached handle, so a scan will not surface the device
+  // and a fresh connect will fail. Force a disconnect first so the tracker
+  // returns to advertising and the scan can find it. Safe on a truly dormant
+  // slot too — `disconnect` on a non-existent connection is a no-op.
+  await Promise.all(
+    pending.map(async (tracker) => {
+      const slot = getTrackerSlots()[tracker.hand]
+      if (!slot) return
+      if (!READY_STATES.has(slot.state)) return
+      try {
+        await coordinator.disconnectSlot(tracker.hand)
+        logger.info('autoconnect.reclaim.disconnected', 'evicted stale connection', {
+          hand: safe(tracker.hand),
+          deviceId: deviceSensitive(tracker.address),
+        })
+      } catch (err) {
+        // Non-fatal — the scan may still find it, and if it doesn't the
+        // per-slot outcome will already reflect that.
+        logger.warn('autoconnect.reclaim.disconnectFailed', 'stale disconnect failed', {
+          hand: safe(tracker.hand),
+          errorMessage: safe(err instanceof Error ? err.message : String(err)),
+        })
+      }
+    }),
+  )
 
   let advertisements
   try {
@@ -112,7 +166,7 @@ async function runAutoConnect(options: { timeoutMs?: number }): Promise<AutoConn
 
   const results = await Promise.all(
     KNOWN_TRACKERS.map(async (tracker): Promise<AutoConnectOutcome> => {
-      if (slotAlreadyUsable(tracker.hand, tracker.address)) {
+      if (slotAlreadyUsable(tracker.hand, tracker.address, nowMs)) {
         return { hand: tracker.hand, address: tracker.address, status: 'already-connected' }
       }
       const deviceId = seen.get(tracker.address.toUpperCase())

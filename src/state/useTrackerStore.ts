@@ -29,6 +29,18 @@ export interface SlotState {
    * to bonding / discovering / recovering, not just a boolean. */
   state: ConnectionState
   errorMessage?: string
+  /**
+   * Monotonic time of the last frame received from this device, or `undefined`
+   * if none has arrived on this connection. Written by whoever is holding the
+   * punch subscription (currently `useLivePunchSource`), read by the auto-
+   * connect probe and the "stale slot" watchdog.
+   *
+   * This exists because `state: 'ready'` alone cannot tell a live slot from a
+   * phantom one — a killed process leaves the store carrying `'ready'` after
+   * the actual GATT link is gone. The auto-connect path used to skip on that
+   * value alone, which stranded the athlete with no way back onto the bag.
+   */
+  lastEventAtMs?: number
 }
 
 interface Slots {
@@ -41,6 +53,8 @@ export interface TrackerStoreState {
   assign: (hand: SlotHand, deviceId: string, name?: string) => void
   clear: (hand: SlotHand) => void
   setState: (hand: SlotHand, state: ConnectionState, errorMessage?: string) => void
+  /** Stamp the slot with the time a frame arrived — evidence of liveness. */
+  noteEvent: (hand: SlotHand, atMonotonicMs: number) => void
 }
 
 export const useTrackerStore = create<TrackerStoreState>((set) => ({
@@ -69,6 +83,15 @@ export const useTrackerStore = create<TrackerStoreState>((set) => ({
         errorMessage: state === 'error' ? errorMessage : errorMessage ?? existing.errorMessage,
       }
       return { slots: { ...prev.slots, [hand]: next } }
+    })
+  },
+  noteEvent: (hand, atMonotonicMs) => {
+    set((prev) => {
+      const existing = prev.slots[hand]
+      if (!existing) return prev
+      return {
+        slots: { ...prev.slots, [hand]: { ...existing, lastEventAtMs: atMonotonicMs } },
+      }
     })
   },
 }))
@@ -104,6 +127,11 @@ export function clearSlot(hand: SlotHand): void {
 
 export function setSlotState(hand: SlotHand, state: ConnectionState, errorMessage?: string): void {
   useTrackerStore.getState().setState(hand, state, errorMessage)
+}
+
+/** Non-React entry point for whoever holds the punch subscription. */
+export function noteSlotEvent(hand: SlotHand, atMonotonicMs: number): void {
+  useTrackerStore.getState().noteEvent(hand, atMonotonicMs)
 }
 
 /**

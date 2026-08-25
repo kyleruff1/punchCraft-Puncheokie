@@ -1,6 +1,7 @@
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
+import { autoConnectKnownTrackers, isAutoConnectInFlight } from '@ble/autoConnectTrackers'
 import type { SlotState } from '@/state/useTrackerStore'
 import { colors, stateColors } from '@/theme/colors'
 
@@ -49,6 +50,12 @@ function resolveVisual(slot: SlotState | null): Visual {
 /**
  * Small pill showing one tracker slot's connection state.
  *
+ * Tapping it kicks an auto-connect pass — a manual reclaim for the case where
+ * the trackers slow-blink because the app is holding a phantom handle. Safe on
+ * a live slot too: the probe skips a slot with recent events. Under
+ * `PRAGMA foreign_keys` disabled elsewhere, this button is the athlete's
+ * back-onto-the-bag path.
+ *
  * Accessibility: never color-only (§19.4) — the textual label always names
  * the state alongside the colored dot.
  */
@@ -57,18 +64,23 @@ export function ConnectionBadge(props: ConnectionBadgeProps): React.ReactElement
   const visual = resolveVisual(slot)
   const prefix = hand === 'left' ? 'L' : 'R'
   const text = `${prefix}: ${visual.label}`
+  const onPress = (): void => {
+    if (isAutoConnectInFlight()) return
+    void autoConnectKnownTrackers({ timeoutMs: 10_000 })
+  }
   return (
-    <View
+    <Pressable
+      onPress={onPress}
       style={styles.pill}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={accessibilityLabel ?? text}
+      accessibilityRole="button"
+      accessibilityLabel={`${accessibilityLabel ?? text} — tap to reconnect`}
+      accessibilityHint="Rescans for the tracker and reconnects it"
     >
       <View style={[styles.dot, { backgroundColor: visual.color }]} />
       <Text style={styles.label} numberOfLines={1} ellipsizeMode="tail">
         {text}
       </Text>
-    </View>
+    </Pressable>
   )
 }
 

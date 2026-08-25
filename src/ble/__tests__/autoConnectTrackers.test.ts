@@ -17,12 +17,14 @@ const red = KNOWN_TRACKERS.find((t) => t.hand === 'right')!
 // permits references whose names begin with `mock`.
 const mockScan = jest.fn()
 const mockConnectSlot = jest.fn()
+const mockDisconnectSlot = jest.fn()
 let mockSlots: { left: unknown; right: unknown } = { left: null, right: null }
 
 jest.mock('@ble/TrackerCoordinator', () => ({
   getTrackerCoordinator: () => ({
     scan: (...a: unknown[]) => mockScan(...a),
     connectSlot: (...a: unknown[]) => mockConnectSlot(...a),
+    disconnectSlot: (...a: unknown[]) => mockDisconnectSlot(...a),
   }),
 }))
 
@@ -30,12 +32,33 @@ jest.mock('@state/useTrackerStore', () => ({
   getTrackerSlots: () => mockSlots,
 }))
 
+/**
+ * The freshness stamp the auto-connect probe treats as evidence of a live
+ * connection. Any positive number that is at most a few seconds behind
+ * `systemMonotonicClock().now()` reads as fresh; using the same clock keeps
+ * the test in sync with the fresh-window logic (10s in production).
+ */
+const nowMs = (): number => {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now()
+  }
+  return Date.now()
+}
+/** A slot object annotated as freshly live. */
+const liveSlot = (deviceId: string, state: string) => ({
+  deviceId,
+  state,
+  lastEventAtMs: nowMs(),
+})
+
 const ad = (deviceId: string) => ({ deviceId })
 
 beforeEach(() => {
   mockScan.mockReset()
   mockConnectSlot.mockReset()
+  mockDisconnectSlot.mockReset()
   mockConnectSlot.mockResolvedValue(undefined)
+  mockDisconnectSlot.mockResolvedValue(undefined)
   mockSlots = { left: null, right: null }
 })
 
@@ -69,8 +92,11 @@ describe('autoConnectKnownTrackers', () => {
     expect(mockConnectSlot).not.toHaveBeenCalled()
   })
 
-  it('leaves an already-connected slot alone rather than reconnecting it', async () => {
-    mockSlots = { left: { deviceId: blue.address, state: 'streaming' }, right: null }
+  it('leaves a slot alone when it is ready AND has fresh liveness evidence', async () => {
+    // "Ready" is not enough (D24) — the state can survive a killed process
+    // while the actual GATT link is gone. A recent `lastEventAtMs` is what
+    // proves the connection is live.
+    mockSlots = { left: liveSlot(blue.address, 'streaming'), right: null }
     mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
 
     const result = await autoConnectKnownTrackers()
@@ -78,12 +104,13 @@ describe('autoConnectKnownTrackers', () => {
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('already-connected')
     expect(mockConnectSlot).toHaveBeenCalledTimes(1)
     expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
+    expect(mockDisconnectSlot).not.toHaveBeenCalledWith('left')
   })
 
-  it('does not touch the radio at all when both slots are already usable', async () => {
+  it('does not touch the radio at all when both slots are live and fresh', async () => {
     mockSlots = {
-      left: { deviceId: blue.address, state: 'ready' },
-      right: { deviceId: red.address, state: 'streaming' },
+      left: liveSlot(blue.address, 'ready'),
+      right: liveSlot(red.address, 'streaming'),
     }
 
     const result = await autoConnectKnownTrackers()
@@ -91,6 +118,25 @@ describe('autoConnectKnownTrackers', () => {
     expect(mockScan).not.toHaveBeenCalled()
     expect(result.connectedCount).toBe(0)
     expect(result.outcomes.every((o) => o.status === 'already-connected')).toBe(true)
+  })
+
+  it('evicts a phantom ready slot — the very bug that stranded the athlete', async () => {
+    // A slot the store still says is `'ready'` but with no `lastEventAtMs`
+    // and no recent event is exactly the phantom-connection case: a killed
+    // process left the state behind while the tracker returned to slow-blink
+    // advertising. Without the reclaim path, auto-connect used to skip such
+    // slots and there was no way back onto the bag (D24).
+    mockSlots = {
+      left: { deviceId: blue.address, state: 'ready' }, // no lastEventAtMs
+      right: null,
+    }
+    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
+
+    const result = await autoConnectKnownTrackers()
+
+    expect(mockDisconnectSlot).toHaveBeenCalledWith('left')
+    expect(mockScan).toHaveBeenCalled()
+    expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('connected')
   })
 
   it('treats a slot bound to a DIFFERENT device as needing reconnection', async () => {
