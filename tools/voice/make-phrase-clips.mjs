@@ -290,6 +290,14 @@ for (const combination of combinations) {
           finish: performance.finish,
         })
         const key = `${combination}.${cadence}.${vocabulary}.${performance.name}`
+        // Words the coach will speak — used to size the duration bounds
+        // passed to the renderer (see `phraseBoundsMs`). "1-2b-3" under
+        // `numbers` is *four* words ("one two bee three"), so per-token
+        // count is wrong; `spokenFor` gives the real spoken form.
+        const spokenWordCount = tokens.reduce(
+          (sum, t) => sum + spokenFor(t, { vocabulary }).split(' ').length,
+          0,
+        )
         jobs.push({
           key,
           combination,
@@ -298,11 +306,27 @@ for (const combination of combinations) {
           performance: performance.name,
           tokens,
           plan,
+          spokenWordCount,
           wav: join(cwd, OUT_ROOT, `${key}.wav`),
         })
       }
     }
   }
+}
+
+/**
+ * Plausible duration window for a spoken phrase of `words` words.
+ *
+ * A window rather than a ceiling because Chatterbox drops syllables just as
+ * often as it runs long — a "one, two" that comes back at 370ms has lost the
+ * "two", and shipped this way it read as unintelligible barking after tempo
+ * fit. Bounding both ends lets the best-of-N retry keep rolling until the
+ * take has the right number of syllables. 250-800ms per word covers a rushed
+ * call and a leisurely one; anything outside is either dropped or padded.
+ */
+function phraseBoundsMs(words) {
+  const n = Math.max(1, words)
+  return { minDurationMs: 250 * n, maxDurationMs: 800 * n + 200 }
 }
 
 if (!manifestOnly) {
@@ -317,6 +341,7 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work),
+            ...phraseBoundsMs(j.spokenWordCount),
           })),
         }),
         encoding: 'utf8',

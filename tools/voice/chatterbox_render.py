@@ -10,16 +10,19 @@ Reads a JSON spec on stdin:
     {
       "reference": "tools/voice/reference/cornerman-reference.wav",
       "jobs": [{"path": "...", "text": "...", "exaggeration": 0.7,
-                "cfgWeight": 0.4, "maxDurationMs": 900}]
+                "cfgWeight": 0.4, "minDurationMs": 500, "maxDurationMs": 1600}]
     }
 
-`maxDurationMs` is optional and enables a best-of-N retry. Chatterbox is
-markedly unstable on very short inputs: measured, a bare "Five!" rendered at
-2.20s on one run and 0.80s on the next from identical settings, and no
-`cfg_weight` fixed it — the model simply sometimes keeps generating. A single
-spoken digit that lasts three seconds cannot be scheduled against a beat, so
-jobs that know their plausible length ask for a bound and the renderer keeps
-generating until a take fits, falling back to the shortest it saw.
+`minDurationMs` and `maxDurationMs` bound a best-of-N retry. Chatterbox is
+markedly unstable on the short inputs this project renders — it sometimes runs
+long, and it sometimes silently *drops a syllable* to run short (measured: a
+"one two" take clipping to a 370ms "one"). The first version of this bounded
+only the upper end and preferred the shortest take, which reinforced the
+truncated ones and shipped clips that garbled after tempo fit. Both bounds
+now: a take that undershoots means a word was dropped, a take that overshoots
+means the model kept generating past the phrase. The renderer keeps rolling
+until a take lands inside the window, and falls back to the take closest to
+the middle of the window when nothing does.
 
 Prints `OK <path> <durationMs>` or `FAIL <path> <message>` per job, so one bad
 job never sinks a batch, then `DONE <n> in <s>s`.
@@ -79,11 +82,35 @@ def main() -> int:
 
     for entry in jobs:
         path = entry["path"]
+        min_ms = entry.get("minDurationMs")
         max_ms = entry.get("maxDurationMs")
-        attempts = attempts_cap if max_ms else 1
+        bounded = min_ms is not None or max_ms is not None
+        attempts = attempts_cap if bounded else 1
+
+        def in_bounds(ms: float) -> bool:
+            if min_ms is not None and ms < float(min_ms):
+                return False
+            if max_ms is not None and ms > float(max_ms):
+                return False
+            return True
+
+        # Distance to the middle of the window — used as a fallback tiebreak
+        # when no take lands inside the window at all.
+        def middleness(ms: float) -> float:
+            if min_ms is not None and max_ms is not None:
+                mid = (float(min_ms) + float(max_ms)) / 2.0
+            elif min_ms is not None:
+                mid = float(min_ms)
+            elif max_ms is not None:
+                mid = float(max_ms)
+            else:
+                mid = ms
+            return abs(ms - mid)
+
         try:
-            best = None  # (samples, duration_ms) — the shortest take seen
-            for attempt in range(attempts):
+            fallback = None  # (samples, duration_ms) — the closest-to-mid take seen
+            accepted = None
+            for _attempt in range(attempts):
                 wav = model.generate(
                     entry["text"],
                     audio_prompt_path=reference,
@@ -94,17 +121,27 @@ def main() -> int:
                 if samples.ndim > 1:
                     samples = samples.squeeze()
                 duration_ms = len(samples) / model.sr * 1000
-                if best is None or duration_ms < best[1]:
-                    best = (samples, duration_ms)
-                if max_ms is None or duration_ms <= float(max_ms):
+                if fallback is None or middleness(duration_ms) < middleness(fallback[1]):
+                    fallback = (samples, duration_ms)
+                if in_bounds(duration_ms):
+                    accepted = (samples, duration_ms)
                     break
 
-            samples, duration_ms = best
+            samples, duration_ms = accepted if accepted else fallback
             sf.write(path, samples.astype(np.float32), model.sr)
-            # Report an over-long take rather than letting it pass silently — a
-            # call that cannot fit its beat is a defect, not a variation.
-            over = "" if max_ms is None or duration_ms <= float(max_ms) else f" OVER {round(float(max_ms))}"
-            print(f"OK {path} {round(duration_ms)}{over}", flush=True)
+            # Report a take that landed outside the window rather than letting
+            # it pass silently — that is exactly the defect that shipped
+            # garbled clips in the first place. `SHORT` means a syllable was
+            # dropped; `OVER` means the model kept generating.
+            if accepted:
+                tag = ""
+            elif min_ms is not None and duration_ms < float(min_ms):
+                tag = f" SHORT under {round(float(min_ms))}"
+            elif max_ms is not None and duration_ms > float(max_ms):
+                tag = f" OVER {round(float(max_ms))}"
+            else:
+                tag = ""
+            print(f"OK {path} {round(duration_ms)}{tag}", flush=True)
         except Exception as exc:
             print(f"FAIL {path} {exc}", flush=True)
 
