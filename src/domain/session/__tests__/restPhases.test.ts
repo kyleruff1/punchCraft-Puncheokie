@@ -217,6 +217,47 @@ describe('RoundResultFreeze — a dropped tracker is recorded, not hidden', () =
   })
 })
 
+describe('RoundResultFreeze — precision counts confirmed technique matches (D25)', () => {
+  it('reports zero when no precision hits landed', () => {
+    const freeze = new RoundResultFreeze()
+    freeze.beginRound(0)
+    freeze.observePunch({ hand: 'left' })
+    expect(freeze.freeze(100)?.precision).toBe(0)
+  })
+
+  it('accumulates across the round rather than clearing per cue', () => {
+    // The runner clears per-cue affirmed markers on every new cue-active so
+    // the stage does not carry old marks; the freeze counter must not care.
+    const freeze = new RoundResultFreeze()
+    freeze.beginRound(0)
+    freeze.notePrecisionHit()
+    freeze.notePrecisionHit()
+    freeze.notePrecisionHit()
+    expect(freeze.freeze(100)?.precision).toBe(3)
+  })
+
+  it('resets between rounds', () => {
+    const freeze = new RoundResultFreeze()
+    freeze.beginRound(0)
+    freeze.notePrecisionHit()
+    freeze.freeze(100)
+    freeze.beginRound(1)
+    expect(freeze.freeze(100)?.precision).toBe(0)
+  })
+
+  it('goes silent once the round has frozen', () => {
+    // Same rule as observePunch: after the bell the number stops moving.
+    // A late `notePrecisionHit` from an in-flight settled match must not
+    // reopen the round's grade.
+    const freeze = new RoundResultFreeze()
+    freeze.beginRound(0)
+    freeze.notePrecisionHit()
+    const first = freeze.freeze(100)
+    freeze.notePrecisionHit()
+    expect(first?.precision).toBe(1)
+  })
+})
+
 // ---------------------------------------------------------------------------
 
 function block(id: string, tokens: WorkoutToken[]): WorkoutBlock {

@@ -25,7 +25,6 @@ import {
   type RestNextRound,
 } from '../RestPhases'
 import { colors } from '@/theme/colors'
-import { sequenceScoreLabel, type CapabilityTier } from '@domain/workout/capabilityTier'
 import { restPhaseAt, type FrozenRoundResult, type RestPhase } from '@domain/session/restPhases'
 
 const MINUTE = 60_000
@@ -41,6 +40,7 @@ const FROZEN: FrozenRoundResult = {
   right: 122,
   avgVelocity: { value: 68.4, unit: 'tracker-unit', label: 'tracker-reported velocity' },
   bestVelocity: { value: 92.1, unit: 'tracker-unit', label: 'tracker-reported velocity' },
+  precision: 34,
   trackerDropped: false,
 }
 
@@ -202,40 +202,46 @@ describe('the three phases survive colour removal (spec §19.4)', () => {
   })
 })
 
-describe('result phase — doc §23 contents', () => {
-  it('reuses the count badge rather than grading again', () => {
+describe('result phase — the round grade card (D25)', () => {
+  it('shows the four numbers the athlete came for', () => {
+    // Punches thrown / max velocity / avg velocity / precision. Four tiles,
+    // one row, no verdict.
     const tree = render({ restElapsedMs: AT.result })
-    expect(textOf(tree.root.findByProps({ testID: 'count-badge-count' }))).toBe('246 / 240')
-    expect(textOf(tree.root.findByProps({ testID: 'count-badge-status' }))).toBe('+6 OVER')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-punches' }))).toContain('246')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-max-velocity' }))).toContain('92')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-avg-velocity' }))).toContain('68')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-precision' }))).toContain('34')
   })
 
-  it('shows the round average as tracker-reported velocity (spec §4.3)', () => {
+  it('carries the target under the punches tile', () => {
     const tree = render({ restElapsedMs: AT.result })
-    const line = textOf(tree.root.findByProps({ testID: 'rest-avg-velocity' }))
-    expect(line).toContain('tracker-reported velocity')
-    expect(line).toContain('68')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-punches' }))).toContain('240')
   })
 
-  it('omits the velocity line entirely when the source reports none', () => {
+  it('renders an em-dash rather than zero when the tracker sent no velocity', () => {
+    // D11: an absent capability is absent, not a false zero. `246 punches at
+    // an average velocity of zero` would read as the athlete's failing.
     const { avgVelocity: _avg, bestVelocity: _best, ...noVelocity } = FROZEN
     const tree = render({ frozen: noVelocity, restElapsedMs: AT.result })
-    expect(has(tree, 'rest-avg-velocity')).toBe(false)
-    expect(allText(tree)).not.toMatch(/velocity/i)
+    expect(textOf(tree.root.findByProps({ testID: 'grade-max-velocity' }))).toContain('—')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-avg-velocity' }))).toContain('—')
   })
 
-  it.each(['hand-only', 'hand-timestamp', 'hand-broad-type', 'hand-distinct-type'] as const)(
-    'names any sequence score from the %s tier (D4)',
-    (tier: CapabilityTier) => {
-      const tree = render({
-        restElapsedMs: AT.result,
-        capabilityTier: tier,
-        sequenceScorePct: 82,
-      })
-      expect(textOf(tree.root.findByProps({ testID: 'count-badge-sequence-score' }))).toBe(
-        `82% ${sequenceScoreLabel(tier)}`,
-      )
-    },
-  )
+  it('explains why precision reads zero on hardware that rarely confirms type', () => {
+    // Zero precision is honest here: the FightCamp v1 byte only reliably
+    // discriminates some techniques per device (H12). The tile carries a
+    // small line the athlete can read so a zero is not misread as failure.
+    const tree = render({ frozen: { ...FROZEN, precision: 0 }, restElapsedMs: AT.result })
+    const tile = textOf(tree.root.findByProps({ testID: 'grade-precision' }))
+    expect(tile).toContain('0')
+    expect(tile.toLowerCase()).toContain('hardware')
+  })
+
+  it('names the tile "correct hand and type" when precision is non-zero', () => {
+    const tree = render({ restElapsedMs: AT.result })
+    const tile = textOf(tree.root.findByProps({ testID: 'grade-precision' })).toLowerCase()
+    expect(tile).toContain('correct hand and type')
+  })
 
   it('renders no letter grade', () => {
     const text = allText(render({ restElapsedMs: AT.result }))

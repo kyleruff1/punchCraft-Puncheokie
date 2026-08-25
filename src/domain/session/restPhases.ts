@@ -115,6 +115,20 @@ export interface FrozenRoundResult {
    * per-combination results; the recovery view falls back to velocity.
    */
   bestCombo?: string
+  /**
+   * Precision punches (D25) — the athlete threw the correct hand and the
+   * tracker confirmed the strike type the coach called.
+   *
+   * "Confirmed" here means `LiveMatch.affirmed` — the byte the tracker sent
+   * lies in a slot its device profile can reliably discriminate against the
+   * prescribed technique (H12). On the FightCamp v1 hardware this fires
+   * sparsely (blue reliably tells uppercuts apart; red reliably tells hooks
+   * apart), so the number is lower than `actual` by design. Under D11 an
+   * absent capability is reported absent rather than as zero: the tile
+   * distinguishes "no punch was affirmed" from "no confirmable punch was
+   * thrown" in prose above the number, not in the number itself.
+   */
+  precision: number
   /** A glove was disconnected or reconnecting at some point in this round. */
   trackerDropped: boolean
 }
@@ -191,6 +205,7 @@ export class RoundResultFreeze {
   private velocitySum = 0
   private velocityCount = 0
   private best: number | undefined
+  private precision = 0
   private trackerDropped = false
 
   /** Open a fresh round. Discards anything the previous round accumulated. */
@@ -203,6 +218,7 @@ export class RoundResultFreeze {
     this.velocitySum = 0
     this.velocityCount = 0
     this.best = undefined
+    this.precision = 0
     this.trackerDropped = false
   }
 
@@ -245,6 +261,21 @@ export class RoundResultFreeze {
   }
 
   /**
+   * Record a precision hit — a match whose type concordance came back
+   * `'agree'` for the prescribed technique (D25).
+   *
+   * The runner is the caller: it sees every settled match and knows which
+   * of them were affirmed. Kept as a separate entry point rather than a
+   * flag on `observePunch` because the two facts arrive at different
+   * moments — `observePunch` runs the instant a frame lands, while
+   * `affirmed` is decided by the matcher a little later.
+   */
+  notePrecisionHit(): void {
+    if (!this.open) return
+    this.precision += 1
+  }
+
+  /**
    * Close the round and return its result.
    *
    * Returns `undefined` when no round is open, so a duplicate
@@ -265,6 +296,7 @@ export class RoundResultFreeze {
       right: this.right,
       ...(avg ? { avgVelocity: avg } : {}),
       ...(this.best === undefined ? {} : { bestVelocity: velocityView(this.best) }),
+      precision: this.precision,
       trackerDropped: this.trackerDropped,
     }
   }

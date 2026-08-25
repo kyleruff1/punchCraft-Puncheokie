@@ -563,6 +563,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // Reward only: nothing is recorded when the byte disagrees.
           if (event.match.affirmed && expected) {
             affirmedRef.current = [...affirmedRef.current, expected.tokenIndex]
+            // Roll the affirmed match into the round tally too, so the grade
+            // card at the bell can name "precision punches" — the count of
+            // hits where the tracker actually confirmed the prescribed
+            // technique (D25). Kept alongside `affirmedRef` rather than
+            // derived from it because `affirmedRef` is cleared on every new
+            // cue, while the round's precision must accumulate across all of
+            // them.
+            freezeRef.current.notePrecisionHit()
           }
           // Tiered per-hit haptic: a solid buzz for a right-hand hit on the
           // beat, a stronger one when the strike type also agrees (rare on v1).

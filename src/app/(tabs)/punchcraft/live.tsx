@@ -225,7 +225,6 @@ export default function LiveScreen(): React.JSX.Element {
               restElapsedMs={restElapsedMs}
               restDurationMs={restDurationMs}
               onSkipRest={runner.skipRest}
-              capabilityTier={live.capabilityTier}
             />
           ) : (
             <CueStage

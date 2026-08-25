@@ -49,11 +49,9 @@
 import React, { useEffect, useRef } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 
-import { CountBadge } from './CountBadge'
 import { formatCountdown } from './RoundTopBar'
 import { colors } from '@/theme/colors'
 import { gradeAccessibilityText, gradeRound } from '@domain/programs/roundGrading'
-import type { CapabilityTier } from '@domain/workout/capabilityTier'
 import {
   REST_PHASE_ORDER,
   restPhaseAt,
@@ -88,10 +86,6 @@ export interface RestPhasesProps {
   onSkipRest: () => void
   /** Disables the breathing animation (doc §25). */
   reducedMotion?: boolean
-  /** Names any sequence-score caption by tier (D4). */
-  capabilityTier?: CapabilityTier
-  /** Optional hand-sequence score for the round, as a percentage. */
-  sequenceScorePct?: number
   /** Voice Coach port hook. Silent until M34-05. */
   onAnnounce?: (announcement: RestAnnouncement) => void
 }
@@ -241,34 +235,92 @@ function Line(props: { label: string; value: string; testID: string }): React.JS
   )
 }
 
+/**
+ * One tile on the round grade card.
+ *
+ * Same shape whether the value is a number, absent (rendered as the em-dash
+ * D11 requires) or `undefined`. `sub` is the small line under the value,
+ * used by the velocity tiles to name the unit and by the precision tile to
+ * carry its capability caveat without shrinking the number.
+ */
+function GradeTile(props: {
+  label: string
+  value: string
+  sub?: string
+  testID: string
+}): React.JSX.Element {
+  return (
+    <View style={styles.gradeTile} testID={props.testID}>
+      <Text style={styles.gradeTileLabel} numberOfLines={1}>
+        {props.label}
+      </Text>
+      <Text style={styles.gradeTileValue} numberOfLines={1} adjustsFontSizeToFit>
+        {props.value}
+      </Text>
+      {props.sub ? (
+        <Text style={styles.gradeTileSub} numberOfLines={2}>
+          {props.sub}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
 // ---------------------------------------------------------------------------
 
+/**
+ * Round grade — four tiles, one row (D25).
+ *
+ * Punches thrown / max velocity / avg velocity / precision. The four numbers
+ * are the whole read: this is not a summary of the workout, it is the four
+ * things the athlete wants to know before the next round.
+ *
+ * Absence and truth: velocity tiles read `—` when the tracker sent no
+ * readings (D11 — absent, never a false zero). Precision reads its plain
+ * count and carries a small caveat when the number is zero, since a zero
+ * there is ambiguous on the FightCamp v1 hardware — the tracker cannot
+ * confirm every technique, so the athlete may have thrown all the right
+ * shots and had none of them land on a confirmable byte (H12).
+ */
 function ResultView(props: {
   frozen: FrozenRoundResult
-  capabilityTier: CapabilityTier
-  sequenceScorePct?: number
 }): React.JSX.Element {
-  const { frozen, capabilityTier, sequenceScorePct } = props
+  const { frozen } = props
   const outcome = gradeRound(frozen.actual, frozen.target).outcome
+  const round = (n: number): string => String(Math.round(n))
 
   return (
     <View style={styles.body} testID="rest-phase-result">
-      <CountBadge
-        actual={frozen.actual}
-        target={frozen.target}
-        size="hero"
-        {...(sequenceScorePct === undefined
-          ? {}
-          : { sequenceScore: { pct: sequenceScorePct, tier: capabilityTier } })}
-      />
-
-      {frozen.avgVelocity ? (
-        <Line
-          testID="rest-avg-velocity"
-          label={frozen.avgVelocity.label}
-          value={String(Math.round(frozen.avgVelocity.value))}
+      <View style={styles.gradeRow} testID="rest-grade-row">
+        <GradeTile
+          testID="grade-punches"
+          label="Punches"
+          value={String(frozen.actual)}
+          sub={`Target ${frozen.target}`}
         />
-      ) : null}
+        <GradeTile
+          testID="grade-max-velocity"
+          label="Max velocity"
+          value={frozen.bestVelocity ? round(frozen.bestVelocity.value) : '—'}
+          sub={frozen.bestVelocity ? 'tracker units' : 'no reading'}
+        />
+        <GradeTile
+          testID="grade-avg-velocity"
+          label="Avg velocity"
+          value={frozen.avgVelocity ? round(frozen.avgVelocity.value) : '—'}
+          sub={frozen.avgVelocity ? 'tracker units' : 'no reading'}
+        />
+        <GradeTile
+          testID="grade-precision"
+          label="Precision"
+          value={String(frozen.precision)}
+          sub={
+            frozen.precision === 0
+              ? 'this hardware only confirms some techniques'
+              : 'correct hand and type'
+          }
+        />
+      </View>
 
       {outcome === 'short' ? (
         <Text style={styles.note} testID="rest-short-note">
@@ -357,8 +409,6 @@ export function RestPhases(props: RestPhasesProps): React.JSX.Element {
     restDurationMs,
     onSkipRest,
     reducedMotion = false,
-    capabilityTier = 'hand-timestamp',
-    sequenceScorePct,
     onAnnounce,
   } = props
 
@@ -396,13 +446,7 @@ export function RestPhases(props: RestPhasesProps): React.JSX.Element {
         </Text>
       </View>
 
-      {phase === 'result' ? (
-        <ResultView
-          frozen={frozen}
-          capabilityTier={capabilityTier}
-          {...(sequenceScorePct === undefined ? {} : { sequenceScorePct })}
-        />
-      ) : null}
+      {phase === 'result' ? <ResultView frozen={frozen} /> : null}
       {phase === 'recovery' ? (
         <RecoveryView frozen={frozen} reducedMotion={reducedMotion} />
       ) : null}
@@ -463,6 +507,44 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
+  },
+  gradeRow: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    justifyContent: 'space-around',
+    alignItems: 'flex-start',
+    gap: 12,
+    maxWidth: 720,
+  },
+  gradeTile: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    minWidth: 96,
+  },
+  gradeTileLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+  },
+  gradeTileValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: colors.textPrimary,
+    fontVariant: ['tabular-nums'],
+    lineHeight: 40,
+  },
+  gradeTileSub: {
+    fontSize: 11,
+    lineHeight: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   // Deliberately not tinted: a warning colour here would make the note the
   // loudest thing on a rest screen (doc §21).
