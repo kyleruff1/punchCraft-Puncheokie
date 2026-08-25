@@ -20,6 +20,7 @@ import { FootworkToken } from './FootworkToken'
 import { PunchToken } from './PunchToken'
 import type { TokenVisualState } from './tokenVisuals'
 import { colors } from '@/theme/colors'
+import { fonts, sizes, weights } from '@/theme/typography'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { WorkoutToken } from '@domain/workout/WorkoutTokens'
 
@@ -237,8 +238,9 @@ const styles = StyleSheet.create({
   root: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   nextZone: { minHeight: 90, alignItems: 'center', justifyContent: 'flex-start', gap: 2 },
   nextLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: sizes.micro,
+    fontFamily: fonts.label,
+    fontWeight: weights.bold,
     letterSpacing: 1.2,
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -250,10 +252,20 @@ const styles = StyleSheet.create({
   cueRow: { alignItems: 'center', gap: 8 },
   tokens: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' },
   repeat: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  repeatLabel: { fontSize: 20, fontWeight: '800', color: colors.textSecondary },
+  repeatLabel: {
+    fontSize: sizes.subtitle,
+    fontFamily: fonts.display,
+    fontWeight: weights.black,
+    color: colors.textSecondary,
+  },
   dots: { flexDirection: 'row', gap: 6 },
   dot: { width: 10, height: 10, borderRadius: 5, borderWidth: 2 },
   dotFilled: { backgroundColor: colors.accent, borderColor: colors.accent },
   dotEmpty: { backgroundColor: 'transparent', borderColor: colors.borderStrong },
-  idle: { fontSize: 28, fontWeight: '700', color: colors.textMuted },
+  idle: {
+    fontSize: sizes.hero,
+    fontFamily: fonts.heading,
+    fontWeight: weights.bold,
+    color: colors.textMuted,
+  },
 })

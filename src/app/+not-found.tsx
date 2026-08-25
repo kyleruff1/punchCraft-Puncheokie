@@ -1,8 +1,10 @@
 import { Link, Stack } from 'expo-router'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 
+import { ForgedButton } from '@/components/branding/ForgedButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { colors } from '@/theme/colors'
+import { fonts, recipes, sizes, weights } from '@/theme/typography'
 
 /**
  * Fallback for a URL that resolves to no route.
@@ -19,10 +21,12 @@ export default function NotFound() {
       <Stack.Screen options={{ title: 'Not found' }} />
       <Text style={styles.title}>Route not found</Text>
       <Link href="/(tabs)/punchcraft" asChild>
-        <Pressable style={styles.linkButton} accessibilityLabel="Go to punchCraft">
-          <Text style={styles.linkButtonText}>Go to </Text>
-          <Wordmark app="punchCraft" size="sm" />
-        </Pressable>
+        <ForgedButton variant="primary" accessibilityLabel="Go to punchCraft">
+          <View style={styles.goRow}>
+            <Text style={styles.goText}>Go to </Text>
+            <Wordmark app="punchCraft" size="sm" />
+          </View>
+        </ForgedButton>
       </Link>
     </View>
   )
@@ -37,16 +41,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.background,
   },
-  title: { fontSize: 20, fontWeight: '700', color: colors.textPrimary },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
+  title: {
+    fontSize: sizes.title,
+    fontFamily: fonts.heading,
+    fontWeight: weights.bold,
+    color: colors.textPrimary,
   },
-  linkButtonText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  goRow: { flexDirection: 'row', alignItems: 'center' },
+  goText: { ...recipes.buttonPrimary, color: colors.textOnAccent },
 })

@@ -24,6 +24,7 @@ import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'r
 import { useRouter } from 'expo-router'
 
 import { colors } from '@/theme/colors'
+import { fonts, sizes } from '@/theme/typography'
 
 const AUTO_ADVANCE_MS = 1_800
 const DESTINATION = '/(tabs)/punchcraft' as const
@@ -96,7 +97,8 @@ const styles = StyleSheet.create({
   hint: {
     position: 'absolute',
     bottom: 40,
-    fontSize: 12,
+    fontSize: sizes.label,
+    fontFamily: fonts.label,
     color: colors.textMuted,
     letterSpacing: 0.6,
   },

@@ -1,9 +1,11 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { ForgedButton } from '@/components/branding/ForgedButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
+import { fonts, recipes, sizes, weights } from '@/theme/typography'
 import { listSampleWorkouts } from '@domain/workout/samples'
 import { useWorkoutStore } from '@state/useWorkoutStore'
 
@@ -41,16 +43,16 @@ export default function PunchCraftLanding() {
       </Text>
 
       <Link href="/(tabs)/punchcraft/recipe" asChild>
-        <Pressable
-          accessibilityRole="button"
-          style={styles.primaryAction}
+        <ForgedButton
+          variant="primary"
           testID="setup-workout"
           // Mint a fresh seed and drop any library pick, so the recipe opens on
           // a new generated workout rather than the last one built or picked.
           onPress={() => startNewBuild()}
+          style={styles.primaryActionSpacing}
         >
-          <Text style={styles.primaryActionText}>Build a workout</Text>
-        </Pressable>
+          Build a workout
+        </ForgedButton>
       </Link>
 
       <View style={styles.section}>
@@ -93,19 +95,18 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
   brand: { alignSelf: 'flex-start', marginVertical: 4 },
-  paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
-  primaryAction: {
-    marginTop: 4,
-    paddingVertical: 16,
-    borderRadius: 10,
-    alignItems: 'center',
-    backgroundColor: colors.accent,
+  paragraph: {
+    fontSize: sizes.body,
+    fontFamily: fonts.body,
+    lineHeight: 22,
+    color: colors.textPrimary,
   },
-  primaryActionText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
+  primaryActionSpacing: { marginTop: 4 },
   section: { gap: 8, marginTop: 8 },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: sizes.label,
+    fontFamily: fonts.label,
+    fontWeight: weights.bold,
     letterSpacing: 0.8,
     color: colors.textMuted,
     textTransform: 'uppercase',
@@ -118,9 +119,24 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  libraryName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  libraryDescription: { fontSize: 13, lineHeight: 18, color: colors.textSecondary },
-  sectionNote: { fontSize: 13, color: colors.textMuted, fontStyle: 'italic' },
+  libraryName: {
+    fontSize: sizes.body,
+    fontFamily: fonts.heading,
+    fontWeight: weights.bold,
+    color: colors.textPrimary,
+  },
+  libraryDescription: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    lineHeight: 18,
+    color: colors.textSecondary,
+  },
+  sectionNote: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textMuted,
+    fontStyle: 'italic',
+  },
   spikeAction: {
     marginTop: 8,
     paddingVertical: 12,
@@ -130,7 +146,7 @@ const styles = StyleSheet.create({
     borderColor: colors.borderStrong,
     alignItems: 'center',
   },
-  spikeActionText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  spikeActionText: { ...recipes.buttonSubtle, color: colors.textSecondary },
   headerLink: { paddingHorizontal: 12 },
-  headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
+  headerLinkText: { ...recipes.buttonSubtle, color: colors.accent },
 })

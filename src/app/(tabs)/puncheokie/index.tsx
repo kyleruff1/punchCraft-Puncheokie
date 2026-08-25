@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
+import { fonts, recipes, sizes } from '@/theme/typography'
 
 /**
  * Puncheokie — not shipped yet.
@@ -43,7 +44,12 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
   brand: { alignSelf: 'flex-start', marginVertical: 4 },
-  paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
+  paragraph: {
+    fontSize: sizes.body,
+    fontFamily: fonts.body,
+    lineHeight: 22,
+    color: colors.textPrimary,
+  },
   placeholder: {
     marginTop: 4,
     padding: 16,
@@ -53,7 +59,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.surface,
   },
-  placeholderText: { fontSize: 14, fontStyle: 'italic', color: colors.textSecondary },
+  placeholderText: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    fontStyle: 'italic',
+    color: colors.textSecondary,
+  },
   headerLink: { paddingHorizontal: 12 },
-  headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
+  headerLinkText: { ...recipes.buttonSubtle, color: colors.accent },
 })

@@ -1,9 +1,11 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
+import { ForgedButton } from '@/components/branding/ForgedButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
+import { fonts, recipes, sizes } from '@/theme/typography'
 
 /**
  * Velocity Lab landing.
@@ -49,24 +51,16 @@ export default function VelocityLabLanding() {
 
       <View style={styles.linkRow}>
         <Link href="/(tabs)/velocity-lab/spike" asChild>
-          <Pressable style={styles.linkButton}>
-            <Text style={styles.linkButtonText}>Run BLE spike</Text>
-          </Pressable>
+          <ForgedButton variant="secondary">Run BLE spike</ForgedButton>
         </Link>
         <Link href="/(tabs)/velocity-lab/probe" asChild>
-          <Pressable style={styles.linkButton}>
-            <Text style={styles.linkButtonText}>Protocol probe (dev)</Text>
-          </Pressable>
+          <ForgedButton variant="secondary">Protocol probe (dev)</ForgedButton>
         </Link>
         <Link href="/(tabs)/velocity-lab/live" asChild>
-          <Pressable style={styles.linkButton}>
-            <Text style={styles.linkButtonText}>Live decoded events</Text>
-          </Pressable>
+          <ForgedButton variant="secondary">Live decoded events</ForgedButton>
         </Link>
         <Link href="/settings" asChild>
-          <Pressable style={styles.linkButton}>
-            <Text style={styles.linkButtonText}>Diagnostics</Text>
-          </Pressable>
+          <ForgedButton variant="subtle">Diagnostics</ForgedButton>
         </Link>
       </View>
     </ScrollView>
@@ -76,16 +70,19 @@ export default function VelocityLabLanding() {
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 16, backgroundColor: colors.background },
   brand: { alignSelf: 'flex-start', marginVertical: 4 },
-  paragraph: { fontSize: 15, lineHeight: 22, color: colors.textPrimary },
-  hint: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' },
-  linkRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
-  linkButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    backgroundColor: colors.surfaceElevated,
+  paragraph: {
+    fontSize: sizes.body,
+    fontFamily: fonts.body,
+    lineHeight: 22,
+    color: colors.textPrimary,
   },
-  linkButtonText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+  hint: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  linkRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   headerLink: { paddingHorizontal: 12 },
-  headerLinkText: { fontSize: 15, fontWeight: '600', color: colors.accent },
+  headerLinkText: { ...recipes.buttonSubtle, color: colors.accent },
 })

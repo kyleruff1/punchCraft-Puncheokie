@@ -35,6 +35,7 @@ import { RestPhases } from '@components/workout/RestPhases'
 import { RoundTopBar } from '@components/workout/RoundTopBar'
 import { SimControls } from '@components/workout/SimControls'
 import { colors } from '@/theme/colors'
+import { fonts, sizes, weights } from '@/theme/typography'
 import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { getSampleWorkout } from '@domain/workout/samples'
@@ -478,7 +479,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.accent,
   },
-  startButtonText: { fontSize: 22, fontWeight: '800', color: colors.textOnAccent },
+  startButtonText: {
+    fontSize: sizes.title,
+    fontFamily: fonts.display,
+    fontWeight: weights.black,
+    color: colors.textOnAccent,
+  },
   pausedOverlay: {
     position: 'absolute',
     top: 0,
@@ -497,7 +503,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   saveNote: { marginTop: 6, fontSize: 13, color: colors.textSecondary },
-  pausedText: { fontSize: 40, fontWeight: '800', color: colors.textPrimary },
+  pausedText: {
+    fontSize: sizes.display,
+    fontFamily: fonts.display,
+    fontWeight: weights.black,
+    color: colors.textPrimary,
+  },
   scoreStrip: {
     flexDirection: 'row',
     alignItems: 'center',
