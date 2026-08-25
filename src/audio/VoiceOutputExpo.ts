@@ -387,6 +387,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         this.phrasePlayer = player
         player.volume = this.volumes.voice
         player.play()
+        // Success-path record: the QA loop aligns mic recordings of a session
+        // against these lines (LogRecord carries both clocks), and a silent
+        // round with no .play entries means nothing was even attempted.
+        logger.info('puncheokie.voice.play', 'combination phrase playing', {
+          cueId: safe(asset.cueId),
+          combination: safe(combination),
+          cadence: safe(cadence),
+          durationMs: safe(asset.durationMs),
+        })
       } catch (err) {
         logger.warn('puncheokie.voice.phraseFailed', 'combination phrase did not play', {
           combination: safe(combination),
@@ -592,6 +601,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // its own end and produce silence.
       player.seekTo(0)
       player.play()
+      // Success-path record for the QA loop — see playCombination's note.
+      logger.info('puncheokie.voice.play', 'clip playing', {
+        asset: safe(id),
+        form: safe(form),
+        vocabulary: safe(this.vocabulary),
+        priority: safe(priority),
+      })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'clip did not play', {
         asset: safe(id),

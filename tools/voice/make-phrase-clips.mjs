@@ -342,6 +342,11 @@ const renderOut =
     ? execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
         input: JSON.stringify({
           reference: REFERENCE_VOICE,
+          // `--attempts=<n>` raises the best-of-N budget for every job in
+          // this run — the hotfix default is 12, a full render keeps 5.
+          ...(process.argv.find((a) => a.startsWith('--attempts='))
+            ? { attempts: Number(process.argv.find((a) => a.startsWith('--attempts=')).slice('--attempts='.length)) }
+            : {}),
           jobs: jobs.map((j) => ({
             path: j.wav,
             text: j.plan.renderedText,

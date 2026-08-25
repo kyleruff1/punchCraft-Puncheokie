@@ -74,3 +74,57 @@ plainly on disk. Restart with a cleared cache:
 ```bash
 npx expo start --dev-client --port 8081 --clear
 ```
+
+## The QA loop: validate, hotfix, re-verify
+
+Chatterbox is seedless and unstable on short inputs — a rendered clip can
+drop a syllable or replace a word with a filler vowel ("Oh!") while landing
+inside its duration window. The loop that catches this:
+
+**Validate everything on disk** (Tier 0 — no hardware in the loop):
+
+```bash
+node tools/voice/export-expectations.mjs
+F:/voice-tools/venv/Scripts/python.exe tools/voice/validate_clips.py
+```
+
+The exporter recomputes what every clip should say from the same
+`compilePhrase`/`compileAdlib` calls the generators render with (never a
+hand-copied list). The validator transcribes each clip with Whisper on the
+GPU — both as-is and slowed back down by its tempo-fit rate — scores the
+transcript with `asr_match.py`, runs the acoustic checks (duration window,
+edge silence, unexplained-voiced-time for the "oooh" artifact, tone
+frequency), and writes `tools/analysis/reports/<ts>/` with `report.md`,
+`report.json`, and a waveform+spectrogram PNG per flagged clip.
+
+**Hotfix the flagged clips** — a subset re-render through the ASR gate
+(every candidate take must transcribe as its script before it ships;
+verdicts land in `tools/analysis/render-report*.json`):
+
+```bash
+node tools/voice/make-phrase-clips.mjs --only-keys=<key1,key2,…> --attempts=12
+node tools/voice/make-voice-clips.mjs  --only-ids=<id1,id2,…>   --attempts=12
+node tools/voice/make-phrase-clips.mjs --manifest-only   # refresh durations
+```
+
+Subset renders deliberately skip the index and app manifest; the
+`--manifest-only` pass rebuilds both from the full set on disk. Same-name
+overwrites need only a Metro reload on the device.
+
+**Stubborn phrases** get an entry in `tools/voice/overrides.json`
+(gitignored artifacts live in `tools/analysis/`; overrides are committed):
+
+```json
+{ "1-2b.steady.numbers.push":
+  { "text": "One! Two! Bee!", "cfgWeight": 0.5, "attempts": 16 } }
+```
+
+`text` respells what the coach says (it becomes both the rendered text and
+what the gate expects); `cfgWeight`/`exaggeration` trade expressiveness for
+text fidelity; `minMs`/`maxMs` override the final-file duration window.
+
+**Re-verify just the fixes:**
+
+```bash
+F:/voice-tools/venv/Scripts/python.exe tools/voice/validate_clips.py --only-keys=<keys>
+```

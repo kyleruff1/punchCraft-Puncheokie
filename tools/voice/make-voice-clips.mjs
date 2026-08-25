@@ -212,6 +212,10 @@ const renderOut =
     ? execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
         input: JSON.stringify({
           reference: REFERENCE_VOICE,
+          // `--attempts=<n>` raises the best-of-N budget (hotfix: 12).
+          ...(process.argv.find((a) => a.startsWith('--attempts='))
+            ? { attempts: Number(process.argv.find((a) => a.startsWith('--attempts=')).slice('--attempts='.length)) }
+            : {}),
           // A lone word is the working call, not a teaching one and not the
           // shouted end of a combination — the same `work` state the plans are
           // compiled at above.
