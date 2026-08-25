@@ -189,6 +189,32 @@ export default function LiveScreen(): React.JSX.Element {
           the width the cue stage needs (doc §19). */}
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Exit is the escape hatch — always visible, corner of the screen so
+          it never falls under the athlete's grip, small enough not to steal
+          from the cue stage. Fires the same confirm flow the Stop button
+          does; a workout is real work and dropping it silently would lose
+          the athlete's session. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Exit workout"
+        onPress={() => {
+          // Nothing to stop and nothing to save on `idle` / `completed` /
+          // `cancelled` — leave directly. On a running/paused workout the
+          // same confirm the Stop button uses runs, so a mid-session tap
+          // does not silently lose the athlete's work.
+          if (live.phase === 'idle' || isOver) {
+            router.back()
+            return
+          }
+          runner.emergencyStop()
+          setConfirmingStop(true)
+        }}
+        style={styles.exitButton}
+        testID="exit-workout"
+      >
+        <Text style={styles.exitButtonText}>← Exit</Text>
+      </Pressable>
+
       <RoundTopBar
         roundIndex={Math.max(0, live.roundIndex)}
         roundCount={live.roundCount || workout.schedule.length}
@@ -429,6 +455,21 @@ const styles = StyleSheet.create({
   },
   extras: { fontSize: 13, color: colors.textSecondary },
   pacingCue: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  exitButton: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    zIndex: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    // Sit above the stage without eating touch area from the punch tokens.
+    opacity: 0.9,
+  },
+  exitButtonText: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
   controls: {
     flexDirection: 'row',
     gap: 10,
