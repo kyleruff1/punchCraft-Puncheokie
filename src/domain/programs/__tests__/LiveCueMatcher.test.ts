@@ -96,11 +96,19 @@ describe('provisional feedback (doc §21)', () => {
     expect(h.matches().map((m) => m.expectedIndex)).toEqual([0, 1])
   })
 
-  it('reports a wrong hand as a mismatch without discarding the punch', () => {
+  it('reports a wrong hand as an extra without discarding it, leaving the slot open', () => {
+    // Since D18 a wrong glove does not consume the ordinal: it is reported as
+    // an extra carrying its reason, and the correct hand can still answer.
     const h = harness()
     h.matcher.onCueEvent(windowOpened())
     h.matcher.onPunchEvent(event({ hand: 'right' }))
-    expect(h.matches()[0]?.outcome).toBe('hand-mismatch')
+    expect(h.matches()).toHaveLength(0)
+    expect(h.extras()).toHaveLength(1)
+    expect(h.extras()[0]?.reason).toBe('hand-mismatch')
+
+    h.matcher.onPunchEvent(onToken(0))
+    expect(h.matches()[0]?.expectedIndex).toBe(0)
+    expect(h.matches()[0]?.outcome).toBe('matched')
   })
 
   it('carries tracker-reported velocity through when the source has it', () => {
@@ -153,12 +161,26 @@ describe('extras are always emitted (spec §13.6)', () => {
     expect(h.extras()[0]).toMatchObject({ cueId: CUE.id, eventId: surplus.id })
   })
 
-  it('emits a punch outside the window', () => {
+  it('credits a punch thrown late in the set, since timing no longer gates (D18)', () => {
+    // This asserted the opposite until D18: credit was gated on the punch
+    // landing inside the acceptance window, so a combination worked slightly
+    // late scored as missed while the athlete was still throwing it. Credit is
+    // now presence — the set is on screen, so the punch counts.
     const h = harness()
     h.matcher.onCueEvent(windowOpened())
-    h.matcher.onPunchEvent(event({ receivedMonotonicTimeMs: CUE.windowEndMs + 200 }))
+    h.matcher.onPunchEvent(onToken(0, { receivedMonotonicTimeMs: CUE.windowEndMs + 200 }))
+    expect(h.matches()).toHaveLength(1)
+    expect(h.extras()).toHaveLength(0)
+  })
+
+  it('still emits an extra once every expectation is answered', () => {
+    const h = harness()
+    h.matcher.onCueEvent(windowOpened())
+    h.matcher.onPunchEvent(onToken(0))
+    h.matcher.onPunchEvent(onToken(1))
+    h.matcher.onPunchEvent(onToken(0))
+    expect(h.matches()).toHaveLength(2)
     expect(h.extras()).toHaveLength(1)
-    expect(h.matches()).toHaveLength(0)
   })
 
   it.each(['encouraged', 'neutral', 'discouraged'] as const)(
@@ -205,13 +227,16 @@ describe('settling on window close', () => {
   })
 
   it('reports a correction when a recovered event reorders the cue', () => {
-    // The live punch is credited to slot 0 immediately. A recovered event
-    // then turns up with an earlier tracker timestamp, so the settled pass
-    // puts it first and pushes the live punch to slot 1.
+    // The live punch is credited to slot 0 immediately. A recovered event then
+    // turns up with an earlier tracker timestamp, so the settled pass puts that
+    // one first and the live punch no longer owns slot 0 — it either moves to a
+    // later slot or, if that slot wants the other glove, becomes an extra.
+    // Which of the two does not matter here; that the disagreement is reported
+    // rather than silently smoothed over does.
     const h = harness()
     h.matcher.onCueEvent(windowOpened())
 
-    const live = onToken(1, { receivedMonotonicTimeMs: CUE.scheduledStartMs + 300 })
+    const live = onToken(0, { receivedMonotonicTimeMs: CUE.scheduledStartMs + 300 })
     h.matcher.onPunchEvent(live)
     expect(h.matches()[0]?.expectedIndex).toBe(0)
 
@@ -222,8 +247,7 @@ describe('settling on window close', () => {
 
     const settled = h.settled()[0]!
     const liveAssignment = settled.result.assignments.find((a) => a.eventId === live.id)
-    expect(liveAssignment?.expectedIndex).toBe(1)
-    // The disagreement is reported rather than silently smoothed over.
+    expect(liveAssignment?.expectedIndex).not.toBe(0)
     expect(settled.corrections.map((c) => c.eventId)).toEqual([live.id])
   })
 

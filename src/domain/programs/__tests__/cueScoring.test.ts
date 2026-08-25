@@ -92,13 +92,25 @@ describe('completion and correct hand', () => {
     expect(result.completionPct).toBe(50)
   })
 
-  it('counts a wrong-hand punch as completed but not correct-hand', () => {
+  it('counts a wrong-hand punch against hand accuracy, and completes nothing', () => {
     // Something landed, so the athlete responded; it was the wrong glove.
-    // Those are different facts and the score keeps them apart.
+    // Those are still different facts and the score still keeps them apart —
+    // but since D18 a wrong hand no longer fills the expectation, so nothing
+    // completed. Hand accuracy is measured among the punches that answered an
+    // expectation, so one wrong glove and nothing else is 0%.
     const wrong = event({ hand: 'right', receivedMonotonicTimeMs: CUE.scheduledStartMs })
     const result = score([wrong])
-    expect(result.completionPct).toBe(50)
+    expect(result.completionPct).toBe(0)
     expect(result.correctHandPct).toBe(0)
+  })
+
+  it('scores hand accuracy against attempts, not against what was called', () => {
+    // A set half-thrown, correctly: 100% of what was attempted used the right
+    // glove, while completion honestly reports that half the set went unthrown.
+    const right = event({ hand: 'left', receivedMonotonicTimeMs: CUE.scheduledStartMs })
+    const result = score([right])
+    expect(result.completionPct).toBe(50)
+    expect(result.correctHandPct).toBe(100)
   })
 
   it('scores an empty cue at zero without dividing by zero', () => {

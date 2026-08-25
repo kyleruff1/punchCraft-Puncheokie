@@ -124,6 +124,14 @@ export function scoreCue(
   const correctHand = result.assignments.filter((a) => a.outcome !== 'hand-mismatch').length
   const onTime = result.assignments.filter((a) => Math.abs(a.offsetMs) <= TIMING_TIGHT_MS).length
 
+  // Punches that answered an expectation with the wrong glove. Since D18 they
+  // no longer consume the ordinal, so they are extras rather than assignments —
+  // which is why hand accuracy has to count them from here. Without this,
+  // `correctHandPct` would be identical to `completionPct` in every case and
+  // "threw it with the wrong hand" would be indistinguishable from "never threw
+  // it".
+  const wrongHand = result.extras.filter((e) => e.reason === 'hand-mismatch').length
+
   // Pair each assignment with the technique its slot asked for, so the
   // bonus can only be earned against something actually prescribed.
   const byEventId = new Map((options.events ?? []).map((e) => [e.id, e]))
@@ -144,7 +152,12 @@ export function scoreCue(
     cueId: result.cueId,
     label: sequenceScoreLabel(tier),
     completionPct: pct(landed, expectedCount),
-    correctHandPct: pct(correctHand, expectedCount),
+    // Accuracy among the punches that actually answered an expectation, not
+    // among the punches the cue called. A set half-thrown with the right hand
+    // scores 100% here and 50% on completion, which is the honest reading:
+    // hand accuracy is about the punches thrown, completion about the ones
+    // called (D18).
+    correctHandPct: pct(correctHand, correctHand + wrongHand),
     // Denominator is what landed, not what was called: an unthrown punch is
     // a completion problem, and counting it as bad timing would penalise the
     // same miss twice.

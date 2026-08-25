@@ -262,6 +262,36 @@ describe('a completed workout lands in the database', () => {
     h.unmount()
   })
 
+  it('writes the punches its cue results name, so the session survives the foreign key', () => {
+    // `cue_results.observed_event_id` references `punch_events(id)` and
+    // `PRAGMA foreign_keys` is ON, so a result naming a punch nobody wrote
+    // takes the whole session down with it — the athlete finishes a workout
+    // and nothing is saved. This went unnoticed while credit was gated on
+    // tight timing, because matches were rare enough that most sessions had
+    // no non-null reference to fail on. Under D18 a match is the normal case.
+    const p = realPersistence()
+    const h = mount(p)
+    h.begin()
+    h.emit('left')
+    h.step(400)
+    h.emit('right')
+    h.step(WORK_MS + REST_MS + WORK_MS)
+
+    const outcome = h.outcomes[0]
+    expect(outcome?.status).toBe('persisted')
+
+    const named = p.raw
+      .prepare('SELECT observed_event_id AS id FROM cue_results WHERE observed_event_id IS NOT NULL')
+      .all() as Array<{ id: string }>
+    expect(named.length).toBeGreaterThan(0)
+
+    for (const { id } of named) {
+      const found = p.raw.prepare('SELECT id FROM punch_events WHERE id = ?').get(id)
+      expect(found).toBeDefined()
+    }
+    h.unmount()
+  })
+
   it('records a row for every punch called, not only the ones thrown', () => {
     // The athlete answered two of the punches they were shown. The ones they
     // did not answer are exactly what a summary needs in order to say so.

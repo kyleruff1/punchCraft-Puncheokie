@@ -50,6 +50,17 @@ export interface CueAssignment {
 export interface CueExtra {
   eventId: string
   eventTimeMs: number
+  /**
+   * Why this punch earned no slot, when the reason is known.
+   *
+   * `'hand-mismatch'` means it answered a live expectation with the wrong
+   * glove. Since D18 that no longer consumes the ordinal — the athlete may
+   * still answer it — so the punch lands here rather than as an assignment.
+   * Recording the reason is what keeps "threw it with the wrong hand"
+   * distinguishable from "never threw it", which the assignment list alone can
+   * no longer tell apart.
+   */
+  reason?: 'hand-mismatch'
 }
 
 export interface CueMatchResult {
@@ -86,7 +97,26 @@ export class CueMatcher {
     this.tier = tier
   }
 
-  match(cue: CueInstance, events: readonly TrackerPunchEvent[]): CueMatchResult {
+  /**
+   * @param opts.gate how a punch qualifies for the cue.
+   *
+   * `'window'` (the default) keeps the original rule: the punch must land
+   * inside the cue's acceptance window. `'open'` credits any event the caller
+   * supplies, because the caller already scoped them — `LiveCueMatcher` only
+   * buffers events that arrived while the cue's window was open, so re-testing
+   * the times here would apply a stricter rule than the live pass and
+   * manufacture a correction on every set (D18).
+   *
+   * The two passes **must** agree. A divergence is not a cosmetic difference:
+   * `LiveCueMatcher.correctionsFor` diffs them, and every mismatch is logged as
+   * a corrected match.
+   */
+  match(
+    cue: CueInstance,
+    events: readonly TrackerPunchEvent[],
+    opts: { gate?: 'window' | 'open' } = {},
+  ): CueMatchResult {
+    const gate = opts.gate ?? 'window'
     const assignments: CueAssignment[] = []
     const extras: CueExtra[] = []
     const filled = new Set<number>()
@@ -109,9 +139,10 @@ export class CueMatcher {
 
     for (const { event, atMs } of timed) {
       // Windows arrive already clamped from expandTimeline — no grace math
-      // here, deliberately.
-      const insideWindow = atMs >= cue.windowStartMs && atMs <= cue.windowEndMs
-      if (!insideWindow) {
+      // here, deliberately. Under `gate: 'open'` the caller has already scoped
+      // the events to the cue's open window, so the test is skipped rather
+      // than applied twice.
+      if (gate === 'window' && (atMs < cue.windowStartMs || atMs > cue.windowEndMs)) {
         extras.push({ eventId: event.id, eventTimeMs: atMs })
         continue
       }
@@ -125,11 +156,20 @@ export class CueMatcher {
       }
 
       const expected = cue.expectedPunches[expectedIndex] as ExpectedPunch
+      const outcome = this.outcomeFor(expected, event)
+
+      // A wrong hand leaves the ordinal open for a retry (D18), matching the
+      // live pass. Without this the two disagree on every hand error.
+      if (outcome === 'hand-mismatch') {
+        extras.push({ eventId: event.id, eventTimeMs: atMs, reason: 'hand-mismatch' })
+        continue
+      }
+
       filled.add(expectedIndex)
       assignments.push({
         expectedIndex,
         eventId: event.id,
-        outcome: this.outcomeFor(expected, event),
+        outcome,
         offsetMs: atMs - this.scheduledMomentMs(cue, expected),
       })
     }

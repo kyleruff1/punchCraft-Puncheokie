@@ -37,6 +37,7 @@ import type {
   WorkoutRepository,
 } from './repositories/WorkoutRepository'
 import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
+import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
 
 export interface PersistWorkoutSessionArgs {
   db: SqlPort
@@ -47,6 +48,16 @@ export interface PersistWorkoutSessionArgs {
   realized: RealizedTokenStream
   /** Rows without their session id; it is assigned here. */
   cueResults: Array<Omit<CueResultRow, 'sessionId' | 'generatedWorkoutId'>>
+  /**
+   * The punches the cue results name.
+   *
+   * `cue_results.observed_event_id` is a real foreign key into `punch_events`,
+   * and `PRAGMA foreign_keys` is ON — so a result naming a punch that was
+   * never written fails the insert and rolls back the entire session. These
+   * are written first, inside the same transaction, which is what makes the
+   * link the schema promises actually resolvable.
+   */
+  punchEvents?: readonly TrackerPunchEvent[]
   adaptations?: ReadonlyArray<Omit<AdaptationRecord, 'generatedWorkoutId'>>
   startedMonotonicMs: number
   endedMonotonicMs: number
@@ -83,6 +94,7 @@ export function persistWorkoutSession(
     workout,
     realized,
     cueResults,
+    punchEvents = [],
     adaptations = [],
     startedMonotonicMs,
     endedMonotonicMs,
@@ -124,6 +136,35 @@ export function persistWorkoutSession(
       endedMonotonicMs,
       activeDurationMs,
     })
+
+    // Before the cue results, so the foreign key they carry resolves.
+    for (const event of punchEvents) {
+      sessions.appendPunchEvent({
+        sessionId: session.id,
+        id: event.id,
+        sourceFrameId: event.sourceFrameId,
+        // A workout is not a capture and may have no device row: both columns
+        // are nullable precisely so a session can record its punches without
+        // one (migration 002).
+        captureId: null,
+        deviceId: null,
+        deviceAddress: event.deviceId,
+        hand: event.hand,
+        receivedMonotonicTimeMs: event.receivedMonotonicTimeMs,
+        receivedWallTimeIso: event.receivedWallTimeIso,
+        ...(event.trackerTimestampMs !== undefined
+          ? { trackerTimestampMs: event.trackerTimestampMs }
+          : {}),
+        ...(event.punchTypeRaw !== undefined ? { punchTypeRaw: event.punchTypeRaw } : {}),
+        ...(event.punchType !== undefined ? { punchType: event.punchType } : {}),
+        ...(event.velocityRaw !== undefined ? { velocityRaw: event.velocityRaw } : {}),
+        velocityUnit: event.velocityUnit,
+        recovered: event.recovered ?? false,
+        decoderId: event.decoderId,
+        decoderVersion: event.decoderVersion,
+        qualityFlags: event.qualityFlags ?? [],
+      })
+    }
 
     if (cueResults.length > 0) {
       workouts.writeCueResults(

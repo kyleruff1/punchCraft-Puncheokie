@@ -283,6 +283,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    * within a second or two of its punches.
    */
   const recentEventsRef = useRef(new Map<string, TrackerPunchEvent>())
+  /**
+   * Every punch a persisted cue result names, kept for the whole session.
+   *
+   * Separate from `recentEventsRef`, which is a small rolling window sized for
+   * the live rail. These have to survive to the bell: `cue_results` carries a
+   * foreign key into `punch_events`, so a row naming a punch that was never
+   * written takes the entire session transaction down with it.
+   */
+  const matchedEventsRef = useRef(new Map<string, TrackerPunchEvent>())
   /** Adaptations the plan actually made, in the order it made them. */
   const adaptationsRef = useRef<Array<Omit<AdaptationRecord, 'generatedWorkoutId'>>>([])
   /**
@@ -582,13 +591,22 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // missing row could not be told from a cue never reached.
           const settled = cuesById.get(event.result.cueId)
           if (settled) {
-            cueRowsRef.current.push(
-              ...toCueResultRows({
-                cue: settled,
-                result: event.result,
-                events: recentEventsRef.current.values(),
-              }),
-            )
+            const rows = toCueResultRows({
+              cue: settled,
+              result: event.result,
+              events: recentEventsRef.current.values(),
+            })
+            cueRowsRef.current.push(...rows)
+            // `cue_results.observed_event_id` is a real foreign key into
+            // `punch_events`, so every event a row names has to be written
+            // too or the whole session rolls back. Captured here, where the
+            // event is still in the recent window — by the bell it is long
+            // gone, and the row would name a punch nothing can resolve.
+            for (const row of rows) {
+              if (!row.observedEventId) continue
+              const observed = recentEventsRef.current.get(row.observedEventId)
+              if (observed) matchedEventsRef.current.set(observed.id, observed)
+            }
           }
           if (event.corrections.length > 0) {
             // A late or recovered event reordered a cue the athlete already
@@ -655,6 +673,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           workout,
           realized,
           cueResults: cueRowsRef.current,
+          // Written before the cue results that name them — see the ref.
+          punchEvents: [...matchedEventsRef.current.values()],
+          // Written before the cue results that name them — see the ref.
           adaptations: adaptationsRef.current,
           startedMonotonicMs: startedAtRef.current,
           endedMonotonicMs: clock.now(),

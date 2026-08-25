@@ -198,24 +198,32 @@ describe('extras are never dropped (doc §21, spec §13.6)', () => {
 })
 
 describe('hand mismatch is not type mismatch (doc §6)', () => {
-  it('reports hand-mismatch when the wrong glove fires', () => {
-    // The first expectation is a left jab; a right punch fills the slot but
-    // is recorded as the wrong hand rather than silently discarded.
+  it('records a wrong glove as an extra carrying its reason, never discarded', () => {
+    // The first expectation is a left jab; a right punch answers it with the
+    // wrong glove. Since D18 that does not fill the slot — but the punch is
+    // still reported, with the reason, so it stays distinguishable from a
+    // punch that simply had no slot left.
     const wrong = event({ hand: 'right', receivedMonotonicTimeMs: CUE.scheduledStartMs })
     const result = matcher().match(CUE, [wrong])
-    expect(result.assignments[0]?.outcome).toBe('hand-mismatch')
-    expect(result.extras).toEqual([])
+    expect(result.assignments).toEqual([])
+    expect(result.extras).toHaveLength(1)
+    expect(result.extras[0]?.reason).toBe('hand-mismatch')
   })
 
-  it('still consumes the slot, so the combination does not double-count', () => {
+  it('leaves the ordinal open, so the correct hand can still answer it', () => {
+    // The whole point of D18: a hand error is recoverable. The right hand
+    // arriving next fills expectation 0, not expectation 1.
     const wrong = event({ hand: 'right', receivedMonotonicTimeMs: CUE.scheduledStartMs })
-    const result = matcher().match(CUE, [wrong, onToken(1)])
-    expect(result.assignments.map((a) => a.expectedIndex)).toEqual([0, 1])
+    const result = matcher().match(CUE, [wrong, onToken(0)])
+    expect(result.assignments.map((a) => a.expectedIndex)).toEqual([0])
+    expect(result.assignments[0]?.outcome).toBe('matched')
   })
 
-  it('reports an unknown hand as a mismatch, never as a match', () => {
+  it('treats an unknown hand as a mismatch, never as a match', () => {
     const unknown = event({ hand: 'unknown', receivedMonotonicTimeMs: CUE.scheduledStartMs })
-    expect(matcher().match(CUE, [unknown]).assignments[0]?.outcome).toBe('hand-mismatch')
+    const result = matcher().match(CUE, [unknown])
+    expect(result.assignments).toEqual([])
+    expect(result.extras[0]?.reason).toBe('hand-mismatch')
   })
 })
 
@@ -264,10 +272,12 @@ describe('technique claims are gated by the tier (D12)', () => {
   })
 
   it('prefers hand-mismatch over type-mismatch when both are wrong', () => {
+    // A hand error outranks a technique error, so the punch leaves the ordinal
+    // open (D18) rather than filling it with a type-mismatch assignment.
     const wrong = onToken(0, { hand: 'right', punchType: 'hook' })
-    expect(matcher('hand-broad-type').match(CUE, [wrong]).assignments[0]?.outcome).toBe(
-      'hand-mismatch',
-    )
+    const result = matcher('hand-broad-type').match(CUE, [wrong])
+    expect(result.assignments).toEqual([])
+    expect(result.extras[0]?.reason).toBe('hand-mismatch')
   })
 })
 
@@ -322,10 +332,13 @@ describe('missed expectations', () => {
     expect(matcher().match(CUE, []).missedExpectedIndexes).toEqual([0, 1])
   })
 
-  it('counts a hand mismatch as filled, not missed', () => {
+  it('counts a hand mismatch as missed, since the expectation went unanswered', () => {
+    // It used to be counted as filled. Under D18 the ordinal stays open, so an
+    // unretried hand error leaves the expectation genuinely missed — which is
+    // the honest reading of a punch that was never landed correctly.
     const wrong = event({ hand: 'right', receivedMonotonicTimeMs: CUE.scheduledStartMs })
     const result = matcher().match(CUE, [wrong])
-    expect(result.missedExpectedIndexes).toEqual([1])
+    expect(result.missedExpectedIndexes).toEqual([0, 1])
     expect(matchedCount(result)).toBe(0)
   })
 })

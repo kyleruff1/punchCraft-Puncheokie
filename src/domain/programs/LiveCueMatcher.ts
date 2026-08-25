@@ -69,6 +69,16 @@ export interface LiveExtra {
   eventTimeMs: number
   /** Carried so the surface can present it; never so it can be dropped. */
   policy: ExtraPunchPolicy
+  /**
+   * Why this punch earned no slot, when the reason is known.
+   *
+   * `'hand-mismatch'` means it answered a live expectation with the wrong
+   * glove, so the ordinal is still open (D18). Absent means the set simply had
+   * nothing left to fill, or nothing was being called. A surface may
+   * acknowledge the distinction — never punitively: doc §13's no-red rule
+   * holds, and a miss is shown by the absence of green, not by a mark.
+   */
+  reason?: 'hand-mismatch'
 }
 
 export interface LiveCount {
@@ -188,10 +198,15 @@ export class LiveCueMatcher {
     // Buffer it and say nothing yet rather than crediting the wrong slot.
     if (event.recovered) return
 
+    // Credit is presence, not arithmetic (D18). The cue's window brackets this
+    // method — nothing is open before `cue-window-opened` or after
+    // `cue-window-closed` — so a punch thrown while the set is on screen is
+    // creditable however late in the window it lands. Timing gates nothing.
     const atMs = event.receivedMonotonicTimeMs
-    const inWindow = atMs >= open.cue.windowStartMs && atMs <= open.cue.windowEndMs
-    const expectedIndex = inWindow ? this.nextUnfilled(open) : null
+    const expectedIndex = this.nextUnfilled(open)
 
+    // Every expectation already answered: the athlete threw more than the set
+    // asked for. Still a punch, still counted.
     if (expectedIndex === null) {
       this.publish({
         type: 'extra',
@@ -206,9 +221,32 @@ export class LiveCueMatcher {
     }
 
     const expected = open.cue.expectedPunches[expectedIndex]!
-    open.filled.add(expectedIndex)
 
-    const outcome: MatchOutcome = event.hand === expected.hand ? 'matched' : 'hand-mismatch'
+    // A wrong hand does not consume the slot (D18). It used to: the index was
+    // filled before the hand was even examined, which had two bad consequences.
+    // The set could then never reach `expectedPunches.length` matches, so the
+    // completion reward became permanently unreachable after a single hand
+    // error; and because a completed set ends early, burning a slot turned a
+    // recoverable mistake into a guaranteed timeout — punishing the athlete
+    // with a slower workout for the thing they are here to practise. The punch
+    // is reported as an extra carrying its reason, and the ordinal stays open
+    // for the correct hand. Nothing is lost: extras are always counted.
+    if (event.hand !== expected.hand) {
+      this.publish({
+        type: 'extra',
+        extra: {
+          cueId: open.cue.id,
+          eventId: event.id,
+          eventTimeMs: atMs,
+          policy: this.options.extraPunchPolicy,
+          reason: 'hand-mismatch',
+        },
+      })
+      return
+    }
+
+    open.filled.add(expectedIndex)
+    const outcome: MatchOutcome = 'matched'
 
     // Only a correct hand can earn the flourish: congratulating the type
     // byte on a punch thrown with the wrong glove would celebrate the one
@@ -261,10 +299,15 @@ export class LiveCueMatcher {
 
     // A count-scored cue is not matched token by token; the batch matcher
     // would report every punch as an extra, which is the wrong story.
+    //
+    // `gate: 'open'` because `open.events` are already exactly the punches that
+    // arrived while this cue's window was open — re-testing their times would
+    // apply a stricter rule than the live pass just applied and report a
+    // correction for every one of them (D18).
     const result =
       open.cue.scoring === 'count'
         ? this.countScoredResult(open)
-        : this.matcher.match(open.cue, open.events)
+        : this.matcher.match(open.cue, open.events, { gate: 'open' })
     this.settled.push(result)
 
     const score = scoreCue(result, this.options.tier, {
