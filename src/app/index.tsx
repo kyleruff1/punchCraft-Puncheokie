@@ -14,24 +14,29 @@
  * "the app loaded" and "the app opened".
  *
  * A tap continues immediately; otherwise a short auto-advance carries the
- * athlete in. The logo is the whole content — the wordmark is baked into it,
- * so there is no separate title to keep in sync.
+ * athlete in. Two hero variants — the portrait art was drawn as a portrait
+ * and the landscape art was drawn as a landscape, so cropping either into
+ * the other loses the composition. `useWindowDimensions` picks between them.
  */
 
 import React, { useEffect, useRef } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { useRouter } from 'expo-router'
 
 import { colors } from '@/theme/colors'
 
 const AUTO_ADVANCE_MS = 1_800
 const DESTINATION = '/(tabs)/punchcraft' as const
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const LOGO = require('../../assets/branding/punchcraft-logo.png') as number
+/* eslint-disable @typescript-eslint/no-require-imports */
+const HERO_PORTRAIT = require('../../assets/branding/splash-portrait.png') as number
+const HERO_LANDSCAPE = require('../../assets/branding/splash-landscape.png') as number
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 export default function SplashScreen(): React.JSX.Element {
   const router = useRouter()
   const advancedRef = useRef(false)
+  const { width, height } = useWindowDimensions()
+  const isLandscape = width >= height
 
   const goToPunchCraft = React.useCallback((): void => {
     if (advancedRef.current) return
@@ -56,10 +61,10 @@ export default function SplashScreen(): React.JSX.Element {
     >
       <View style={styles.center}>
         <Image
-          source={LOGO}
-          style={styles.logo}
+          source={isLandscape ? HERO_LANDSCAPE : HERO_PORTRAIT}
+          style={styles.hero}
           resizeMode="contain"
-          accessibilityLabel="punchCraft"
+          accessibilityLabel="punchCraft — Boxing skills app"
         />
       </View>
       <Text style={styles.hint}>Tap to continue</Text>
@@ -73,18 +78,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    // Zero padding — the hero art carries its own edges and adding padding
+    // would visibly frame it inside the black background rather than letting
+    // it fill the screen.
+    padding: 0,
   },
   center: {
-    // Bounded so a landscape tablet keeps the logo the primary object rather
-    // than stretching to fill and losing the wordmark's proportions.
+    flex: 1,
     width: '100%',
-    maxWidth: 720,
-    aspectRatio: 5 / 3, // matches the 2000×1200 source
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logo: {
+  hero: {
     width: '100%',
     height: '100%',
   },

@@ -25,6 +25,12 @@ const config: ExpoConfig = {
   // spike on the Lenovo TB125FU.
   orientation: 'default',
   userInterfaceStyle: 'dark',
+  // The kit Kyle sent: a rounded-square icon with the PC monogram on a
+  // gloved fist. `expo.icon` is the base for iOS and legacy Android; the
+  // adaptive icon below is what Android 8+ actually renders. Both point at
+  // the same square asset — Android composes it against the accent
+  // background so the cyan artwork reads on any launcher theme.
+  icon: './assets/branding/icon.png',
   // New Architecture is always enabled from Expo SDK 55 onward (§11.2 note);
   // no config key exists to toggle it.
   extra: {
@@ -34,6 +40,14 @@ const config: ExpoConfig = {
   android: {
     package: 'com.kyleruff.punchcraft',
     versionCode: 1,
+    // Adaptive icon: Android composes `foregroundImage` (the artwork) over
+    // `backgroundColor`, which is what makes the icon look right on any
+    // launcher theme rather than showing a white square where the artwork's
+    // padding should be.
+    adaptiveIcon: {
+      foregroundImage: './assets/branding/icon.png',
+      backgroundColor: '#0F0F10',
+    },
     // These are also declared by react-native-ble-plx's config plugin below,
     // but we list them here so the manifest is legible without running prebuild.
     permissions: [
