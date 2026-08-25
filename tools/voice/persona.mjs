@@ -1,10 +1,16 @@
 /**
- * The settled production persona — Old-School Cornerman.
+ * The active production persona, projected onto the flat constants the voice
+ * tools consume.
  *
- * Three axes, each decided by a listening round over workout music, each
- * pinned here so the audition tool and the production generator cannot drift
- * apart. Changing any value here changes every rendered clip, so it belongs
- * to the cache key alongside the renderer (D16).
+ * Personas themselves now live in `personas.mjs` as a registry, so a second
+ * voice is a data change rather than a refactor. This module selects the
+ * active one and re-exports its fields under the names the generators and the
+ * audition tool already use — which is what lets those tools stay unaware that
+ * a persona is now a record rather than a set of loose constants.
+ *
+ * ## History
+ *
+ * The persona was settled over six listening rounds against workout music:
  *
  * | Axis        | Winner        | Round | What it decides                    |
  * |-------------|---------------|-------|------------------------------------|
@@ -13,58 +19,93 @@
  * | Texture     | broadcast     | 3     | the production chain, post-render  |
  * | Finish      | shout         | 4     | the ending inflection              |
  *
- * Round one picked aged-melodic; round six revisited the blend once the rest
- * was settled and `stone` won — a deeper, darker, onyx-led voice with the grit
- * and age the post-production chain could not add (round five confirmed the
- * chain is a weak lever for character).
+ * Those rounds tuned Kokoro, whose 82M-parameter prosody turned out to be the
+ * real ceiling on how expressive the coach could sound — round five had
+ * already found the post-production chain to be a weak lever for character.
+ * Production therefore moved to a cloned voice (`cornerman`), where the
+ * character comes from the reference clip and intensity is a synthesis
+ * parameter rather than a pitch-contour trick. The expression, finish and
+ * texture choices carried over; the blend did not.
  *
  * The rounds are documented in docs/puncheokie-voice-spike.md, with the
  * measurements that settled each one.
  */
 
+import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
+
+/** The persona every tool in this directory renders unless told otherwise. */
+export const PERSONA = getPersona(ACTIVE_PERSONA)
+
+export { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId }
+
+// ---------------------------------------------------------------------------
+// Synthesis
+// ---------------------------------------------------------------------------
+
+/** `chatterbox` (cloned, GPU) or `kokoro` (blended, CPU). See personas.mjs. */
+export const ENGINE = PERSONA.engine
+
 /**
- * Timbre — round one.
- *
- * A weighted sum of Kokoro's shipped male voices. `am_santa` is age colour
- * only, never the clarity foundation: it has far less training material than
- * the others, and leaning on it costs intelligibility — the one thing a punch
- * call cannot afford to lose.
+ * The voice being cloned, for a `chatterbox` persona. Licensing and the exact
+ * extract are recorded in `tools/voice/reference/PROVENANCE.md` — read it
+ * before changing this, since the reference is the licensing of every clip.
  */
-export const PRODUCTION_BLEND_NAME = 'stone'
-export const PRODUCTION_BLEND = {
-  am_onyx: 0.42,
-  am_michael: 0.33,
-  am_fenrir: 0.25,
-}
+export const REFERENCE_VOICE = PERSONA.reference
 
-/** Expression — round two. The deepest of the three contour multipliers. */
-export const PRODUCTION_EXPRESSION = 'theatrical'
+/** Performance state → Chatterbox intensity, for a `chatterbox` persona. */
+export const EXAGGERATION = PERSONA.intensity ?? {}
+
+/** Kokoro-era speed → formant-preserving stretch, for a `chatterbox` persona. */
+export const CHATTERBOX_TEMPO_CALIBRATION = PERSONA.tempoCalibration ?? 1
+
+// ---------------------------------------------------------------------------
+// Shaping — applied after synthesis, whichever engine produced the audio
+// ---------------------------------------------------------------------------
+
+/** Expression — how far the pitch contour moves. */
+export const PRODUCTION_EXPRESSION = PERSONA.expression
 
 /**
- * Finish — round four. The corner shouting the power punch.
+ * Finish — the ending inflection.
  *
  * The ending rises into the last strike and stays up rather than settling
  * down. The downward finish was a dead lever under theatrical (already clamped
  * to the pitch floor), so aggression on the ending had to come from the
  * up-kick and the shout, applied to the measured last voiced region.
  */
-export const PRODUCTION_FINISH = 'shout'
+export const PRODUCTION_FINISH = PERSONA.finish
 
 /**
- * Texture — round three.
+ * Texture — the post-render production chain.
  *
  * The corner shouting over a PA: band-limited, mid-forward, very loud. It won
  * on the constraint that overrides taste — cutting through a gym mix without
  * smearing *three*, *five* or *slip*.
  */
-export const PRODUCTION_TEXTURE = 'broadcast'
+export const PRODUCTION_TEXTURE = PERSONA.texture
+
+// ---------------------------------------------------------------------------
+// Kokoro blend — only meaningful for a `kokoro` persona
+// ---------------------------------------------------------------------------
+
+/**
+ * A weighted sum of Kokoro's shipped male voices. `am_santa` is age colour
+ * only, never the clarity foundation: it has far less training material than
+ * the others, and leaning on it costs intelligibility — the one thing a punch
+ * call cannot afford to lose.
+ *
+ * Falls back to the `stone` persona's blend so the Kokoro-only tools keep
+ * working while the active persona is a cloned one.
+ */
+export const PRODUCTION_BLEND_NAME = PERSONA.blendName ?? PERSONAS.stone.blendName
+export const PRODUCTION_BLEND = PERSONA.blend ?? PERSONAS.stone.blend
 
 /**
  * The renderer identity, for the manifest and the cache key.
  *
- * Any change to the blend, the expression or the texture must change this, so
- * a stored session can tell which persona produced its audio (D16, spec §3.2
- * versioned decoders).
+ * Any change to the engine, the reference, the expression or the texture must
+ * change this, so a stored session can tell which persona produced its audio
+ * (D16, spec §3.2 versioned decoders).
  */
-export const PERSONA_VERSION = 'cornerman-2'
-export const RENDERER = `kokoro-${PRODUCTION_BLEND_NAME}-${PRODUCTION_EXPRESSION}-${PRODUCTION_TEXTURE}`
+export const PERSONA_VERSION = PERSONA.version
+export const RENDERER = rendererId(PERSONA)

@@ -54,17 +54,33 @@ import { join } from 'node:path'
 
 import { compilePhrase, spokenFor } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
-import {
-  PRODUCTION_BLEND,
-  PRODUCTION_BLEND_NAME,
-  PRODUCTION_EXPRESSION,
-  PRODUCTION_FINISH,
-  PRODUCTION_TEXTURE,
-  RENDERER,
-} from './persona.mjs'
+import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
 import { insertBeats, measureDuration, readWav, trimEnds } from './wav.mjs'
 
-const OUT_ROOT = join('assets', 'voice', 'phrases')
+/**
+ * The persona to render, via `--persona=<id>`; the active one by default.
+ *
+ * Each persona renders into its own directory and is tagged in the manifest,
+ * so several voices can exist side by side and the app can pick between them.
+ * See tools/voice/personas.mjs.
+ */
+const personaArg = process.argv.find((a) => a.startsWith('--persona='))?.slice('--persona='.length)
+const PERSONA = getPersona(personaArg ?? ACTIVE_PERSONA)
+const OUT_ROOT = join('assets', 'voice', 'phrases', PERSONA.id)
+
+// Everything the render is shaped by, read off the selected persona rather
+// than off module constants — otherwise `--persona` would change where clips
+// land without changing how they sound.
+const RENDERER = rendererId(PERSONA)
+const ENGINE = PERSONA.engine
+const REFERENCE_VOICE = PERSONA.reference
+const EXAGGERATION = PERSONA.intensity ?? {}
+const CHATTERBOX_TEMPO_CALIBRATION = PERSONA.tempoCalibration ?? 1
+const PRODUCTION_EXPRESSION = PERSONA.expression
+const PRODUCTION_FINISH = PERSONA.finish
+const PRODUCTION_TEXTURE = PERSONA.texture
+const PRODUCTION_BLEND_NAME = PERSONA.blendName ?? PERSONAS.stone.blendName
+const PRODUCTION_BLEND = PERSONA.blend ?? PERSONAS.stone.blend
 
 /** Every cadence a combination may be called at. */
 const CADENCES = ['technical', 'steady', 'pressure', 'sprint']
@@ -111,6 +127,17 @@ function findFfmpeg() {
 }
 
 const FFMPEG = findFfmpeg()
+
+/**
+ * The interpreter that has Chatterbox and a CUDA build of PyTorch.
+ *
+ * Deliberately not the repo's default `python`: the toolchain needs Python
+ * 3.12 (torch ships no 3.14 wheels) and several GB of CUDA libraries, so it
+ * lives in its own venv off the repo. Override with `CHATTERBOX_PYTHON` when
+ * it sits elsewhere. See tools/voice/README.md.
+ */
+const CHATTERBOX_PYTHON =
+  process.env.CHATTERBOX_PYTHON ?? 'F:/voice-tools/venv/Scripts/python.exe'
 
 /**
  * Every combination the workout corpus can call.
@@ -299,21 +326,61 @@ for (const combination of combinations) {
 if (!manifestOnly) {
 console.log(`Rendering ${jobs.length} phrases — ${RENDERER}…`)
 
-const renderOut = execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
-  input: JSON.stringify({
-    blends: { [PRODUCTION_BLEND_NAME]: PRODUCTION_BLEND },
-    jobs: jobs.map((j) => ({
-      path: j.wav,
-      text: j.plan.renderedText,
-      speed: j.plan.speed,
-      blend: PRODUCTION_BLEND_NAME,
-    })),
-  }),
-  encoding: 'utf8',
-  maxBuffer: 32 * 1024 * 1024,
-})
+const renderOut =
+  ENGINE === 'chatterbox'
+    ? execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
+        input: JSON.stringify({
+          reference: REFERENCE_VOICE,
+          jobs: jobs.map((j) => ({
+            path: j.wav,
+            text: j.plan.renderedText,
+            ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work),
+          })),
+        }),
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      })
+    : execFileSync('python', [join('tools', 'voice', 'kokoro_render.py')], {
+        input: JSON.stringify({
+          blends: { [PRODUCTION_BLEND_NAME]: PRODUCTION_BLEND },
+          jobs: jobs.map((j) => ({
+            path: j.wav,
+            text: j.plan.renderedText,
+            speed: j.plan.speed,
+            blend: PRODUCTION_BLEND_NAME,
+          })),
+        }),
+        encoding: 'utf8',
+        maxBuffer: 32 * 1024 * 1024,
+      })
 for (const failure of renderOut.split(/\r?\n/).filter((l) => l.startsWith('FAIL '))) {
   console.error(`  ${failure}`)
+}
+
+// Chatterbox has no speed control and renders roughly twice as long as Kokoro
+// for the same call, which a cue window will not tolerate. Apply the plan's
+// speed here instead, formant-preserving so compressing the call does not
+// raise its pitch into a different voice.
+if (ENGINE === 'chatterbox') {
+  console.log('Fitting tempo to the cue windows…')
+  for (const job of jobs) {
+    if (!existsSync(job.wav)) continue
+    const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
+    if (!Number.isFinite(rate) || Math.abs(rate - 1) < 0.02) continue
+    const temp = `${job.wav}.t.wav`
+    try {
+      execFileSync(
+        FFMPEG,
+        ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav,
+          '-af', `rubberband=tempo=${rate.toFixed(3)}:formant=preserved:pitchq=quality`,
+          '-ar', '24000', '-ac', '1', temp],
+        { stdio: 'ignore' },
+      )
+      if (existsSync(temp)) renameWithRetry(temp, job.wav)
+    } catch (error) {
+      console.error(`  FAIL tempo ${job.key}: ${error.message.split('\n')[0]}`)
+    }
+  }
 }
 
 // Beats and trim before the contour and texture. Trimming last was the bug
@@ -379,6 +446,7 @@ for (const job of jobs) {
 
   index.push({
     cueId: job.key,
+    persona: PERSONA.id,
     combination: job.combination,
     cadence: job.cadence,
     vocabulary: job.vocabulary,
@@ -411,10 +479,9 @@ const lines = [
   ' *',
   ' * DO NOT EDIT — produced by `node tools/voice/make-phrase-clips.mjs`.',
   ' *',
-  ' * One clip per (combination, cadence, vocabulary, performance), spoken by',
-  ' * the settled Old-School Cornerman persona. `wordMarks` is present for',
-  ' * interface stability but is usually empty — circle activation stays on the',
-  ' * cue clock.',
+  ' * One clip per (combination, cadence, vocabulary, performance) for each',
+  ' * rendered persona. `wordMarks` is present for interface stability but is',
+  ' * usually empty — circle activation stays on the cue clock.',
   ' */',
   '',
   '/* eslint-disable @typescript-eslint/no-require-imports */',
@@ -430,6 +497,8 @@ const lines = [
   '',
   'export interface PhraseAsset {',
   '  cueId: string',
+  '  /** Which voice this clip is spoken in. See tools/voice/personas.mjs. */',
+  '  persona: string',
   '  combination: string',
   '  cadence: string',
   '  vocabulary: CalloutVocabulary',
@@ -442,12 +511,16 @@ const lines = [
   '  renderer: string',
   '}',
   '',
+  `/** The voice used when a caller does not name one. */`,
+  `export const DEFAULT_PERSONA = ${JSON.stringify(PERSONA.id)}`,
+  '',
   'export const phraseAssets: readonly PhraseAsset[] = [',
 ]
 for (const entry of index) {
   lines.push(
     '  {',
     `    cueId: ${JSON.stringify(entry.cueId)},`,
+    `    persona: ${JSON.stringify(entry.persona)},`,
     `    combination: ${JSON.stringify(entry.combination)},`,
     `    cadence: ${JSON.stringify(entry.cadence)},`,
     `    vocabulary: ${JSON.stringify(entry.vocabulary)},`,
@@ -455,7 +528,7 @@ for (const entry of index) {
     `    tokens: ${JSON.stringify(entry.tokens)},`,
     `    durationMs: ${entry.durationMs},`,
     `    wordMarks: ${JSON.stringify(entry.wordMarks)},`,
-    `    module: require('../../../assets/voice/phrases/${entry.file}'),`,
+    `    module: require('../../../assets/voice/phrases/${entry.persona}/${entry.file}'),`,
     `    renderer: ${JSON.stringify(entry.renderer)},`,
     '  },',
   )
@@ -466,24 +539,31 @@ lines.push(
   '/* eslint-enable @typescript-eslint/no-require-imports */',
   '',
   '/**',
-  ' * Lookup by combination and cadence, plus the callout vocabulary and the',
-  ' * performance state. Vocabulary and performance default to the production',
-  ' * baseline (numbers / work), so a caller that has not yet been widened still',
-  ' * resolves the same clip it always did.',
+  ' * Lookup by combination and cadence, plus the callout vocabulary, the',
+  ' * performance state and the voice. Vocabulary and performance default to the',
+  ' * production baseline (numbers / work) and the persona to the shipped voice,',
+  ' * so a caller that has not been widened still resolves the clip it always did.',
   ' */',
   'export function findPhraseAsset(',
   '  combination: string,',
   '  cadence: string,',
   "  vocabulary: CalloutVocabulary = 'numbers',",
   "  performance: PerformanceState = 'work',",
+  '  persona: string = DEFAULT_PERSONA,',
   '): PhraseAsset | undefined {',
   '  return phraseAssets.find(',
   '    (a) =>',
+  '      a.persona === persona &&',
   '      a.combination === combination &&',
   '      a.cadence === cadence &&',
   '      a.vocabulary === vocabulary &&',
   '      a.performance === performance,',
   '  )',
+  '}',
+  '',
+  '/** Every persona present in the manifest, for a voice picker. */',
+  'export function availablePersonas(): string[] {',
+  '  return [...new Set(phraseAssets.map((a) => a.persona))]',
   '}',
   '',
 )
