@@ -538,7 +538,7 @@ export default function LiveDecodeScreen(): React.ReactElement {
  * monospace log. Everything with a semantic equivalent uses `colors`.
  */
 const dev = {
-  boostedRow: '#3A2A10',
+  boostedRow: colors.accentSurface,
   logText: colors.textPrimary,
   logDetail: colors.textMuted,
   typeLabel: colors.warning,

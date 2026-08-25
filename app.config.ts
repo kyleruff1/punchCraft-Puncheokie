@@ -46,7 +46,9 @@ const config: ExpoConfig = {
     // padding should be.
     adaptiveIcon: {
       foregroundImage: './assets/branding/icon.png',
-      backgroundColor: '#0F0F10',
+      // Matches the in-app `colors.background` (near-black teal) so the
+      // launcher tile reads as the same ground as the app itself.
+      backgroundColor: '#051C1F',
     },
     // These are also declared by react-native-ble-plx's config plugin below,
     // but we list them here so the manifest is legible without running prebuild.
