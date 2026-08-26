@@ -75,46 +75,55 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
       style={[styles.root, body && styles.bodyPlacement]}
       testID={`punch-token-${number}${body ? 'b' : ''}`}
     >
-      {state === 'active' ? (
-        <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
-      ) : null}
-
-      <AffirmationRing
-        diameter={diameter}
-        active={affirmed}
-        reducedMotion={reducedMotion}
-        {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
-      />
-
-      <View
-        style={[
-          styles.circle,
-          {
-            width: diameter,
-            height: diameter,
-            borderRadius: diameter / 2,
-            borderWidth: visual.borderWidth,
-            borderColor: visual.borderColor,
-            backgroundColor: visual.backgroundColor,
-          },
-          // The glow rides on top of whatever state the token is in, so a
-          // completed token keeps its check and gains the gold.
-          affirmed && styles.affirmedCircle,
-        ]}
-      >
-        <Text
-          style={[styles.number, { fontSize: TOKEN_FONT_SIZE[size], color: visual.textColor }]}
-        >
-          {number}
-        </Text>
-
-        {body ? (
-          <View style={styles.bodyBadge} testID="body-badge">
-            {/* Uppercase B is the on-screen badge only; serialized notation
-                stays lowercase `b` (D10). */}
-            <Text style={styles.bodyBadgeText}>B</Text>
-          </View>
+      {/* Token slot — sized exactly to the circle, with alignItems/
+          justifyContent 'center' so the absolutely-positioned rings
+          center on the CIRCLE, not on the outer flex group that also
+          contains the state marker and hand hint. Without this wrapper
+          the rings default to the root's centre, which sits below the
+          circle because marker + hand-hint push the flex group's centroid
+          down — that's the "ring hanging low" bug. */}
+      <View style={styles.tokenSlot}>
+        {state === 'active' ? (
+          <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
         ) : null}
+
+        <AffirmationRing
+          diameter={diameter}
+          active={affirmed}
+          reducedMotion={reducedMotion}
+          {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
+        />
+
+        <View
+          style={[
+            styles.circle,
+            {
+              width: diameter,
+              height: diameter,
+              borderRadius: diameter / 2,
+              borderWidth: visual.borderWidth,
+              borderColor: visual.borderColor,
+              backgroundColor: visual.backgroundColor,
+            },
+            // The glow rides on top of whatever state the token is in, so a
+            // completed token keeps its check and gains the gold.
+            affirmed && styles.affirmedCircle,
+          ]}
+        >
+          <Text
+            style={[styles.number, { fontSize: TOKEN_FONT_SIZE[size], color: visual.textColor }]}
+          >
+            {number}
+          </Text>
+
+          {body ? (
+            <View style={styles.bodyBadge} testID="body-badge">
+              {/* Uppercase B is the on-screen badge only; serialized notation
+                  stays lowercase `b` (D10). */}
+              <Text style={styles.bodyBadgeText}>B</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {/* Colour is never the only signal: the glow always comes with a
@@ -142,6 +151,7 @@ const styles = StyleSheet.create({
   root: { alignItems: 'center', justifyContent: 'center', padding: 8 },
   /** Body shots sit lower on screen — the placement cue from doc §13. */
   bodyPlacement: { paddingTop: 24 },
+  tokenSlot: { alignItems: 'center', justifyContent: 'center' },
   circle: { alignItems: 'center', justifyContent: 'center' },
   number: { fontWeight: '800' },
   bodyBadge: {
