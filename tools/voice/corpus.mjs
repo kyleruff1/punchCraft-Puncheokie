@@ -49,7 +49,76 @@ export function combinationsFromCorpus() {
       if (notation.split('-').length > 1) found.add(notation)
     }
   }
+  // Kyle's corpus v1 is the second source: combos plus ladder stages, in
+  // the same lowercase clip-key form the scan produces.
+  for (const notation of corpusV1().notations) found.add(notation)
   return [...found].sort()
+}
+
+/**
+ * Kyle's combo corpus v1 (Rhythm Map M1) — the second source of phrase
+ * notations, and the only source of spoken groupings.
+ *
+ * Read from the JSON twin of `src/domain/workout/corpus/comboCorpusV1.ts`
+ * (this is an .mjs tool; the typed module is for the domain). Notations
+ * normalize to the lowercase-b clip-key form. Ladder stages that are not
+ * corpus rows render too; a >4-punch stage inherits its grouping from the
+ * corpus combo it is a prefix of, cut at the stage boundary — the athlete
+ * hears the same motif boundaries at every rung of the ladder.
+ */
+export function corpusV1() {
+  const raw = JSON.parse(
+    readFileSync(join('src', 'domain', 'workout', 'corpus', 'comboCorpusV1.json'), 'utf8'),
+  )
+  const lower = (tokens) => tokens.map((t) => t.toLowerCase())
+  const keyOf = (tokens) => lower(tokens).join('-')
+
+  /** notation -> grouping (lowercase token groups), explicit combos first. */
+  const groupingFor = new Map()
+  const notations = new Set()
+
+  for (const combo of raw.combos) {
+    const key = keyOf(combo.tokens)
+    if (combo.tokens.length > 1) notations.add(key)
+    if (combo.spokenGroups.length > 1) {
+      groupingFor.set(key, combo.spokenGroups.map(lower))
+    }
+  }
+
+  const combosByLength = [...raw.combos].sort((a, b) => b.tokens.length - a.tokens.length)
+  const prefixGrouping = (tokens) => {
+    const wanted = lower(tokens)
+    for (const combo of combosByLength) {
+      const host = lower(combo.tokens)
+      if (host.length < wanted.length) break
+      if (combo.spokenGroups.length <= 1) continue
+      if (!wanted.every((t, i) => host[i] === t)) continue
+      const cut = []
+      let taken = 0
+      for (const group of combo.spokenGroups.map(lower)) {
+        if (taken >= wanted.length) break
+        const slice = group.slice(0, wanted.length - taken)
+        cut.push(slice)
+        taken += slice.length
+      }
+      return cut.length > 1 ? cut : undefined
+    }
+    return undefined
+  }
+
+  for (const set of raw.buildUpSets) {
+    for (const stage of set.stages) {
+      if (stage.tokens.length <= 1) continue
+      const key = keyOf(stage.tokens)
+      notations.add(key)
+      if (!groupingFor.has(key) && stage.tokens.length > 4) {
+        const derived = prefixGrouping(stage.tokens)
+        if (derived) groupingFor.set(key, derived)
+      }
+    }
+  }
+
+  return { notations: [...notations].sort(), groupingFor }
 }
 
 /**

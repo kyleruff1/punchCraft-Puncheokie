@@ -21,7 +21,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { CADENCES, VOCABULARIES, combinationsFromCorpus, finalBoundsMs } from './corpus.mjs'
+import { CADENCES, VOCABULARIES, combinationsFromCorpus, corpusV1, finalBoundsMs } from './corpus.mjs'
 import { compileAdlib, compilePhrase, spokenFor } from './prosody.mjs'
 import { ACTIVE_PERSONA, getPersona } from './personas.mjs'
 import { FORM_SPEED, SHARED_WORDS, TONES, VOCABULARY_WORDS, maxWordMs } from './wordCorpus.mjs'
@@ -60,6 +60,9 @@ function push(entry) {
 /* ------------------------------------------------------- phrase clips */
 
 const phraseRoot = join('assets', 'voice', 'phrases', PERSONA.id)
+// The same grouping source the generator renders with — text drift between
+// render and validation is the exact failure this exporter exists to prevent.
+const { groupingFor: GROUPING } = corpusV1()
 for (const combination of combinationsFromCorpus()) {
   const tokens = combination.split('-').map((t) => t.trim())
   for (const cadence of CADENCES) {
@@ -72,6 +75,7 @@ for (const combination of combinationsFromCorpus()) {
           performance: performance.name,
           expression: PERSONA.expression,
           finish: performance.finish,
+          ...(GROUPING.has(combination) ? { grouping: GROUPING.get(combination) } : {}),
         })
         const key = `${combination}.${cadence}.${vocabulary}.${performance.name}`
         if (OVERRIDES[key]?.text) plan.renderedText = OVERRIDES[key].text

@@ -44,7 +44,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
-import { CADENCES, VOCABULARIES, combinationsFromCorpus, finalBoundsMs } from './corpus.mjs'
+import { CADENCES, VOCABULARIES, combinationsFromCorpus, corpusV1, finalBoundsMs } from './corpus.mjs'
 import { compilePhrase, spokenFor } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
 import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
@@ -258,6 +258,10 @@ if (process.argv.includes('--list')) {
   process.exit(0)
 }
 
+// Spoken groupings from corpus v1 — "1-4-2-3-6-5" is three motifs, not six
+// digits, and the grouping shapes the phrase's pauses and accents.
+const { groupingFor: GROUPING } = corpusV1()
+
 const allJobs = []
 for (const combination of combinations) {
   const tokens = combination.split('-').map((t) => t.trim())
@@ -271,6 +275,7 @@ for (const combination of combinations) {
           performance: performance.name,
           expression: PRODUCTION_EXPRESSION,
           finish: performance.finish,
+          ...(GROUPING.has(combination) ? { grouping: GROUPING.get(combination) } : {}),
         })
         const key = `${combination}.${cadence}.${vocabulary}.${performance.name}`
         // Words the coach will speak — used to size the duration bounds
@@ -300,8 +305,16 @@ for (const combination of combinations) {
   }
 }
 
+// `--missing-only` renders just the clips with no file on disk — the
+// corpus-expansion batch: new notations render, the shipped 248 stay
+// untouched. Like other subset renders it skips the index/manifest writes;
+// follow with `--manifest-only`.
+const missingOnly = process.argv.includes('--missing-only')
+
 // The hotfix subset: exactly the flagged keys, nothing else.
-const jobs = onlyKeys ? allJobs.filter((j) => onlyKeys.has(j.key)) : allJobs
+const jobs = (onlyKeys ? allJobs.filter((j) => onlyKeys.has(j.key)) : allJobs).filter(
+  (j) => !missingOnly || !existsSync(j.wav),
+)
 if (onlyKeys) {
   const known = new Set(allJobs.map((j) => j.key))
   for (const key of onlyKeys) {
@@ -513,7 +526,7 @@ for (const job of jobs) {
 // manifest would drop every combination it did not render, so those writes
 // are skipped — follow a hotfix with `--manifest-only` to refresh both from
 // the full set on disk.
-if (onlyArg || onlyKeys) {
+if (onlyArg || onlyKeys || missingOnly) {
   console.log(
     `\nSubset render of ${index.length} clip(s); index and manifest left untouched — ` +
       `run with --manifest-only to refresh them.`,

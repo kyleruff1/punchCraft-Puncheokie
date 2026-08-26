@@ -377,7 +377,7 @@ const MOVEMENT_BEAT = '... '
  * instead of trailing it into the next group, and it restores sentence case
  * for the group that follows.
  */
-function renderBody(spokenGroups, perf) {
+function renderBody(spokenGroups, perf, phased = false) {
   let out = ''
   let capitalize = true
 
@@ -385,7 +385,9 @@ function renderBody(spokenGroups, perf) {
     if (index > 0) {
       const atMovement =
         isMovement(group.tokens[0]) || isMovement(spokenGroups[index - 1].tokens[0])
-      out += atMovement ? MOVEMENT_BEAT : perf.groupSeparator
+      // An authored phase boundary earns the movement-strength pause: the
+      // groups are separate remembered motifs, not a running list.
+      out += atMovement || phased ? MOVEMENT_BEAT : perf.groupSeparator
     }
 
     // Sentence case, not Title Case On Every Word. Capitalising each word
@@ -400,9 +402,11 @@ function renderBody(spokenGroups, perf) {
     if (interruption) out += '!'
     // The group after a beat starts a new sentence, and so does the movement
     // itself — a lowercase word after an ellipsis is read as a continuation,
-    // which is the one thing the interruption must not be.
+    // which is the one thing the interruption must not be. A phased group
+    // boundary is the same kind of break.
     capitalize =
       interruption ||
+      phased ||
       (index + 1 < spokenGroups.length && isMovement(spokenGroups[index + 1].tokens[0]))
   })
 
@@ -422,12 +426,18 @@ function renderBody(spokenGroups, perf) {
  * quietest point nearby rather than cutting at the arithmetic estimate, so a
  * drifting estimate lengthens a silence instead of clipping a consonant.
  */
-function beatsFor(groups, beatMs) {
+function beatsFor(groups, beatMs, phased = false) {
   const beats = []
   for (const span of groupSpans(groups)) {
-    if (!span.movement) continue
-    if (span.index > 0) beats.push({ at: span.start, targetMs: beatMs })
-    if (span.index < groups.length - 1) beats.push({ at: span.end, targetMs: beatMs })
+    if (span.movement) {
+      if (span.index > 0) beats.push({ at: span.start, targetMs: beatMs })
+      if (span.index < groups.length - 1) beats.push({ at: span.end, targetMs: beatMs })
+      continue
+    }
+    // Authored phase boundaries get a real audio beat at each group start —
+    // the ellipsis buys the entry pause in text, this guarantees it in the
+    // rendered take (see the note above on synthesizer trailing gaps).
+    if (phased && span.index > 0) beats.push({ at: span.start, targetMs: beatMs })
   }
   return beats
 }
@@ -446,11 +456,28 @@ export function compilePhrase({
   performance = 'work',
   expression = 'theatrical',
   finish = 'land',
+  grouping,
 }) {
   const perf = PERFORMANCES[performance]
   const fin = FINISHES[finish] ?? FINISHES.land
   const depth = (EXPRESSION[expression] ?? EXPRESSION.expressive) * perf.contourScale
-  const groups = groupTokens(tokens)
+  // An authored spoken grouping (corpus v1) overrides the automatic pairing:
+  // "1-4-2-3-6-5" is called "One-FOUR... two-THREE... six-FIVE!", three
+  // remembered motifs, never six flat digits. The grouping must be a
+  // partition of the tokens — a corpus error surfaces here, not on the bag.
+  let groups
+  if (grouping && grouping.length > 0) {
+    const flat = grouping.flat()
+    if (flat.length !== tokens.length || flat.some((t, i) => t !== tokens[i])) {
+      throw new Error(
+        `grouping ${JSON.stringify(grouping)} is not a partition of tokens ${tokens.join('-')}`,
+      )
+    }
+    groups = grouping.map((g) => [...g])
+  } else {
+    groups = groupTokens(tokens)
+  }
+  const phased = Boolean(grouping && grouping.length > 1)
   const strikes = tokens.filter((t) => !isMovement(t)).length
 
   const spokenGroups = groups.map((group) => ({
@@ -469,7 +496,7 @@ export function compilePhrase({
     expression,
     finish,
     groups: spokenGroups.map((g) => ({ tokens: g.tokens, accentLast: g.accentLast })),
-    renderedText: `${renderBody(spokenGroups, perf)}${perf.ending}`,
+    renderedText: `${renderBody(spokenGroups, perf, phased)}${perf.ending}`,
     pitchContourSemitones: scaleContour(
       contourForGroups(groups, depth),
       depth,
@@ -482,7 +509,7 @@ export function compilePhrase({
       peakSemitones: Math.round(fin.peakSt * depth * 100) / 100,
       endSemitones: Math.round(fin.endSt * depth * 100) / 100,
     },
-    beats: beatsFor(groups, perf.beatMs),
+    beats: beatsFor(groups, perf.beatMs, phased),
     swing: SWING,
     finalAccentDb: perf.finalAccentDb + fin.accentDb,
     pitchShiftSemitones: perf.pitchShiftSemitones,
