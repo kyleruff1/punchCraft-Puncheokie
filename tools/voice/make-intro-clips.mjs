@@ -64,10 +64,12 @@ const PACE_WORDS = {
 
 const SEGMENTS = []
 // "Jonathan" over Kyle's "Johnathan": Whisper normalizes to the common
-// spelling, and the ASR gate would flunk a take over a silent H.
+// spelling, and the ASR gate would flunk a take over a silent H. The name
+// is spelled "Punchcraft" as ONE word so it reads as one flowing name —
+// "Jonathan-PunchCraft" — not "punch (pause) craft" (Kyle's direction).
 SEGMENTS.push({
   id: 'intro-hello',
-  text: "Hello! Welcome to punch craft. I'm your coach, Jonathan punch craft.",
+  text: "Hello! Welcome to Punchcraft. I'm your coach, Jonathan Punchcraft.",
 })
 for (const [n, word] of Object.entries(NUMBER_WORDS)) {
   SEGMENTS.push({

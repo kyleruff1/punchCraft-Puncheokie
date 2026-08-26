@@ -168,14 +168,21 @@ export default function LiveScreen(): React.JSX.Element {
     haptics,
   })
 
-  // The walkout announcement plays during that extended countdown — the
-  // player is idempotent, so re-renders mid-countdown cannot restart it.
+  // The walkout announcement: players buffer during the lobby (the first
+  // monitored run measured ~16s of cold-load silence when loading began at
+  // the countdown), then play() during the extended countdown runs the
+  // sequence on warm clips. The player is idempotent, so re-renders
+  // mid-countdown cannot restart it.
   const introRef = useRef<IntroPlayer | null>(null)
   React.useEffect(() => {
-    if (live.phase !== 'countdown' || policy.mode === 'off') return
+    if (live.phase !== 'idle' || policy.mode === 'off') return
     introRef.current ??= new IntroPlayer()
-    introRef.current.play(intro.segments, volumes.voice)
-  }, [live.phase, policy.mode, intro.segments, volumes.voice])
+    introRef.current.load(intro.segments)
+  }, [live.phase, policy.mode, intro.segments])
+  React.useEffect(() => {
+    if (live.phase !== 'countdown' || policy.mode === 'off') return
+    introRef.current?.play(volumes.voice)
+  }, [live.phase, policy.mode, volumes.voice])
   React.useEffect(() => {
     // The bell has authority: a still-talking intro is cut, never waited on.
     if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()

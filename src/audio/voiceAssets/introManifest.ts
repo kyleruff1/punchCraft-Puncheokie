@@ -16,7 +16,7 @@ export interface IntroSegment {
 }
 
 export const INTRO_SEGMENTS: Readonly<Record<string, IntroSegment>> = {
-  'intro-hello': { id: 'intro-hello', module: require('../../../assets/voice/numbers/standalone/intro-hello.wav'), durationMs: 5903 },
+  'intro-hello': { id: 'intro-hello', module: require('../../../assets/voice/numbers/standalone/intro-hello.wav'), durationMs: 5653 },
   'intro-rounds-2': { id: 'intro-rounds-2', module: require('../../../assets/voice/numbers/standalone/intro-rounds-2.wav'), durationMs: 6304 },
   'intro-rounds-3': { id: 'intro-rounds-3', module: require('../../../assets/voice/numbers/standalone/intro-rounds-3.wav'), durationMs: 5764 },
   'intro-rounds-4': { id: 'intro-rounds-4', module: require('../../../assets/voice/numbers/standalone/intro-rounds-4.wav'), durationMs: 6327 },
