@@ -159,8 +159,11 @@ if (ENGINE !== 'chatterbox') {
 
 const onlyArg = process.argv.find((a) => a.startsWith('--only-ids='))?.slice('--only-ids='.length)
 const only = onlyArg ? new Set(onlyArg.split(',').map((s) => s.trim())) : null
+const manifestOnly = process.argv.includes('--manifest-only')
 
-const jobs = SEGMENTS.filter((s) => !only || only.has(s.id)).map((segment) => {
+const jobs = manifestOnly
+  ? []
+  : SEGMENTS.filter((s) => !only || only.has(s.id)).map((segment) => {
   const plan = compileAdlib(segment.text, {
     performance: 'work',
     expression: PRODUCTION_EXPRESSION,
@@ -169,6 +172,7 @@ const jobs = SEGMENTS.filter((s) => !only || only.has(s.id)).map((segment) => {
   return { ...segment, plan, wav: join(process.cwd(), OUT_DIR, `${segment.id}.wav`) }
 })
 
+if (!manifestOnly) {
 console.log(`Rendering ${jobs.length} intro segments — ${RENDERER}…`)
 const renderOut = execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
   input: JSON.stringify({
@@ -204,6 +208,7 @@ for (const job of jobs) {
     { stdio: 'ignore' },
   )
   if (existsSync(temp)) renameWithRetry(temp, job.wav)
+}
 }
 
 // The manifest carries MEASURED durations — the countdown offset is
