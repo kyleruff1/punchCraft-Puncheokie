@@ -5,9 +5,10 @@
   "numbers/combo/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
   "names/standalone/1": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
   "word:pivot": { "text": "Pivot now", "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
+  "names/combo/pivot": { "text": "Pivot now", "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24, "maxMs": 1600 },
+  "numbers/combo/roll": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
   "numbers/combo/5": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "names/standalone/roll": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
   "names/standalone/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "names/combo/roll": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
+  "word:roll": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
   "names/combo/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 }
 }

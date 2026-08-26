@@ -18,7 +18,7 @@
  * Writes: tools/analysis/expectations.json
  */
 
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { CADENCES, VOCABULARIES, combinationsFromCorpus, finalBoundsMs } from './corpus.mjs'
@@ -29,6 +29,12 @@ import { FORM_SPEED, SHARED_WORDS, TONES, VOCABULARY_WORDS, maxWordMs } from './
 const personaArg = process.argv.find((a) => a.startsWith('--persona='))?.slice('--persona='.length)
 const PERSONA = getPersona(personaArg ?? ACTIVE_PERSONA)
 const TEMPO_CALIBRATION = PERSONA.tempoCalibration ?? 1
+
+// The same per-clip overrides the generators render with — a respelled
+// clip must be validated against what it actually says, not the table text.
+const OVERRIDES = existsSync(join('tools', 'voice', 'overrides.json'))
+  ? JSON.parse(readFileSync(join('tools', 'voice', 'overrides.json'), 'utf8'))
+  : {}
 
 // Mirrors the generator's performance narrowing: the full teach/work/push set,
 // filtered to what this persona actually renders (the shipped cornerman
@@ -68,6 +74,7 @@ for (const combination of combinationsFromCorpus()) {
           finish: performance.finish,
         })
         const key = `${combination}.${cadence}.${vocabulary}.${performance.name}`
+        if (OVERRIDES[key]?.text) plan.renderedText = OVERRIDES[key].text
         // Counted from the text actually rendered, not from `spokenFor` —
         // mid-phrase the compiler shortens some tokens ("lead hook" → "hook"),
         // and a duration window sized to the long form flags honest clips.
@@ -102,12 +109,14 @@ for (const vocabulary of ['numbers', 'names']) {
     const dir = join('assets', 'voice', vocabulary, form)
     const words = { ...VOCABULARY_WORDS[vocabulary], ...SHARED_WORDS }
     for (const [id, text] of Object.entries(words)) {
-      const plan = compileAdlib(`${text}!`, {
+      const override = OVERRIDES[`${vocabulary}/${form}/${id}`] ?? OVERRIDES[`word:${id}`] ?? {}
+      const spoken = override.text ?? text
+      const plan = compileAdlib(`${spoken}!`, {
         performance: 'work',
         expression: PERSONA.expression,
         finish: 'land',
       })
-      const wordCount = text.trim().split(/\s+/).length
+      const wordCount = spoken.trim().split(/\s+/).length
       const tempoRate = Number((FORM_SPEED[form] * TEMPO_CALIBRATION).toFixed(3))
       push({
         kind: 'word',
