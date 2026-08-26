@@ -82,8 +82,14 @@ export const SETUP_PATTERNS: Readonly<Record<SetupPatternId, PatternDef>> = {
 /** A same-notation stretch this long MUST be announced (Kyle's rule). */
 export const MANDATORY_SAME_MOVE_MS = 60_000
 
-/** A reservation past this would eat the set it announces. */
-export const MAX_CALLOUT_RESERVE_MS = 8_000
+/**
+ * A reservation past this would eat the set it announces. Sized for the
+ * longest real chain (a 4.7s buildup sentence + technical recitation +
+ * "regular speed — okay, go!" ≈ 10.5s with gaps and slack) — the first
+ * device run showed 8s silently skipping the marquee buildup ceremony
+ * whenever the rng drew a longer variant.
+ */
+export const MAX_CALLOUT_RESERVE_MS = 12_000
 
 /**
  * Injected from the app layer: measured ceremony length for a concrete
