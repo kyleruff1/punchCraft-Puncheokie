@@ -1,35 +1,35 @@
 /**
  * Workout Recipe screen (M31-06, doc §8).
  *
- * Lives under punchCraft, which owns building and running a workout end to
- * end. (The design doc calls the workout engine "Puncheokie"; that is now a
- * separate punch-along mode that has not shipped.)
+ * Lives under punchCraft, which owns building and running a workout end
+ * to end. Scoring is punch count, not per-combo sequence grade.
  *
- * The seven primary control
- * groups, live conflict feedback, the pinned Recipe Summary card, and
- * "Start with a sample". It replaces the retired free-form program editor
- * (plan C5) — recipe plus generator, never a hand-built program.
+ * ## Collapse-first layout
  *
- * Scoring is punch count, not a per-combo sequence grade. The tracker cannot
- * confirm which technique landed, so no copy here promises technique accuracy.
+ * Every preference here sits behind a `PickerRow` (single-select) or a
+ * `MultiPickerRow` (multi-select). Collapsed rows show the current value
+ * so the athlete reads the whole recipe at a glance; only the picker the
+ * athlete is actively touching expands, and only one at a time —
+ * enforced by the `PickerProvider` wrapping the screen. That is what
+ * keeps the whole recipe on one screen without scrolling in landscape
+ * or portrait (the fit target Kyle set).
  */
 import React, { useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Link, Stack } from 'expo-router'
 
 import { ConflictNotice } from '@components/workout/ConflictNotice'
 import { EnablementMenu } from '@components/workout/EnablementMenu'
+import { ForgedButton } from '@components/branding/ForgedButton'
 import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
-import {
-  ControlGroup,
-  SegmentedControl,
-  Stepper,
-  type SegmentOption,
-} from '@components/workout/RecipeControls'
+import { Stepper } from '@components/workout/RecipeControls'
+import { CollapsibleSection } from '@components/ui/CollapsibleSection'
+import { PickerProvider } from '@components/ui/PickerContext'
+import { PickerRow, type PickerOption } from '@components/ui/PickerRow'
 import { colors } from '@/theme/colors'
+import { fonts, sizes } from '@/theme/typography'
 import {
   conflictsForField,
-  useAdvancedOpen,
   useConflicts,
   useRecipe,
   useRecipeSummary,
@@ -43,76 +43,87 @@ import {
   suggestGoal,
   type IntensityTier,
 } from '@domain/workout/punchGoals'
-import { listSampleWorkouts } from '@domain/workout/samples'
+import { listSampleWorkouts, type SampleWorkoutKey } from '@domain/workout/samples'
 import { tierFor } from '@domain/workout/WorkoutRecipe'
 import type { WorkoutRecipe } from '@domain/workout/WorkoutRecipe'
 import type { WorkoutDurationMinutes } from '@domain/workout/roundSchedule'
 
 // ---------------------------------------------------------------------------
-// Control option tables — kept as data so the screen body stays readable.
+// Option tables — kept as data so the screen body stays readable.
 // ---------------------------------------------------------------------------
 
-const DURATIONS: ReadonlyArray<SegmentOption<`${WorkoutDurationMinutes}`>> = [
-  { value: '20', label: '20 min' },
-  { value: '30', label: '30 min' },
-  { value: '40', label: '40 min' },
-  { value: '60', label: '60 min' },
+const DURATION_OPTIONS: ReadonlyArray<PickerOption<`${WorkoutDurationMinutes}`>> = [
+  { value: '20', label: '20 minutes' },
+  { value: '30', label: '30 minutes' },
+  { value: '40', label: '40 minutes' },
+  { value: '60', label: '60 minutes' },
 ]
 
-const TIER_OPTIONS: ReadonlyArray<SegmentOption<'beginner' | 'intermediate' | 'advanced'>> = [
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
+const TIER_OPTIONS: ReadonlyArray<PickerOption<'beginner' | 'intermediate' | 'advanced'>> = [
+  {
+    value: 'beginner',
+    label: 'Beginner',
+    description: 'Fundamentals — the core punches and simple ladders.',
+  },
+  {
+    value: 'intermediate',
+    label: 'Intermediate',
+    description: 'Adds combinations, defense, and mid-length build-ups.',
+  },
+  {
+    value: 'advanced',
+    label: 'Advanced',
+    description: 'Chains multi-phase patterns and defensive counters.',
+  },
 ]
 
-const FOCUS_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['focus']>> = [
-  { value: 'hands', label: 'Hands' },
-  { value: 'movement', label: 'Movement' },
-  { value: 'balanced', label: 'Balanced' },
+const FOCUS_OPTIONS: ReadonlyArray<PickerOption<WorkoutRecipe['focus']>> = [
+  { value: 'hands', label: 'Hands', description: 'Punch-forward, less footwork.' },
+  { value: 'movement', label: 'Movement', description: 'Lowers punch target for footwork and defense.' },
+  { value: 'balanced', label: 'Balanced', description: 'Middle ground on punch density.' },
 ]
 
-/**
- * Stance and switch mode are one control group in doc §8 even though they
- * are two recipe fields: picking Orthodox or Southpaw fixes the stance,
- * while the two switch options keep the chosen stance as the *starting*
- * stance and change only how it moves.
- */
 type StanceChoice = 'orthodox' | 'southpaw' | 'switch-by-round' | 'switch-on-command'
 
-const STANCE_OPTIONS: ReadonlyArray<SegmentOption<StanceChoice>> = [
-  { value: 'orthodox', label: 'Orthodox' },
-  { value: 'southpaw', label: 'Southpaw' },
+const STANCE_OPTIONS: ReadonlyArray<PickerOption<StanceChoice>> = [
+  { value: 'orthodox', label: 'Orthodox', description: 'Left foot forward, right hand rear.' },
+  { value: 'southpaw', label: 'Southpaw', description: 'Right foot forward, left hand rear.' },
   { value: 'switch-by-round', label: 'Switch by round' },
   { value: 'switch-on-command', label: 'Switch on command' },
 ]
 
-const BIAS_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['bias']>> = [
+const BIAS_OPTIONS: ReadonlyArray<PickerOption<WorkoutRecipe['bias']>> = [
   { value: 'balanced', label: 'Balanced' },
-  { value: 'lead', label: 'Lead hand' },
-  { value: 'rear', label: 'Rear hand' },
-  { value: 'left', label: 'Physical left' },
-  { value: 'right', label: 'Physical right' },
+  { value: 'lead', label: 'Lead hand', description: 'Follows the stance.' },
+  { value: 'rear', label: 'Rear hand', description: 'Follows the stance.' },
+  { value: 'left', label: 'Physical left', description: 'Fixed to the left arm.' },
+  { value: 'right', label: 'Physical right', description: 'Fixed to the right arm.' },
 ]
 
-const VOICE_MODE_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['voiceMode']>> = [
+const VOICE_MODE_OPTIONS: ReadonlyArray<PickerOption<WorkoutRecipe['voiceMode']>> = [
   { value: 'off', label: 'Off' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'standard', label: 'Standard' },
-  { value: 'full', label: 'Full' },
+  { value: 'minimal', label: 'Minimal', description: 'Cue calls only.' },
+  { value: 'standard', label: 'Standard', description: 'Cues plus round transitions.' },
+  { value: 'full', label: 'Full', description: 'Cues, transitions, encouragement.' },
 ]
 
-const VOICE_VOCABULARY_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['voiceVocabulary']>> = [
-  { value: 'numbers', label: 'Numbers' },
-  { value: 'names', label: 'Names' },
+const VOICE_VOCABULARY_OPTIONS: ReadonlyArray<PickerOption<WorkoutRecipe['voiceVocabulary']>> = [
+  { value: 'numbers', label: 'Numbers', description: 'One, two, three…' },
+  { value: 'names', label: 'Names', description: 'Jab, cross, hook…' },
 ]
 
-const PLAN_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['adaptationMode']>> = [
-  { value: 'fixed', label: 'Fixed' },
-  { value: 'adaptive', label: 'Adaptive' },
-  { value: 'goal-seeking', label: 'Goal-seeking' },
+const PLAN_OPTIONS: ReadonlyArray<PickerOption<WorkoutRecipe['adaptationMode']>> = [
+  { value: 'fixed', label: 'Fixed', description: 'The recipe is the plan.' },
+  { value: 'adaptive', label: 'Adaptive', description: 'Adjusts density at block boundaries.' },
+  { value: 'goal-seeking', label: 'Goal-seeking', description: 'Also chases the punch target.' },
 ]
 
 const TIER_ORDER: IntensityTier[] = ['technique', 'steady', 'hard', 'high-volume', 'extreme']
+
+const INTENSITY_TIER_OPTIONS: ReadonlyArray<PickerOption<IntensityTier>> = TIER_ORDER.map((tier) => ({
+  value: tier,
+  label: TIER_LABELS[tier],
+}))
 
 /** Goals are authored in multiples of 50, so the stepper moves the same way. */
 const GOAL_STEP = 50
@@ -137,10 +148,8 @@ export default function RecipeScreen(): React.JSX.Element {
   const conflicts = useConflicts()
   const summary = useRecipeSummary()
   const selectedSampleKey = useSelectedSampleKey()
-  const advancedOpen = useAdvancedOpen()
   const setRecipe = useWorkoutStore((s) => s.setRecipe)
   const selectSample = useWorkoutStore((s) => s.selectSample)
-  const setAdvancedOpen = useWorkoutStore((s) => s.setAdvancedOpen)
   const resetRecipe = useWorkoutStore((s) => s.resetRecipe)
 
   const samples = useMemo(() => listSampleWorkouts(), [])
@@ -151,243 +160,207 @@ export default function RecipeScreen(): React.JSX.Element {
   // so the athlete reads each problem once, where they can act on it.
   const goalConflicts = conflictsForField(conflicts, 'totalPunchGoal')
 
+  const sampleOptions: ReadonlyArray<PickerOption<string | 'none'>> = useMemo(
+    () => [
+      { value: 'none' as const, label: 'None — build my own' },
+      ...samples.map((s) => ({
+        value: s.key,
+        label: s.name,
+        description: s.description,
+      })),
+    ],
+    [samples],
+  )
+
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.container}>
-      <Stack.Screen options={{ title: 'Workout recipe' }} />
+    <PickerProvider>
+      <ScrollView style={styles.root} contentContainerStyle={styles.container}>
+        <Stack.Screen options={{ title: 'Workout recipe' }} />
 
-      <Text style={styles.intro}>
-        Set the shape of the workout — punchCraft generates the combinations; you are scored on
-        punch count.
-      </Text>
+        <Text style={styles.intro}>
+          Shape the workout — the coach generates the combinations; you are scored on punch count.
+        </Text>
 
-      {/* 1 — Duration */}
-      <ControlGroup label="Duration">
-        <SegmentedControl
+        {/* 1 — Duration */}
+        <PickerRow
+          id="duration"
           testID="duration"
-          options={DURATIONS}
+          label="Duration"
           value={`${recipe.durationMinutes}` as `${WorkoutDurationMinutes}`}
+          options={DURATION_OPTIONS}
           onChange={(value) =>
             setRecipe({ durationMinutes: Number(value) as WorkoutDurationMinutes })
           }
         />
-      </ControlGroup>
 
-      {/* 2 — Punch goal */}
-      <ControlGroup
-        label="Punch goal"
-        caption={`Suggested for this duration and focus: ${suggested.toLocaleString('en-US')}.`}
-      >
-        <SegmentedControl
-          testID="tier"
-          options={TIER_ORDER.map((tier) => ({
-            value: tier,
-            label: TIER_LABELS[tier],
-          }))}
+        {/* 2 — Punch goal (tier band picker + fine stepper in the popout) */}
+        <PickerRow
+          id="goal"
+          testID="goal"
+          label="Punch goal"
+          caption={`Suggested for this duration and focus: ${suggested.toLocaleString('en-US')}.`}
           value={intensity.tier}
+          options={INTENSITY_TIER_OPTIONS}
+          valuePreview={`${recipe.totalPunchGoal.toLocaleString('en-US')} · ${intensity.label}`}
           onChange={(tier) =>
             setRecipe({ totalPunchGoal: GOAL_TIERS[tier][recipe.durationMinutes] })
           }
-        />
-        <Stepper
-          testID="goal"
-          value={recipe.totalPunchGoal}
-          step={GOAL_STEP}
-          min={GOAL_STEP}
-          max={20_000}
-          format={(v) => v.toLocaleString('en-US')}
-          onChange={(totalPunchGoal) => setRecipe({ totalPunchGoal })}
-        />
-        <Text style={styles.intensityLabel} testID="intensity-label">
-          {intensity.label}
-        </Text>
-        {intensity.warning ? (
-          <View style={styles.extremeWarning} testID="extreme-warning">
-            <View style={styles.warningIconBox}>
-              <Text style={styles.warningIcon}>!</Text>
+          extraBody={
+            <View style={styles.goalExtras}>
+              <Stepper
+                testID="goal-stepper"
+                value={recipe.totalPunchGoal}
+                step={GOAL_STEP}
+                min={GOAL_STEP}
+                max={20_000}
+                format={(v) => v.toLocaleString('en-US')}
+                onChange={(totalPunchGoal) => setRecipe({ totalPunchGoal })}
+              />
+              {intensity.warning ? (
+                <View style={styles.extremeWarning} testID="extreme-warning">
+                  <View style={styles.warningIconBox}>
+                    <Text style={styles.warningIcon}>!</Text>
+                  </View>
+                  <Text style={styles.extremeWarningText}>{intensity.warning}</Text>
+                </View>
+              ) : null}
+              {goalConflicts.map((conflict) => (
+                <ConflictNotice key={conflict.code} conflict={conflict} />
+              ))}
             </View>
-            <Text style={styles.extremeWarningText}>{intensity.warning}</Text>
-          </View>
-        ) : null}
-        {goalConflicts.map((conflict) => (
-          <ConflictNotice key={conflict.code} conflict={conflict} />
-        ))}
-      </ControlGroup>
+          }
+        />
 
-      {/* 3 — Tier (M4): selects VOCABULARY — which families, ladders and
-          defense density the athlete trains — not merely combo length. */}
-      <ControlGroup
-        label="Tier"
-        caption="Which combination families and build-up ladders the coach draws from. Beginner teaches fundamentals; advanced chains multi-phase patterns."
-      >
-        <SegmentedControl
+        {/* 3 — Tier (M4): which vocabulary of combos and ladders. */}
+        <PickerRow
+          id="tier"
           testID="tier"
-          options={TIER_OPTIONS}
+          label="Tier"
+          caption="Which combination families and build-up ladders the coach draws from."
           value={tierFor(recipe)}
+          options={TIER_OPTIONS}
           onChange={(tier) => setRecipe({ tier })}
         />
-      </ControlGroup>
 
-      {/* 3b — Focus */}
-      <ControlGroup
-        label="Focus"
-        caption="Movement lowers the punch target to leave room for footwork and defense."
-      >
-        <SegmentedControl
+        {/* 3b — Focus */}
+        <PickerRow
+          id="focus"
           testID="focus"
-          options={FOCUS_OPTIONS}
+          label="Focus"
           value={recipe.focus}
+          options={FOCUS_OPTIONS}
           onChange={(focus) => setRecipe({ focus })}
         />
-      </ControlGroup>
 
-      {/* 4 — Stance */}
-      <ControlGroup
-        label="Stance"
-        caption={
-          recipe.stanceMode === 'fixed'
-            ? undefined
-            : `Starts ${recipe.defaultStance}. Stance changes only at a round boundary, and the change is announced.`
-        }
-      >
-        <SegmentedControl
+        {/* 4 — Stance (and switch mode as options in the same list) */}
+        <PickerRow
+          id="stance"
           testID="stance"
-          options={STANCE_OPTIONS}
+          label="Stance"
+          caption={
+            recipe.stanceMode === 'fixed'
+              ? undefined
+              : `Starts ${recipe.defaultStance}. Stance changes at round boundaries.`
+          }
           value={stanceChoiceFor(recipe)}
+          options={STANCE_OPTIONS}
           onChange={(choice) => setRecipe(patchForStanceChoice(choice))}
         />
-      </ControlGroup>
 
-      {/* 5 — Bias */}
-      <ControlGroup
-        label="Hand bias"
-        caption="Lead and rear follow the stance. Physical left and right stay fixed to one arm, for rehab and asymmetry work."
-      >
-        <SegmentedControl
+        {/* 5 — Hand bias */}
+        <PickerRow
+          id="bias"
           testID="bias"
-          options={BIAS_OPTIONS}
+          label="Hand bias"
           value={recipe.bias}
+          options={BIAS_OPTIONS}
           onChange={(bias) => setRecipe({ bias })}
         />
-      </ControlGroup>
 
-      {/* 6 — Voice Coach */}
-      <ControlGroup
-        label="Voice coach"
-        caption="Stored now, spoken later. The coach stays off while another app is playing audio until you switch it on."
-      >
-        <SegmentedControl
+        {/* 6 — Voice coach (mode + vocabulary as two stacked picks) */}
+        <PickerRow
+          id="voice-mode"
           testID="voice-mode"
-          options={VOICE_MODE_OPTIONS}
+          label="Voice coach"
           value={recipe.voiceMode}
+          options={VOICE_MODE_OPTIONS}
           onChange={(voiceMode) => setRecipe({ voiceMode })}
         />
-        <Text style={styles.subLabel}>Vocabulary</Text>
-        <SegmentedControl
+        <PickerRow
+          id="voice-vocabulary"
           testID="voice-vocabulary"
-          options={VOICE_VOCABULARY_OPTIONS}
+          label="Voice vocabulary"
           value={recipe.voiceVocabulary}
+          options={VOICE_VOCABULARY_OPTIONS}
           onChange={(voiceVocabulary) => setRecipe({ voiceVocabulary })}
         />
-      </ControlGroup>
 
-      {/* 7 — Plan behavior */}
-      <ControlGroup
-        label="Plan behavior"
-        caption="Adaptive adjusts density at block boundaries. Goal-seeking also chases the punch target."
-      >
-        <SegmentedControl
+        {/* 7 — Plan behavior */}
+        <PickerRow
+          id="plan"
           testID="plan"
-          options={PLAN_OPTIONS}
+          label="Plan behavior"
           value={recipe.adaptationMode}
+          options={PLAN_OPTIONS}
           onChange={(adaptationMode) => setRecipe({ adaptationMode })}
         />
-      </ControlGroup>
 
-      {/* Advanced — progressive disclosure (doc §8). Collapsed by default;
-          expanding never mutates a value. */}
-      <View style={styles.advanced}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: advancedOpen }}
-          onPress={() => setAdvancedOpen(!advancedOpen)}
-          style={styles.advancedHeader}
-          testID="advanced-affordance"
+        {/* Advanced — the enablement menu wrapped in the same collapse
+            pattern as every picker row, so it defaults closed and the
+            recipe fits on one screen. The menu itself drives every toggle
+            unchanged. */}
+        <CollapsibleSection
+          id="advanced"
+          testID="advanced"
+          label="Advanced"
+          caption="Which punches, defense, footwork and coaching calls the workout may use."
         >
-          <Text style={styles.advancedText}>Advanced</Text>
-          <Text style={styles.advancedToggle}>{advancedOpen ? 'Hide' : 'Show'}</Text>
-        </Pressable>
-        <Text style={styles.advancedCaption}>
-          Which punches, defense, footwork and coaching calls the workout may use.
-        </Text>
-        {advancedOpen ? (
-          <View style={styles.advancedBody}>
-            <EnablementMenu recipe={recipe} conflicts={conflicts} onChange={setRecipe} />
-          </View>
-        ) : null}
-      </View>
+          <EnablementMenu recipe={recipe} conflicts={conflicts} onChange={setRecipe} />
+        </CollapsibleSection>
 
-      {/* Start with a sample */}
-      <ControlGroup label="Start with a sample">
-        {samples.map((sample) => {
-          const selected = sample.key === selectedSampleKey
-          return (
-            <Pressable
-              key={sample.key}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => selectSample(selected ? undefined : sample.key)}
-              style={[styles.sample, selected && styles.sampleSelected]}
-              testID={`sample-${sample.key}`}
-            >
-              <Text style={styles.sampleName}>
-                {selected ? '✓ ' : ''}
-                {sample.name}
-              </Text>
-              <Text style={styles.sampleDescription}>{sample.description}</Text>
-              {selected ? (
-                <Text style={styles.sampleSummary}>
-                  {sample.workout.schedule.length} rounds ·{' '}
-                  {sample.workout.recipe.totalPunchGoal.toLocaleString('en-US')} punches ·{' '}
-                  {sample.workout.estimatedActivePunchesPerMinute} punches/minute
-                </Text>
-              ) : null}
-            </Pressable>
-          )
-        })}
-      </ControlGroup>
+        {/* Sample — as a picker row so it stays one line by default. */}
+        <PickerRow
+          id="sample"
+          testID="sample"
+          label="Start with a sample"
+          value={selectedSampleKey ?? 'none'}
+          options={sampleOptions}
+          onChange={(key) => selectSample(key === 'none' ? undefined : (key as SampleWorkoutKey))}
+        />
 
-      <RecipeSummaryCard summary={summary} conflicts={conflicts} />
+        <RecipeSummaryCard summary={summary} conflicts={conflicts} />
 
-      <View style={styles.actions}>
-        <Link href="/(tabs)/punchcraft/live" asChild>
-          <Pressable accessibilityRole="button" style={styles.startButton} testID="start-button">
-            <Text style={styles.startButtonText}>Start workout</Text>
-          </Pressable>
-        </Link>
-        <Text style={styles.startCaption}>
-          Runs on simulated punches until the trackers are wired in (M33-01).
-        </Text>
+        <View style={styles.actions}>
+          <Link href="/(tabs)/punchcraft/live" asChild>
+            <ForgedButton variant="primary" testID="start-button">
+              Start workout
+            </ForgedButton>
+          </Link>
+          <Text style={styles.startCaption}>
+            Runs on simulated punches until the trackers are wired in (M33-01).
+          </Text>
 
-        <Pressable
-          accessibilityRole="button"
-          onPress={resetRecipe}
-          style={styles.resetButton}
-          testID="reset-button"
-        >
-          <Text style={styles.resetButtonText}>Reset to defaults</Text>
-        </Pressable>
-      </View>
-    </ScrollView>
+          <ForgedButton variant="subtle" onPress={resetRecipe} testID="reset-button">
+            Reset to defaults
+          </ForgedButton>
+        </View>
+      </ScrollView>
+    </PickerProvider>
   )
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  container: { padding: 20, gap: 24, paddingBottom: 48 },
-  intro: { fontSize: 15, lineHeight: 22, color: colors.textSecondary },
+  container: { padding: 16, gap: 10, paddingBottom: 32 },
+  intro: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    lineHeight: 18,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
 
-  subLabel: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
-  intensityLabel: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  goalExtras: { gap: 12, alignItems: 'flex-start' },
 
   extremeWarning: {
     flexDirection: 'row',
@@ -408,49 +381,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  warningIcon: { fontSize: 12, fontWeight: '700', lineHeight: 14, color: colors.warning },
-  extremeWarningText: { flex: 1, fontSize: 13, lineHeight: 18, color: colors.textPrimary },
+  warningIcon: {
+    fontSize: sizes.label,
+    fontFamily: fonts.heading,
+    lineHeight: 14,
+    color: colors.warning,
+  },
+  extremeWarningText: {
+    flex: 1,
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    lineHeight: 18,
+    color: colors.textPrimary,
+  },
 
-  advanced: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    padding: 14,
-    gap: 8,
+  actions: { gap: 8, marginTop: 4 },
+  startCaption: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
-  advancedHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: 32,
-  },
-  advancedText: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  advancedToggle: { fontSize: 14, fontWeight: '600', color: colors.accent },
-  advancedCaption: { fontSize: 13, color: colors.textSecondary },
-  advancedBody: { marginTop: 8 },
-
-  sample: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-    padding: 14,
-    gap: 4,
-  },
-  sampleSelected: { borderColor: colors.accent, backgroundColor: colors.accentSurface },
-  sampleName: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  sampleDescription: { fontSize: 13, lineHeight: 18, color: colors.textSecondary },
-  sampleSummary: { fontSize: 13, color: colors.accent, marginTop: 4 },
-
-  actions: { gap: 8 },
-  startButton: {
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: colors.accent,
-  },
-  startButtonText: { fontSize: 16, fontWeight: '700', color: colors.textOnAccent },
-  startCaption: { fontSize: 13, color: colors.textMuted, textAlign: 'center' },
-  resetButton: { paddingVertical: 12, alignItems: 'center' },
-  resetButtonText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
 })

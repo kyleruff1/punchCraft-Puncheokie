@@ -6,19 +6,21 @@
  * definition: raised edges, shaded texture, the sense that the button
  * is a piece of metal rather than a coloured swatch.
  *
- * The effect here is pure RN — no native module needed. The body is a
- * mid-tone fill with a light top border and a heavier dark bottom
- * border that together fake a bevel. A thin light highlight strip
- * along the top inside edge sharpens the raised read, and a shadow
- * strip peeking out under the bottom edge fakes the shadow a forged
- * edge would cast on the ground.
+ * The body is now a real vertical `expo-linear-gradient` (light top,
+ * mid belly, dark bottom), read as a forged strip catching a top light.
+ * A light 1px border along the top and a heavier dark border along the
+ * bottom sharpen the bevel; a thin light highlight strip runs along
+ * the top inside edge; a shadow strip peeks out under the bottom edge,
+ * faking the shadow a forged edge would cast on the ground.
  *
- * On press: the top highlight hides, the fill shifts to a darker tone,
- * and the bottom shadow collapses — so the button reads as pressed-in
- * rather than merely inverted.
+ * On press: the top of the gradient drops to the mid tone (the button
+ * loses its highlight), the belly darkens to the pressed variant, and
+ * the shadow strip collapses — the button reads as pressed-in rather
+ * than merely inverted.
  *
- * A true-gradient upgrade (via expo-linear-gradient after a native
- * rebuild) is a one-file swap; the API here is stable.
+ * `expo-linear-gradient` is a native module: the app needs a dev-client
+ * rebuild for this to render at all. Same rebuild covers the Chakra
+ * Petch font load added in Piece 4.
  *
  * Three variants:
  * - `primary` — the turquoise brand pop for the one page-forward action.
@@ -30,6 +32,7 @@
  */
 
 import React, { useState } from 'react'
+import { LinearGradient } from 'expo-linear-gradient'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import type { AccessibilityRole, StyleProp, TextStyle, ViewStyle } from 'react-native'
 
@@ -39,9 +42,9 @@ import { recipes } from '@/theme/typography'
 export type ForgedVariant = 'primary' | 'secondary' | 'subtle'
 
 interface VariantVisual {
-  /** Main fill color of the body. */
-  fill: string
-  fillPressed: string
+  /** Three-stop vertical gradient top → mid → bottom. */
+  gradient: readonly [string, string, string]
+  gradientPressed: readonly [string, string, string]
   /** Bevel top edge (light) and bottom edge (shadow). */
   bevelTop: string
   bevelBottom: string
@@ -52,24 +55,24 @@ interface VariantVisual {
 
 const VARIANTS: Record<ForgedVariant, VariantVisual> = {
   primary: {
-    fill: punch.turquoise,
-    fillPressed: punch.turquoiseDeep,
+    gradient: [punch.aqua, punch.turquoise, punch.tealDeep],
+    gradientPressed: [punch.turquoise, punch.turquoiseDeep, punch.tealDeep],
     bevelTop: punch.aqua,
     bevelBottom: punch.tealBlack,
     textColor: colors.textOnAccent,
     textRecipe: recipes.buttonPrimary,
   },
   secondary: {
-    fill: punch.steel,
-    fillPressed: punch.gunmetal,
+    gradient: [punch.silver, punch.steel, punch.tealBlack],
+    gradientPressed: [punch.steel, punch.gunmetal, punch.tealBlack],
     bevelTop: punch.silver,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonSecondary,
   },
   subtle: {
-    fill: punch.gunmetal,
-    fillPressed: punch.charcoal,
+    gradient: [punch.steel, punch.gunmetal, punch.tealBlack],
+    gradientPressed: [punch.gunmetal, punch.charcoal, punch.tealBlack],
     bevelTop: punch.steel,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
@@ -100,6 +103,7 @@ export function ForgedButton({
 }: ForgedButtonProps): React.JSX.Element {
   const [pressed, setPressed] = useState(false)
   const v = VARIANTS[variant]
+  const stops = pressed ? v.gradientPressed : v.gradient
   const content =
     typeof children === 'string' ? (
       <Text style={[styles.text, v.textRecipe, { color: v.textColor }]}>{children}</Text>
@@ -123,14 +127,13 @@ export function ForgedButton({
         style={[styles.shadow, { backgroundColor: v.bevelBottom }, pressed && styles.shadowPressed]}
         pointerEvents="none"
       />
-      <View
+      <LinearGradient
+        colors={[...stops]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
         style={[
           styles.body,
-          {
-            backgroundColor: pressed ? v.fillPressed : v.fill,
-            borderTopColor: v.bevelTop,
-            borderBottomColor: v.bevelBottom,
-          },
+          { borderTopColor: v.bevelTop, borderBottomColor: v.bevelBottom },
         ]}
       >
         {/* Inner highlight — a 1px light line along the top inside edge,
@@ -140,7 +143,7 @@ export function ForgedButton({
           pointerEvents="none"
         />
         {content}
-      </View>
+      </LinearGradient>
     </Pressable>
   )
 }

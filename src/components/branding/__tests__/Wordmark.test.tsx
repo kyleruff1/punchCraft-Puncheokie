@@ -13,7 +13,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 import { Wordmark, type WordmarkApp, type WordmarkSize } from '../Wordmark'
 
 const APPS: WordmarkApp[] = ['punchCraft', 'velocityLab', 'puncheokie']
-const SIZES: WordmarkSize[] = ['sm', 'md', 'lg']
+const SIZES: WordmarkSize[] = ['sm', 'tab', 'md', 'lg']
 
 const EXPECTED_LABEL: Record<WordmarkApp, string> = {
   punchCraft: 'punchCraft',
@@ -49,13 +49,14 @@ describe('Wordmark', () => {
     expect(style.width).toBeGreaterThan(0)
   })
 
-  it('keeps sizes ordered sm < md < lg (so the type scale is meaningful)', () => {
+  it('keeps sizes ordered sm < tab < md < lg (so the type scale is meaningful)', () => {
     const heightFor = (size: WordmarkSize): number => {
       const tree = render(<Wordmark app="punchCraft" size={size} />)
       const image = tree.root.findByProps({ accessibilityRole: 'image' })
       return (image.props.style as { height: number }).height
     }
-    expect(heightFor('sm')).toBeLessThan(heightFor('md'))
+    expect(heightFor('sm')).toBeLessThan(heightFor('tab'))
+    expect(heightFor('tab')).toBeLessThan(heightFor('md'))
     expect(heightFor('md')).toBeLessThan(heightFor('lg'))
   })
 })

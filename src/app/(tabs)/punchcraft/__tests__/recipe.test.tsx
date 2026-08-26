@@ -5,6 +5,12 @@
  * a dependency, and adding one for a handful of testID lookups was not
  * worth the install, so these walk the rendered tree directly.
  *
+ * The recipe screen now sits behind picker rows: every preference
+ * collapses to a header row; tapping the header opens a popout with
+ * option Pressables. The `pickOption` helper hides both steps behind
+ * one call so the tests read the same as they did against the old
+ * SegmentedControl.
+ *
  * expo-router is stubbed: `Stack.Screen` and `Link` only affect navigation
  * chrome, and the assertions here are about controls, conflicts and copy.
  */
@@ -12,9 +18,6 @@ import React from 'react'
 import { act, create, type ReactTestRenderer, type ReactTestInstance } from 'react-test-renderer'
 
 jest.mock('expo-router', () => {
-  // Named function declarations so react/display-name is satisfied; the
-  // factory touches React only in type position, which is erased, so
-  // jest.mock hoisting stays safe.
   function Stack() {
     return null
   }
@@ -37,12 +40,6 @@ import { GOAL_TIERS } from '@domain/workout/punchGoals'
 
 const store = () => useWorkoutStore.getState()
 
-/**
- * Rendered trees are tracked and unmounted after each test. A tree left
- * mounted keeps subscribing to the store, so the next test's setup writes
- * would re-render it outside act() and emit warnings that have nothing to
- * do with the test being run.
- */
 const mounted: ReactTestRenderer[] = []
 
 function render(element: React.JSX.Element): ReactTestRenderer {
@@ -60,13 +57,6 @@ afterEach(() => {
   })
 })
 
-/**
- * Every string rendered under a node, concatenated in render order.
- *
- * `ReactTestInstance.children` holds child instances, not text, so this
- * walks the subtree; joining with '' keeps adjacent JSX fragments reading
- * as the single sentence the athlete sees.
- */
 function textOf(node: ReactTestInstance): string {
   return node.children
     .map((child) => (typeof child === 'string' ? child : textOf(child)))
@@ -83,56 +73,63 @@ function press(tree: ReactTestRenderer, testID: string): void {
   })
 }
 
+/**
+ * Open a picker row and pick one of its options in a single call.
+ * `pickerId` matches the row's `id` prop; `value` is stringified to
+ * match the option testID pattern (`{pickerId}-option-{value}`).
+ */
+function pickOption(tree: ReactTestRenderer, pickerId: string, value: string | number): void {
+  press(tree, `${pickerId}-toggle`)
+  press(tree, `${pickerId}-option-${String(value)}`)
+}
+
 beforeEach(() => {
   act(() => {
     store().resetRecipe()
-    // resetRecipe deliberately leaves the panel as the athlete left it, so
-    // each test collapses it explicitly rather than inheriting the previous
-    // test's state.
-    store().setAdvancedOpen(false)
   })
 })
 
 describe('primary controls dispatch the right patch', () => {
   it.each([
-    ['duration-60', 'durationMinutes', 60],
-    ['focus-movement', 'focus', 'movement'],
-    ['bias-rear', 'bias', 'rear'],
-    ['voice-mode-full', 'voiceMode', 'full'],
-    ['voice-vocabulary-names', 'voiceVocabulary', 'names'],
-    ['plan-goal-seeking', 'adaptationMode', 'goal-seeking'],
-  ] as const)('%s sets %s', (testID, field, expected) => {
+    ['duration', '60', 'durationMinutes', 60],
+    ['focus', 'movement', 'focus', 'movement'],
+    ['bias', 'rear', 'bias', 'rear'],
+    ['voice-mode', 'full', 'voiceMode', 'full'],
+    ['voice-vocabulary', 'names', 'voiceVocabulary', 'names'],
+    ['plan', 'goal-seeking', 'adaptationMode', 'goal-seeking'],
+  ] as const)('%s → %s sets %s', (pickerId, option, field, expected) => {
     const tree = render(<RecipeScreen />)
-    press(tree, testID)
+    pickOption(tree, pickerId, option)
     expect(store().recipe[field]).toBe(expected)
   })
 
   it('maps the stance control onto both stance fields', () => {
     const tree = render(<RecipeScreen />)
 
-    press(tree, 'stance-southpaw')
+    pickOption(tree, 'stance', 'southpaw')
     expect(store().recipe.defaultStance).toBe('southpaw')
     expect(store().recipe.stanceMode).toBe('fixed')
 
     // Choosing a switch mode keeps the stance already chosen as the
     // starting stance rather than silently resetting it to orthodox.
-    press(tree, 'stance-switch-by-round')
+    pickOption(tree, 'stance', 'switch-by-round')
     expect(store().recipe.stanceMode).toBe('switch-by-round')
     expect(store().recipe.defaultStance).toBe('southpaw')
   })
 
   it('sets the goal from a tier preset at the current duration', () => {
     const tree = render(<RecipeScreen />)
-    press(tree, 'tier-hard')
+    pickOption(tree, 'goal', 'hard')
     expect(store().recipe.totalPunchGoal).toBe(GOAL_TIERS.hard[store().recipe.durationMinutes])
   })
 
   it('steps the goal by 50 in each direction', () => {
     const tree = render(<RecipeScreen />)
+    press(tree, 'goal-toggle')
     const before = store().recipe.totalPunchGoal
-    press(tree, 'goal-plus')
+    press(tree, 'goal-stepper-plus')
     expect(store().recipe.totalPunchGoal).toBe(before + 50)
-    press(tree, 'goal-minus')
+    press(tree, 'goal-stepper-minus')
     expect(store().recipe.totalPunchGoal).toBe(before)
   })
 })
@@ -148,7 +145,7 @@ describe('summary card', () => {
   it('recomputes when duration changes', () => {
     const tree = render(<RecipeScreen />)
     const before = textOf(tree.root.findByProps({ testID: 'recipe-summary-card' }))
-    press(tree, 'duration-60')
+    pickOption(tree, 'duration', '60')
     const after = textOf(tree.root.findByProps({ testID: 'recipe-summary-card' }))
     expect(after).not.toEqual(before)
     expect(after).toContain('60 minutes')
@@ -178,32 +175,43 @@ describe('conflicts', () => {
 
   it('shows the Extreme warning when the goal reaches that tier (doc §10)', () => {
     const tree = render(<RecipeScreen />)
-    press(tree, 'tier-extreme')
+    // Open the goal picker and pick the extreme tier — extreme-warning
+    // renders inside the extraBody, which is only mounted while the
+    // picker is open.
+    pickOption(tree, 'goal', 'extreme')
+    press(tree, 'goal-toggle')
     expect(() => tree.root.findByProps({ testID: 'extreme-warning' })).not.toThrow()
   })
 
   it('shows no warning at a moderate tier', () => {
     const tree = render(<RecipeScreen />)
-    press(tree, 'tier-steady')
+    pickOption(tree, 'goal', 'steady')
+    press(tree, 'goal-toggle')
     expect(tree.root.findAllByProps({ testID: 'extreme-warning' })).toHaveLength(0)
   })
 })
 
 describe('start with a sample', () => {
-  it('lists all three M31-05 samples by name and key', () => {
+  it('lists all three M31-05 samples by name in the sample picker', () => {
     const tree = render(<RecipeScreen />)
+    // Open the picker so the option rows mount.
+    press(tree, 'sample-toggle')
     const text = allText(tree)
     for (const sample of listSampleWorkouts()) {
       expect(text).toContain(sample.name)
-      expect(() => tree.root.findByProps({ testID: `sample-${sample.key}` })).not.toThrow()
+      expect(() =>
+        tree.root.findByProps({ testID: `sample-option-${sample.key}` }),
+      ).not.toThrow()
     }
   })
 
   it('selects and deselects a sample', () => {
     const tree = render(<RecipeScreen />)
-    press(tree, 'sample-switch-by-round')
+    pickOption(tree, 'sample', 'switch-by-round')
     expect(store().selectedSampleKey).toBe('switch-by-round')
-    press(tree, 'sample-switch-by-round')
+    // Deselect by picking None; the picker's "value" for the deselected
+    // state is the sentinel 'none' option.
+    pickOption(tree, 'sample', 'none')
     expect(store().selectedSampleKey).toBeUndefined()
   })
 })
@@ -231,26 +239,17 @@ describe('advanced panel (M31-07)', () => {
     expect(tree.root.findAllByProps({ testID: 'enablement-menu' })).toHaveLength(0)
   })
 
-  it('expands without mutating any value (doc §8)', () => {
+  it('expands without mutating any value', () => {
     const tree = render(<RecipeScreen />)
     const before = store().recipe
-    press(tree, 'advanced-affordance')
-    expect(store().advancedOpen).toBe(true)
+    press(tree, 'advanced-toggle')
     expect(store().recipe).toEqual(before)
     expect(() => tree.root.findByProps({ testID: 'enablement-menu' })).not.toThrow()
   })
 
-  it('keeps its open state in the store, so it survives a remount', () => {
-    const first = render(<RecipeScreen />)
-    press(first, 'advanced-affordance')
-    // A fresh render stands in for navigating away and back inside the tab.
-    const second = render(<RecipeScreen />)
-    expect(() => second.root.findByProps({ testID: 'enablement-menu' })).not.toThrow()
-  })
-
   it('updates the summary card in the same interaction as a menu change', () => {
     const tree = render(<RecipeScreen />)
-    press(tree, 'advanced-affordance')
+    press(tree, 'advanced-toggle')
     const before = textOf(tree.root.findByProps({ testID: 'recipe-summary-card' }))
     act(() => {
       const node = tree.root.findByProps({ testID: 'punch-5' })
@@ -265,9 +264,6 @@ describe('punchCraft landing — the workout home', () => {
   it('describes the mode briefly, on its own clock, and never mentions beats (D3)', () => {
     const tree = render(<PunchCraftLanding />)
     const text = allText(tree)
-    // A short label, not a tutorial: the cue clock is the master, so it is the
-    // tablet's own clock — never a song's beat (D3), and the score is punch
-    // count, not the old hand-sequence grade.
     expect(text.toLowerCase()).toContain("tablet's own clock")
     expect(text.toLowerCase()).toContain('punch count')
     expect(text.toLowerCase()).not.toContain('hand-sequence match')
@@ -279,29 +275,28 @@ describe('punchCraft landing — the workout home', () => {
     expect(allText(tree)).toContain('Build a workout')
   })
 
-  it('lists the designed-workout library', () => {
-    // punchCraft owns the corpus: a workout is either built here or picked
-    // from the library, and both routes lead to the recipe screen.
+  it('lists the designed-workout library in the collapsed picker', () => {
+    // The samples now sit behind a collapsed picker on the landing —
+    // opening the picker mounts each sample as an option row.
     const tree = render(<PunchCraftLanding />)
+    press(tree, 'landing-sample-toggle')
+    const text = allText(tree)
     for (const sample of listSampleWorkouts()) {
-      expect(() => tree.root.findByProps({ testID: `library-${sample.key}` })).not.toThrow()
-      expect(allText(tree)).toContain(sample.name)
+      expect(text).toContain(sample.name)
+      expect(() =>
+        tree.root.findByProps({ testID: `landing-sample-option-${sample.key}` }),
+      ).not.toThrow()
     }
   })
 
   it('picking a library workout stores it so the run uses it, not the default', () => {
-    // The gap this closes: the live screen used to run a hardcoded sample. Now
-    // tapping a card records the selection, which the live screen reads.
     const tree = render(<PunchCraftLanding />)
     expect(store().selectedSampleKey).toBeUndefined()
-    press(tree, 'library-switch-by-round')
+    pickOption(tree, 'landing-sample', 'switch-by-round')
     expect(store().selectedSampleKey).toBe('switch-by-round')
   })
 
   it('Build a workout mints a fresh seed and clears any library pick (M35)', () => {
-    // A built workout is generated from the recipe seed; each build should get
-    // a new seed so identical settings still produce a fresh session, and it
-    // must not run a previously-picked library sample.
     const tree = render(<PunchCraftLanding />)
     act(() => store().selectSample('switch-by-round'))
     const before = store().recipe.seed

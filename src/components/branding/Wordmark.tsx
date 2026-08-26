@@ -15,7 +15,8 @@
  * label keeps the code-consistent "Puncheokie" so screen-reader users
  * hear the same name the rest of the app uses.
  *
- * Three sizes cover every current site: `sm` for tab bars and headers,
+ * Four sizes cover every current site: `sm` for headers, `tab` for the
+ * tab-bar label (bigger than `sm` so it fills the tab-row height cleanly),
  * `md` for landing-page H1s, `lg` reserved for a future hero placement.
  * The wordmark PNGs' authored aspect ratio is ~3:1; each size fixes the
  * height and lets width follow, so nothing distorts.
@@ -44,9 +45,10 @@ const ACCESSIBILITY_LABELS = {
 const WORDMARK_ASPECT = 2172 / 724
 
 const SIZE_HEIGHTS = {
-  sm: 20,
-  md: 44,
-  lg: 72,
+  sm: 26,
+  tab: 40,
+  md: 64,
+  lg: 96,
 } as const
 
 export type WordmarkApp = keyof typeof SOURCES

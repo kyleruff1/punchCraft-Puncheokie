@@ -19,6 +19,19 @@ const tabScreenOptions = {
   tabBarStyle: {
     backgroundColor: colors.surface,
     borderTopColor: colors.border,
+    // Sized to fit the `tab` Wordmark (40pt) with breathing room above
+    // and below; without this the bar stays at the RN default and crops
+    // the top of the wordmark.
+    height: 72,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  tabBarLabelStyle: {
+    // Center the wordmark in the label slot rather than bottom-anchoring
+    // to where a text label would have sat.
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabBarActiveTintColor: colors.accent,
   tabBarInactiveTintColor: colors.textSecondary,
@@ -31,7 +44,8 @@ export default function TabsLayout() {
         name="velocity-lab"
         options={{
           title: 'Velocity Lab',
-          tabBarLabel: () => <Wordmark app="velocityLab" size="sm" />,
+          tabBarIcon: () => null,
+          tabBarLabel: () => <Wordmark app="velocityLab" size="tab" />,
           headerTitle: () => <Wordmark app="velocityLab" size="sm" />,
         }}
       />
@@ -43,7 +57,8 @@ export default function TabsLayout() {
           // available. The label render still names the tab to the
           // accessibility layer via the Wordmark's fixed a11y label.
           title: 'punchCraft',
-          tabBarLabel: () => <Wordmark app="punchCraft" size="sm" />,
+          tabBarIcon: () => null,
+          tabBarLabel: () => <Wordmark app="punchCraft" size="tab" />,
           headerTitle: () => <Wordmark app="punchCraft" size="sm" />,
         }}
       />
@@ -51,7 +66,8 @@ export default function TabsLayout() {
         name="puncheokie"
         options={{
           title: 'Puncheokie',
-          tabBarLabel: () => <Wordmark app="puncheokie" size="sm" />,
+          tabBarIcon: () => null,
+          tabBarLabel: () => <Wordmark app="puncheokie" size="tab" />,
           headerTitle: () => <Wordmark app="puncheokie" size="sm" />,
         }}
       />
