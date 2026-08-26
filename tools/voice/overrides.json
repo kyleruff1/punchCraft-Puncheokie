@@ -1,18 +1,86 @@
 {
   "_comment": "Per-clip render overrides for phrases (full key) and words (vocab/form/id or word:id). The 8 entries below are the clips that failed BOTH Tier-0 (on disk) and Tier-1 (through the speaker) on 2026-08-25: cfgWeight up trades theatrical looseness for text fidelity, exaggeration comes down a notch, and the gate gets a deep attempt budget.",
-  "numbers/standalone/4": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "numbers/standalone/5": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "numbers/combo/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "names/standalone/1": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "word:pivot": { "text": "Pivot now", "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "names/combo/pivot": { "text": "Pivot now", "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24, "maxMs": 1600 },
-  "numbers/combo/roll": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "numbers/combo/5": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "names/standalone/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
-  "word:roll": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "word:3": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "word:6": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "word:stop": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "word:duck": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
-  "names/combo/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 }
+  "numbers/standalone/4": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "numbers/standalone/5": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "numbers/combo/switch": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "names/standalone/1": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "word:pivot": {
+    "text": "Pivot now",
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "names/combo/pivot": {
+    "text": "Pivot now",
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24,
+    "maxMs": 1600
+  },
+  "numbers/combo/roll": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "numbers/combo/5": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "names/standalone/switch": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "word:roll": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "word:3": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "word:6": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "word:stop": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "word:duck": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  },
+  "names/combo/switch": {
+    "cfgWeight": 0.55,
+    "exaggeration": 0.8,
+    "attempts": 20
+  },
+  "1b-1-2.sprint.numbers.push": {
+    "cfgWeight": 0.6,
+    "exaggeration": 0.75,
+    "attempts": 24
+  }
 }

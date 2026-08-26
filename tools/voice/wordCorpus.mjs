@@ -82,8 +82,16 @@ export const FORM_SPEED = { standalone: 1.18, combo: 1.5 }
  *
  * Scaled by word count so "cut off the ring" is not held to a digit's budget,
  * and by form because a combo word is clipped tighter than an announcement.
+ *
+ * Widened when the ASR gate landed. The old ceilings (620/780) were tuned
+ * when duration was the only proxy for a correct take, so the window was
+ * squeezed until wrong-length takes could not ship — and the gate's first
+ * hotfix run showed most combo takes never fitting it at all (12/12 over,
+ * ASR never consulted). With correctness checked directly by transcript,
+ * the ceiling's only job is the beat budget: a combo word may run ~430ms
+ * after the ~2.03x tempo fit, which admits ~860ms before it.
  */
 export function maxWordMs(words, form) {
-  const base = form === 'combo' ? 620 : 780
+  const base = form === 'combo' ? 860 : 1040
   return base + Math.max(0, words - 1) * 300
 }
