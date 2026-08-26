@@ -12,7 +12,9 @@ import {
   DOUBLE_BREATH_MS,
   INTRO_SEGMENT_GAP_MS,
   INTRO_TAIL_PAD_MS,
-  JOKE_LANDING_MS,
+  JOKE_LANDING_MAX_MS,
+  JOKE_LANDING_MIN_MS,
+  jokeLandingMs,
   planIntro,
 } from '../introPlan'
 import { INTRO_SEGMENTS, type IntroSegment } from '../voiceAssets/introManifest'
@@ -55,10 +57,24 @@ describe('planIntro', () => {
     const plan = planIntro(workoutFor(), FULL_FAKE, FAKE_JOKE)
     const gaps = Object.fromEntries(plan.segments.map((s) => [s.id, s.gapBeforeMs]))
     expect(gaps['joke-99']).toBe(DOUBLE_BREATH_MS)
-    expect(gaps['intro-letsgo']).toBe(JOKE_LANDING_MS)
+    expect(gaps['intro-letsgo']).toBe(jokeLandingMs(FAKE_JOKE.durationMs))
     expect(gaps['intro-hello']).toBe(0)
     // Plain sentences keep the plain breath.
     expect(plan.segments[1]?.gapBeforeMs).toBe(INTRO_SEGMENT_GAP_MS)
+  })
+
+  it('scales the landing beat with the joke length, inside the bounds', () => {
+    // A longer setup earns a longer laugh — but the beat is never clipped
+    // short and never becomes a dead stage.
+    expect(jokeLandingMs(5_000)).toBeLessThan(jokeLandingMs(9_500))
+    for (const joke of LOBBY_JOKES) {
+      const beat = jokeLandingMs(joke.durationMs)
+      expect(beat).toBeGreaterThanOrEqual(JOKE_LANDING_MIN_MS)
+      expect(beat).toBeLessThanOrEqual(JOKE_LANDING_MAX_MS)
+    }
+    const longJoke: LobbyJoke = { id: 'joke-98', module: 1, durationMs: 60_000 }
+    const plan = planIntro(workoutFor(), FULL_FAKE, longJoke)
+    expect(plan.segments.at(-1)?.gapBeforeMs).toBe(JOKE_LANDING_MAX_MS)
   })
 
   it('falls back to the plain breath before the send-off when there is no joke', () => {
@@ -89,7 +105,12 @@ describe('planIntro', () => {
     // plan shrinks to hello → (double breath) → joke → (beat) → send-off.
     expect(plan.segments.map((s) => s.id)).toEqual(['intro-hello', 'joke-99', 'intro-letsgo'])
     expect(plan.totalMs).toBe(
-      4_000 + DOUBLE_BREATH_MS + 8_000 + JOKE_LANDING_MS + 4_000 + INTRO_TAIL_PAD_MS,
+      4_000 +
+        DOUBLE_BREATH_MS +
+        8_000 +
+        jokeLandingMs(8_000) +
+        4_000 +
+        INTRO_TAIL_PAD_MS,
     )
   })
 

@@ -34,8 +34,19 @@ import { pickLobbyJoke, type LobbyJoke } from './voiceAssets/jokeManifest'
 export const INTRO_SEGMENT_GAP_MS = 350
 /** The double breath before the joke — the setup hangs, then it drops. */
 export const DOUBLE_BREATH_MS = 1_700
-/** The beat after the punchline, before "Let's get started!". */
-export const JOKE_LANDING_MS = 1_000
+/**
+ * The beat after the punchline, before "Let's get started!", scales with
+ * the joke itself — the manifest carries measured lengths, so a longer
+ * setup earns a longer laugh. Bounded: never clipped, never a dead stage.
+ */
+export const JOKE_LANDING_MIN_MS = 800
+export const JOKE_LANDING_MAX_MS = 2_200
+export function jokeLandingMs(jokeDurationMs: number): number {
+  return Math.min(
+    JOKE_LANDING_MAX_MS,
+    Math.max(JOKE_LANDING_MIN_MS, Math.round(jokeDurationMs * 0.18)),
+  )
+}
 /** Quiet after "Let's get started!" before the bell — a beat, not a wall. */
 export const INTRO_TAIL_PAD_MS = 900
 
@@ -95,7 +106,11 @@ export function planIntro(
     segments.push({
       ...sendOff,
       gapBeforeMs:
-        segments.length === 0 ? 0 : joke ? JOKE_LANDING_MS : INTRO_SEGMENT_GAP_MS,
+        segments.length === 0
+          ? 0
+          : joke
+            ? jokeLandingMs(joke.durationMs)
+            : INTRO_SEGMENT_GAP_MS,
     })
   }
 
