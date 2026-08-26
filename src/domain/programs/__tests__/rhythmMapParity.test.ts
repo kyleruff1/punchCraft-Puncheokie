@@ -53,7 +53,7 @@ function driveRound(workout: Parameters<typeof expandTimeline>[0], roundIndex: n
     tone: () => undefined,
     setVolumes: () => undefined,
     playPhrase: (assets, startAt) => {
-      recorded.push({ kind: 'per-word', at: startAt, detail: assets.join('+') })
+      recorded.push({ kind: 'per-word', at: startAt ?? clock.now(), detail: assets.join('+') })
     },
     playCombination: (combination, _cadence, atMs) => {
       recorded.push({ kind: 'phrase', at: atMs ?? clock.now(), detail: combination })

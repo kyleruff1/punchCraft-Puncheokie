@@ -61,6 +61,12 @@ export interface CueStageProps {
   current?: CueView
   next?: CueView
   reducedMotion?: boolean
+  /**
+   * What the empty stage says. 'Ready' before the first cue; the runner
+   * passes a free-work line when the round has no further cues scheduled,
+   * so the athlete keeps working instead of reading a frozen combination.
+   */
+  idleLabel?: string
 }
 
 /** Hand letter for a punch token, taken from the resolved expectations. */
@@ -196,7 +202,7 @@ function CueRow(props: {
 }
 
 export function CueStage(props: CueStageProps): React.JSX.Element {
-  const { current, next, reducedMotion = false } = props
+  const { current, next, reducedMotion = false, idleLabel } = props
 
   return (
     <View style={styles.root} testID="cue-stage">
@@ -226,7 +232,7 @@ export function CueStage(props: CueStageProps): React.JSX.Element {
           />
         ) : (
           <Text style={styles.idle} testID="cue-stage-idle">
-            Ready
+            {idleLabel ?? 'Ready'}
           </Text>
         )}
       </View>

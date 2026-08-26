@@ -60,6 +60,13 @@ export interface CueSnapshot {
   next?: CueInstance
   status: CueStatus
   remainingMs: number
+  /**
+   * True when the round has no further cues scheduled — the athlete is in
+   * free work until the bell. Distinct from an ordinary `gap` (which has a
+   * `next`): the stage shows a free-work state rather than latching the
+   * last finished cue forever, which read as a freeze on the bag (M2).
+   */
+  freeWork?: boolean
 }
 
 /** How a cue finished, kept separately because the status becomes `gap`. */
@@ -243,8 +250,13 @@ export class CueEngine {
     }
 
     // Nothing in flight: the just-finished cue holds `gap` until the next
-    // one previews.
+    // one previews. With NO next cue at all, the round is in free work —
+    // holding the finished cue there latched a stale combination on screen
+    // for the rest of the round (the "stagnant 1" freeze).
     const finished = this.lastFinishedRuntime()
+    if (!next && finished) {
+      return { status: 'gap', remainingMs: 0, freeWork: true }
+    }
     const remainingMs = next ? Math.max(0, next.cue.previewAt - this.lastTickMs) : 0
     return {
       ...(finished ? { current: finished.cue } : {}),

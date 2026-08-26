@@ -133,7 +133,7 @@ export interface WorkoutRunner {
   /** End the rest interval — all three §23 rest views go with it (D6). */
   skipRest(): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
-  readCues(): { current?: CueView; next?: CueView }
+  readCues(): { current?: CueView; next?: CueView; freeWork?: boolean }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
   readResults(): WorkoutRunnerResults
 }
@@ -242,6 +242,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const sessionRef = useRef<WorkoutSessionClock | null>(null)
   const currentRef = useRef<CueRenderState | null>(null)
   const nextRef = useRef<CueRenderState | null>(null)
+  /** The round ran out of scheduled cues — free work until the bell (M2). */
+  const freeWorkRef = useRef(false)
 
   const countsRef = useRef({ total: 0, left: 0, right: 0, inCue: 0, inCueExpected: 0 })
   /**
@@ -436,6 +438,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     }
 
     const isActive = snap.status === 'active' || snap.status === 'accepting'
+    freeWorkRef.current = snap.freeWork === true
     currentRef.current = renderStateFor(snap.current, states(snap.current, isActive))
     // Hide "Next" while a repeated combo runs: the engine's next is just the
     // next rep of the same block, so showing it duplicates what is already on
@@ -987,6 +990,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       readCues: () => ({
         ...(currentRef.current ? { current: currentRef.current } : {}),
         ...(nextRef.current ? { next: nextRef.current } : {}),
+        ...(freeWorkRef.current ? { freeWork: true } : {}),
       }),
       readResults: () => ({
         cueResults: matcherRef.current?.results() ?? [],

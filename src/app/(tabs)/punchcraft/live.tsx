@@ -294,6 +294,7 @@ export default function LiveScreen(): React.JSX.Element {
             <CueStage
               {...(cues.current ? { current: cues.current } : {})}
               {...(cues.next ? { next: cues.next } : {})}
+              {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
             />
           )}
 
