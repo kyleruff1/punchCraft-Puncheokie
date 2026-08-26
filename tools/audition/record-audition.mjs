@@ -24,7 +24,9 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const DEVICE_NAME = process.env.AUDITION_MIC ?? 'Analogue 1 + 2 (16- Focusrite USB Audio)'
-const MAX_RUN_MS = 25 * 60 * 1000
+// Measured pace is ~4-5s per clip over the dev-client tunnel: a full
+// 360-clip pass runs ~25-30 minutes. The cap is a hang guard, not a budget.
+const MAX_RUN_MS = 45 * 60 * 1000
 
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
 

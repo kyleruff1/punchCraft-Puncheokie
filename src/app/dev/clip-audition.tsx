@@ -97,34 +97,40 @@ export default function ClipAuditionScreen(): React.JSX.Element {
     return all.filter((item) => wanted.has(item.key))
   }, [params.keys])
 
-  /** One player at a time — the AudioTrack budget note in persona-audition. */
-  const playModule = useCallback(async (module: number, fallbackMs: number): Promise<void> => {
-    const player = createAudioPlayer(module)
-    try {
-      for (let i = 0; i < 60 && !player.isLoaded; i += 1) await sleep(25)
-      const durationMs = player.isLoaded && player.duration > 0 ? player.duration * 1000 : fallbackMs
-      player.play()
-      await sleep(durationMs + 120)
-    } finally {
-      try {
-        player.remove()
-      } catch {
-        // Already gone.
-      }
-    }
-  }, [])
-
   const run = useCallback(async (): Promise<void> => {
     if (runningRef.current) return
     runningRef.current = true
     setFinished(false)
     await setAudioModeAsync({ playsInSilentMode: true, interruptionMode: 'doNotMix' })
     await activateKeepAwakeAsync(AUDITION_KEEP_AWAKE_TAG)
+
+    // TWO persistent players for the whole pass, clips swapped in via
+    // `replace()`. The first version created (and removed) a player per
+    // sound; native AudioTrack teardown is deferred, so ~90 items in the
+    // constructor was rejected and the run died mid-library.
+    const chirpPlayer = createAudioPlayer(CHIRP)
+    const clipPlayer = createAudioPlayer(null)
+
+    const playChirp = async (): Promise<void> => {
+      chirpPlayer.seekTo(0)
+      chirpPlayer.play()
+      await sleep(CHIRP_MS + 120)
+    }
+    const playClip = async (module: number, fallbackMs: number): Promise<void> => {
+      clipPlayer.replace(module)
+      for (let i = 0; i < 80 && !clipPlayer.isLoaded; i += 1) await sleep(25)
+      const durationMs =
+        clipPlayer.isLoaded && clipPlayer.duration > 0 ? clipPlayer.duration * 1000 : fallbackMs
+      clipPlayer.seekTo(0)
+      clipPlayer.play()
+      await sleep(durationMs + 120)
+    }
+
     try {
       // Double chirp: the recorder's t0 anchor.
-      await playModule(CHIRP, CHIRP_MS)
+      await playChirp()
       await sleep(250)
-      await playModule(CHIRP, CHIRP_MS)
+      await playChirp()
       log({ event: 'start', count: playlist.length })
       await sleep(800)
 
@@ -132,10 +138,16 @@ export default function ClipAuditionScreen(): React.JSX.Element {
         const item = playlist[index]
         if (!item) continue
         setProgress({ index: index + 1, total: playlist.length, key: item.key })
-        await playModule(CHIRP, CHIRP_MS)
-        await sleep(AFTER_CHIRP_MS)
-        log({ event: 'play', key: item.key, index })
-        await playModule(item.module, item.durationMs ?? 1500)
+        // One bad clip logs and moves on — a 360-clip pass must not die on
+        // item 94.
+        try {
+          await playChirp()
+          await sleep(AFTER_CHIRP_MS)
+          log({ event: 'play', key: item.key, index })
+          await playClip(item.module, item.durationMs ?? 1500)
+        } catch (err) {
+          log({ event: 'error', key: item.key, index, message: String(err) })
+        }
         await sleep(AFTER_CLIP_MS)
       }
 
@@ -144,9 +156,16 @@ export default function ClipAuditionScreen(): React.JSX.Element {
       setFinished(true)
     } finally {
       runningRef.current = false
+      for (const player of [chirpPlayer, clipPlayer]) {
+        try {
+          player.remove()
+        } catch {
+          // Already gone.
+        }
+      }
       deactivateKeepAwake(AUDITION_KEEP_AWAKE_TAG)
     }
-  }, [playModule, playlist])
+  }, [playlist])
 
   useEffect(() => {
     if (params.auto === '1') void run()
