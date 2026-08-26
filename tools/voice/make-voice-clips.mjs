@@ -41,7 +41,7 @@
  */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -175,6 +175,21 @@ function minWordMs(words, form) {
   return Math.round(180 * words * rate)
 }
 
+/**
+ * Per-clip render overrides, shared with the phrase generator's file. Word
+ * keys are the variant (`numbers/standalone/4`) or every variant of an id
+ * (`word:4`); variant wins. Fields: `text` (respelled spoken text — becomes
+ * what is rendered AND what the ASR gate expects), `cfgWeight`,
+ * `exaggeration` (fidelity levers for a word Chatterbox keeps garbling),
+ * `attempts`, `minMs`/`maxMs`.
+ */
+function loadOverrides() {
+  const path = join('tools', 'voice', 'overrides.json')
+  if (!existsSync(path)) return {}
+  return JSON.parse(readFileSync(path, 'utf8'))
+}
+const OVERRIDES = loadOverrides()
+
 // One plan per (word, form): a single-strike command that lands. `land` rather
 // than the persona's `shout` finish — a lone call is firm and clear, not a
 // shouted combination ending.
@@ -186,7 +201,9 @@ for (const vocabulary of ['numbers', 'names']) {
     const words = { ...VOCABULARY_WORDS[vocabulary], ...SHARED_WORDS }
     for (const [id, text] of Object.entries(words)) {
       if (onlyIds && !onlyIds.has(id)) continue
-      const plan = compileAdlib(`${text}!`, {
+      const override = OVERRIDES[`${vocabulary}/${form}/${id}`] ?? OVERRIDES[`word:${id}`] ?? {}
+      const spoken = override.text ?? text
+      const plan = compileAdlib(`${spoken}!`, {
         performance: 'work',
         expression: PRODUCTION_EXPRESSION,
         finish: 'land',
@@ -197,8 +214,9 @@ for (const vocabulary of ['numbers', 'names']) {
         vocabulary,
         form,
         plan,
+        override,
         // "Cut off the ring" needs a longer budget than "Five" — see maxWordMs.
-        words: text.trim().split(/\s+/).length,
+        words: spoken.trim().split(/\s+/).length,
         wav: join(cwd, dir, `${id}.wav`),
       })
     }
@@ -223,10 +241,15 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION.work ?? {}),
-            minDurationMs: minWordMs(j.words, j.form),
-            maxDurationMs: maxWordMs(j.words, j.form),
+            minDurationMs: j.override.minMs ?? minWordMs(j.words, j.form),
+            maxDurationMs: j.override.maxMs ?? maxWordMs(j.words, j.form),
             // The ASR gate: a take must transcribe as the scripted word.
             expectText: j.plan.renderedText,
+            ...(j.override.cfgWeight !== undefined ? { cfgWeight: j.override.cfgWeight } : {}),
+            ...(j.override.exaggeration !== undefined
+              ? { exaggeration: j.override.exaggeration }
+              : {}),
+            ...(j.override.attempts !== undefined ? { attempts: j.override.attempts } : {}),
           })),
         }),
         encoding: 'utf8',
