@@ -54,13 +54,15 @@ export function jokeLandingMs(jokeDurationMs: number): number {
 export const INTRO_TAIL_PAD_MS = 900
 
 /**
- * Slack added to the countdown CAP beyond the planned speech. Monitored
- * run 4 measured ~10s of accumulated JS-stall lateness on the dev client;
- * the cap absorbs it so the bell never cuts the coach off mid-joke. The
- * normal path never serves this slack: the intro's completion skips the
- * remaining countdown, so the bell follows the actual last word.
+ * Slack added to the countdown CAP beyond the planned speech. The walkout
+ * plays NATIVELY now (run 7 measured it landing exactly on plan), so the
+ * only thing this covers is the completion pump being starved — in which
+ * case the bell rings at the cap. Keep it tight: a starved pump costs at
+ * most this much quiet after "Let's get started!", never 15s of dead air
+ * (run 7's lesson — the old 15s slack was sized for JS playback stalls
+ * that native playback made impossible).
  */
-export const INTRO_COUNTDOWN_SLACK_MS = 15_000
+export const INTRO_COUNTDOWN_SLACK_MS = 1_500
 
 export interface PlannedIntroSegment {
   id: string
