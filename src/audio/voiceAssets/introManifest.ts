@@ -67,6 +67,7 @@ export const INTRO_SEGMENTS: Readonly<Record<string, IntroSegment>> = {
   'warn-round-10': { id: 'warn-round-10', module: require('../../../assets/voice/numbers/standalone/warn-round-10.wav'), durationMs: 4933 },
   'warn-round-11': { id: 'warn-round-11', module: require('../../../assets/voice/numbers/standalone/warn-round-11.wav'), durationMs: 4817 },
   'warn-round-12': { id: 'warn-round-12', module: require('../../../assets/voice/numbers/standalone/warn-round-12.wav'), durationMs: 5058 },
+  'power-strikes': { id: 'power-strikes', module: require('../../../assets/voice/numbers/standalone/power-strikes.wav'), durationMs: 2907 },
 }
 
 /* eslint-enable @typescript-eslint/no-require-imports */

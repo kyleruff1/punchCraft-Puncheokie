@@ -31,6 +31,7 @@ const COACH_LINES: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
   'touch-and-go',
   'breathe',
   'hands-up',
+  'power-strikes',
 ])
 
 export function assetPriority(id: VoiceAssetId): AudioPriority {

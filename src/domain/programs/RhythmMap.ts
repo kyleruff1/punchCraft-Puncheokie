@@ -83,7 +83,13 @@ export interface PhasePayload {
 }
 
 export interface EncouragementPayload {
-  asset: 'double-up' | 'put-it-on-em' | 'touch-and-go' | 'breathe' | 'hands-up'
+  asset:
+    | 'double-up'
+    | 'put-it-on-em'
+    | 'touch-and-go'
+    | 'breathe'
+    | 'hands-up'
+    | 'power-strikes'
 }
 
 /**
@@ -103,6 +109,17 @@ export const ENCOURAGEMENT_ROTATION: readonly EncouragementPayload['asset'][] = 
 export const ENCOURAGEMENT_GAP_MS = 15_000
 /** Density cap per round — a coach interjects, never narrates. */
 export const MAX_ENCOURAGEMENTS_PER_ROUND = 6
+
+/**
+ * Power mode (Kyle's rule): a run of 1-2 strike segments spaced this wide
+ * has dropped the pace on purpose — those reps are POWER strikes, and the
+ * coach says so ("Okay, power strikes! Slow down a bit — and hit it
+ * HARD!"). Without the announcement a slow window just feels empty.
+ */
+export const POWER_MAX_TOKENS = 2
+export const POWER_MIN_INTERVAL_MS = 5_000
+export const POWER_MIN_REPS = 3
+export const MAX_POWER_ANNOUNCES_PER_ROUND = 2
 
 export interface RhythmEvent {
   /** Unique within the round — precise cancellation needs identity. */
@@ -229,13 +246,58 @@ export function compileRoundRhythmMap(
   }
 
   if (opts.encouragement) {
+    // Power mode (Kyle's rule): find runs of the same 1-2 strike segment
+    // spaced wide enough that the pace has clearly dropped, and call out
+    // WHY — inside the window, right after the slow part starts, in the
+    // first wide gap between strikes.
+    let powerAdded = 0
+    let runStart = 0
+    while (runStart < round.cues.length && powerAdded < MAX_POWER_ANNOUNCES_PER_ROUND) {
+      const first = round.cues[runStart]
+      if (!first || first.tokens.length > POWER_MAX_TOKENS) {
+        runStart += 1
+        continue
+      }
+      const combination = formatCombo(first.tokens)
+      let runEnd = runStart + 1
+      while (
+        runEnd < round.cues.length &&
+        formatCombo((round.cues[runEnd] as (typeof round.cues)[number]).tokens) === combination
+      ) {
+        runEnd += 1
+      }
+      const run = round.cues.slice(runStart, runEnd)
+      if (run.length >= POWER_MIN_REPS) {
+        const intervals = run
+          .slice(1)
+          .map((cue, i) => cue.scheduledStartMs - (run[i] as (typeof run)[number]).scheduledStartMs)
+        const slowest = Math.min(...intervals)
+        if (slowest >= POWER_MIN_INTERVAL_MS) {
+          const firstGap = intervals[0] as number
+          events.push({
+            id: `power#${powerAdded}`,
+            cueId: `power#${powerAdded}`,
+            kind: 'encouragement',
+            // 40% into the first inter-strike gap: the athlete has felt
+            // one slow rep, and the next call's announce lead is clear.
+            atMs: (first as (typeof round.cues)[number]).scheduledStartMs + Math.round(firstGap * 0.4),
+            payload: { asset: 'power-strikes' },
+            cancelsWith: 'round-end',
+          })
+          powerAdded += 1
+        }
+      }
+      runStart = runEnd
+    }
     // Fill audited silence: any gap between voiced events longer than the
     // grid earns one line from the rotation, deterministic per round and
     // slot, density-capped. The compiler placed every call, so a scheduled
     // encouragement can never collide with one — it lands in guaranteed
     // quiet (the runtime queue still yields it first if anything moves).
     const voicedTimes = events
-      .filter((e) => e.kind === 'call' || e.kind === 'refire')
+      // Power call-outs (added above) count as voiced here, so a rotation
+      // line is never scheduled right on top of one.
+      .filter((e) => e.kind === 'call' || e.kind === 'refire' || e.kind === 'encouragement')
       .map((e) => e.atMs)
       .sort((a, b) => a - b)
     const bounds = [0, ...voicedTimes, round.workDurationMs]

@@ -99,6 +99,8 @@ export type VoiceAssetId =
   | 'touch-and-go'
   | 'breathe'
   | 'hands-up'
+  // Power mode: names WHY a slow 1-2 strike window slowed down.
+  | 'power-strikes'
 
 /**
  * The callout vocabulary (D15) — which rendering of a combination is played.
@@ -163,6 +165,7 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'touch-and-go',
   'breathe',
   'hands-up',
+  'power-strikes',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

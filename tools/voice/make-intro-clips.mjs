@@ -118,6 +118,14 @@ for (const [n, word] of Object.entries(NUMBER_WORDS)) {
     text: `It's time to get ready for round ${word}, in three... two... one!`,
   })
 }
+// Power mode (in-round VoiceAssetId, copied to the four manifest dirs by
+// hand after rendering): announces WHY the pace just dropped — a slow
+// 1-2 strike window is for power, not rest.
+// Kept short: it must land inside one inter-strike gap (>= 5s windows).
+SEGMENTS.push({
+  id: 'power-strikes',
+  text: 'Okay, some power strikes — slow down a bit!',
+})
 
 function findFfmpeg() {
   const candidates = [

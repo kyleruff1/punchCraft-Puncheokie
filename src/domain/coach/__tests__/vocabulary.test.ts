@@ -80,8 +80,9 @@ describe('the asset set covers the whole token vocabulary', () => {
     expect(new Set(VOICE_ASSET_IDS).size).toBe(VOICE_ASSET_IDS.length)
     // 24 core (punches, defense, footwork, session, tones) + 4 coast
     // announcements (D23) + 5 coach lines (M4 encouragement) + the gong
-    // (round-end sound; the ding opens rounds, and no beeps exist).
-    expect(VOICE_ASSET_IDS).toHaveLength(34)
+    // (round-end sound; the ding opens rounds, and no beeps exist) + the
+    // power-mode call-out for slow 1-2 strike windows.
+    expect(VOICE_ASSET_IDS).toHaveLength(35)
   })
 })
 
