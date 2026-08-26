@@ -44,6 +44,7 @@ import { useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
+import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
   PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
@@ -128,7 +129,18 @@ export default function LiveScreen(): React.JSX.Element {
   // memoized on the recipe so it stays stable for the length of a run and only
   // rebuilds when the recipe changes. Either way the workout carries its own
   // stance, so a switch-by-round sample opens in the stance it prescribes.
-  const generated = useMemo(() => generateWorkout(recipe), [recipe])
+  // The clip gate (M1/M3): the generator's build-up ladders only emit
+  // notations the phrase library can actually say. A notation with no
+  // rendered clip drops that ladder from selection rather than sending the
+  // coach to the per-word fallback for a whole round.
+  const generated = useMemo(
+    () =>
+      generateWorkout(recipe, {
+        voiceReady: (notation) =>
+          findPhraseAsset(notation, recipe.cadenceProfile, policy.vocabulary === 'names' ? 'techniques' : 'numbers') !== undefined,
+      }),
+    [recipe, policy.vocabulary],
+  )
   const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
   const runner = useWorkoutRunner({
     workout,

@@ -139,9 +139,11 @@ describe('generateWorkout — distribution', () => {
   it('is jab-heavy under a balanced bias', () => {
     const workout = generateWorkout(recipe({ durationMinutes: 40 }))
     const dist = workout.expectedTechniqueDistribution
-    const jab = dist['1'] ?? 0
+    // A body jab is a jab — the corpus's body-variation phase (D26) sends
+    // the same lead hand downstairs, so §15's jab dominance sums both.
+    const jab = (dist['1'] ?? 0) + (dist['1b'] ?? 0)
     for (const [key, share] of Object.entries(dist)) {
-      if (key === '1') continue
+      if (key === '1' || key === '1b') continue
       expect(jab).toBeGreaterThanOrEqual(share)
     }
   })
@@ -166,7 +168,8 @@ describe('generateWorkout — warnings', () => {
       recipe({ durationMinutes: 60, totalPunchGoal: GOAL_TIERS.extreme[60], cadenceProfile: 'sprint' }),
     )
     expect(validateGeneratedWorkout(workout)).toEqual([])
-    expect(workout.warnings.some((w) => w.toLowerCase().includes('volume'))).toBe(true)
+    // D26: the clock is filled first; an unreachable goal surfaces as drift.
+    expect(workout.warnings.some((w) => w.includes('differ from the goal'))).toBe(true)
     const hasVolumeBlock = workout.schedule.some((r) =>
       r.blocks.some((b) => b.kind === 'volume-burst' || b.kind === 'open-pressure'),
     )
