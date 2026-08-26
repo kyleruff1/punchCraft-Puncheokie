@@ -76,6 +76,14 @@ export interface WorkoutRecipe {
   defenseFrequency: Frequency
   footworkFrequency: Frequency
   cadenceProfile: CadenceProfile
+  /**
+   * Content tier (Rhythm Map M1). Selects VOCABULARY — which combination
+   * families, defense density and build-up ladders the athlete trains —
+   * not merely combo length; a beginner gets beginner patterns, not just
+   * short ones. Optional: legacy recipes derive a default from
+   * `comboComplexity` via `tierFor`.
+   */
+  tier?: 'beginner' | 'intermediate' | 'advanced'
   /** Added by D14 — the seven controls §26 omitted. */
   comboComplexity: 1 | 2 | 3 | 4 | 5
   cueRhythmProfile: 'even' | 'syncopated' | 'burst'
@@ -116,6 +124,19 @@ export interface WorkoutRecipe {
  * the Recipe screen replaces it with a fresh seed per generated workout, and
  * the seed is what makes a workout reproducible (R18).
  */
+/**
+ * The tier a recipe trains at — the explicit field when set, otherwise the
+ * legacy derivation from `comboComplexity` (1-2 → beginner, 3 →
+ * intermediate, 4-5 → advanced). The shim keeps every stored recipe valid
+ * while the tier picker rolls out.
+ */
+export function tierFor(recipe: WorkoutRecipe): 'beginner' | 'intermediate' | 'advanced' {
+  if (recipe.tier) return recipe.tier
+  if (recipe.comboComplexity <= 2) return 'beginner'
+  if (recipe.comboComplexity === 3) return 'intermediate'
+  return 'advanced'
+}
+
 export function defaultRecipe(): WorkoutRecipe {
   return {
     durationMinutes: 20,
