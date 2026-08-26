@@ -62,7 +62,8 @@ import {
 } from './VoiceOutputPort'
 import { shouldSpeak, voiceAllowed, type VoiceCoachPolicy } from './VoiceCoachPolicy'
 import type { CueEvent, SessionPhaseEvent } from '../programs/CueState'
-import type { CueInstance } from '../programs/CueTimeline'
+import type { CueInstance, RoundTimeline } from '../programs/CueTimeline'
+import type { CallPayload, RhythmEvent, RoundRhythmMap } from '../programs/RhythmMap'
 import type { Stance } from '../workout/WorkoutTokens'
 
 /**
@@ -208,6 +209,17 @@ export class CueAnnouncer {
    */
   private readonly burstsScheduled = new Set<string>()
 
+  // ---- map execution (M2). When a compiled RoundRhythmMap is installed,
+  // the announcer stops deriving call times from events and becomes the
+  // map's executor: the conductor tick advances a cursor and every due
+  // event is dispatched against runtime permission. Event handling keeps
+  // owning LIFECYCLE (inCombo, prepared phrases, ended cues); it no longer
+  // owns TIME.
+  private roundMap: RoundRhythmMap | null = null
+  private mapCues = new Map<string, CueInstance>()
+  private mapCursor = 0
+  private readonly endedCues = new Set<string>()
+
   constructor(opts: CueAnnouncerOptions) {
     this.policy = opts.policy
     this.output = opts.output
@@ -234,6 +246,99 @@ export class CueAnnouncer {
     return [...this.prepared.keys()]
   }
 
+  /**
+   * Install a round's compiled rhythm map (or clear it with nulls).
+   *
+   * From here until the next install, the map owns every call time; the
+   * event stream only updates lifecycle. Passing nulls returns the
+   * announcer to its event-driven behaviour — the compatibility mode the
+   * parity harness exercises.
+   */
+  setRound(round: RoundTimeline | null, map: RoundRhythmMap | null): void {
+    this.roundMap = map
+    this.mapCursor = 0
+    this.endedCues.clear()
+    this.mapCues = new Map((round?.cues ?? []).map((cue) => [cue.id, cue]))
+  }
+
+  /**
+   * The conductor's beat: dispatch every map event whose time has come.
+   *
+   * Called from the runner's tick with the same work-elapsed sample that
+   * advances the cue engine — audio and screen read one clock, so they
+   * cannot drift (the wall-timer failure the monitor measured at ~2.3x).
+   */
+  onTick(workElapsedMs: number, nowMs: number): void {
+    const map = this.roundMap
+    if (!map) return
+    const clockOffsetMs = nowMs - workElapsedMs
+    while (this.mapCursor < map.events.length) {
+      const event = map.events[this.mapCursor] as RhythmEvent
+      if (event.atMs > workElapsedMs) break
+      this.mapCursor += 1
+      this.dispatchMapEvent(event, clockOffsetMs)
+    }
+  }
+
+  private dispatchMapEvent(event: RhythmEvent, clockOffsetMs: number): void {
+    if (event.cancelsWith === 'cue-end' && this.endedCues.has(event.cueId)) return
+    if (!voiceAllowed(this.policy, this.playbackActive)) return
+
+    switch (event.kind) {
+      case 'tone': {
+        if (!this.speakable('punch-command')) return
+        this.output.playAsset('tone-ready')
+        return
+      }
+      case 'call':
+      case 'refire': {
+        const payload = event.payload as CallPayload | null
+        if (!payload) return
+        // Styles that never speak the combination up front keep their tone-
+        // only behaviour; in-time delivery speaks per token via onTokenDue.
+        if (this.policy.style === 'follow-the-call' || this.policy.style === 'minimal') return
+        if (this.delivery === 'in-time' && event.kind === 'call') return
+        if (!this.speakable('punch-command')) return
+
+        const cue = this.mapCues.get(event.cueId)
+        if (payload.mode === 'phrase' && this.output.playCombination) {
+          const voice: CombinationVoice = {
+            vocabulary: this.vocabulary,
+            performance: cue ? this.performanceFor(cue) : 'work',
+          }
+          const played = this.output.playCombination(
+            payload.combination,
+            payload.cadence,
+            undefined,
+            voice,
+          )
+          if (played) return
+          // The library lost the rendering at runtime — fall through to the
+          // per-word path rather than leaving the combination uncalled.
+        }
+        if (cue) this.dispatchPerWordCall(cue, clockOffsetMs)
+        return
+      }
+      default:
+        // phase-announce / encouragement / movement gain voices in M4; a
+        // declared-but-unvoiced event is schedule, not sound.
+        return
+    }
+  }
+
+  /** The per-word delivery, placed by `planPhrase` from measured clip lengths. */
+  private dispatchPerWordCall(cue: CueInstance, clockOffsetMs: number): void {
+    const assets = this.prepared.get(cue.id) ?? comboPhraseAssets(cue.tokens)
+    if (assets.length === 0) return
+    const plan = this.planPhrase(cue, assets)
+    const startAt = plan.startAt + clockOffsetMs
+    if (this.output.playPhrase) {
+      this.output.playPhrase(assets, startAt, plan.tightness)
+    } else {
+      for (const asset of assets) this.output.playAsset(asset, startAt)
+    }
+  }
+
   // -------------------------------------------------------------------------
 
   onCueEvent(e: CueEvent): void {
@@ -254,7 +359,10 @@ export class CueAnnouncer {
 
     switch (e.type) {
       case 'cue-announcing':
-        this.announce(e.cue, e.nowMs - e.workElapsedMs)
+        // Map execution (M2): the compiled map owns the call time; the
+        // event only marks lifecycle. Event-driven timing remains for
+        // callers with no map installed.
+        if (this.roundMap === null) this.announce(e.cue, e.nowMs - e.workElapsedMs)
         break
 
       case 'cue-active':
@@ -263,11 +371,11 @@ export class CueAnnouncer {
         // announced once at cue-announcing and then the athlete throws for
         // its whole window — 30-80 seconds, in the workouts the generator
         // has been producing. That was landing as long silent stretches
-        // where the athlete lost the rhythm they were told to hold. Schedule
-        // periodic re-calls of the motif across the window so the coach
-        // re-anchors it every few seconds without the athlete having to
-        // remember.
-        this.scheduleBurstRefires(e.cue, e.nowMs - e.workElapsedMs)
+        // where the athlete lost the rhythm they were told to hold. The
+        // periodic re-calls live in the compiled map when one is
+        // installed; the event-driven pre-scheduling below is the no-map
+        // fallback.
+        if (this.roundMap === null) this.scheduleBurstRefires(e.cue, e.nowMs - e.workElapsedMs)
         break
 
       case 'token-due':
@@ -280,6 +388,8 @@ export class CueAnnouncer {
       case 'cue-cancelled':
         this.inCombo = false
         this.prepared.delete(e.cue.id)
+        // Map events for this cue that have not dispatched yet die with it.
+        this.endedCues.add(e.cue.id)
         // A burst that ends well before its window — target reached early,
         // or skipped — leaves its remaining re-calls scheduled, and they
         // would fire over whatever comes next. Drop them. Only on a

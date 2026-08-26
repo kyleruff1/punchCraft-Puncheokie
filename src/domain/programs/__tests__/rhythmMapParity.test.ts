@@ -36,7 +36,11 @@ interface Recorded {
   detail: string
 }
 
-function driveRound(workout: Parameters<typeof expandTimeline>[0], roundIndex: number) {
+function driveRound(
+  workout: Parameters<typeof expandTimeline>[0],
+  roundIndex: number,
+  mode: 'events' | 'map' = 'events',
+) {
   const timeline = expandTimeline(workout, 'orthodox', 100)
   const round = timeline[roundIndex]!
   const clock = createFakeClock()
@@ -75,14 +79,17 @@ function driveRound(workout: Parameters<typeof expandTimeline>[0], roundIndex: n
   engine.subscribe((e) => announcer.onCueEvent(e))
   engine.onSessionPhase({ type: 'work-entered', roundIndex, nowMs: clock.now() })
 
+  const map = compileRoundRhythmMap(round, { cadence: 'steady', durationFor })
+  if (mode === 'map') announcer.setRound(round, map)
+
   let at = 0
   while (at < round.workDurationMs) {
     at += 50
     clock.advance(50)
     engine.tick(at)
+    if (mode === 'map') announcer.onTick(at, clock.now())
   }
 
-  const map = compileRoundRhythmMap(round, { cadence: 'steady', durationFor })
   return { round, recorded, map }
 }
 
@@ -143,7 +150,44 @@ function describeParity(name: string, workout: Parameters<typeof expandTimeline>
   })
 }
 
+function describeExecutor(name: string, workout: Parameters<typeof expandTimeline>[0]) {
+  describe(`${name} (executor mode)`, () => {
+    it('dispatches every live map event within a tick of its compiled time', () => {
+      const { recorded, map } = driveRound(workout, 0, 'map')
+
+      const mapPhrases = map.events.filter(
+        (e) =>
+          (e.kind === 'call' || e.kind === 'refire') &&
+          e.payload !== null &&
+          'mode' in e.payload &&
+          e.payload.mode === 'phrase',
+      )
+      const livePhrases = recorded.filter((r) => r.kind === 'phrase')
+      // Every compiled phrase call fires (no cue ends early in an unmatched
+      // drive), each within one 50ms tick of its map time.
+      expect(livePhrases.length).toBe(mapPhrases.length)
+      const sortedLive = [...livePhrases].sort((a, b) => a.at - b.at)
+      const sortedMap = [...mapPhrases].sort((a, b) => a.atMs - b.atMs)
+      sortedMap.forEach((event, i) => {
+        const live = sortedLive[i]!
+        expect(live.detail).toBe((event.payload as { combination: string }).combination)
+        expect(live.at).toBeGreaterThanOrEqual(event.atMs)
+        expect(live.at).toBeLessThanOrEqual(event.atMs + 60)
+      })
+
+      const mapTones = map.events.filter((e) => e.kind === 'tone')
+      const liveTones = recorded.filter((r) => r.kind === 'tone')
+      expect(liveTones.length).toBe(mapTones.length)
+    })
+  })
+}
+
 describeParity('three-round fundamentals', threeRoundFundamentals)
+describeExecutor('three-round fundamentals', threeRoundFundamentals)
+describeExecutor(
+  'generated (seed rhythm-map-parity)',
+  generateWorkout({ ...defaultRecipe(), seed: 'rhythm-map-parity' }),
+)
 describeParity('establish the jab', getSampleWorkout('establish-the-jab-20').workout)
 describeParity(
   'generated (seed rhythm-map-parity)',

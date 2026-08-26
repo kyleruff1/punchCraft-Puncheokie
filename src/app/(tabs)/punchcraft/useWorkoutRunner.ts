@@ -32,6 +32,7 @@ import { CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
+import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
@@ -215,6 +216,30 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     () => expandTimeline(workout, stance, bpm),
     [workout, stance, bpm],
   )
+
+  /**
+   * The compiled rhythm maps, one per round (M2): every call, refire and
+   * tone with its time, from the same timeline the engine runs. Phrase
+   * lengths come from the manifest via the output port; recompiles when
+   * the timeline or vocabulary changes.
+   */
+  const rhythmMaps = useMemo(() => {
+    const vocabulary = voice?.policy.vocabulary === 'names' ? 'techniques' : 'numbers'
+    return timeline.map((round) =>
+      compileRoundRhythmMap(round, {
+        cadence: workout.recipe.cadenceProfile,
+        durationFor: (combination) =>
+          voice?.output.combinationDurationMs?.(combination, workout.recipe.cadenceProfile, {
+            vocabulary,
+            performance: 'work',
+          }),
+      }),
+    )
+  }, [timeline, workout.recipe.cadenceProfile, voice])
+  const timelineRef = useRef(timeline)
+  timelineRef.current = timeline
+  const rhythmMapsRef = useRef(rhythmMaps)
+  rhythmMapsRef.current = rhythmMaps
 
   /** How many cues share each block, so the stage can render "×N". */
   const repeatTotals = useMemo(() => {
@@ -723,6 +748,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           freezeRef.current.beginRound(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
 
+          // Install the round's compiled rhythm map (M2): from here the map
+          // owns every call time and the conductor tick dispatches them.
+          const round = timelineRef.current[transition.roundIndex]
+          const map = rhythmMapsRef.current[transition.roundIndex]
+          announcerRef.current?.setRound(round ?? null, map ?? null)
+
           // Bank the previous round's active time so the pacing clock spans
           // the whole workout rather than restarting each round.
           const previous = workout.schedule[transition.roundIndex - 1]
@@ -903,9 +934,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // needs the same sample the store gets.
       if (snapshot.phase === 'work') announcer?.onRoundClock(snapshot.phaseRemainingMs)
       engine.tick(snapshot.workElapsedMs)
-      // Scheduled voice fires off this same sample — presentation and audio
-      // read one rhythm map, so they cannot drift apart (wall timers do,
-      // measured ~2.3x slow under workout load).
+      // The conductor's beat (M2): dispatch due rhythm-map events, then
+      // fire any due scheduled audio — presentation and audio read one
+      // clock sample, so they cannot drift apart (wall timers do, measured
+      // ~2.3x slow under workout load). Engine first, so a cue that ended
+      // this tick cancels its remaining events before they dispatch.
+      if (snapshot.phase === 'work') {
+        announcer?.onTick(snapshot.workElapsedMs, clock.now())
+      }
       voice?.output.advance?.()
       syncFromEngine()
       pushStore(false)

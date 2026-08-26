@@ -463,18 +463,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     return ms
   }
 
+  private fireGroup(group: PendingGroup): void {
+    this.pending = this.pending.filter((g) => g !== group)
+    this.playSequence(
+      group.ids.map((each) => ({
+        id: each,
+        priority: assetPriority(each),
+        form: group.form,
+        tightness: group.tightness,
+      })),
+    )
+  }
+
   private queueGroup(group: PendingGroup, delay: number): void {
-    group.handle = this.schedule(() => {
-      this.pending = this.pending.filter((g) => g !== group)
-      this.playSequence(
-        group.ids.map((each) => ({
-          id: each,
-          priority: assetPriority(each),
-          form: group.form,
-          tightness: group.tightness,
-        })),
-      )
-    }, delay)
+    group.handle = this.schedule(() => this.fireGroup(group), delay)
     this.pending.push(group)
   }
 
@@ -502,13 +504,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * screen's clock rather than a wall timer's (see `scheduledPhrases`).
    */
   advance(): void {
-    if (this.scheduledPhrases.length === 0) return
     const now = this.clock()
-    const due = this.scheduledPhrases.filter((p) => p.at <= now)
-    if (due.length === 0) return
-    this.scheduledPhrases = this.scheduledPhrases.filter((p) => p.at > now)
-    due.sort((a, b) => a.at - b.at)
-    for (const entry of due) entry.run()
+    if (this.scheduledPhrases.length > 0) {
+      const due = this.scheduledPhrases.filter((p) => p.at <= now)
+      if (due.length > 0) {
+        this.scheduledPhrases = this.scheduledPhrases.filter((p) => p.at > now)
+        due.sort((a, b) => a.at - b.at)
+        for (const entry of due) entry.run()
+      }
+    }
+    // Pending groups (tones, per-word phrases) ride the tick too: the timer
+    // stays as a fallback for callers with no conductor, and whichever
+    // fires first removes the group so the other is a no-op.
+    const dueGroups = this.pending.filter((g) => g.atMs <= now)
+    for (const group of dueGroups) {
+      this.cancelScheduled(group.handle)
+      this.fireGroup(group)
+    }
   }
 
   /**
