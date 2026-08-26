@@ -173,16 +173,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   private phrasePlayer: AudioPlayer | null = null
   /**
-   * Every scheduled-but-unstarted combination call.
+   * Scheduled-but-unstarted combination calls, fired by `advance()` — the
+   * runner's tick — NOT by wall timers.
    *
-   * A SET, not a single handle — the announcer pre-schedules the periodic
-   * burst re-calls all at once (it owns no timers, D3), and the original
-   * single-handle version cancelled each pending call when the next was
-   * scheduled. Net effect on device: a 30-second volume burst got its
-   * opening call and then silence, which is precisely the mid-round quiet
-   * the refires were built to fill.
+   * Two hard lessons live here. First, a SET of pending calls, not a single
+   * handle: the announcer pre-schedules a burst's periodic re-calls all at
+   * once (it owns no timers, D3), and a single-handle version cancelled
+   * each pending call when the next was scheduled — a 30-second burst got
+   * its opener and then silence. Second, no `setTimeout`: a monitored live
+   * session measured RN timers stretching ~2.3x under workout load, so
+   * calls scheduled 6 s out fired 60-140 s late — the coach yelling a
+   * combination the screen had long moved past. The screen keeps time
+   * because the session tick samples the real clock; audio joins the same
+   * tick via `advance()` so the two surfaces read one rhythm map and
+   * cannot drift apart.
    */
-  private readonly phraseHandles = new Set<unknown>()
+  private scheduledPhrases: Array<{ at: number; run: () => void }> = []
 
   constructor(opts: VoiceOutputExpoOptions = {}) {
     this.manifest = opts.manifest ?? voiceAssetManifest
@@ -420,11 +426,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       start()
       return true
     }
-    const handle = this.schedule(() => {
-      this.phraseHandles.delete(handle)
-      start()
-    }, delay)
-    this.phraseHandles.add(handle)
+    this.scheduledPhrases.push({ at: atMs as number, run: start })
     return true
   }
 
@@ -490,8 +492,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   /** Drop every scheduled-but-unstarted combination call. See the port note. */
   cancelScheduledCombinations(): void {
-    for (const handle of this.phraseHandles) this.cancelScheduled(handle)
-    this.phraseHandles.clear()
+    this.scheduledPhrases = []
+  }
+
+  /**
+   * The conductor's beat: fire every scheduled combination whose time has
+   * come. Called from the workout runner's tick — the same sample that
+   * advances the cue engine and the screen — so scheduled audio keeps the
+   * screen's clock rather than a wall timer's (see `scheduledPhrases`).
+   */
+  advance(): void {
+    if (this.scheduledPhrases.length === 0) return
+    const now = this.clock()
+    const due = this.scheduledPhrases.filter((p) => p.at <= now)
+    if (due.length === 0) return
+    this.scheduledPhrases = this.scheduledPhrases.filter((p) => p.at > now)
+    due.sort((a, b) => a.at - b.at)
+    for (const entry of due) entry.run()
   }
 
   /**
@@ -556,10 +573,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     if (this.sequence.some((step) => step.priority > belowPriority)) this.clearSequence()
     // A scheduled combination has not started yet, so it is queue too —
     // including every pending burst re-call.
-    if (belowPriority <= AUDIO_PRIORITY.punchCommand) {
-      for (const handle of this.phraseHandles) this.cancelScheduled(handle)
-      this.phraseHandles.clear()
-    }
+    if (belowPriority <= AUDIO_PRIORITY.punchCommand) this.scheduledPhrases = []
     if (belowPriority <= AUDIO_PRIORITY.metric) {
       try {
         this.speaker.stop()
@@ -583,8 +597,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
     this.clearSequence()
-    for (const handle of this.phraseHandles) this.cancelScheduled(handle)
-    this.phraseHandles.clear()
+    this.scheduledPhrases = []
     try {
       this.phrasePlayer?.remove()
     } catch {

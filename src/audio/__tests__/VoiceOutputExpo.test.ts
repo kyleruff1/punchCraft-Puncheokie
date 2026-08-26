@@ -641,6 +641,7 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
     expect(h.output.playCombination('1-2', 'steady', t0 + 18_000)).toBe(true)
 
     h.advance(20_000)
+    h.output.advance()
     expect(h.plays).toHaveLength(3)
   })
 
@@ -652,6 +653,7 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
     h.output.cancel(AUDIO_PRIORITY.safety)
 
     h.advance(20_000)
+    h.output.advance()
     expect(h.plays).toHaveLength(0)
   })
 })
@@ -665,6 +667,7 @@ describe('cancelScheduledCombinations', () => {
     h.output.cancelScheduledCombinations()
 
     h.advance(20_000)
+    h.output.advance()
     expect(h.plays).toHaveLength(0)
   })
 })

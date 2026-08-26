@@ -900,6 +900,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // needs the same sample the store gets.
       if (snapshot.phase === 'work') announcer?.onRoundClock(snapshot.phaseRemainingMs)
       engine.tick(snapshot.workElapsedMs)
+      // Scheduled voice fires off this same sample — presentation and audio
+      // read one rhythm map, so they cannot drift apart (wall timers do,
+      // measured ~2.3x slow under workout load).
+      voice?.output.advance?.()
       syncFromEngine()
       pushStore(false)
     }, TICK_INTERVAL_MS)

@@ -231,6 +231,15 @@ export interface VoiceOutputPort {
    */
   cancelScheduledCombinations?(): void
   /**
+   * Fire every scheduled call whose time has arrived.
+   *
+   * The workout runner calls this each tick — the same real-clock sample
+   * that advances the cue engine and the screen — so scheduled audio and
+   * presentation read one rhythm map. Wall timers measured on device
+   * stretch ~2.3x under workout load; the tick does not.
+   */
+  advance?(): void
+  /**
    * How long a clip takes to say, if the implementation knows.
    *
    * Optional because only a real audio backend can measure it, and a domain
