@@ -61,6 +61,30 @@ describe('burst blocks keep the coach speaking (mid-round silence regression)', 
       engine.tick(at)
     }
 
+    // A duplicated cue-active must not stack a second refire train — the
+    // output keeps every scheduled call now, so the announcer has to be
+    // idempotent per cue. Replay each burst's activation and confirm the
+    // call count does not grow.
+    const before = phraseCalls.length
+    for (const burst of bursts) {
+      announcer.onCueEvent({
+        type: 'cue-active',
+        cue: burst,
+        status: 'active',
+        timestamps: {
+          previewScheduledMs: 0,
+          voiceScheduledMs: 0,
+          executionScheduledMs: 0,
+          windowCloseMs: 0,
+          trackerEventTimesMs: [],
+          suspensions: [],
+        },
+        workElapsedMs: burst.scheduledStartMs,
+        nowMs: clock.now(),
+      })
+    }
+    expect(phraseCalls.length).toBe(before)
+
     for (const burst of bursts) {
       // Calls strictly inside the window, past the opener: the refires.
       const inside = phraseCalls.filter(

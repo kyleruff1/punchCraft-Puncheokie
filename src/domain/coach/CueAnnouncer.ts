@@ -189,6 +189,14 @@ export class CueAnnouncer {
   private heldMetric: string | null = null
   private roundIndex = -1
   private readonly warnedRounds = new Set<number>()
+  /**
+   * Bursts whose re-calls are already scheduled. The refires are placed all
+   * at once at `cue-active`, and with the output port now keeping every
+   * scheduled call (the additive-handles fix), a duplicated `cue-active`
+   * would stack a second full train of calls on top of the first. Heard on
+   * the bag as the coach yelling a combination the screen stopped showing.
+   */
+  private readonly burstsScheduled = new Set<string>()
 
   constructor(opts: CueAnnouncerOptions) {
     this.policy = opts.policy
@@ -262,6 +270,18 @@ export class CueAnnouncer {
       case 'cue-cancelled':
         this.inCombo = false
         this.prepared.delete(e.cue.id)
+        // A burst that ends well before its window — target reached early,
+        // or skipped — leaves its remaining re-calls scheduled, and they
+        // would fire over whatever comes next. Drop them. Only on a
+        // clearly-early end: at the natural window close the next cue's own
+        // call may already be scheduled, and that one must survive.
+        if (
+          (e.type === 'cue-completed' || e.type === 'cue-cancelled') &&
+          e.cue.scoring === 'count' &&
+          e.workElapsedMs < e.cue.windowEndMs - 2_000
+        ) {
+          this.output.cancelScheduledCombinations?.()
+        }
         this.flushMetric()
         break
 
@@ -289,6 +309,10 @@ export class CueAnnouncer {
 
       case 'work-entered':
         this.roundIndex = e.roundIndex
+        // Cue ids are unique within a round, so the burst guard resets at
+        // the round boundary — never mid-round, where a re-emitted
+        // activation (however it arises) must stay a no-op.
+        this.burstsScheduled.clear()
         if (voiceAllowed(this.policy, this.playbackActive) && this.speakable('bell')) {
           this.output.playAsset('bell')
         }
@@ -524,6 +548,9 @@ export class CueAnnouncer {
    */
   private scheduleBurstRefires(cue: CueInstance, clockOffsetMs: number): void {
     if (cue.scoring !== 'count') return
+    // Once per cue, whatever the event stream does — see `burstsScheduled`.
+    if (this.burstsScheduled.has(cue.id)) return
+    this.burstsScheduled.add(cue.id)
     if (!this.speakable('punch-command')) return
     const play = this.output.playCombination
     if (!play) return

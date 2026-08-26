@@ -488,6 +488,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.playAsset(TONE_ASSETS[kind])
   }
 
+  /** Drop every scheduled-but-unstarted combination call. See the port note. */
+  cancelScheduledCombinations(): void {
+    for (const handle of this.phraseHandles) this.cancelScheduled(handle)
+    this.phraseHandles.clear()
+  }
+
   /**
    * Play clips back to back, each starting when the previous finishes.
    *

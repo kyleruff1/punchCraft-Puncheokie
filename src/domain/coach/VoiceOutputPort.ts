@@ -221,6 +221,16 @@ export interface VoiceOutputPort {
     voice?: CombinationVoice,
   ): number | undefined
   /**
+   * Drop every combination call that is scheduled but not yet sounding.
+   *
+   * The announcer pre-schedules a burst's periodic re-calls all at once
+   * (it owns no timers, D3). When the burst ends early — target reached,
+   * or skipped — the calls not yet started belong to a combination the
+   * athlete is no longer being asked for, and playing them over the next
+   * block is worse than silence.
+   */
+  cancelScheduledCombinations?(): void
+  /**
    * How long a clip takes to say, if the implementation knows.
    *
    * Optional because only a real audio backend can measure it, and a domain

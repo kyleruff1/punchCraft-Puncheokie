@@ -655,3 +655,16 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
     expect(h.plays).toHaveLength(0)
   })
 })
+
+describe('cancelScheduledCombinations', () => {
+  it('drops pending re-calls without touching anything sounding', () => {
+    const h = harness()
+    const t0 = h.now()
+    h.output.playCombination('1-2', 'steady', t0 + 6_000)
+    h.output.playCombination('1-2', 'steady', t0 + 12_000)
+    h.output.cancelScheduledCombinations()
+
+    h.advance(20_000)
+    expect(h.plays).toHaveLength(0)
+  })
+})
