@@ -19,6 +19,7 @@ export const SILENCE_TRACKS: Readonly<Record<number, number>> = {
   1200: require('../../../assets/voice/numbers/standalone/silence-1200.wav'),
   1400: require('../../../assets/voice/numbers/standalone/silence-1400.wav'),
   1600: require('../../../assets/voice/numbers/standalone/silence-1600.wav'),
+  1700: require('../../../assets/voice/numbers/standalone/silence-1700.wav'),
   1800: require('../../../assets/voice/numbers/standalone/silence-1800.wav'),
   2000: require('../../../assets/voice/numbers/standalone/silence-2000.wav'),
   2200: require('../../../assets/voice/numbers/standalone/silence-2200.wav'),

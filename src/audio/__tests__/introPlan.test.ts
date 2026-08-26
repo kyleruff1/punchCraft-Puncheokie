@@ -18,6 +18,7 @@ import {
   planIntro,
 } from '../introPlan'
 import { INTRO_SEGMENTS, type IntroSegment } from '../voiceAssets/introManifest'
+import { silenceFor } from '../voiceAssets/silenceManifest'
 import { LOBBY_JOKES, type LobbyJoke } from '../voiceAssets/jokeManifest'
 
 function fakeManifest(ids: string[], durationMs = 5_000): Record<string, IntroSegment> {
@@ -61,6 +62,16 @@ describe('planIntro', () => {
     expect(gaps['intro-hello']).toBe(0)
     // Plain sentences keep the plain breath.
     expect(plan.segments[1]?.gapBeforeMs).toBe(INTRO_SEGMENT_GAP_MS)
+  })
+
+  it('has a silence track for every gap the planner can emit', () => {
+    // The walkout plays as a NATIVE playlist, so a pause without a silence
+    // track silently vanishes from the speech (the missing-1700 bug, run 6).
+    const gaps = new Set<number>([DOUBLE_BREATH_MS, INTRO_SEGMENT_GAP_MS])
+    for (let ms = 1_000; ms <= 20_000; ms += 50) gaps.add(jokeLandingMs(ms))
+    for (const gap of gaps) {
+      expect([gap, silenceFor(gap) !== undefined]).toEqual([gap, true])
+    }
   })
 
   it('scales the landing beat with the joke length, inside the bounds', () => {
