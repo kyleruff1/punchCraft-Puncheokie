@@ -222,9 +222,13 @@ export default function LiveScreen(): React.JSX.Element {
 
       {/* Exit is the escape hatch — always visible, corner of the screen so
           it never falls under the athlete's grip, small enough not to steal
-          from the cue stage. Fires the same confirm flow the Stop button
-          does; a workout is real work and dropping it silently would lose
-          the athlete's session. */}
+          from the cue stage. Top RIGHT, under the floating settings gear:
+          the top-left corner belongs to the round counter, and the first
+          bag test had this button sitting exactly on top of "Round 1/3".
+          The top bar wrapper below reserves the width so the glove chips
+          slide left rather than underlapping. Fires the same confirm flow
+          the Stop button does; a workout is real work and dropping it
+          silently would lose the athlete's session. */}
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Exit workout"
@@ -246,14 +250,17 @@ export default function LiveScreen(): React.JSX.Element {
         <Text style={styles.exitButtonText}>← Exit</Text>
       </Pressable>
 
-      <RoundTopBar
-        roundIndex={Math.max(0, live.roundIndex)}
-        roundCount={live.roundCount || workout.schedule.length}
-        roundRemainingMs={live.roundRemainingMs}
-        stance={live.stance}
-        connection={connection}
-        {...(live.degraded ? { degraded: live.degraded } : {})}
-      />
+      {/* Right inset keeps the glove chips clear of the Exit button. */}
+      <View style={styles.topBarInset}>
+        <RoundTopBar
+          roundIndex={Math.max(0, live.roundIndex)}
+          roundCount={live.roundCount || workout.schedule.length}
+          roundRemainingMs={live.roundRemainingMs}
+          stance={live.stance}
+          connection={connection}
+          {...(live.degraded ? { degraded: live.degraded } : {})}
+        />
+      </View>
 
       {/* Why the coach is silent, said once and quietly. Either the athlete
           turned it off, or this build cannot tell whether their music is
@@ -518,10 +525,11 @@ const styles = StyleSheet.create({
   },
   extras: { fontSize: 13, color: colors.textSecondary },
   pacingCue: { fontSize: 13, fontWeight: '700', color: colors.accent },
+  topBarInset: { paddingRight: 96 },
   exitButton: {
     position: 'absolute',
     top: 8,
-    left: 8,
+    right: 8,
     zIndex: 10,
     paddingHorizontal: 12,
     paddingVertical: 8,
