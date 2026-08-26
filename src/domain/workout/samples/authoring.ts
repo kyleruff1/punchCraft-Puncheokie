@@ -47,6 +47,8 @@ export interface BlockSpec {
    * block runs.
    */
   durationBeats?: number
+  /** Voice cadence band for this block (M4) — see WorkoutBlock.cadence. */
+  cadence?: string
 }
 
 /** Apply authored musical offsets over the parser's placeholder sequence. */
@@ -93,6 +95,7 @@ export function layBlocks(specs: readonly BlockSpec[], bpm: number): WorkoutBloc
     if (spec.targetVelocityZone !== undefined) block.targetVelocityZone = spec.targetVelocityZone
     if (spec.spokenPhrase !== undefined) block.spokenPhrase = spec.spokenPhrase
     if (spec.instruction !== undefined) block.instruction = spec.instruction
+    if (spec.cadence !== undefined) block.cadence = spec.cadence
 
     blocks.push(block)
     cursorMs += durationMs

@@ -67,6 +67,19 @@ const PHASE_SHARE = {
 /** Repair-pass bound: extending pressure reps must terminate loudly. */
 const MAX_REPAIR_PASSES = 24
 
+/**
+ * Voice cadence bands in order (doc §17). A phase may shift the CALLED
+ * rendering a band up (bursts, pressure) or down (movement) from the
+ * workout's profile — the beat grid stays put; the recording changes.
+ */
+const CADENCE_BANDS = ['technical', 'steady', 'pressure', 'sprint'] as const
+
+export function shiftCadence(profile: string, delta: number): string {
+  const index = CADENCE_BANDS.indexOf(profile as (typeof CADENCE_BANDS)[number])
+  if (index < 0) return profile
+  return CADENCE_BANDS[Math.max(0, Math.min(CADENCE_BANDS.length - 1, index + delta))] as string
+}
+
 /** Complexity ceiling for a round: 2 early, 5 late (before the recipe cap). */
 export function complexityCeilingAt(p: CurvePosition): number {
   return 2 + Math.round(p * 3)
@@ -338,6 +351,7 @@ export function fillScoredRound(
       budgetMs: number,
       desiredPunches: number,
       tighten = 1,
+      cadence?: string,
     ): void => {
       const probe = comboSpecFor(nextId(), pick.notation, 1, 0)
       const comboOnlyMs = blocksSpanMs(layBlocks([probe], bpm))
@@ -353,6 +367,7 @@ export function fillScoredRound(
       // duration is the D26 contract, punches are the recipe's wish.
       const fitReps = Math.max(2, Math.min(12, Math.floor(budgetBeats / (comboBeats + gapBeats))))
       const spec = comboSpecFor(nextId(), pick.notation, Math.min(reps, fitReps), gapBeats)
+      if (cadence !== undefined) spec.cadence = cadence
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
@@ -377,6 +392,7 @@ export function fillScoredRound(
       const durationBeats = Math.min(Math.max(8, budgetBeats), MAX_BURST_DURATION_BEATS)
       const targetPunches = Math.max(MIN_BURST_TARGET_PUNCHES, Math.round(effTarget * 0.13))
       const spec = volumeSpecFor(nextId(), 'volume-burst', base.notation, durationBeats, targetPunches, gap)
+      spec.cadence = shiftCadence(recipe.cadenceProfile, 1)
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
@@ -404,6 +420,7 @@ export function fillScoredRound(
       while ((defenseLeft > 0 || footworkLeft > 0) && span() < movementDeadline && guard++ < 8) {
         const pool = defenseLeft > 0 ? defenseMotifs : footworkMotifs
         const spec = commandSpecFor(nextId(), rng.pick(pool), gap)
+        spec.cadence = shiftCadence(recipe.cadenceProfile, -1)
         if (spanWith(specs, spec, bpm) > workMs) {
           blockCount -= 1
           break
@@ -428,10 +445,17 @@ export function fillScoredRound(
       const deficit = Math.max(0, target - roundPunchCount(layBlocks(specs, bpm)))
       const targetPunches = Math.max(MIN_BURST_TARGET_PUNCHES, Math.min(deficit, flurrySeconds * 2))
       const spec = volumeSpecFor(nextId(), 'open-pressure', loop.notation, durationBeats, targetPunches, 0)
+      spec.cadence = 'sprint'
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
-    addRepeatPhase(completed, phaseBudget(PHASE_SHARE.pressure), phasePunches(0.22), 0.7)
+    addRepeatPhase(
+      completed,
+      phaseBudget(PHASE_SHARE.pressure),
+      phasePunches(0.22),
+      0.7,
+      shiftCadence(recipe.cadenceProfile, 1),
+    )
   } else {
     // No ladder survives the recipe (narrow enabledPunches, tiny combo cap,
     // clips not yet rendered) — fall back to weighted legacy selection so
@@ -493,7 +517,7 @@ export function fillScoredRound(
     order,
     kind: 'round',
     countsTowardGoal: true,
-    theme: roundThemeFor(p),
+    theme: ladder ? ladder.set.name : roundThemeFor(p),
     workDurationMs: entry.workDurationMs,
     restAfterMs: entry.restAfterMs,
     // Derived from the laid blocks, never asserted (D26: targets are an

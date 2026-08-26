@@ -44,6 +44,7 @@ import {
   type IntensityTier,
 } from '@domain/workout/punchGoals'
 import { listSampleWorkouts } from '@domain/workout/samples'
+import { tierFor } from '@domain/workout/WorkoutRecipe'
 import type { WorkoutRecipe } from '@domain/workout/WorkoutRecipe'
 import type { WorkoutDurationMinutes } from '@domain/workout/roundSchedule'
 
@@ -56,6 +57,12 @@ const DURATIONS: ReadonlyArray<SegmentOption<`${WorkoutDurationMinutes}`>> = [
   { value: '30', label: '30 min' },
   { value: '40', label: '40 min' },
   { value: '60', label: '60 min' },
+]
+
+const TIER_OPTIONS: ReadonlyArray<SegmentOption<'beginner' | 'intermediate' | 'advanced'>> = [
+  { value: 'beginner', label: 'Beginner' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'advanced', label: 'Advanced' },
 ]
 
 const FOCUS_OPTIONS: ReadonlyArray<SegmentOption<WorkoutRecipe['focus']>> = [
@@ -206,7 +213,21 @@ export default function RecipeScreen(): React.JSX.Element {
         ))}
       </ControlGroup>
 
-      {/* 3 — Focus */}
+      {/* 3 — Tier (M4): selects VOCABULARY — which families, ladders and
+          defense density the athlete trains — not merely combo length. */}
+      <ControlGroup
+        label="Tier"
+        caption="Which combination families and build-up ladders the coach draws from. Beginner teaches fundamentals; advanced chains multi-phase patterns."
+      >
+        <SegmentedControl
+          testID="tier"
+          options={TIER_OPTIONS}
+          value={tierFor(recipe)}
+          onChange={(tier) => setRecipe({ tier })}
+        />
+      </ControlGroup>
+
+      {/* 3b — Focus */}
       <ControlGroup
         label="Focus"
         caption="Movement lowers the punch target to leave room for footwork and defense."

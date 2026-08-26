@@ -319,9 +319,21 @@ export class CueAnnouncer {
         if (cue) this.dispatchPerWordCall(cue, clockOffsetMs)
         return
       }
+      case 'encouragement': {
+        const payload = event.payload as { asset?: VoiceAssetId } | null
+        if (!payload?.asset) return
+        // Scheduled encouragement is deliberately NOT held mid-combination:
+        // the compiler placed it inside audited silence (a burst the athlete
+        // is working through), so `inCombo` is exactly where it belongs. The
+        // policy's category switch still applies, and its clip priority is
+        // the lowest — anything real supersedes it in the queue.
+        if (!shouldSpeak(this.policy, 'coaching-reminder', false)) return
+        this.output.playAsset(payload.asset)
+        return
+      }
       default:
-        // phase-announce / encouragement / movement gain voices in M4; a
-        // declared-but-unvoiced event is schedule, not sound.
+        // phase-announce / movement gain voices later; a declared-but-
+        // unvoiced event is schedule, not sound.
         return
     }
   }

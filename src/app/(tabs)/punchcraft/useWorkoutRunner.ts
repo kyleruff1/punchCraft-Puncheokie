@@ -228,14 +228,18 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     return timeline.map((round) =>
       compileRoundRhythmMap(round, {
         cadence: workout.recipe.cadenceProfile,
-        durationFor: (combination) =>
-          voice?.output.combinationDurationMs?.(combination, workout.recipe.cadenceProfile, {
+        // Per-cue cadence (M4): a flurry block is CALLED in its own band's
+        // rendering, so the length lookup follows the cue.
+        durationFor: (combination, cadence) =>
+          voice?.output.combinationDurationMs?.(combination, cadence, {
             vocabulary,
             performance: 'work',
           }),
+        encouragement:
+          workout.recipe.enabledCoachCalls.length > 0 && workout.recipe.voiceMode !== 'off',
       }),
     )
-  }, [timeline, workout.recipe.cadenceProfile, voice])
+  }, [timeline, workout.recipe, voice])
   const timelineRef = useRef(timeline)
   timelineRef.current = timeline
   const rhythmMapsRef = useRef(rhythmMaps)

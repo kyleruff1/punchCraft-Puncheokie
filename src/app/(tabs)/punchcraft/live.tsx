@@ -45,6 +45,7 @@ import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
+import { LobbyJokePlayer } from '@audio/LobbyJokePlayer'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
   PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
@@ -118,6 +119,25 @@ export default function LiveScreen(): React.JSX.Element {
     () => ({ output, policy, detector }),
     [output, policy, detector],
   )
+
+  // The lobby joke (M4): ONE per workout, told while the fight loads and
+  // never after the first bell — personality lives outside the rhythm map
+  // by construction, so it cannot offset a single call.
+  const jokeRef = useRef<LobbyJokePlayer | null>(null)
+  React.useEffect(() => {
+    if (live.phase !== 'idle' || policy.mode === 'off') return
+    jokeRef.current ??= new LobbyJokePlayer()
+    // A beat after the screen settles, like a cornerman filling the wait.
+    const timer = setTimeout(() => jokeRef.current?.tell(volumes.voice), 1_200)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [live.phase, policy.mode, volumes.voice])
+  React.useEffect(() => {
+    // The bell ends the comedy: any phase past idle silences the joke.
+    if (live.phase !== 'idle') jokeRef.current?.stop()
+  }, [live.phase])
+  React.useEffect(() => () => jokeRef.current?.stop(), [])
 
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise

@@ -82,6 +82,12 @@ export interface WorkoutBlock {
   graceAfterMs?: number
   spokenPhrase?: string
   instruction?: string
+  /**
+   * Voice cadence band for this block (M4, doc §17) — names which phrase
+   * RENDERING calls it (a flurry is called in the sprint recording); the
+   * beat grid stays on the workout's profile. Absent = workout default.
+   */
+  cadence?: string
 }
 
 export interface ProgramRound {

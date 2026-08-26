@@ -88,6 +88,14 @@ export type VoiceAssetId =
   | 'tone-ready'
   | 'tone-repeat'
   | 'tone-warning'
+  // Coach lines (M4) — encouragement and shorthand commands the rhythm map
+  // schedules into audited silence gaps. Matched to the recipe's
+  // `enabledCoachCalls` ids and the grammar's COACH_WORDS.
+  | 'double-up'
+  | 'put-it-on-em'
+  | 'touch-and-go'
+  | 'breathe'
+  | 'hands-up'
 
 /**
  * The callout vocabulary (D15) — which rendering of a combination is played.
@@ -146,6 +154,11 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'coast-30',
   'coast-45',
   'coast-60',
+  'double-up',
+  'put-it-on-em',
+  'touch-and-go',
+  'breathe',
+  'hands-up',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

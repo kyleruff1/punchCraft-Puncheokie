@@ -82,6 +82,28 @@ export interface PhasePayload {
   at: number
 }
 
+export interface EncouragementPayload {
+  asset: 'double-up' | 'put-it-on-em' | 'touch-and-go' | 'breathe' | 'hands-up'
+}
+
+/**
+ * The rotation the compiler deals encouragement from — deterministic (the
+ * compiler is pure; roundIndex + slot pick the line), energy-ordered so a
+ * burst gap gets a push and a recovery gap gets a breath.
+ */
+export const ENCOURAGEMENT_ROTATION: readonly EncouragementPayload['asset'][] = [
+  'double-up',
+  'hands-up',
+  'put-it-on-em',
+  'breathe',
+  'touch-and-go',
+]
+
+/** Voiced gaps longer than this earn an encouragement (research: 15-20s grid). */
+export const ENCOURAGEMENT_GAP_MS = 15_000
+/** Density cap per round — a coach interjects, never narrates. */
+export const MAX_ENCOURAGEMENTS_PER_ROUND = 6
+
 export interface RhythmEvent {
   /** Unique within the round — precise cancellation needs identity. */
   id: string
@@ -90,7 +112,7 @@ export interface RhythmEvent {
   kind: RhythmEventKind
   /** Round-relative (work-elapsed) milliseconds. */
   atMs: number
-  payload: CallPayload | TonePayload | PhasePayload | null
+  payload: CallPayload | TonePayload | PhasePayload | EncouragementPayload | null
   cancelsWith: 'cue-end' | 'round-end' | 'never'
 }
 
@@ -104,15 +126,21 @@ export interface RoundRhythmMap {
 }
 
 export interface CompileOptions {
-  /** Cadence profile id — selects which phrase rendering a call names. */
+  /** The workout's cadence profile — the default when a cue names none. */
   cadence: string
   /**
-   * Measured phrase length for a combination at this cadence, or undefined
+   * Measured phrase length for a combination at a cadence, or undefined
    * when the library has no rendering — injected, because the manifest
    * lives outside the domain. Undefined selects the per-word call mode.
    */
-  durationFor: (combination: string) => number | undefined
+  durationFor: (combination: string, cadence: string) => number | undefined
   leadTimes?: AnnouncerLeadTimes
+  /**
+   * Schedule encouragement into voiced gaps longer than the grid (M4).
+   * Off by default so existing compiles stay byte-identical; the runner
+   * turns it on when the recipe enables coach calls.
+   */
+  encouragement?: boolean
 }
 
 /** Compile one round's audio schedule from its expanded timeline. */
@@ -134,8 +162,13 @@ export function compileRoundRhythmMap(
       cancelsWith: 'cue-end',
     })
 
+    // Per-block cadence (M4, doc §17): a flurry block is CALLED in the
+    // sprint rendering even while the beat grid stays on the workout's
+    // profile — the cadence names which recording speaks, and the clips
+    // exist at all four bands.
+    const cadence = cue.cadence ?? opts.cadence
     const combination = formatCombo(cue.tokens)
-    const lengthMs = opts.durationFor(combination)
+    const lengthMs = opts.durationFor(combination, cadence)
     if (lengthMs === undefined) {
       // No rendered phrase: the per-word fallback starts at the announce
       // lead, exactly where the event-driven announcer started it.
@@ -144,7 +177,7 @@ export function compileRoundRhythmMap(
         cueId: cue.id,
         kind: 'call',
         atMs: cue.announceAt,
-        payload: { mode: 'per-word', combination, cadence: opts.cadence },
+        payload: { mode: 'per-word', combination, cadence },
         cancelsWith: 'cue-end',
       })
     } else {
@@ -158,7 +191,7 @@ export function compileRoundRhythmMap(
         cueId: cue.id,
         kind: 'call',
         atMs: startAt,
-        payload: { mode: 'phrase', combination, cadence: opts.cadence },
+        payload: { mode: 'phrase', combination, cadence },
         cancelsWith: 'cue-end',
       })
 
@@ -177,7 +210,7 @@ export function compileRoundRhythmMap(
               cueId: cue.id,
               kind: 'refire',
               atMs: at,
-              payload: { mode: 'phrase', combination, cadence: opts.cadence },
+              payload: { mode: 'phrase', combination, cadence },
               cancelsWith: 'cue-end',
             })
             refireIndex += 1
@@ -200,10 +233,55 @@ export function compileRoundRhythmMap(
     })
   }
 
+  if (opts.encouragement) {
+    // Fill audited silence: any gap between voiced events longer than the
+    // grid earns one line from the rotation, deterministic per round and
+    // slot, density-capped. The compiler placed every call, so a scheduled
+    // encouragement can never collide with one — it lands in guaranteed
+    // quiet (the runtime queue still yields it first if anything moves).
+    const voicedTimes = events
+      .filter((e) => e.kind === 'call' || e.kind === 'refire')
+      .map((e) => e.atMs)
+      .sort((a, b) => a - b)
+    const bounds = [0, ...voicedTimes, round.workDurationMs]
+    let added = 0
+    for (let i = 1; i < bounds.length && added < MAX_ENCOURAGEMENTS_PER_ROUND; i += 1) {
+      const gap = (bounds[i] as number) - (bounds[i - 1] as number)
+      if (gap <= ENCOURAGEMENT_GAP_MS) continue
+      // A long gap gets the full grid, not one lonely line in the middle —
+      // evenly spaced interjections, still under the round's density cap.
+      const slots = Math.min(
+        Math.floor(gap / ENCOURAGEMENT_GAP_MS),
+        MAX_ENCOURAGEMENTS_PER_ROUND - added,
+      )
+      for (let k = 1; k <= slots; k += 1) {
+        const atMs = Math.round((bounds[i - 1] as number) + (gap * k) / (slots + 1))
+        const asset = ENCOURAGEMENT_ROTATION[
+          (round.roundIndex + added) % ENCOURAGEMENT_ROTATION.length
+        ] as EncouragementPayload['asset']
+        events.push({
+          id: `encourage#${added}`,
+          cueId: `encourage#${added}`,
+          kind: 'encouragement',
+          atMs,
+          payload: { asset },
+          cancelsWith: 'round-end',
+        })
+        added += 1
+      }
+    }
+  }
+
   events.sort((a, b) => a.atMs - b.atMs || a.id.localeCompare(b.id))
   const voicedEvents = events
     .map((event, index) => ({ event, index }))
-    .filter(({ event }) => event.kind === 'call' || event.kind === 'refire' || event.kind === 'tone')
+    .filter(
+      ({ event }) =>
+        event.kind === 'call' ||
+        event.kind === 'refire' ||
+        event.kind === 'tone' ||
+        event.kind === 'encouragement',
+    )
     .map(({ index }) => index)
 
   return {

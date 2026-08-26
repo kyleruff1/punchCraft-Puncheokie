@@ -45,6 +45,13 @@ export const SHARED_WORDS = {
   'coast-30': 'Coast for half a minute',
   'coast-45': 'Coast for forty-five seconds',
   'coast-60': 'Coast for a minute',
+  // Coach lines (M4) — encouragement the rhythm map schedules into audited
+  // silence gaps, and the shorthand commands coaches actually bark.
+  'double-up': 'Double up',
+  'put-it-on-em': 'Put it on em',
+  'touch-and-go': 'Touch and go',
+  breathe: 'Breathe',
+  'hands-up': 'Hands up',
 }
 
 /**

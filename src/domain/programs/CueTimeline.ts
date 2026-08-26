@@ -103,6 +103,8 @@ export interface CueInstance {
   id: string
   blockId: string
   repeatIndex: number
+  /** Voice cadence band from the block (M4) — absent means the workout's. */
+  cadence?: string
   /** `sequence` unless this is a count-scored burst. */
   scoring: CueScoring
   /** Present only on `scoring: 'count'` cues. */
@@ -343,6 +345,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       id: `${block.id}#${repeatIndex}`,
       blockId: block.id,
       repeatIndex,
+      ...(block.cadence === undefined ? {} : { cadence: block.cadence }),
       scoring: 'sequence',
       tokens: block.tokens,
       tokenOffsetsMs: offsets,
@@ -407,6 +410,7 @@ function expandCountScoredBlock(block: WorkoutBlock, ctx: BlockContext): CueInst
     id: `${block.id}#burst`,
     blockId: block.id,
     repeatIndex: 0,
+    ...(block.cadence === undefined ? {} : { cadence: block.cadence }),
     scoring: 'count',
     countScored: {
       targetPunches: block.targetPunches ?? 0,
