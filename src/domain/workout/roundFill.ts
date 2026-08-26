@@ -39,8 +39,16 @@ import { blocksSpanMs, layBlocks, roundPunchCount, type BlockSpec } from './samp
 import { motifsFor, type Motif } from './comboLibrary'
 import { parseCombo } from './WorkoutTokens'
 import { tierFor, type WorkoutRecipe, type Frequency } from './WorkoutRecipe'
-import type { Rng } from './seededRandom'
-import type { ProgramRound, WorkoutBlock } from './WorkoutTokens'
+import { makeRng, type Rng } from './seededRandom'
+import {
+  familyPatternFor,
+  MANDATORY_SAME_MOVE_MS,
+  pickCallout,
+  type ReserveMsFor,
+  type SetupPatternId,
+} from './setupCallouts'
+import { GENERATOR_VERSION } from './versions'
+import type { ProgramRound, SetupCallout, WorkoutBlock } from './WorkoutTokens'
 
 /** A round's position in the workout, 0 at the first scored round, 1 at the last. */
 export type CurvePosition = number
@@ -250,6 +258,13 @@ export interface FillOptions {
    * once a corpus batch lands.
    */
   voiceReady?: (notation: string) => boolean
+  /**
+   * Set Ceremonies: prices a pre-set call-out (sentence + optional
+   * recitation + tail, measured durations + slack) so the fill can
+   * reserve lead-in time for it. Injected from the app layer; absent =
+   * feature off and generation is unchanged.
+   */
+  setupCallouts?: { reserveMsFor: ReserveMsFor }
 }
 
 export interface FilledRound {
@@ -274,6 +289,19 @@ export function fillScoredRound(
   opts: FillOptions = {},
 ): FilledRound {
   const voiceReady = opts.voiceReady ?? (() => true)
+  // Set Ceremonies: a SEPARATE rng stream so callout draws never disturb
+  // the main stream's sequence (rng call order is the determinism
+  // contract), keyed like the main one plus the round.
+  const calloutRng = makeRng(
+    `${recipe.seed}|${GENERATOR_VERSION}|callouts|r${order}`,
+  )
+  const calloutFor = (
+    pattern: SetupPatternId,
+    notation?: string,
+  ): SetupCallout | undefined =>
+    opts.setupCallouts
+      ? pickCallout(pattern, calloutRng, opts.setupCallouts.reserveMsFor, notation)
+      : undefined
   const workMs = entry.workDurationMs
   const gap = gapBeatsAt(p)
   const specs: BlockSpec[] = []
@@ -352,13 +380,18 @@ export function fillScoredRound(
       desiredPunches: number,
       tighten = 1,
       cadence?: string,
+      callout?: SetupCallout,
     ): void => {
       const probe = comboSpecFor(nextId(), pick.notation, 1, 0)
       const comboOnlyMs = blocksSpanMs(layBlocks([probe], bpm))
       blockCount -= 1 // probe only; reclaim the id
       if (comboOnlyMs <= 0) return
       const comboBeats = msToBeats(comboOnlyMs, bpm)
-      const budgetBeats = msToBeats(budgetMs, bpm)
+      // A ceremony's reservation comes out of THIS phase's budget — the
+      // gap-solve reconciles the smaller window, so the round still
+      // spans to the bell and no neighbour moves.
+      const reserveMs = callout?.reserveMs ?? 0
+      const budgetBeats = msToBeats(Math.max(1_000, budgetMs - reserveMs), bpm)
       const wantedReps = Math.round(desiredPunches / Math.max(1, pick.punchCount))
       const reps = Math.max(2, Math.min(12, wantedReps))
       const solvedGap = budgetBeats / reps - comboBeats
@@ -368,6 +401,10 @@ export function fillScoredRound(
       const fitReps = Math.max(2, Math.min(12, Math.floor(budgetBeats / (comboBeats + gapBeats))))
       const spec = comboSpecFor(nextId(), pick.notation, Math.min(reps, fitReps), gapBeats)
       if (cadence !== undefined) spec.cadence = cadence
+      if (callout !== undefined) {
+        spec.leadInBeats = msToBeats(reserveMs, bpm)
+        spec.setupCallout = callout
+      }
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
@@ -381,26 +418,69 @@ export function fillScoredRound(
     const effTarget = Math.round(target * 0.88)
     const phasePunches = (share: number): number => Math.max(4, Math.round(effTarget * share))
 
-    // 1 — base pattern.
-    addRepeatPhase(base, phaseBudget(PHASE_SHARE.base), phasePunches(0.17))
-    // 2 — first build-up stage.
-    addRepeatPhase(build1, phaseBudget(PHASE_SHARE.build1), phasePunches(0.17))
+    // 1 — base pattern. The round opens with a ceremony: the last round
+    // gets its send-off, the first gets the pattern introduction, and
+    // middle rounds get the family flavor of the base notation.
+    const lastRound = p >= 1
+    const basePattern: SetupPatternId = lastRound
+      ? 'co-final-round'
+      : p <= 0
+        ? 'co-first-look'
+        : familyPatternFor(base.notation)
+    addRepeatPhase(
+      base,
+      phaseBudget(PHASE_SHARE.base),
+      phasePunches(0.17),
+      1,
+      undefined,
+      calloutFor(basePattern, base.notation),
+    )
+    // 2 — first build-up stage: "Let's get ready for the buildup…"
+    addRepeatPhase(
+      build1,
+      phaseBudget(PHASE_SHARE.build1),
+      phasePunches(0.17),
+      1,
+      undefined,
+      calloutFor('co-buildup-start', build1.notation),
+    )
 
     // 3 — timed volume burst on the base pattern, punches from the goal.
     {
-      const budgetBeats = Math.floor(msToBeats(phaseBudget(PHASE_SHARE.volume), bpm))
+      const allJab = base.notation
+        .toLowerCase()
+        .split('-')
+        .every((t) => t.replace('b', '') === '1')
+      const callout = calloutFor(allJab ? 'co-jab-volume' : 'co-volume')
+      const reserveMs = callout?.reserveMs ?? 0
+      const budgetBeats = Math.floor(
+        msToBeats(Math.max(1_000, phaseBudget(PHASE_SHARE.volume) - reserveMs), bpm),
+      )
       const durationBeats = Math.min(Math.max(8, budgetBeats), MAX_BURST_DURATION_BEATS)
       const targetPunches = Math.max(MIN_BURST_TARGET_PUNCHES, Math.round(effTarget * 0.13))
       const spec = volumeSpecFor(nextId(), 'volume-burst', base.notation, durationBeats, targetPunches, gap)
       spec.cadence = shiftCadence(recipe.cadenceProfile, 1)
+      if (callout !== undefined) {
+        spec.leadInBeats = msToBeats(reserveMs, bpm)
+        spec.setupCallout = callout
+      }
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
 
-    // 4 — second build-up stage.
-    addRepeatPhase(build2, phaseBudget(PHASE_SHARE.build2), phasePunches(0.17))
+    // 4 — second build-up stage: "we're adding a piece."
+    addRepeatPhase(
+      build2,
+      phaseBudget(PHASE_SHARE.build2),
+      phasePunches(0.17),
+      1,
+      undefined,
+      calloutFor('co-buildup-next', build2.notation),
+    )
 
     // 5 — base with an approved body variation (falls back to the base).
+    // Only an ACTUAL variation earns "let's go downstairs" — repeating
+    // the plain base again announces nothing new.
     {
       const variation =
         recipe.bodyShotPercent > 0 ? bodyVariationOf(base.notation, voiceReady) : null
@@ -408,6 +488,9 @@ export function fillScoredRound(
         variation ? { notation: variation, punchCount: base.punchCount } : base,
         phaseBudget(PHASE_SHARE.bodyVariation),
         phasePunches(0.14),
+        1,
+        undefined,
+        variation ? calloutFor('co-downstairs') : undefined,
       )
     }
 
@@ -417,10 +500,19 @@ export function fillScoredRound(
       let footworkLeft = footworkMotifs.length > 0 ? Math.min(1, callsPerRound(recipe.footworkFrequency, rng)) : 0
       const movementDeadline = span() + phaseBudget(PHASE_SHARE.movement)
       let guard = 0
+      let movementAnnounced = false
       while ((defenseLeft > 0 || footworkLeft > 0) && span() < movementDeadline && guard++ < 8) {
         const pool = defenseLeft > 0 ? defenseMotifs : footworkMotifs
         const spec = commandSpecFor(nextId(), rng.pick(pool), gap)
         spec.cadence = shiftCadence(recipe.cadenceProfile, -1)
+        if (!movementAnnounced) {
+          const callout = calloutFor('co-movement')
+          if (callout !== undefined) {
+            spec.leadInBeats = msToBeats(callout.reserveMs, bpm)
+            spec.setupCallout = callout
+          }
+          movementAnnounced = true
+        }
         if (spanWith(specs, spec, bpm) > workMs) {
           blockCount -= 1
           break
@@ -433,8 +525,7 @@ export function fillScoredRound(
 
     // 7 — pressure: the completed pattern, gap tightened; the final round
     // flurries on the base loop instead (tier-scaled, sprints use short loops).
-    const isLast = p >= 1
-    if (isLast) {
+    if (lastRound) {
       const tier = tierFor(recipe)
       const flurrySeconds = tier === 'beginner' ? 15 : tier === 'intermediate' ? 20 : 25
       const durationBeats = Math.min(
@@ -446,6 +537,11 @@ export function fillScoredRound(
       const targetPunches = Math.max(MIN_BURST_TARGET_PUNCHES, Math.min(deficit, flurrySeconds * 2))
       const spec = volumeSpecFor(nextId(), 'open-pressure', loop.notation, durationBeats, targetPunches, 0)
       spec.cadence = 'sprint'
+      const callout = calloutFor('co-flurry')
+      if (callout !== undefined) {
+        spec.leadInBeats = msToBeats(callout.reserveMs, bpm)
+        spec.setupCallout = callout
+      }
       if (spanWith(specs, spec, bpm) <= workMs) specs.push(spec)
       else blockCount -= 1
     }
@@ -455,6 +551,7 @@ export function fillScoredRound(
       phasePunches(0.22),
       0.7,
       shiftCadence(recipe.cadenceProfile, 1),
+      calloutFor('co-pressure', completed.notation),
     )
   } else {
     // No ladder survives the recipe (narrow enabledPunches, tiny combo cap,
@@ -508,6 +605,52 @@ export function fillScoredRound(
         break
       }
       specs.push(spec)
+    }
+  }
+
+  // ---- mandatory same-move announcement (Set Ceremonies, Kyle's rule):
+  // any contiguous run of one notation longer than a minute MUST be
+  // announced — "settle in" — so the athlete knows the stretch is
+  // deliberate. The repair tail is the usual culprit (it can extend the
+  // closing pattern 60-90s). If the added reservation pushes the span
+  // past the bell, trailing repair reps are dropped to pay for it.
+  if (opts.setupCallouts) {
+    const laid = layBlocks(specs, bpm)
+    let runStart = 0
+    while (runStart < specs.length) {
+      const first = specs[runStart] as BlockSpec
+      let runEnd = runStart + 1
+      while (
+        runEnd < specs.length &&
+        (specs[runEnd] as BlockSpec).notation === first.notation &&
+        (specs[runEnd] as BlockSpec).kind === 'repeated-combo' &&
+        first.kind === 'repeated-combo'
+      ) {
+        runEnd += 1
+      }
+      const startMs = laid[runStart]?.startOffsetMs ?? 0
+      const last = laid[runEnd - 1]
+      const runMs = last === undefined ? 0 : last.startOffsetMs + last.durationMs - startMs
+      if (runMs > MANDATORY_SAME_MOVE_MS && first.setupCallout === undefined) {
+        const allJab = first.notation
+          .toLowerCase()
+          .split('-')
+          .every((t) => t.replace('b', '') === '1')
+        const callout = calloutFor(allJab ? 'co-jab-volume' : 'co-settle-in')
+        if (callout !== undefined) {
+          first.leadInBeats = (first.leadInBeats ?? 0) + msToBeats(callout.reserveMs, bpm)
+          first.setupCallout = callout
+          let guard = 0
+          while (
+            blocksSpanMs(layBlocks(specs, bpm)) > workMs &&
+            specs.length - 1 > runStart &&
+            guard++ < MAX_REPAIR_PASSES
+          ) {
+            specs.pop()
+          }
+        }
+      }
+      runStart = runEnd
     }
   }
 

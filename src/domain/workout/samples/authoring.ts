@@ -11,7 +11,14 @@
  */
 
 import { beatsToMs, blockDurationMs } from '../cadence'
-import { parseCombo, type BlockKind, type BlockStance, type WorkoutBlock, type WorkoutToken } from '../WorkoutTokens'
+import {
+  parseCombo,
+  type BlockKind,
+  type BlockStance,
+  type SetupCallout,
+  type WorkoutBlock,
+  type WorkoutToken,
+} from '../WorkoutTokens'
 
 export interface BlockSpec {
   id: string
@@ -49,6 +56,15 @@ export interface BlockSpec {
   durationBeats?: number
   /** Voice cadence band for this block (M4) — see WorkoutBlock.cadence. */
   cadence?: string
+  /**
+   * Quiet lead-in laid BEFORE this block starts (Set Ceremonies): the
+   * fill reserves the time a pre-set call-out needs, because inter-set
+   * quiet is otherwise ≤3s and no ceremony fits. Span accounting folds
+   * it in automatically — `layBlocks` advances the cursor first.
+   */
+  leadInBeats?: number
+  /** The pre-set call-out this block earned — see setupCallouts.ts. */
+  setupCallout?: SetupCallout
 }
 
 /** Apply authored musical offsets over the parser's placeholder sequence. */
@@ -74,6 +90,9 @@ export function layBlocks(specs: readonly BlockSpec[], bpm: number): WorkoutBloc
   let cursorMs = 0
 
   for (const spec of specs) {
+    // A ceremony reservation is empty laid time before the block — the
+    // set's own rhythm (reps, gaps) is untouched by its announcement.
+    cursorMs += beatsToMs(spec.leadInBeats ?? 0, bpm)
     const tokens = withOffsets(parseCombo(spec.notation), spec.offsets)
     const repeat = spec.repeat ?? 1
     const durationMs =
@@ -96,6 +115,7 @@ export function layBlocks(specs: readonly BlockSpec[], bpm: number): WorkoutBloc
     if (spec.spokenPhrase !== undefined) block.spokenPhrase = spec.spokenPhrase
     if (spec.instruction !== undefined) block.instruction = spec.instruction
     if (spec.cadence !== undefined) block.cadence = spec.cadence
+    if (spec.setupCallout !== undefined) block.setupCallout = spec.setupCallout
 
     blocks.push(block)
     cursorMs += durationMs

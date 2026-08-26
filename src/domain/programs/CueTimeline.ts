@@ -24,7 +24,13 @@ import { beatsToMs, maxBeatOffset, tokenOffsetsMs } from '../workout/cadence'
 import { resolveEffectiveStance, resolveHand } from './StanceMapper'
 import type { GeneratedWorkout } from '../workout/GeneratedWorkout'
 import type { PunchType } from '../punch/PunchEvent'
-import type { PunchNumber, Stance, WorkoutBlock, WorkoutToken } from '../workout/WorkoutTokens'
+import type {
+  PunchNumber,
+  SetupCallout,
+  Stance,
+  WorkoutBlock,
+  WorkoutToken,
+} from '../workout/WorkoutTokens'
 
 // ---------------------------------------------------------------------------
 // Tunables. Every one of these is a placeholder until M36-03 tunes them
@@ -121,6 +127,13 @@ export interface CueInstance {
   windowStartMs: number
   windowEndMs: number
   spokenPhrase?: string
+  /**
+   * The pre-set call-out ceremony (Set Ceremonies) — present only on a
+   * block's FIRST cue (repeatIndex 0): the ceremony announces the set,
+   * not every rep. The rhythm map compiles it inside the fill's
+   * reservation.
+   */
+  setupCallout?: SetupCallout
 }
 
 export interface RoundTimeline {
@@ -376,6 +389,10 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       ),
       windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
       ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
+      // The ceremony belongs to the set, not the rep: first cue only.
+      ...(block.setupCallout === undefined || repeatIndex !== 0
+        ? {}
+        : { setupCallout: block.setupCallout }),
     })
   }
 
@@ -431,6 +448,7 @@ function expandCountScoredBlock(block: WorkoutBlock, ctx: BlockContext): CueInst
     windowStartMs: Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
     windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
     ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
+    ...(block.setupCallout === undefined ? {} : { setupCallout: block.setupCallout }),
   }
 }
 

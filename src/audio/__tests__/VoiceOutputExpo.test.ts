@@ -175,14 +175,20 @@ describe('the manifest covers the whole vocabulary', () => {
     // "one". It is checked in the source rather than through the module ids,
     // because jest-expo maps every `.wav` require to one stub value and the
     // ids therefore collide in tests but not in Metro.
+    // The Set Ceremony call-outs live in generated per-directory maps
+    // (calloutManifest.ts) spread into the four sections — count both
+    // sources, and hold the same each-vocabulary-owns-its-directory rule.
     const source = readFileSync('src/audio/voiceAssets/manifest.ts', 'utf8')
+    const callouts = readFileSync('src/audio/voiceAssets/calloutManifest.ts', 'utf8')
     const numbersBlock = source.slice(source.indexOf('numbers: {'), source.indexOf('names: {'))
     const namesBlock = source.slice(source.indexOf('names: {'))
+    const calloutNumbers = callouts.match(/assets\/voice\/numbers\/(standalone|combo)\/co-/g) ?? []
+    const calloutNames = callouts.match(/assets\/voice\/names\/(standalone|combo)\/co-/g) ?? []
 
     // One block per form, so each vocabulary names its ids twice.
     const perVocabulary = VOICE_ASSET_IDS.length * PHRASE_FORMS.length
-    expect(numbersBlock.match(/assets\/voice\/numbers\//g)).toHaveLength(perVocabulary)
-    expect(namesBlock.match(/assets\/voice\/names\//g)).toHaveLength(perVocabulary)
+    expect((numbersBlock.match(/assets\/voice\/numbers\//g)?.length ?? 0) + calloutNumbers.length).toBe(perVocabulary)
+    expect((namesBlock.match(/assets\/voice\/names\//g)?.length ?? 0) + calloutNames.length).toBe(perVocabulary)
     expect(namesBlock).not.toContain('assets/voice/numbers/')
   })
 
@@ -190,9 +196,14 @@ describe('the manifest covers the whole vocabulary', () => {
     // A require of a missing asset resolves to nothing at runtime and shows
     // up as a clip that silently never plays.
     const source = readFileSync('src/audio/voiceAssets/manifest.ts', 'utf8')
+    const callouts = readFileSync('src/audio/voiceAssets/calloutManifest.ts', 'utf8')
     const paths = source.match(/assets\/voice\/[a-z]+\/[a-z]+\/[^']+\.wav/g) ?? []
-    expect(paths).toHaveLength(VOICE_ASSET_IDS.length * 2 * PHRASE_FORMS.length)
-    for (const path of paths) {
+    const calloutPaths = callouts.match(/assets\/voice\/[a-z]+\/[a-z]+\/[^']+\.wav/g) ?? []
+    // 82 VoiceAssetIds × 2 vocabularies × 2 forms, split across the two
+    // sources (theme-* clips are rest-side extras beyond the id set).
+    const idPaths = [...paths, ...calloutPaths.filter((p) => p.includes('/co-'))]
+    expect(idPaths).toHaveLength(VOICE_ASSET_IDS.length * 2 * PHRASE_FORMS.length)
+    for (const path of [...paths, ...calloutPaths]) {
       expect([path, existsSync(path)]).toEqual([path, true])
     }
   })

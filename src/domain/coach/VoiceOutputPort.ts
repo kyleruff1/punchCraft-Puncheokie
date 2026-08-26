@@ -101,6 +101,55 @@ export type VoiceAssetId =
   | 'hands-up'
   // Power mode: names WHY a slow 1-2 strike window slowed down.
   | 'power-strikes'
+  // Set Ceremonies — pre-set call-out sentences (2-3 variants per
+  // pattern; fill-time rng picks the variant) plus the two launch tails.
+  | 'co-first-look-01'
+  | 'co-first-look-02'
+  | 'co-first-look-03'
+  | 'co-ones-twos-01'
+  | 'co-ones-twos-02'
+  | 'co-ones-twos-03'
+  | 'co-double-jab-01'
+  | 'co-double-jab-02'
+  | 'co-hooks-01'
+  | 'co-hooks-02'
+  | 'co-hooks-03'
+  | 'co-uppercuts-01'
+  | 'co-uppercuts-02'
+  | 'co-square-01'
+  | 'co-square-02'
+  | 'co-buildup-start-01'
+  | 'co-buildup-start-02'
+  | 'co-buildup-start-03'
+  | 'co-buildup-next-01'
+  | 'co-buildup-next-02'
+  | 'co-volume-01'
+  | 'co-volume-02'
+  | 'co-volume-03'
+  | 'co-jab-volume-01'
+  | 'co-jab-volume-02'
+  | 'co-downstairs-01'
+  | 'co-downstairs-02'
+  | 'co-downstairs-03'
+  | 'co-body-to-head-01'
+  | 'co-body-to-head-02'
+  | 'co-movement-01'
+  | 'co-movement-02'
+  | 'co-pressure-01'
+  | 'co-pressure-02'
+  | 'co-pressure-03'
+  | 'co-new-pattern-01'
+  | 'co-new-pattern-02'
+  | 'co-settle-in-01'
+  | 'co-settle-in-02'
+  | 'co-flurry-01'
+  | 'co-flurry-02'
+  | 'co-final-round-01'
+  | 'co-final-round-02'
+  | 'co-breathe-reset-01'
+  | 'co-breathe-reset-02'
+  | 'co-okay-go'
+  | 'co-regular-speed-go'
 
 /**
  * The callout vocabulary (D15) — which rendering of a combination is played.
@@ -166,6 +215,53 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'breathe',
   'hands-up',
   'power-strikes',
+  'co-first-look-01',
+  'co-first-look-02',
+  'co-first-look-03',
+  'co-ones-twos-01',
+  'co-ones-twos-02',
+  'co-ones-twos-03',
+  'co-double-jab-01',
+  'co-double-jab-02',
+  'co-hooks-01',
+  'co-hooks-02',
+  'co-hooks-03',
+  'co-uppercuts-01',
+  'co-uppercuts-02',
+  'co-square-01',
+  'co-square-02',
+  'co-buildup-start-01',
+  'co-buildup-start-02',
+  'co-buildup-start-03',
+  'co-buildup-next-01',
+  'co-buildup-next-02',
+  'co-volume-01',
+  'co-volume-02',
+  'co-volume-03',
+  'co-jab-volume-01',
+  'co-jab-volume-02',
+  'co-downstairs-01',
+  'co-downstairs-02',
+  'co-downstairs-03',
+  'co-body-to-head-01',
+  'co-body-to-head-02',
+  'co-movement-01',
+  'co-movement-02',
+  'co-pressure-01',
+  'co-pressure-02',
+  'co-pressure-03',
+  'co-new-pattern-01',
+  'co-new-pattern-02',
+  'co-settle-in-01',
+  'co-settle-in-02',
+  'co-flurry-01',
+  'co-flurry-02',
+  'co-final-round-01',
+  'co-final-round-02',
+  'co-breathe-reset-01',
+  'co-breathe-reset-02',
+  'co-okay-go',
+  'co-regular-speed-go',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

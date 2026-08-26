@@ -66,6 +66,7 @@ export type RhythmEventKind =
   | 'phase-announce'
   | 'encouragement'
   | 'movement'
+  | 'set-callout'
 
 export interface CallPayload {
   mode: 'phrase' | 'per-word'
@@ -81,6 +82,22 @@ export interface PhasePayload {
   /** Fraction of the round at which this mark sits (0..1). */
   at: number
 }
+
+/**
+ * One part of a pre-set ceremony (Set Ceremonies): a rendered sentence
+ * clip, or a recitation of the set's notation replayed from the phrase
+ * library at technical cadence.
+ */
+export type SetCalloutPayload =
+  | { asset: string }
+  | { recite: string; cadence: 'technical' }
+
+/** Ceremony must FINISH this long before the set's first call starts. */
+export const SET_CALLOUT_QUIET_MS = 300
+/** Breath between ceremony parts (sentence → recitation → tail). */
+export const SET_CALLOUT_PART_GAP_MS = 250
+/** Ceremony never starts before the previous cue's window has ended. */
+export const SET_CALLOUT_MIN_CLEAR_MS = 200
 
 export interface EncouragementPayload {
   asset:
@@ -129,7 +146,13 @@ export interface RhythmEvent {
   kind: RhythmEventKind
   /** Round-relative (work-elapsed) milliseconds. */
   atMs: number
-  payload: CallPayload | TonePayload | PhasePayload | EncouragementPayload | null
+  payload:
+    | CallPayload
+    | TonePayload
+    | PhasePayload
+    | EncouragementPayload
+    | SetCalloutPayload
+    | null
   cancelsWith: 'cue-end' | 'round-end' | 'never'
 }
 
@@ -158,6 +181,12 @@ export interface CompileOptions {
    * turns it on when the recipe enables coach calls.
    */
   encouragement?: boolean
+  /**
+   * Set Ceremonies: measured duration of a call-out sentence clip, or
+   * undefined when it is not rendered. Absent entirely = no ceremony
+   * events — compiles stay byte-identical by construction.
+   */
+  setupCalloutDurationFor?: (asset: string) => number | undefined
 }
 
 /** Compile one round's audio schedule from its expanded timeline. */
@@ -168,7 +197,8 @@ export function compileRoundRhythmMap(
   const leadTimes = opts.leadTimes ?? { ...DEFAULT_ANNOUNCE_LEAD_TIMES }
   const events: RhythmEvent[] = []
 
-  for (const cue of round.cues) {
+  for (let cueIndex = 0; cueIndex < round.cues.length; cueIndex += 1) {
+    const cue = round.cues[cueIndex] as RoundTimeline['cues'][number]
     // No ready tones are compiled: the coach's voice IS the cue (Kyle's
     // sound design — no beeps, ever; a tone before every call put
     // hundreds of chirps under the vocals per workout). `readyToneMs`
@@ -181,6 +211,7 @@ export function compileRoundRhythmMap(
     const cadence = cue.cadence ?? opts.cadence
     const combination = formatCombo(cue.tokens)
     const lengthMs = opts.durationFor(combination, cadence)
+    let callStartAt = cue.announceAt
     if (lengthMs === undefined) {
       // No rendered phrase: the per-word fallback starts at the announce
       // lead, exactly where the event-driven announcer started it.
@@ -198,6 +229,7 @@ export function compileRoundRhythmMap(
       // executor, never silent (doc §18 rule, unchanged).
       const finishBy = cue.scheduledStartMs - leadTimes.readyToneMs
       const startAt = Math.max(cue.previewAt, finishBy - lengthMs)
+      callStartAt = startAt
       events.push({
         id: `${cue.id}/call`,
         cueId: cue.id,
@@ -227,6 +259,68 @@ export function compileRoundRhythmMap(
             })
             refireIndex += 1
           }
+        }
+      }
+    }
+
+    // ---- Set Ceremonies: the pre-set call-out, compiled INSIDE the
+    // fill's reservation (cue.setupCallout only exists on a block's
+    // first cue, and the fill laid `leadInBeats` of quiet before it).
+    // Placement is backward from the set's own first call, degrading
+    // gracefully: drop the recitation, then the tail, then everything.
+    // No other event is touched — the property test holds them
+    // byte-identical with the feature on or off.
+    if (cue.setupCallout !== undefined && opts.setupCalloutDurationFor !== undefined) {
+      const ceremony = cue.setupCallout
+      const sentenceMs = opts.setupCalloutDurationFor(ceremony.asset)
+      if (sentenceMs !== undefined) {
+        const prev = round.cues[cueIndex - 1]
+        const earliest = prev === undefined ? 0 : prev.scheduledEndMs + SET_CALLOUT_MIN_CLEAR_MS
+        const anchor = callStartAt - SET_CALLOUT_QUIET_MS
+        const reciteMs =
+          ceremony.notation === undefined
+            ? undefined
+            : opts.durationFor(ceremony.notation, 'technical')
+        const tailMs =
+          ceremony.tail === undefined ? undefined : opts.setupCalloutDurationFor(ceremony.tail)
+
+        // Try full → no recite → sentence only, keeping whatever fits.
+        const attempts: Array<{ recite: boolean; tail: boolean }> = [
+          { recite: reciteMs !== undefined, tail: tailMs !== undefined },
+          { recite: false, tail: tailMs !== undefined },
+          { recite: false, tail: false },
+        ]
+        for (const attempt of attempts) {
+          const parts: Array<{ payload: SetCalloutPayload; durationMs: number }> = [
+            { payload: { asset: ceremony.asset }, durationMs: sentenceMs },
+          ]
+          if (attempt.recite && ceremony.notation !== undefined && reciteMs !== undefined) {
+            parts.push({
+              payload: { recite: ceremony.notation, cadence: 'technical' },
+              durationMs: reciteMs,
+            })
+          }
+          if (attempt.tail && ceremony.tail !== undefined && tailMs !== undefined) {
+            parts.push({ payload: { asset: ceremony.tail }, durationMs: tailMs })
+          }
+          const totalMs =
+            parts.reduce((sum, part) => sum + part.durationMs, 0) +
+            SET_CALLOUT_PART_GAP_MS * (parts.length - 1)
+          const startAt = anchor - totalMs
+          if (startAt < earliest) continue
+          let at = startAt
+          parts.forEach((part, k) => {
+            events.push({
+              id: `${cue.id}/ceremony#${k}`,
+              cueId: cue.id,
+              kind: 'set-callout',
+              atMs: Math.round(at),
+              payload: part.payload,
+              cancelsWith: 'cue-end',
+            })
+            at += part.durationMs + SET_CALLOUT_PART_GAP_MS
+          })
+          break
         }
       }
     }
@@ -297,7 +391,13 @@ export function compileRoundRhythmMap(
     const voicedTimes = events
       // Power call-outs (added above) count as voiced here, so a rotation
       // line is never scheduled right on top of one.
-      .filter((e) => e.kind === 'call' || e.kind === 'refire' || e.kind === 'encouragement')
+      .filter(
+        (e) =>
+          e.kind === 'call' ||
+          e.kind === 'refire' ||
+          e.kind === 'encouragement' ||
+          e.kind === 'set-callout',
+      )
       .map((e) => e.atMs)
       .sort((a, b) => a - b)
     const bounds = [0, ...voicedTimes, round.workDurationMs]
@@ -336,7 +436,8 @@ export function compileRoundRhythmMap(
       ({ event }) =>
         event.kind === 'call' ||
         event.kind === 'refire' ||
-        event.kind === 'encouragement',
+        event.kind === 'encouragement' ||
+        event.kind === 'set-callout',
     )
     .map(({ index }) => index)
 

@@ -32,6 +32,7 @@ import { CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
+import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
@@ -246,6 +247,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           }),
         encouragement:
           workout.recipe.enabledCoachCalls.length > 0 && workout.recipe.voiceMode !== 'off',
+        // Set Ceremonies: measured sentence lengths from the generated
+        // manifest (not the output port — it only answers for resident
+        // players). Absent clip = no ceremony, never a guessed duration.
+        setupCalloutDurationFor: (asset) =>
+          (CALLOUT_CLIPS as Record<string, { durationMs: number }>)[asset]?.durationMs,
       }),
     )
   }, [timeline, workout.recipe, voice])

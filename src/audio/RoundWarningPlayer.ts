@@ -24,6 +24,7 @@ import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
 
 import { logger, safe } from '@/diagnostics/logger'
 
+import { themeClipFor } from './voiceAssets/calloutManifest'
 import { INTRO_SEGMENTS } from './voiceAssets/introManifest'
 import { silenceFor } from './voiceAssets/silenceManifest'
 
@@ -46,7 +47,7 @@ export class RoundWarningPlayer {
    * native side buffers while the athlete breathes. Re-preparing the same
    * round is a no-op; a new round frees the previous playlist.
    */
-  prepare(roundNumber: number): void {
+  prepare(roundNumber: number, theme?: string): void {
     if (this.preparedRound === roundNumber) return
     this.dispose()
     this.preparedRound = roundNumber
@@ -56,20 +57,27 @@ export class RoundWarningPlayer {
     if (!core) return // Round number outside the rendered range.
     const openerIndex = 1 + Math.floor(Math.random() * OPENER_COUNT)
     const opener = INTRO_SEGMENTS[`warn-opener-${String(openerIndex).padStart(2, '0')}`]
+    // "Coming up — the Square Builder!" (Set Ceremonies): the next
+    // round's theme, voiced between the opener and the countdown when a
+    // clip exists for it. Unknown themes are simply skipped.
+    const themeClip = theme === undefined ? undefined : themeClipFor(theme)
 
     const sources: number[] = []
     let totalMs = 0
-    if (opener) {
-      sources.push(opener.module)
-      totalMs += opener.durationMs
-      const breath = silenceFor(OPENER_GAP_MS)
-      if (breath !== undefined) {
-        sources.push(breath)
-        totalMs += OPENER_GAP_MS
+    const pushWithBreath = (module: number, durationMs: number): void => {
+      if (sources.length > 0) {
+        const breath = silenceFor(OPENER_GAP_MS)
+        if (breath !== undefined) {
+          sources.push(breath)
+          totalMs += OPENER_GAP_MS
+        }
       }
+      sources.push(module)
+      totalMs += durationMs
     }
-    sources.push(core.module)
-    totalMs += core.durationMs
+    if (opener) pushWithBreath(opener.module, opener.durationMs)
+    if (themeClip) pushWithBreath(themeClip.module, themeClip.durationMs)
+    pushWithBreath(core.module, core.durationMs)
 
     try {
       this.playlist = createAudioPlaylist({ sources, loop: 'none', updateInterval: 500 })

@@ -63,7 +63,12 @@ import {
 import { shouldSpeak, voiceAllowed, type VoiceCoachPolicy } from './VoiceCoachPolicy'
 import type { CueEvent, SessionPhaseEvent } from '../programs/CueState'
 import type { CueInstance, RoundTimeline } from '../programs/CueTimeline'
-import type { CallPayload, RhythmEvent, RoundRhythmMap } from '../programs/RhythmMap'
+import type {
+  CallPayload,
+  RhythmEvent,
+  RoundRhythmMap,
+  SetCalloutPayload,
+} from '../programs/RhythmMap'
 import type { Stance } from '../workout/WorkoutTokens'
 
 /**
@@ -288,6 +293,25 @@ export class CueAnnouncer {
       case 'tone': {
         // Compiled maps no longer carry tones; a stale map's tone event is
         // ignored — no beeps (Kyle's sound design).
+        return
+      }
+      case 'set-callout': {
+        // A pre-set ceremony part (Set Ceremonies). Gated like the call it
+        // precedes — NOT as a coaching reminder, which Standard mode mutes
+        // and would silence the keystone feature for default users.
+        if (!this.speakable('punch-command')) return
+        const payload = event.payload as SetCalloutPayload | null
+        if (!payload) return
+        if ('recite' in payload) {
+          // A false return means the phrase library has no rendering — the
+          // recitation is an enhancement; the set's own call still fires.
+          this.output.playCombination?.(payload.recite, payload.cadence, undefined, {
+            vocabulary: this.vocabulary === 'techniques' ? 'techniques' : 'numbers',
+            performance: 'teach',
+          })
+          return
+        }
+        this.output.playAsset(payload.asset as VoiceAssetId)
         return
       }
       case 'call':

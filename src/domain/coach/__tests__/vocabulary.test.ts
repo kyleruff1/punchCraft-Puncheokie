@@ -81,8 +81,9 @@ describe('the asset set covers the whole token vocabulary', () => {
     // 24 core (punches, defense, footwork, session, tones) + 4 coast
     // announcements (D23) + 5 coach lines (M4 encouragement) + the gong
     // (round-end sound; the ding opens rounds, and no beeps exist) + the
-    // power-mode call-out for slow 1-2 strike windows.
-    expect(VOICE_ASSET_IDS).toHaveLength(35)
+    // power-mode call-out + 47 Set Ceremony call-outs (19 patterns in
+    // 2-3 variants, plus the two launch tails).
+    expect(VOICE_ASSET_IDS).toHaveLength(82)
   })
 })
 

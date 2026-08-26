@@ -46,6 +46,7 @@ import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
+import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
 import { RoundWarningPlayer } from '@audio/RoundWarningPlayer'
 import {
   INTRO_COUNTDOWN_SLACK_MS,
@@ -140,14 +141,44 @@ export default function LiveScreen(): React.JSX.Element {
   // notations the phrase library can actually say. A notation with no
   // rendered clip drops that ladder from selection rather than sending the
   // coach to the per-word fallback for a whole round.
-  const generated = useMemo(
-    () =>
-      generateWorkout(recipe, {
-        voiceReady: (notation) =>
-          findPhraseAsset(notation, recipe.cadenceProfile, policy.vocabulary === 'names' ? 'techniques' : 'numbers') !== undefined,
-      }),
-    [recipe, policy.vocabulary],
-  )
+  const generated = useMemo(() => {
+    const vocabulary = policy.vocabulary === 'names' ? 'techniques' : 'numbers'
+    return generateWorkout(recipe, {
+      voiceReady: (notation) =>
+        findPhraseAsset(notation, recipe.cadenceProfile, vocabulary) !== undefined,
+      // Set Ceremonies: price a pre-set call-out from MEASURED clip
+      // lengths so the fill can reserve exactly the lead-in the coach
+      // needs. Any missing clip prices to undefined — the ceremony is
+      // skipped, never guessed.
+      ...(policy.mode === 'off'
+        ? {}
+        : {
+            setupCallouts: {
+              reserveMsFor: (asset: string, notation?: string, tail?: string) => {
+                const sentence = (
+                  CALLOUT_CLIPS as Record<string, { durationMs: number }>
+                )[asset]?.durationMs
+                if (sentence === undefined) return undefined
+                let total = sentence
+                if (notation !== undefined) {
+                  const recite = findPhraseAsset(notation, 'technical', vocabulary)?.durationMs
+                  if (recite === undefined) return undefined
+                  total += recite + 250
+                }
+                if (tail !== undefined) {
+                  const tailMs = (
+                    CALLOUT_CLIPS as Record<string, { durationMs: number }>
+                  )[tail]?.durationMs
+                  if (tailMs === undefined) return undefined
+                  total += tailMs + 250
+                }
+                // Finish-quiet margin plus start slack.
+                return total + 800
+              },
+            },
+          }),
+    })
+  }, [recipe, policy.vocabulary, policy.mode])
   const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
 
   // The walkout announcement: "Hello! Welcome to punch craft. I'm your
@@ -219,9 +250,11 @@ export default function LiveScreen(): React.JSX.Element {
     warnRef.current ??= new RoundWarningPlayer()
     // During rest, roundIndex still names the round just finished; the
     // athlete is being readied for the NEXT one (1-based: index + 2).
-    warnRef.current.prepare(live.roundIndex + 2)
+    // The next round's theme ("Coming up — the Square Builder!") joins
+    // the ceremony when a clip exists for it.
+    warnRef.current.prepare(live.roundIndex + 2, workout.schedule[live.roundIndex + 1]?.theme)
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
-  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice])
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.schedule])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
   const startedRef = useRef(false)

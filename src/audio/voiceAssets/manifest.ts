@@ -27,6 +27,14 @@
 
 import { VOICE_ASSET_IDS, type VoiceAssetId } from '@domain/coach/VoiceOutputPort'
 import type { VoiceVocabulary } from '@domain/coach/VoiceCoachPolicy'
+// Set Ceremonies: generated per-directory require maps (47 call-out
+// clips × 4 sections) — see tools/voice/make-callout-clips.mjs.
+import {
+  CALLOUT_REQUIRES_NAMES_COMBO,
+  CALLOUT_REQUIRES_NAMES_STANDALONE,
+  CALLOUT_REQUIRES_NUMBERS_COMBO,
+  CALLOUT_REQUIRES_NUMBERS_STANDALONE,
+} from './calloutManifest'
 
 /** What Metro's `require` returns for an asset — an opaque module id. */
 export type AssetModule = number
@@ -76,6 +84,7 @@ export const voiceAssetManifest: VoiceAssetManifest = {
         switch: require('../../../assets/voice/numbers/standalone/switch.wav'),
         bell: require('../../../assets/voice/numbers/standalone/bell.wav'),
         gong: require('../../../assets/voice/numbers/standalone/gong.wav'),
+        ...CALLOUT_REQUIRES_NUMBERS_STANDALONE,
         'power-strikes': require('../../../assets/voice/numbers/standalone/power-strikes.wav'),
         'tone-ready': require('../../../assets/voice/numbers/standalone/tone-ready.wav'),
         'tone-repeat': require('../../../assets/voice/numbers/standalone/tone-repeat.wav'),
@@ -113,6 +122,7 @@ export const voiceAssetManifest: VoiceAssetManifest = {
         switch: require('../../../assets/voice/numbers/combo/switch.wav'),
         bell: require('../../../assets/voice/numbers/combo/bell.wav'),
         gong: require('../../../assets/voice/numbers/combo/gong.wav'),
+        ...CALLOUT_REQUIRES_NUMBERS_COMBO,
         'power-strikes': require('../../../assets/voice/numbers/combo/power-strikes.wav'),
         'tone-ready': require('../../../assets/voice/numbers/combo/tone-ready.wav'),
         'tone-repeat': require('../../../assets/voice/numbers/combo/tone-repeat.wav'),
@@ -152,6 +162,7 @@ export const voiceAssetManifest: VoiceAssetManifest = {
         switch: require('../../../assets/voice/names/standalone/switch.wav'),
         bell: require('../../../assets/voice/names/standalone/bell.wav'),
         gong: require('../../../assets/voice/names/standalone/gong.wav'),
+        ...CALLOUT_REQUIRES_NAMES_STANDALONE,
         'power-strikes': require('../../../assets/voice/names/standalone/power-strikes.wav'),
         'tone-ready': require('../../../assets/voice/names/standalone/tone-ready.wav'),
         'tone-repeat': require('../../../assets/voice/names/standalone/tone-repeat.wav'),
@@ -189,6 +200,7 @@ export const voiceAssetManifest: VoiceAssetManifest = {
         switch: require('../../../assets/voice/names/combo/switch.wav'),
         bell: require('../../../assets/voice/names/combo/bell.wav'),
         gong: require('../../../assets/voice/names/combo/gong.wav'),
+        ...CALLOUT_REQUIRES_NAMES_COMBO,
         'power-strikes': require('../../../assets/voice/names/combo/power-strikes.wav'),
         'tone-ready': require('../../../assets/voice/names/combo/tone-ready.wav'),
         'tone-repeat': require('../../../assets/voice/names/combo/tone-repeat.wav'),

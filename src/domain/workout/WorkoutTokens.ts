@@ -65,6 +65,20 @@ export type BlockKind =
   | 'open-pressure'
   | 'coast'
 
+/**
+ * A pre-set coach call-out (Set Ceremonies): the sentence variant to
+ * play, an optional notation to recite at technical cadence, an optional
+ * launch tail, and the lead-in time the fill reserved for the whole
+ * ceremony. Structural only — pattern ids and selection rules live in
+ * `setupCallouts.ts`, which produces these.
+ */
+export interface SetupCallout {
+  asset: string
+  notation?: string
+  tail?: string
+  reserveMs: number
+}
+
 export interface WorkoutBlock {
   id: string
   kind: BlockKind
@@ -82,6 +96,15 @@ export interface WorkoutBlock {
   graceAfterMs?: number
   spokenPhrase?: string
   instruction?: string
+  /**
+   * The pre-set call-out this block earned (Set Ceremonies) — stamped at
+   * generation time (only the fill knows "this is build1 of the Square
+   * Builder") and threaded to the block's first cue, where the rhythm
+   * map compiles the ceremony inside the fill's reservation. The
+   * structural type lives here because this module is the import-free
+   * root; the pattern table and pickers live in `setupCallouts.ts`.
+   */
+  setupCallout?: SetupCallout
   /**
    * Voice cadence band for this block (M4, doc §17) — names which phrase
    * RENDERING calls it (a flurry is called in the sprint recording); the
