@@ -10,5 +10,9 @@
   "numbers/combo/5": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
   "names/standalone/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 },
   "word:roll": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
+  "word:3": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
+  "word:6": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
+  "word:stop": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
+  "word:duck": { "cfgWeight": 0.6, "exaggeration": 0.75, "attempts": 24 },
   "names/combo/switch": { "cfgWeight": 0.55, "exaggeration": 0.8, "attempts": 20 }
 }
