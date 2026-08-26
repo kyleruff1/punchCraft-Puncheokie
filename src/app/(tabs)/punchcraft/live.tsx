@@ -45,6 +45,8 @@ import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
+import { IntroPlayer } from '@audio/IntroPlayer'
+import { planIntro } from '@audio/introPlan'
 import { LobbyJokePlayer } from '@audio/LobbyJokePlayer'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
@@ -162,17 +164,41 @@ export default function LiveScreen(): React.JSX.Element {
     [recipe, policy.vocabulary],
   )
   const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
+
+  // The walkout announcement: "Hello! Welcome to punch craft. I'm your
+  // coach, Jonathan punch craft…" — the countdown stretches to fit the
+  // planned segments, so the coach finishes before the first bell and the
+  // rhythm map never moves. Voice off, or no rendered segments, falls back
+  // to the default 5-second lead-in.
+  const intro = useMemo(() => planIntro(workout), [workout])
+  const introMs = policy.mode !== 'off' && intro.totalMs > 0 ? intro.totalMs : undefined
+
   const runner = useWorkoutRunner({
     workout,
     source,
     stance: workout.recipe.defaultStance,
     clock,
+    countdownMs: introMs,
     // `setEndOutcome` is stable, which the runner requires — an unstable
     // callback here would rebuild the cue engine on every render.
     onSessionEnded: setEndOutcome,
     voice,
     haptics,
   })
+
+  // The walkout announcement plays during that extended countdown — the
+  // player is idempotent, so re-renders mid-countdown cannot restart it.
+  const introRef = useRef<IntroPlayer | null>(null)
+  React.useEffect(() => {
+    if (live.phase !== 'countdown' || policy.mode === 'off') return
+    introRef.current ??= new IntroPlayer()
+    introRef.current.play(intro.segments, volumes.voice)
+  }, [live.phase, policy.mode, intro.segments, volumes.voice])
+  React.useEffect(() => {
+    // The bell has authority: a still-talking intro is cut, never waited on.
+    if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()
+  }, [live.phase])
+  React.useEffect(() => () => introRef.current?.stop(), [])
 
   const startedRef = useRef(false)
 

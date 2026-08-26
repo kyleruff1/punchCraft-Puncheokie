@@ -145,6 +145,12 @@ export interface UseWorkoutRunnerArgs {
   stance: Stance
   clock?: MonotonicClock
   /**
+   * Lead-in before round 1, overriding the session clock's default. The
+   * live screen sets it to the walkout announcement's planned length
+   * (`planIntro`) so the coach finishes before the first bell.
+   */
+  countdownMs?: number
+  /**
    * Repositories to write the finished session into. Defaults to the shared
    * app database; pass `null` to run without persisting, which is what the
    * component tests do — they have no native SQLite binding.
@@ -208,7 +214,8 @@ interface CueRenderState {
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
-  const { workout, source, stance, persistence, onSessionEnded, voice, haptics } = args
+  const { workout, source, stance, persistence, onSessionEnded, voice, haptics, countdownMs } =
+    args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
@@ -898,7 +905,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         workDurationMs: r.workDurationMs,
         restAfterMs: r.restAfterMs,
       })),
-      { clock },
+      // The walkout announcement (intro) extends the lead-in: the screen
+      // passes the planned intro length so the first bell waits for the
+      // coach. The work clock — and the rhythm map with it — still starts
+      // at the bell; the intro only ever moves the countdown.
+      countdownMs === undefined ? { clock } : { clock, countdownMs },
     )
     engineRef.current = engine
     sessionRef.current = session
@@ -975,6 +986,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     applyTransitions,
     capability.tier,
     clock,
+    countdownMs,
     onCueEvent,
     onMatcherEvent,
     onPunch,
