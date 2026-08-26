@@ -16,10 +16,11 @@
  * VoiceAssetId vocabulary: a joke is not a call.
  *
  * Run: node tools/voice/make-joke-clips.mjs [--only-ids=joke-01,...]
+ *      [--manifest-only]   (re-measure what's on disk, skip rendering)
  */
 
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
@@ -33,7 +34,7 @@ import {
   REFERENCE_VOICE,
   RENDERER,
 } from './persona.mjs'
-import { trimEnds, renameWithRetry } from './wav.mjs'
+import { measureDuration, trimEnds, renameWithRetry } from './wav.mjs'
 
 const OUT_DIR = join('assets', 'voice', 'numbers', 'standalone')
 
@@ -70,6 +71,8 @@ if (ENGINE !== 'chatterbox') {
 const onlyArg = process.argv.find((a) => a.startsWith('--only-ids='))?.slice('--only-ids='.length)
 const only = onlyArg ? new Set(onlyArg.split(',').map((s) => s.trim())) : null
 
+const manifestOnly = process.argv.includes('--manifest-only')
+
 const { jokes } = JSON.parse(readFileSync(join('tools', 'voice', 'jokes.json'), 'utf8'))
 const jobs = jokes
   .filter((j) => !only || only.has(j.id))
@@ -82,6 +85,60 @@ const jobs = jokes
     })
     return { ...joke, plan, wav: join(process.cwd(), OUT_DIR, `${joke.id}.wav`) }
   })
+
+// The joke now rides INSIDE the walkout announcement (the countdown must
+// cover it), so the manifest carries measured durations like the intro's —
+// always rebuilt over the full joke list from what exists on disk.
+function writeManifest() {
+  const entries = jokes.filter((j) => existsSync(join(process.cwd(), OUT_DIR, `${j.id}.wav`)))
+  const lines = [
+    '/**',
+    ' * Cornerman lobby jokes (generated from tools/voice/jokes.json).',
+    ' *',
+    ' * One joke per workout, maximum — delivered as an extension of the',
+    ' * walkout announcement, before the first bell, never on the rhythm',
+    ' * map. Durations are measured from the rendered files; the countdown',
+    ' * stretches to cover the chosen joke.',
+    ' *',
+    ' * DO NOT EDIT — regenerate with `node tools/voice/make-joke-clips.mjs`.',
+    ' */',
+    '',
+    '/* eslint-disable @typescript-eslint/no-require-imports */',
+    '',
+    'export interface LobbyJoke {',
+    '  id: string',
+    '  /** Metro module id for the clip. */',
+    '  module: number',
+    '  durationMs: number',
+    '}',
+    '',
+    'export const LOBBY_JOKES: readonly LobbyJoke[] = [',
+  ]
+  for (const joke of entries) {
+    const durationMs = measureDuration(join(process.cwd(), OUT_DIR, `${joke.id}.wav`))
+    lines.push(
+      `  { id: '${joke.id}', module: require('../../../assets/voice/numbers/standalone/${joke.id}.wav'), durationMs: ${durationMs} },`,
+    )
+  }
+  lines.push(
+    ']',
+    '',
+    '/** The workout’s entire comedy budget: one random draw. */',
+    'export function pickLobbyJoke(): LobbyJoke {',
+    '  return LOBBY_JOKES[Math.floor(Math.random() * LOBBY_JOKES.length)] as LobbyJoke',
+    '}',
+    '',
+    '/* eslint-enable @typescript-eslint/no-require-imports */',
+    '',
+  )
+  writeFileSync(join('src', 'audio', 'voiceAssets', 'jokeManifest.ts'), lines.join('\n'))
+  console.log(`Wrote jokeManifest.ts (${entries.length}/${jokes.length} jokes, measured durations)`)
+}
+
+if (manifestOnly) {
+  writeManifest()
+  process.exit(0)
+}
 
 console.log(`Rendering ${jobs.length} lobby jokes — ${RENDERER}…`)
 const renderOut = execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
@@ -123,3 +180,4 @@ for (const job of jobs) {
   if (existsSync(temp)) renameWithRetry(temp, job.wav)
 }
 console.log(`Wrote ${jobs.filter((j) => existsSync(j.wav)).length}/${jobs.length} jokes to ${OUT_DIR}`)
+writeManifest()

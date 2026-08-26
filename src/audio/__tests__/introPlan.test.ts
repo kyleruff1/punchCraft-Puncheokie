@@ -1,5 +1,6 @@
 /**
- * The walkout announcement plan: which segments a workout gets, and the
+ * The walkout announcement plan: which segments a workout gets, the
+ * coach's comedic timing (double breath → joke → landing beat), and the
  * countdown arithmetic the first bell waits on.
  */
 
@@ -8,11 +9,14 @@ import { scoredRounds } from '@domain/workout/GeneratedWorkout'
 import { defaultRecipe, type WorkoutRecipe } from '@domain/workout/WorkoutRecipe'
 
 import {
+  DOUBLE_BREATH_MS,
   INTRO_SEGMENT_GAP_MS,
   INTRO_TAIL_PAD_MS,
+  JOKE_LANDING_MS,
   planIntro,
 } from '../introPlan'
 import { INTRO_SEGMENTS, type IntroSegment } from '../voiceAssets/introManifest'
+import { LOBBY_JOKES, type LobbyJoke } from '../voiceAssets/jokeManifest'
 
 function fakeManifest(ids: string[], durationMs = 5_000): Record<string, IntroSegment> {
   return Object.fromEntries(ids.map((id) => [id, { id, module: 1, durationMs }]))
@@ -27,27 +31,47 @@ const FULL_FAKE = fakeManifest([
   ),
 ])
 
+const FAKE_JOKE: LobbyJoke = { id: 'joke-99', module: 1, durationMs: 8_000 }
+
 function workoutFor(overrides: Partial<WorkoutRecipe> = {}) {
   return generateWorkout({ ...defaultRecipe(), ...overrides })
 }
 
 describe('planIntro', () => {
-  it('announces hello, the round count, the program, and the send-off — in order', () => {
+  it('sequences hello, round count, program, the joke, then the send-off', () => {
     const workout = workoutFor({ tier: 'intermediate', cadenceProfile: 'steady' })
     const rounds = scoredRounds(workout.schedule).length
-    const plan = planIntro(workout, FULL_FAKE)
+    const plan = planIntro(workout, FULL_FAKE, FAKE_JOKE)
     expect(plan.segments.map((s) => s.id)).toEqual([
       'intro-hello',
       `intro-rounds-${rounds}`,
       'intro-program-intermediate-steady',
+      'joke-99',
       'intro-letsgo',
     ])
+  })
+
+  it("plans the coach's timing: double breath before the joke, a beat after it", () => {
+    const plan = planIntro(workoutFor(), FULL_FAKE, FAKE_JOKE)
+    const gaps = Object.fromEntries(plan.segments.map((s) => [s.id, s.gapBeforeMs]))
+    expect(gaps['joke-99']).toBe(DOUBLE_BREATH_MS)
+    expect(gaps['intro-letsgo']).toBe(JOKE_LANDING_MS)
+    expect(gaps['intro-hello']).toBe(0)
+    // Plain sentences keep the plain breath.
+    expect(plan.segments[1]?.gapBeforeMs).toBe(INTRO_SEGMENT_GAP_MS)
+  })
+
+  it('falls back to the plain breath before the send-off when there is no joke', () => {
+    const plan = planIntro(workoutFor(), FULL_FAKE, null)
+    expect(plan.segments.some((s) => s.id.startsWith('joke-'))).toBe(false)
+    expect(plan.segments.at(-1)?.id).toBe('intro-letsgo')
+    expect(plan.segments.at(-1)?.gapBeforeMs).toBe(INTRO_SEGMENT_GAP_MS)
   })
 
   it('covers every tier x cadence the recipe screen can produce', () => {
     for (const tier of ['beginner', 'intermediate', 'advanced'] as const) {
       for (const cadenceProfile of ['technical', 'steady', 'pressure', 'sprint'] as const) {
-        const plan = planIntro(workoutFor({ tier, cadenceProfile }), FULL_FAKE)
+        const plan = planIntro(workoutFor({ tier, cadenceProfile }), FULL_FAKE, FAKE_JOKE)
         expect(plan.segments.map((s) => s.id)).toContain(
           `intro-program-${tier}-${cadenceProfile}`,
         )
@@ -55,16 +79,22 @@ describe('planIntro', () => {
     }
   })
 
-  it('totals clip lengths plus gaps plus the pre-bell beat', () => {
-    const plan = planIntro(workoutFor(), fakeManifest(['intro-hello', 'intro-letsgo'], 4_000))
+  it('totals clips plus every planned pause plus the pre-bell beat', () => {
+    const plan = planIntro(
+      workoutFor(),
+      fakeManifest(['intro-hello', 'intro-letsgo'], 4_000),
+      FAKE_JOKE,
+    )
     // Round-count and program segments are absent from this manifest, so the
-    // plan gracefully shrinks to the two bookends — and the total with it.
-    expect(plan.segments).toHaveLength(2)
-    expect(plan.totalMs).toBe(4_000 + 4_000 + INTRO_SEGMENT_GAP_MS + INTRO_TAIL_PAD_MS)
+    // plan shrinks to hello → (double breath) → joke → (beat) → send-off.
+    expect(plan.segments.map((s) => s.id)).toEqual(['intro-hello', 'joke-99', 'intro-letsgo'])
+    expect(plan.totalMs).toBe(
+      4_000 + DOUBLE_BREATH_MS + 8_000 + JOKE_LANDING_MS + 4_000 + INTRO_TAIL_PAD_MS,
+    )
   })
 
   it('returns an empty plan when nothing is rendered — the default countdown stands', () => {
-    const plan = planIntro(workoutFor(), {})
+    const plan = planIntro(workoutFor(), {}, null)
     expect(plan.segments).toHaveLength(0)
     expect(plan.totalMs).toBe(0)
   })
@@ -77,13 +107,14 @@ describe('planIntro', () => {
         r.countsTowardGoal ? { ...r, workDurationMs: 180_000 } : r,
       ),
     }
-    const plan = planIntro(bent, FULL_FAKE)
+    const plan = planIntro(bent, FULL_FAKE, FAKE_JOKE)
     expect(plan.segments.some((s) => s.id.startsWith('intro-rounds-'))).toBe(false)
     expect(plan.segments.map((s) => s.id)).toContain('intro-hello')
   })
 
-  it('finds a rendered segment in the SHIPPED manifest for every generated default workout', () => {
-    // The real manifest: whatever the generator emits must be announceable.
+  it('announces every generated default workout from the SHIPPED manifests', () => {
+    // The real manifest + the real joke pool: whatever the generator emits
+    // must be announceable, and every duration is a measurement.
     const workout = workoutFor()
     const plan = planIntro(workout)
     const rounds = scoredRounds(workout.schedule).length
@@ -91,12 +122,15 @@ describe('planIntro', () => {
       'intro-hello',
       `intro-rounds-${rounds}`,
       expect.stringMatching(/^intro-program-/),
+      expect.stringMatching(/^joke-/),
       'intro-letsgo',
     ])
-    expect(plan.totalMs).toBeGreaterThan(10_000)
-    // Every shipped duration is a real measurement, not a placeholder.
+    expect(plan.totalMs).toBeGreaterThan(15_000)
     for (const segment of Object.values(INTRO_SEGMENTS)) {
       expect(segment.durationMs).toBeGreaterThan(500)
+    }
+    for (const joke of LOBBY_JOKES) {
+      expect(joke.durationMs).toBeGreaterThan(2_000)
     }
   })
 })

@@ -47,7 +47,6 @@ import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
 import { planIntro } from '@audio/introPlan'
-import { LobbyJokePlayer } from '@audio/LobbyJokePlayer'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
   PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
@@ -122,25 +121,6 @@ export default function LiveScreen(): React.JSX.Element {
     [output, policy, detector],
   )
 
-  // The lobby joke (M4): ONE per workout, told while the fight loads and
-  // never after the first bell — personality lives outside the rhythm map
-  // by construction, so it cannot offset a single call.
-  const jokeRef = useRef<LobbyJokePlayer | null>(null)
-  React.useEffect(() => {
-    if (live.phase !== 'idle' || policy.mode === 'off') return
-    jokeRef.current ??= new LobbyJokePlayer()
-    // A beat after the screen settles, like a cornerman filling the wait.
-    const timer = setTimeout(() => jokeRef.current?.tell(volumes.voice), 1_200)
-    return () => {
-      clearTimeout(timer)
-    }
-  }, [live.phase, policy.mode, volumes.voice])
-  React.useEffect(() => {
-    // The bell ends the comedy: any phase past idle silences the joke.
-    if (live.phase !== 'idle') jokeRef.current?.stop()
-  }, [live.phase])
-  React.useEffect(() => () => jokeRef.current?.stop(), [])
-
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
   // (M33-01). The runner is written against the port and sees no difference.
@@ -166,10 +146,12 @@ export default function LiveScreen(): React.JSX.Element {
   const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
 
   // The walkout announcement: "Hello! Welcome to punch craft. I'm your
-  // coach, Jonathan punch craft…" — the countdown stretches to fit the
-  // planned segments, so the coach finishes before the first bell and the
-  // rhythm map never moves. Voice off, or no rendered segments, falls back
-  // to the default 5-second lead-in.
+  // coach, Jonathan punch craft…" — workout details, a double breath, the
+  // joke, a beat, "Let's get started!". The countdown stretches to fit the
+  // planned sequence (joke included — it draws once per workout, here in
+  // the memo), so the coach finishes before the first bell and the rhythm
+  // map never moves. Voice off, or no rendered segments, falls back to the
+  // default 5-second lead-in.
   const intro = useMemo(() => planIntro(workout), [workout])
   const introMs = policy.mode !== 'off' && intro.totalMs > 0 ? intro.totalMs : undefined
 

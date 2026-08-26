@@ -1,18 +1,24 @@
 /**
- * The walkout announcement plan — which intro segments this workout gets,
- * and how long the pre-round countdown must stretch to fit them.
+ * The walkout announcement plan — which segments this workout gets, in
+ * what rhythm, and how long the pre-round countdown must stretch to fit.
  *
  * "Hello! Welcome to punch craft. I'm your coach, Jonathan punch craft.
- * Today, we're boxing six rounds of four minutes each… Let's get started!"
+ * Today, we're boxing six rounds of four minutes each… (double breath)
+ * …joke… (beat) …Let's get started!"
  *
- * The variation space stays finite by composition: the intro is a sequence
- * of whole-sentence clips (one per setting axis — round count, tier x
- * cadence), never one clip per combination of settings. The rhythm map is
- * untouched: the intro plays inside an EXTENDED countdown, the first bell
- * still starts the work clock, and the session clock — not the intro
- * playback — decides when that bell rings. A segment missing from the
+ * The joke is an EXTENSION OF THE INTRO — the coach sets up the workout,
+ * takes a double breath, lands the joke, lets it sit, then sends the
+ * athlete off. The pauses are part of the plan (per-segment
+ * `gapBeforeMs`), because the whole point is the coach's timing — a flat
+ * 350ms everywhere would read as a script, not a cornerman.
+ *
+ * The variation space stays finite by composition: whole-sentence clips,
+ * one per setting axis (round count, tier x cadence), plus one random
+ * joke from the 30-deep pool. The rhythm map is untouched: everything
+ * here plays inside an EXTENDED countdown, and the session clock — not
+ * the playback — decides when the bell rings. A segment missing from a
  * manifest (render gate rejected it) is skipped, and the countdown
- * shortens to match: durations here are measured, never guessed.
+ * shortens to match: durations are measured, never guessed.
  */
 
 import {
@@ -22,15 +28,29 @@ import {
 import { tierFor } from '@domain/workout/WorkoutRecipe'
 
 import { INTRO_SEGMENTS, type IntroSegment } from './voiceAssets/introManifest'
+import { pickLobbyJoke, type LobbyJoke } from './voiceAssets/jokeManifest'
 
-/** Breath between sentences; part of the planned total, so the bell waits. */
+/** Breath between plain sentences. */
 export const INTRO_SEGMENT_GAP_MS = 350
+/** The double breath before the joke — the setup hangs, then it drops. */
+export const DOUBLE_BREATH_MS = 1_700
+/** The beat after the punchline, before "Let's get started!". */
+export const JOKE_LANDING_MS = 1_000
 /** Quiet after "Let's get started!" before the bell — a beat, not a wall. */
 export const INTRO_TAIL_PAD_MS = 900
 
+export interface PlannedIntroSegment {
+  id: string
+  /** Metro module id for the clip. */
+  module: number
+  durationMs: number
+  /** Silence before this segment starts (0 for the first). */
+  gapBeforeMs: number
+}
+
 export interface IntroPlan {
-  segments: IntroSegment[]
-  /** What the countdown must cover: clips + gaps + the pre-bell beat. */
+  segments: PlannedIntroSegment[]
+  /** What the countdown must cover: clips + planned pauses + the pre-bell beat. */
   totalMs: number
 }
 
@@ -41,6 +61,7 @@ const STANDARD_REST_MS = 60_000
 export function planIntro(
   workout: GeneratedWorkout,
   manifest: Readonly<Record<string, IntroSegment>> = INTRO_SEGMENTS,
+  joke: LobbyJoke | null = pickLobbyJoke() ?? null,
 ): IntroPlan {
   const ids: string[] = ['intro-hello']
 
@@ -54,16 +75,34 @@ export function planIntro(
   if (standardShape) ids.push(`intro-rounds-${scored.length}`)
 
   ids.push(`intro-program-${tierFor(workout.recipe)}-${workout.recipe.cadenceProfile}`)
-  ids.push('intro-letsgo')
 
-  const segments = ids
+  const segments: PlannedIntroSegment[] = ids
     .map((id) => manifest[id])
     .filter((s): s is IntroSegment => s !== undefined)
+    .map((s, index) => ({ ...s, gapBeforeMs: index === 0 ? 0 : INTRO_SEGMENT_GAP_MS }))
+
+  if (joke) {
+    segments.push({
+      id: joke.id,
+      module: joke.module,
+      durationMs: joke.durationMs,
+      gapBeforeMs: segments.length === 0 ? 0 : DOUBLE_BREATH_MS,
+    })
+  }
+
+  const sendOff = manifest['intro-letsgo']
+  if (sendOff) {
+    segments.push({
+      ...sendOff,
+      gapBeforeMs:
+        segments.length === 0 ? 0 : joke ? JOKE_LANDING_MS : INTRO_SEGMENT_GAP_MS,
+    })
+  }
+
   if (segments.length === 0) return { segments: [], totalMs: 0 }
 
   const totalMs =
-    segments.reduce((sum, s) => sum + s.durationMs, 0) +
-    INTRO_SEGMENT_GAP_MS * (segments.length - 1) +
+    segments.reduce((sum, s) => sum + s.gapBeforeMs + s.durationMs, 0) +
     INTRO_TAIL_PAD_MS
   return { segments, totalMs }
 }

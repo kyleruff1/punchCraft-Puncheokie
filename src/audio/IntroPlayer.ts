@@ -1,8 +1,9 @@
 /**
  * Sequential playback for the walkout announcement (see `introPlan.ts`).
  *
- * Lives in the audio layer for the same reason as `LobbyJokePlayer`:
- * screens speak through adapters, never expo-audio (spec §13.5).
+ * Lives in the audio layer because screens speak through adapters, never
+ * expo-audio (spec §13.5). This player also delivers the joke — the joke
+ * is an extension of the intro, planned into the same sequence.
  *
  * One persistent player + `replace()` per segment — per-clip player
  * creation is the pattern that killed the clip audition ~90 clips in.
@@ -14,8 +15,7 @@
 
 import { createAudioPlayer, type AudioPlayer } from 'expo-audio'
 
-import { INTRO_SEGMENT_GAP_MS } from './introPlan'
-import type { IntroSegment } from './voiceAssets/introManifest'
+import type { PlannedIntroSegment } from './introPlan'
 
 export class IntroPlayer {
   private player: AudioPlayer | null = null
@@ -23,7 +23,7 @@ export class IntroPlayer {
   private started = false
 
   /** Deliver the announcement once. Idempotent. */
-  play(segments: readonly IntroSegment[], volume: number): void {
+  play(segments: readonly PlannedIntroSegment[], volume: number): void {
     if (this.started) return
     this.started = true
     const first = segments[0]
@@ -39,10 +39,12 @@ export class IntroPlayer {
     this.scheduleNext(segments, 0)
   }
 
-  private scheduleNext(segments: readonly IntroSegment[], index: number): void {
+  private scheduleNext(segments: readonly PlannedIntroSegment[], index: number): void {
     const current = segments[index]
     const next = segments[index + 1]
     if (!current || !next) return
+    // The pause is the plan's, not a constant: a double breath sets up the
+    // joke, a landing beat lets it sit — the coach's timing IS the feature.
     this.timer = setTimeout(() => {
       try {
         this.player?.replace(next.module)
@@ -51,7 +53,7 @@ export class IntroPlayer {
         // Skip the segment; the chain continues.
       }
       this.scheduleNext(segments, index + 1)
-    }, current.durationMs + INTRO_SEGMENT_GAP_MS)
+    }, current.durationMs + next.gapBeforeMs)
   }
 
   /** The bell ends the speech. Safe to call repeatedly. */
