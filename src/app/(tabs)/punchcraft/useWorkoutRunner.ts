@@ -133,6 +133,8 @@ export interface WorkoutRunner {
   repeatCue(): void
   /** End the rest interval — all three §23 rest views go with it (D6). */
   skipRest(): void
+  /** End the lead-in now — the walkout finished ahead of its cap. */
+  skipCountdown(): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
   readCues(): { current?: CueView; next?: CueView; freeWork?: boolean }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
@@ -1036,6 +1038,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // representation in the session machine, so there is nothing finer
         // to skip (D6).
         applyTransitions(sessionRef.current?.skipRest() ?? [])
+        syncFromEngine()
+        pushStore(true)
+      },
+      skipCountdown: () => {
+        // The intro finished ahead of its padded cap; ring the bell now
+        // rather than serving the athlete the leftover slack in silence.
+        applyTransitions(sessionRef.current?.skipCountdown() ?? [])
         syncFromEngine()
         pushStore(true)
       },

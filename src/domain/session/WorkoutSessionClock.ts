@@ -173,6 +173,20 @@ export class WorkoutSessionClock {
     return this.advancePhase(0)
   }
 
+  /**
+   * End the lead-in now — the first bell rings immediately.
+   *
+   * Exists for the walkout announcement: the countdown is sized as a CAP
+   * (planned speech plus slack for load stalls), and the moment the coach
+   * lands "Let's get started!" the screen skips the remainder. Same
+   * philosophy as `skipRest`: deliberate, single-state, never a general
+   * fast-forward — outside `countdown` this does nothing.
+   */
+  skipCountdown(): SessionTransition[] {
+    if (this.phase !== 'countdown') return []
+    return this.advancePhase(0)
+  }
+
   /** Immediate stop (doc §25) — nothing lingers. */
   cancel(): SessionTransition[] {
     if (this.phase === 'completed' || this.phase === 'cancelled') return []

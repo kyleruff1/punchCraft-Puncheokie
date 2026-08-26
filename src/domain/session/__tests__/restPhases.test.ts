@@ -394,3 +394,42 @@ describe('skipRest — one call, all three phases (D6)', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+
+describe('skipCountdown — the walkout ends the lead-in early', () => {
+  const ROUNDS: SessionRoundSpec[] = [
+    { workDurationMs: 10_000, restAfterMs: MINUTE },
+    { workDurationMs: 10_000, restAfterMs: 0 },
+  ]
+
+  it('rings the first bell immediately from countdown', () => {
+    const clock = createFakeClock()
+    const session = new WorkoutSessionClock(ROUNDS, { clock, countdownMs: 45_000 })
+    session.start()
+    expect(session.snapshot().phase).toBe('countdown')
+    clock.advance(20_000)
+    session.advance()
+    expect(session.snapshot().phase).toBe('countdown')
+
+    expect(session.skipCountdown()).toEqual([{ type: 'work-entered', roundIndex: 0 }])
+    expect(session.snapshot().phase).toBe('work')
+    // The work clock starts at the (early) bell, not at the padded cap.
+    expect(session.snapshot().phaseElapsedMs).toBe(0)
+  })
+
+  it('does nothing outside countdown, so it cannot shorten work or rest', () => {
+    const clock = createFakeClock()
+    const session = new WorkoutSessionClock(ROUNDS, { clock, countdownMs: 0 })
+    session.start()
+    expect(session.snapshot().phase).toBe('work')
+    expect(session.skipCountdown()).toEqual([])
+    expect(session.snapshot().phase).toBe('work')
+
+    clock.advance(10_000)
+    session.advance()
+    expect(session.snapshot().phase).toBe('rest')
+    expect(session.skipCountdown()).toEqual([])
+    expect(session.snapshot().phase).toBe('rest')
+  })
+})

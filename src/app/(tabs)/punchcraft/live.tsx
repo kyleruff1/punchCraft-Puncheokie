@@ -46,7 +46,11 @@ import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
-import { planIntro } from '@audio/introPlan'
+import {
+  INTRO_COUNTDOWN_SLACK_MS,
+  INTRO_TAIL_PAD_MS,
+  planIntro,
+} from '@audio/introPlan'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
   PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
@@ -153,7 +157,13 @@ export default function LiveScreen(): React.JSX.Element {
   // map never moves. Voice off, or no rendered segments, falls back to the
   // default 5-second lead-in.
   const intro = useMemo(() => planIntro(workout), [workout])
-  const introMs = policy.mode !== 'off' && intro.totalMs > 0 ? intro.totalMs : undefined
+  // The countdown is a CAP, not the schedule: planned speech plus slack
+  // for dev-client load stalls. The intro's completion callback skips the
+  // remainder, so the bell follows the coach's actual last word.
+  const introMs =
+    policy.mode !== 'off' && intro.totalMs > 0
+      ? intro.totalMs + INTRO_COUNTDOWN_SLACK_MS
+      : undefined
 
   const runner = useWorkoutRunner({
     workout,
@@ -181,8 +191,13 @@ export default function LiveScreen(): React.JSX.Element {
   }, [live.phase, policy.mode, intro.segments])
   React.useEffect(() => {
     if (live.phase !== 'countdown' || policy.mode === 'off') return
-    introRef.current?.play(volumes.voice)
-  }, [live.phase, policy.mode, volumes.voice])
+    introRef.current?.play(volumes.voice, {
+      tailMs: INTRO_TAIL_PAD_MS,
+      // "Let's get started!" → a beat → the bell, regardless of how much
+      // of the padded cap is left.
+      onComplete: runner.skipCountdown,
+    })
+  }, [live.phase, policy.mode, volumes.voice, runner.skipCountdown])
   React.useEffect(() => {
     // The bell has authority: a still-talking intro is cut, never waited on.
     if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()

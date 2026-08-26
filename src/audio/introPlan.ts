@@ -50,6 +50,15 @@ export function jokeLandingMs(jokeDurationMs: number): number {
 /** Quiet after "Let's get started!" before the bell — a beat, not a wall. */
 export const INTRO_TAIL_PAD_MS = 900
 
+/**
+ * Slack added to the countdown CAP beyond the planned speech. Monitored
+ * run 4 measured ~10s of accumulated JS-stall lateness on the dev client;
+ * the cap absorbs it so the bell never cuts the coach off mid-joke. The
+ * normal path never serves this slack: the intro's completion skips the
+ * remaining countdown, so the bell follows the actual last word.
+ */
+export const INTRO_COUNTDOWN_SLACK_MS = 15_000
+
 export interface PlannedIntroSegment {
   id: string
   /** Metro module id for the clip. */

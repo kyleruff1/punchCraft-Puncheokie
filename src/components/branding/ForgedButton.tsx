@@ -6,20 +6,19 @@
  * definition: raised edges, shaded texture, the sense that the button
  * is a piece of metal rather than a coloured swatch.
  *
- * The effect here is pure RN — no native module needed. Three stacked
- * bands (top-lit, mid, bottom-shadow) fake a vertical gradient; a
- * 1-pixel light strip on the very top inside edge sells the bevel;
- * the outer border-top is lighter and border-bottom is darker so the
- * button reads as raised. A companion shadow strip peeks out at the
- * bottom, faking the shadow a forged edge would cast on the ground.
+ * The effect here is pure RN — no native module needed. The body is a
+ * mid-tone fill with a light top border and a heavier dark bottom
+ * border that together fake a bevel. A thin light highlight strip
+ * along the top inside edge sharpens the raised read, and a shadow
+ * strip peeking out under the bottom edge fakes the shadow a forged
+ * edge would cast on the ground.
  *
- * On press: the top highlight hides, the bands invert (dark on top),
- * and the shadow strip collapses — so the button reads as pressed-in
+ * On press: the top highlight hides, the fill shifts to a darker tone,
+ * and the bottom shadow collapses — so the button reads as pressed-in
  * rather than merely inverted.
  *
- * A cleaner true-gradient variant can layer in after the next native
- * rebuild (see `expo-linear-gradient`); the visual API here is stable
- * so the swap will be internal.
+ * A true-gradient upgrade (via expo-linear-gradient after a native
+ * rebuild) is a one-file swap; the API here is stable.
  *
  * Three variants:
  * - `primary` — the turquoise brand pop for the one page-forward action.
@@ -40,9 +39,9 @@ import { recipes } from '@/theme/typography'
 export type ForgedVariant = 'primary' | 'secondary' | 'subtle'
 
 interface VariantVisual {
-  /** Faux-gradient stops top → mid → bottom (three horizontal bands). */
-  fill: readonly [string, string, string]
-  fillPressed: readonly [string, string, string]
+  /** Main fill color of the body. */
+  fill: string
+  fillPressed: string
   /** Bevel top edge (light) and bottom edge (shadow). */
   bevelTop: string
   bevelBottom: string
@@ -53,24 +52,24 @@ interface VariantVisual {
 
 const VARIANTS: Record<ForgedVariant, VariantVisual> = {
   primary: {
-    fill: [punch.turquoiseBright, punch.turquoise, punch.turquoiseDeep],
-    fillPressed: [punch.turquoiseDeep, punch.turquoise, punch.turquoiseBright],
+    fill: punch.turquoise,
+    fillPressed: punch.turquoiseDeep,
     bevelTop: punch.aqua,
     bevelBottom: punch.tealBlack,
     textColor: colors.textOnAccent,
     textRecipe: recipes.buttonPrimary,
   },
   secondary: {
-    fill: [punch.slate, punch.steel, punch.gunmetal],
-    fillPressed: [punch.gunmetal, punch.steel, punch.slate],
+    fill: punch.steel,
+    fillPressed: punch.gunmetal,
     bevelTop: punch.silver,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonSecondary,
   },
   subtle: {
-    fill: [punch.gunmetal, punch.charcoal, punch.tealBlack],
-    fillPressed: [punch.tealBlack, punch.charcoal, punch.gunmetal],
+    fill: punch.gunmetal,
+    fillPressed: punch.charcoal,
     bevelTop: punch.steel,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
@@ -101,7 +100,6 @@ export function ForgedButton({
 }: ForgedButtonProps): React.JSX.Element {
   const [pressed, setPressed] = useState(false)
   const v = VARIANTS[variant]
-  const fill = pressed ? v.fillPressed : v.fill
   const content =
     typeof children === 'string' ? (
       <Text style={[styles.text, v.textRecipe, { color: v.textColor }]}>{children}</Text>
@@ -126,19 +124,22 @@ export function ForgedButton({
         pointerEvents="none"
       />
       <View
-        style={[styles.body, { borderTopColor: v.bevelTop, borderBottomColor: v.bevelBottom }]}
+        style={[
+          styles.body,
+          {
+            backgroundColor: pressed ? v.fillPressed : v.fill,
+            borderTopColor: v.bevelTop,
+            borderBottomColor: v.bevelBottom,
+          },
+        ]}
       >
-        {/* Faux-gradient: three stacked bands (top-lit / mid / bottom-shadow). */}
-        <View style={[styles.band, styles.bandTop, { backgroundColor: fill[0] }]} pointerEvents="none" />
-        <View style={[styles.band, styles.bandMid, { backgroundColor: fill[1] }]} pointerEvents="none" />
-        <View style={[styles.band, styles.bandBottom, { backgroundColor: fill[2] }]} pointerEvents="none" />
         {/* Inner highlight — a 1px light line along the top inside edge,
             selling the bevel from the light side. Hidden on press. */}
         <View
           style={[styles.highlight, { backgroundColor: v.bevelTop }, pressed && styles.hidden]}
           pointerEvents="none"
         />
-        <View style={styles.contentWrap}>{content}</View>
+        {content}
       </View>
     </Pressable>
   )
@@ -156,11 +157,10 @@ const styles = StyleSheet.create({
     bottom: -2,
     height: 4,
     borderRadius: 10,
-    opacity: 0.85,
+    opacity: 0.9,
   },
   shadowPressed: { bottom: 0, height: 2, opacity: 0.5 },
   body: {
-    position: 'relative',
     borderRadius: 10,
     borderTopWidth: 1,
     borderBottomWidth: 2,
@@ -168,27 +168,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    minHeight: 48,
+    minHeight: 52,
   },
-  band: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-  },
-  bandTop: { top: 0, height: '38%' },
-  bandMid: { top: '30%', height: '40%' },
-  bandBottom: { bottom: 0, height: '38%' },
   highlight: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    left: 8,
+    right: 8,
     height: 1,
     opacity: 0.7,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
   },
   hidden: { opacity: 0 },
   disabled: { opacity: 0.4 },
-  contentWrap: { zIndex: 1, alignItems: 'center', justifyContent: 'center' },
   text: { textAlign: 'center' },
 })

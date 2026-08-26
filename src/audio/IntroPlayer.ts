@@ -5,44 +5,51 @@
  * expo-audio (spec §13.5). This player also delivers the joke — the joke
  * is an extension of the intro, planned into the same sequence.
  *
- * Two lessons from the first monitored walkout are load-bearing here:
+ * Three monitored walkouts taught this class its shape:
  *
- * - **Preload at load(), not at play().** On the dev client a cold wav
- *   streams from Metro; the first run took ~16 s to make a sound. Every
- *   segment gets its own player the moment the plan exists (the athlete
- *   is still reading the lobby), so play() starts on warm players.
- * - **Advance on didJustFinish, never on a blind timer.** The first cut
- *   advanced on planned durations from the play() call; with the first
- *   clip still loading, every replace() fired early, threw, and the
- *   chain died silently — one sentence, 26 s of dead air, then the bell.
- *   Now the next segment starts when the current one actually ends, plus
- *   the planned gap. A watchdog (duration + gap + slack) advances if the
- *   finish event never arrives, so a stuck clip costs its own slot, not
- *   the whole speech.
+ * - **Preload at load(), not at play().** A cold wav streams from Metro on
+ *   the dev client; run 1 took ~16 s to make a sound. Players are created
+ *   in the lobby, so play() starts warm (run 3 measured 1.6 s).
+ * - **Never sequence on events or one-shot timers.** Run 2 advanced on
+ *   `didJustFinish`; run 3's instrumentation showed that event arriving
+ *   25 s late for a 5.6 s clip — the countdown's preload storm starves
+ *   the JS thread, and a 10 s watchdog timer didn't fire either. The
+ *   same lesson the rhythm map already carries (wall timers stretched
+ *   2.3x mid-round): one-shot deadlines die under load.
+ * - **A clock-sampled pump self-heals.** This player runs a short
+ *   interval that compares the real clock against the plan's measured
+ *   durations. A starved tick just means the next one starts the due
+ *   segment immediately — the speech resumes the moment the thread
+ *   breathes, instead of dying where the event was lost.
  *
  * The bell's authority is untouched: the session clock ends the countdown
  * at the planned total regardless, and stop() cuts a straggler.
  */
 
-import { createAudioPlayer, type AudioPlayer, type AudioStatus } from 'expo-audio'
+import { createAudioPlayer, type AudioPlayer } from 'expo-audio'
+
+import { logger, safe } from '@/diagnostics/logger'
 
 import type { PlannedIntroSegment } from './introPlan'
 
-/** Grace beyond duration+gap before the watchdog force-advances. */
-const WATCHDOG_SLACK_MS = 4_000
+/** Pump cadence — the error bound on every segment hand-off. */
+const PUMP_INTERVAL_MS = 150
 
 interface LoadedSegment {
   segment: PlannedIntroSegment
   player: AudioPlayer
-  subscription: { remove: () => void } | null
 }
 
 export class IntroPlayer {
   private loaded: LoadedSegment[] = []
-  private timer: ReturnType<typeof setTimeout> | null = null
-  private watchdog: ReturnType<typeof setTimeout> | null = null
-  private index = -1
+  private pump: ReturnType<typeof setInterval> | null = null
   private started = false
+  /** Index of the segment currently playing. */
+  private index = -1
+  /** Real-clock time the next segment is due, or null when done. */
+  private nextDueAt: number | null = null
+  private tailMs = 0
+  private onComplete: (() => void) | null = null
 
   /**
    * Create (and start buffering) one player per segment. Call from the
@@ -55,17 +62,36 @@ export class IntroPlayer {
     for (const segment of segments) {
       try {
         const player = createAudioPlayer(segment.module)
-        this.loaded.push({ segment, player, subscription: null })
-      } catch {
+        this.loaded.push({ segment, player })
+      } catch (error) {
         // A segment that cannot load is skipped; the speech survives.
+        logger.warn('puncheokie.intro', 'segment player creation failed', {
+          segment: safe(segment.id),
+          error: safe(String(error)),
+        })
       }
     }
+    logger.info('puncheokie.intro', 'intro loaded', {
+      requested: safe(segments.length),
+      created: safe(this.loaded.length),
+    })
   }
 
-  /** Deliver the announcement once. Idempotent. */
-  play(volume: number): void {
+  /**
+   * Deliver the announcement once. Idempotent.
+   *
+   * `onComplete` fires `tailMs` after the last clip's measured end — the
+   * caller uses it to ring the bell early instead of serving the padded
+   * countdown's leftover slack in silence.
+   */
+  play(
+    volume: number,
+    opts: { tailMs?: number; onComplete?: () => void } = {},
+  ): void {
     if (this.started || this.loaded.length === 0) return
     this.started = true
+    this.tailMs = opts.tailMs ?? 0
+    this.onComplete = opts.onComplete ?? null
     for (const { player } of this.loaded) {
       try {
         player.volume = volume
@@ -73,68 +99,77 @@ export class IntroPlayer {
         // Volume is best-effort.
       }
     }
-    this.startSegment(0)
+    this.startSegment(0, Date.now())
+    this.pump = setInterval(() => this.onPump(), PUMP_INTERVAL_MS)
   }
 
-  private startSegment(index: number): void {
+  private onPump(): void {
+    if (this.nextDueAt === null) return
+    const now = Date.now()
+    if (now < this.nextDueAt) return
+    this.startSegment(this.index + 1, now)
+  }
+
+  private startSegment(index: number, now: number): void {
     const entry = this.loaded[index]
-    if (!entry) return
+    if (!entry) {
+      // Past the last segment: the speech is delivered.
+      this.nextDueAt = null
+      if (this.pump !== null) {
+        clearInterval(this.pump)
+        this.pump = null
+      }
+      logger.info('puncheokie.intro', 'intro complete', {
+        segments: safe(this.loaded.length),
+      })
+      this.onComplete?.()
+      this.onComplete = null
+      return
+    }
     this.index = index
     try {
-      entry.subscription = entry.player.addListener('playbackStatusUpdate', (status: AudioStatus) => {
-        if (status.didJustFinish) this.advanceFrom(index)
-      })
       entry.player.play()
-    } catch {
-      // Skip straight to the next segment; the chain continues.
-      this.advanceFrom(index)
-      return
+      logger.info('puncheokie.intro', 'segment playing', {
+        segment: safe(entry.segment.id),
+        index: safe(index),
+        isLoaded: safe(entry.player.isLoaded),
+      })
+    } catch (error) {
+      logger.warn('puncheokie.intro', 'segment play failed', {
+        segment: safe(entry.segment.id),
+        error: safe(String(error)),
+      })
     }
-    // If the finish event never comes (clip stuck loading, event dropped),
-    // the watchdog advances — a bad clip costs its slot, not the speech.
+    // The schedule anchors on the ACTUAL start, so a late start never
+    // truncates the clip — lateness pushes the tail toward the bell, and
+    // the countdown cap settles any overrun. After the last clip, the due
+    // time is the completion beat that lets the caller ring the bell.
     const next = this.loaded[index + 1]
-    const budget =
-      entry.segment.durationMs + (next?.segment.gapBeforeMs ?? 0) + WATCHDOG_SLACK_MS
-    this.watchdog = setTimeout(() => this.advanceFrom(index), budget)
-  }
-
-  private advanceFrom(index: number): void {
-    if (this.index !== index) return // Already advanced (watchdog vs event race).
-    const entry = this.loaded[index]
-    entry?.subscription?.remove()
-    if (entry) entry.subscription = null
-    if (this.watchdog !== null) {
-      clearTimeout(this.watchdog)
-      this.watchdog = null
-    }
-    const next = this.loaded[index + 1]
-    if (!next) {
-      this.index = this.loaded.length
-      return
-    }
-    this.index = -1 // Between segments; the gap timer owns the hand-off.
-    this.timer = setTimeout(() => {
-      this.timer = null
-      this.startSegment(index + 1)
-    }, next.segment.gapBeforeMs)
+    this.nextDueAt =
+      now +
+      entry.segment.durationMs +
+      (next ? next.segment.gapBeforeMs : this.tailMs)
   }
 
   /** The bell ends the speech. Frees every player. Safe to call repeatedly. */
   stop(): void {
-    if (this.timer !== null) {
-      clearTimeout(this.timer)
-      this.timer = null
+    if (this.loaded.length > 0) {
+      logger.info('puncheokie.intro', 'intro stopped', {
+        atIndex: safe(this.index),
+        of: safe(this.loaded.length),
+      })
     }
-    if (this.watchdog !== null) {
-      clearTimeout(this.watchdog)
-      this.watchdog = null
+    if (this.pump !== null) {
+      clearInterval(this.pump)
+      this.pump = null
     }
+    this.nextDueAt = null
+    this.onComplete = null // The bell already rang; nothing left to skip.
     this.dispose()
   }
 
   private dispose(): void {
-    for (const { player, subscription } of this.loaded) {
-      subscription?.remove()
+    for (const { player } of this.loaded) {
       try {
         player.remove()
       } catch {
