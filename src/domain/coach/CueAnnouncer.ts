@@ -65,8 +65,18 @@ import type { CueEvent, SessionPhaseEvent } from '../programs/CueState'
 import type { CueInstance } from '../programs/CueTimeline'
 import type { Stance } from '../workout/WorkoutTokens'
 
-/** Doc §18.3: voice at T−0.75 s, ready tone at T−0.10 s. M36-03 tunes these. */
-export const DEFAULT_ANNOUNCE_LEAD_TIMES = { announceMs: 750, readyToneMs: 100 } as const
+/**
+ * Lead times and burst-re-call constants live with the Rhythm Map (M2) —
+ * the compiled schedule and this executor must read the same numbers.
+ * Re-exported here so existing importers keep working.
+ */
+export { DEFAULT_ANNOUNCE_LEAD_TIMES } from '../programs/RhythmMap'
+import {
+  BURST_REFIRE_INTERVAL_MS,
+  BURST_TAIL_QUIET_MS,
+  DEFAULT_ANNOUNCE_LEAD_TIMES,
+  MIN_BURST_MS_FOR_REFIRE,
+} from '../programs/RhythmMap'
 
 /**
  * How closely the words of a combination run together.
@@ -520,19 +530,8 @@ export class CueAnnouncer {
     this.output.playAsset('tone-ready', atMs)
   }
 
-  /**
-   * How often to re-call the motif during a count-scored burst, in ms.
-   *
-   * Six seconds is short enough that the pattern stays present for an
-   * athlete drifting into a rhythm and long enough that it does not stack on
-   * top of itself even at the fastest combos. Tunable by ear on the bag; the
-   * companion `MIN_BURST_MS_FOR_REFIRE` avoids re-firing on a burst so
-   * short the initial call already covers it.
-   */
-  private static readonly BURST_REFIRE_INTERVAL_MS = 6_000
-  private static readonly MIN_BURST_MS_FOR_REFIRE = 10_000
-  /** How close to the end to stop re-firing, so the last call finishes cleanly. */
-  private static readonly BURST_TAIL_QUIET_MS = 1_500
+  // Burst re-call constants are shared with the compiled Rhythm Map —
+  // see RhythmMap.ts for the rationale and tuning notes.
 
   /**
    * Re-fire the motif every few seconds during a count-scored burst.
@@ -556,7 +555,7 @@ export class CueAnnouncer {
     if (!play) return
 
     const windowMs = cue.windowEndMs - cue.scheduledStartMs
-    if (windowMs < CueAnnouncer.MIN_BURST_MS_FOR_REFIRE) return
+    if (windowMs < MIN_BURST_MS_FOR_REFIRE) return
 
     const combination = formatCombo(cue.tokens)
     const voice: CombinationVoice = {
@@ -566,11 +565,11 @@ export class CueAnnouncer {
     const clipMs = this.output.combinationDurationMs?.(combination, this.cadence, voice)
     if (clipMs === undefined) return
 
-    const lastStart = cue.windowEndMs - clipMs - CueAnnouncer.BURST_TAIL_QUIET_MS
+    const lastStart = cue.windowEndMs - clipMs - BURST_TAIL_QUIET_MS
     for (
-      let at = cue.scheduledStartMs + CueAnnouncer.BURST_REFIRE_INTERVAL_MS;
+      let at = cue.scheduledStartMs + BURST_REFIRE_INTERVAL_MS;
       at <= lastStart;
-      at += CueAnnouncer.BURST_REFIRE_INTERVAL_MS
+      at += BURST_REFIRE_INTERVAL_MS
     ) {
       play.call(this.output, combination, this.cadence, at + clockOffsetMs, voice)
     }
