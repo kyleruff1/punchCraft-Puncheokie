@@ -46,6 +46,7 @@ import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
+import { RoundWarningPlayer } from '@audio/RoundWarningPlayer'
 import {
   INTRO_COUNTDOWN_SLACK_MS,
   INTRO_TAIL_PAD_MS,
@@ -203,6 +204,25 @@ export default function LiveScreen(): React.JSX.Element {
     if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()
   }, [live.phase])
   React.useEffect(() => () => introRef.current?.stop(), [])
+
+  // Round-start warnings: every rest ends with the coach preparing the
+  // athlete and counting down into the ding. Prepared (natively buffered)
+  // at rest entry, started on the first tick inside its measured window so
+  // "one!" lands on the bell. Tick-driven via store updates — no timers.
+  const warnRef = useRef<RoundWarningPlayer | null>(null)
+  React.useEffect(() => {
+    if (policy.mode === 'off') return
+    if (live.phase !== 'rest') {
+      warnRef.current?.stop()
+      return
+    }
+    warnRef.current ??= new RoundWarningPlayer()
+    // During rest, roundIndex still names the round just finished; the
+    // athlete is being readied for the NEXT one (1-based: index + 2).
+    warnRef.current.prepare(live.roundIndex + 2)
+    warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice])
+  React.useEffect(() => () => warnRef.current?.stop(), [])
 
   const startedRef = useRef(false)
 

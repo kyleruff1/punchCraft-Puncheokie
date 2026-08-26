@@ -86,6 +86,38 @@ for (const [tier, line] of Object.entries(TIER_LINES)) {
   }
 }
 SEGMENTS.push({ id: 'intro-letsgo', text: "Let's get started!" })
+// Round-start warnings: every rest ends with the coach preparing the
+// athlete and counting down into the bell. Split as opener variant (15,
+// rotated for freshness) + countdown core (11, one per round number) —
+// two whole sentences played back-to-back, so freshness never multiplies
+// the render and the countdown pacing stays identical across variants.
+// The core clip's measured end is aligned to land on the round ding.
+const WARN_OPENERS = [
+  'Alright, hold on tight!',
+  "Break's over, champ!",
+  'Back to work — shake it loose!',
+  'Deep breath — here we go again!',
+  'Hands up, chin down!',
+  "You're looking sharp — keep it rolling!",
+  'No rest for the ready!',
+  'Towel down, gloves up!',
+  "Let's stack another one!",
+  'Feet under you — eyes up!',
+  "That bag isn't done with you yet!",
+  'Shake out those arms — stay loose!',
+  'Here comes the fun part!',
+  'Water down — game face on!',
+  'Bounce on those toes — stay ready!',
+]
+WARN_OPENERS.forEach((text, i) => {
+  SEGMENTS.push({ id: `warn-opener-${String(i + 1).padStart(2, '0')}`, text })
+})
+for (const [n, word] of Object.entries(NUMBER_WORDS)) {
+  SEGMENTS.push({
+    id: `warn-round-${n}`,
+    text: `It's time to get ready for round ${word}, in three... two... one!`,
+  })
+}
 
 function findFfmpeg() {
   const candidates = [

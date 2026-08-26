@@ -42,10 +42,13 @@ export const DOUBLE_BREATH_MS = 1_700
 export const JOKE_LANDING_MIN_MS = 800
 export const JOKE_LANDING_MAX_MS = 2_200
 export function jokeLandingMs(jokeDurationMs: number): number {
-  return Math.min(
+  // Quantized to 200ms so every possible pause exists as a silence track —
+  // the walkout plays through a native playlist, and its pauses are audio.
+  const raw = Math.min(
     JOKE_LANDING_MAX_MS,
     Math.max(JOKE_LANDING_MIN_MS, Math.round(jokeDurationMs * 0.18)),
   )
+  return Math.min(JOKE_LANDING_MAX_MS, Math.round(raw / 200) * 200)
 }
 /** Quiet after "Let's get started!" before the bell — a beat, not a wall. */
 export const INTRO_TAIL_PAD_MS = 900

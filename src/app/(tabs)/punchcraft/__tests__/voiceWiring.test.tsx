@@ -226,9 +226,10 @@ describe('session phases reach the announcer', () => {
     const h = mount()
     await h.settle()
     h.begin()
-    const beforeRest = h.port.assets.filter((a) => a === 'bell').length
+    // The round END is the gong now; the ding (bell) opens rounds only.
+    expect(h.port.assets.filter((a) => a === 'gong').length).toBe(0)
     h.step(WORK_MS + TICK_INTERVAL_MS * 2)
-    expect(h.port.assets.filter((a) => a === 'bell').length).toBeGreaterThan(beforeRest)
+    expect(h.port.assets.filter((a) => a === 'gong').length).toBeGreaterThan(0)
     h.unmount()
   })
 
@@ -263,8 +264,10 @@ describe('the round clock reaches the announcer (doc §25)', () => {
     h.begin()
     // Run out to inside the final ten seconds of round 1.
     h.step(WORK_MS - 5_000)
+    // The moment is marked, but no beep plays — beeps are gone from the
+    // sound design (the marker awaits a voiced "last ten seconds!" clip).
     const warnings = h.port.assets.filter((a) => a === 'tone-warning').length
-    expect(warnings).toBe(1)
+    expect(warnings).toBe(0)
     h.unmount()
   })
 
@@ -286,7 +289,7 @@ describe('cue events reach the announcer', () => {
     h.step(4_000)
     // The fixture's combination is 1-2.
     expect(h.port.assets).toContain('1')
-    expect(h.port.assets).toContain('tone-ready')
+    expect(h.port.assets).not.toContain('tone-ready')
     h.unmount()
   })
 })

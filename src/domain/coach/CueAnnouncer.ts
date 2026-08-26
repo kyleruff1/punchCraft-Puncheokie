@@ -286,8 +286,8 @@ export class CueAnnouncer {
 
     switch (event.kind) {
       case 'tone': {
-        if (!this.speakable('punch-command')) return
-        this.output.playAsset('tone-ready')
+        // Compiled maps no longer carry tones; a stale map's tone event is
+        // ignored — no beeps (Kyle's sound design).
         return
       }
       case 'call':
@@ -452,10 +452,20 @@ export class CueAnnouncer {
 
       case 'rest-entered':
         this.inCombo = false
+        // The round ENDS on a gong, not the bell — the ding belongs to
+        // round starts (Kyle's sound design).
         if (voiceAllowed(this.policy, this.playbackActive) && this.speakable('bell')) {
-          this.output.playAsset('bell')
+          this.output.playAsset('gong')
         }
         this.flushMetric()
+        return
+
+      case 'finishing':
+        // The last round has no rest after it, but it earned its gong too
+        // — every round ends on the gong (Kyle's sound design).
+        if (voiceAllowed(this.policy, this.playbackActive) && this.speakable('bell')) {
+          this.output.playAsset('gong')
+        }
         return
 
       default:
@@ -477,7 +487,9 @@ export class CueAnnouncer {
 
     if (!voiceAllowed(this.policy, this.playbackActive)) return
     if (!this.speakable('final-countdown')) return
-    this.output.playAsset('tone-warning')
+    // The final-stretch beep is gone with every other beep. The marker
+    // survives (warnedRounds bookkeeping) for a future voiced "last ten
+    // seconds!" call; until that clip exists, the moment passes silently.
   }
 
   /**
@@ -645,11 +657,12 @@ export class CueAnnouncer {
     return play.call(this.output, combination, this.cadence, startAt + clockOffsetMs, voice)
   }
 
-  private emitReadyTone(atMs: number): void {
-    // The tone is part of calling the combination, so it follows the same
-    // permission as the call itself.
-    if (!this.speakable('punch-command')) return
-    this.output.playAsset('tone-ready', atMs)
+  private emitReadyTone(_atMs: number): void {
+    // Deliberately silent (Kyle's sound design: no beeps, ever). A tone
+    // before every call put hundreds of chirps under the vocals in one
+    // workout. The call sites remain because the ready moment still shapes
+    // control flow — the coach's voice is the cue now, and the only
+    // non-voice sounds left are the round ding and the round-end gong.
   }
 
   // Burst re-call constants are shared with the compiled Rhythm Map —

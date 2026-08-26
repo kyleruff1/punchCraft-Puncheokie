@@ -152,15 +152,10 @@ export function compileRoundRhythmMap(
   const events: RhythmEvent[] = []
 
   for (const cue of round.cues) {
-    const readyAt = cue.scheduledStartMs - leadTimes.readyToneMs
-    events.push({
-      id: `${cue.id}/tone`,
-      cueId: cue.id,
-      kind: 'tone',
-      atMs: readyAt,
-      payload: { tone: 'ready' },
-      cancelsWith: 'cue-end',
-    })
+    // No ready tones are compiled: the coach's voice IS the cue (Kyle's
+    // sound design — no beeps, ever; a tone before every call put
+    // hundreds of chirps under the vocals per workout). `readyToneMs`
+    // survives only as the quiet margin a phrase must finish inside.
 
     // Per-block cadence (M4, doc §17): a flurry block is CALLED in the
     // sprint rendering even while the beat grid stays on the workout's
@@ -279,7 +274,6 @@ export function compileRoundRhythmMap(
       ({ event }) =>
         event.kind === 'call' ||
         event.kind === 'refire' ||
-        event.kind === 'tone' ||
         event.kind === 'encouragement',
     )
     .map(({ index }) => index)

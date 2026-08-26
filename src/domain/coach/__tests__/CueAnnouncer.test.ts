@@ -232,30 +232,22 @@ describe('the D1 gate holds on every entry point (spec §13.5)', () => {
   })
 })
 
-describe('the ready tone lands on the cue clock (D3, spec §18.3)', () => {
-  it('is scheduled at executionScheduled − readyToneMs', () => {
+describe('no ready tones, ever (the voice is the cue)', () => {
+  it('emits no tone when a cue is announced', () => {
     const h = harness()
-    const c = cue()
-    runCue(h, c)
-
-    const tone = h.port.calls.find((x) => x.kind === 'asset' && x.id === 'tone-ready')
-    expect(tone).toEqual({
-      kind: 'asset',
-      id: 'tone-ready',
-      atMs: c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs,
-    })
+    runCue(h, cue())
+    expect(h.port.assets()).not.toContain('tone-ready')
   })
 
-  it('honours a tuned lead time rather than the default', () => {
+  it('emits no tone under tuned lead times either', () => {
     const port = new RecordingPort()
     const announcer = new CueAnnouncer({
       policy: defaultVoiceCoachPolicy(),
       output: port,
       leadTimes: { announceMs: 500, readyToneMs: 250 },
     })
-    const c = cue()
-    announcer.onCueEvent(cueEvent('cue-announcing', c))
-    expect(port.calls).toContainEqual({ kind: 'asset', id: 'tone-ready', atMs: 9_750 })
+    announcer.onCueEvent(cueEvent('cue-announcing', cue()))
+    expect(port.calls.filter((x) => x.kind === 'asset' && x.id === 'tone-ready')).toEqual([])
   })
 
   it('sets no timer and reads no clock', () => {
@@ -294,15 +286,9 @@ describe('deadlines are handed over in the port clock (D3)', () => {
     return port
   }
 
-  it('shifts the ready tone by the offset between the two clocks', () => {
-    const c = cue()
-    const readyWork = c.scheduledStartMs - DEFAULT_ANNOUNCE_LEAD_TIMES.readyToneMs
+  it('emits no ready tone regardless of the clock offset', () => {
     const port = announceAt(OFFSET)
-    expect(port.calls).toContainEqual({
-      kind: 'asset',
-      id: 'tone-ready',
-      atMs: readyWork + OFFSET,
-    })
+    expect(port.calls.filter((x) => x.kind === 'asset' && x.id === 'tone-ready')).toEqual([])
   })
 
   it('shifts the phrase by the same offset', () => {
@@ -368,7 +354,8 @@ describe('each style calls the combination its own way (doc §18.1)', () => {
     const h = harness({ style: 'follow-the-call' })
     const c = cue()
     h.announcer.onCueEvent(cueEvent('cue-announcing', c))
-    expect(h.port.assets()).toEqual(['tone-ready'])
+    // Nothing up front — not even a tone (no beeps in the sound design).
+    expect(h.port.assets()).toEqual([])
 
     h.port.reset()
     h.announcer.onCueEvent(tokenDue(c, 0))
@@ -403,8 +390,8 @@ describe('in-time delivery calls each punch as it lands (doc §18.1)', () => {
     const h = harness({}, { delivery: 'in-time' })
     const c = cue()
     h.announcer.onCueEvent(cueEvent('cue-announcing', c))
-    // No phrase ahead of the throw — only the ready tone.
-    expect(h.port.assets()).toEqual(['tone-ready'])
+    // No phrase ahead of the throw — and no tone either (no beeps).
+    expect(h.port.assets()).toEqual([])
 
     h.port.reset()
     h.announcer.onCueEvent(tokenDue(c, 0))
@@ -485,11 +472,19 @@ describe('pause and resume (doc §18)', () => {
 })
 
 describe('bells and the final warning', () => {
-  it('rings on entering work and on entering rest', () => {
+  it('opens work on the ding and ends the round on the gong', () => {
     const h = harness()
     h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 0, nowMs: 0 })
     h.announcer.onSessionPhase({ type: 'rest-entered', nowMs: 0 })
-    expect(h.port.assets()).toEqual(['bell', 'bell'])
+    expect(h.port.assets()).toEqual(['bell', 'gong'])
+  })
+
+  it('gives the final round its gong too, at finishing', () => {
+    const h = harness()
+    h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 0, nowMs: 0 })
+    h.port.reset()
+    h.announcer.onSessionPhase({ type: 'finishing', nowMs: 0 })
+    expect(h.port.assets()).toEqual(['gong'])
   })
 
   it('warns once per round on the first sample past the threshold', () => {
@@ -500,14 +495,16 @@ describe('bells and the final warning', () => {
     h.announcer.onRoundClock(FINAL_WARNING_AT_MS + 50)
     expect(h.port.assets()).toEqual([])
 
-    // The tick is 50 ms, so the threshold is crossed rather than hit exactly.
+    // The tick is 50 ms, so the threshold is crossed rather than hit
+    // exactly. The moment is MARKED (once, for the future voiced call)
+    // but no beep plays — beeps are gone from the sound design.
     h.announcer.onRoundClock(FINAL_WARNING_AT_MS - 20)
     h.announcer.onRoundClock(FINAL_WARNING_AT_MS - 70)
     h.announcer.onRoundClock(500)
-    expect(h.port.assets()).toEqual(['tone-warning'])
+    expect(h.port.assets()).toEqual([])
   })
 
-  it('warns again in the next round', () => {
+  it('stays beep-free in the next round too', () => {
     const h = harness()
     h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 0, nowMs: 0 })
     h.announcer.onRoundClock(1_000)
@@ -516,7 +513,7 @@ describe('bells and the final warning', () => {
     h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 1, nowMs: 0 })
     h.port.reset()
     h.announcer.onRoundClock(1_000)
-    expect(h.port.assets()).toEqual(['tone-warning'])
+    expect(h.port.assets()).toEqual([])
   })
 
   it('stays silent when the warning is switched off (doc §25)', () => {
@@ -622,7 +619,7 @@ describe('a rendered combination is preferred over per-word clips', () => {
     expect(h.calls[0]?.[0]).toBe('1-2')
     // The per-word path did not also run — that would double the call.
     expect(h.port.calls.some((c) => c.kind === 'phrase')).toBe(false)
-    expect(h.port.assets()).toEqual(['tone-ready'])
+    expect(h.port.assets()).toEqual([])
   })
 
   it('asks for the cadence it was configured with', () => {
@@ -639,10 +636,10 @@ describe('a rendered combination is preferred over per-word clips', () => {
     expect(h.calls[0]?.[2]).toBe(finishBy - 600)
   })
 
-  it('still rings the ready tone', () => {
+  it('rings no ready tone — the phrase is the whole call', () => {
     const h = phraseHarness()
     h.announcer.onCueEvent(cueEvent('cue-announcing'))
-    expect(h.port.assets()).toContain('tone-ready')
+    expect(h.port.assets()).not.toContain('tone-ready')
   })
 
   it('falls back to per-word when nothing has been rendered', () => {
@@ -867,11 +864,10 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     expect(phrase?.kind === 'phrase' && phrase.tightness).toBeGreaterThanOrEqual(MIN_TIGHTNESS)
   })
 
-  it('keeps the ready tone alongside the words', () => {
-    // The tone is what tells the athlete the combination is starting.
+  it('plays no tone alongside the words — the voice is the cue', () => {
     const h = harness({ style: 'call-and-go' }, { durations: true })
     runCue(h, cue({ tokens: [punch(1), punch(2), punch(3), punch(1), punch(2)] }))
-    expect(h.port.assets()).toContain('tone-ready')
+    expect(h.port.assets()).not.toContain('tone-ready')
   })
 
   it('does not guess at an unmeasured clip', () => {
@@ -896,7 +892,7 @@ describe('a phrase is placed so it finishes before the combination (D15)', () =>
     const h = harness({ style: 'call-and-go' })
     const c = cue({ tokens: [punch(1), punch(2), punch(3)], tokenOffsetsMs: [0, 300, 600] })
     runCue(h, c)
-    expect(h.port.assets()).toEqual(['1', '2', '3', 'tone-ready'])
+    expect(h.port.assets()).toEqual(['1', '2', '3'])
     expect(h.skips).toEqual([])
     expect(firstWord(h.port)).toEqual({ kind: 'asset', id: '1', atMs: c.announceAt })
   })
