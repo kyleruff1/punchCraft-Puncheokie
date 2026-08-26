@@ -626,3 +626,32 @@ describe('every id the announcer can emit is playable', () => {
     expect(h.plays).toHaveLength(VOICE_ASSET_IDS.length)
   })
 })
+
+describe('scheduled combination calls are additive (the burst-refire fix)', () => {
+  // The announcer pre-schedules every burst re-call up front — it owns no
+  // timers (D3). The original single-handle implementation cancelled each
+  // pending call when the next was scheduled, so a 30-second volume burst
+  // got its opening call and then silence: the exact mid-round quiet the
+  // refires were built to fill (measured on device, 2026-08-25).
+  it('plays every future-scheduled combination, not just the last', () => {
+    const h = harness()
+    const t0 = h.now()
+    expect(h.output.playCombination('1-2', 'steady', t0 + 6_000)).toBe(true)
+    expect(h.output.playCombination('1-2', 'steady', t0 + 12_000)).toBe(true)
+    expect(h.output.playCombination('1-2', 'steady', t0 + 18_000)).toBe(true)
+
+    h.advance(20_000)
+    expect(h.plays).toHaveLength(3)
+  })
+
+  it('cancel() clears every pending re-call', () => {
+    const h = harness()
+    const t0 = h.now()
+    h.output.playCombination('1-2', 'steady', t0 + 6_000)
+    h.output.playCombination('1-2', 'steady', t0 + 12_000)
+    h.output.cancel(AUDIO_PRIORITY.safety)
+
+    h.advance(20_000)
+    expect(h.plays).toHaveLength(0)
+  })
+})

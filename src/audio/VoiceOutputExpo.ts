@@ -172,7 +172,17 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * the very AudioTrack budget the pool exists to protect.
    */
   private phrasePlayer: AudioPlayer | null = null
-  private phraseHandle: unknown = null
+  /**
+   * Every scheduled-but-unstarted combination call.
+   *
+   * A SET, not a single handle — the announcer pre-schedules the periodic
+   * burst re-calls all at once (it owns no timers, D3), and the original
+   * single-handle version cancelled each pending call when the next was
+   * scheduled. Net effect on device: a 30-second volume burst got its
+   * opening call and then silence, which is precisely the mid-round quiet
+   * the refires were built to fill.
+   */
+  private readonly phraseHandles = new Set<unknown>()
 
   constructor(opts: VoiceOutputExpoOptions = {}) {
     this.manifest = opts.manifest ?? voiceAssetManifest
@@ -410,11 +420,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       start()
       return true
     }
-    if (this.phraseHandle !== null) this.cancelScheduled(this.phraseHandle)
-    this.phraseHandle = this.schedule(() => {
-      this.phraseHandle = null
+    const handle = this.schedule(() => {
+      this.phraseHandles.delete(handle)
       start()
     }, delay)
+    this.phraseHandles.add(handle)
     return true
   }
 
@@ -538,10 +548,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // A phrase mid-flight is a queue as much as a sound: the clips not yet
     // started are exactly what `cancel` is for.
     if (this.sequence.some((step) => step.priority > belowPriority)) this.clearSequence()
-    // A scheduled combination has not started yet, so it is queue too.
-    if (belowPriority <= AUDIO_PRIORITY.punchCommand && this.phraseHandle !== null) {
-      this.cancelScheduled(this.phraseHandle)
-      this.phraseHandle = null
+    // A scheduled combination has not started yet, so it is queue too —
+    // including every pending burst re-call.
+    if (belowPriority <= AUDIO_PRIORITY.punchCommand) {
+      for (const handle of this.phraseHandles) this.cancelScheduled(handle)
+      this.phraseHandles.clear()
     }
     if (belowPriority <= AUDIO_PRIORITY.metric) {
       try {
@@ -566,8 +577,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
     this.clearSequence()
-    if (this.phraseHandle !== null) this.cancelScheduled(this.phraseHandle)
-    this.phraseHandle = null
+    for (const handle of this.phraseHandles) this.cancelScheduled(handle)
+    this.phraseHandles.clear()
     try {
       this.phrasePlayer?.remove()
     } catch {
