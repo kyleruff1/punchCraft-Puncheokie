@@ -134,14 +134,43 @@ function chooseSource(
   }
 }
 
-export function useLivePunchSource(clock: MonotonicClock): LivePunchSource {
+export function useLivePunchSource(
+  clock: MonotonicClock,
+  options: {
+    /**
+     * True while the workout has not started (idle phase). While true, a
+     * simulated choice may upgrade to the trackers if both slots come
+     * live — the runner is merely armed, so rebuilding it is harmless.
+     * Once the workout starts the latch is absolute (decision 1): the
+     * athlete walked onto the bag during a reconnect and the trackers
+     * came up two seconds after the first render — without the upgrade
+     * window the whole workout would silently run on the simulator.
+     */
+    allowUpgrade?: boolean
+  } = {},
+): LivePunchSource {
   const left = useLeftSlot()
   const right = useRightSlot()
+  const allowUpgrade = options.allowUpgrade ?? false
 
-  // Latched on first render — see decision 1 in the header. The slots are
-  // read here and never again for the purpose of choosing.
+  // Latched on first render — see decision 1 in the header. The one
+  // exception: an idle-phase upgrade from simulator to trackers, above.
   const chosenRef = useRef<ChosenSource | null>(null)
   if (chosenRef.current === null) chosenRef.current = chooseSource(clock, left, right)
+  if (
+    allowUpgrade &&
+    chosenRef.current.kind === 'simulated' &&
+    left !== null &&
+    right !== null &&
+    isLive(left) &&
+    isLive(right)
+  ) {
+    const upgraded = chooseSource(clock, left, right)
+    if (upgraded.kind === 'tracker') {
+      logger.info('puncheokie.source.upgraded', 'idle-phase upgrade from simulator to trackers', {})
+      chosenRef.current = upgraded
+    }
+  }
   const chosen = chosenRef.current
 
   const connection = useMemo<LivePunchSource['connection']>(() => {
@@ -164,7 +193,13 @@ export function useLivePunchSource(clock: MonotonicClock): LivePunchSource {
   // is idempotent — if both slots are actually live and receiving events, the
   // probe skips them.
   useEffect(() => {
-    void armAutoRetry({ timeoutMs: 10_000 })
+    // trustReadyState: entering the live screen must NEVER bounce healthy
+    // connections. Off the live screen no slot carries lastEventAtMs, so
+    // the strict probe would evict and rebuild both trackers right as the
+    // athlete walks onto the bag — killing the punch-stream subscriptions
+    // ("connected but nothing counted") and, if the first render landed
+    // mid-eviction, latching the whole workout onto the simulator.
+    void armAutoRetry({ timeoutMs: 10_000, trustReadyState: true })
       .then((result) => {
         if (result.scanError) {
           logger.info('autoconnect.live.skipped', 'live-screen auto-connect could not scan', {

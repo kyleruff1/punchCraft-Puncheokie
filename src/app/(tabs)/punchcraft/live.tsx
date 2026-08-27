@@ -150,7 +150,12 @@ export default function LiveScreen(): React.JSX.Element {
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
   // (M33-01). The runner is written against the port and sees no difference.
-  const { source, sim, connection } = useLivePunchSource(clock)
+  const { source, sim, connection } = useLivePunchSource(clock, {
+    // Before Start is pressed the runner is only armed, so upgrading from
+    // the simulator to freshly-connected trackers is safe — and rescues
+    // the athlete who opened the screen while a reconnect was in flight.
+    allowUpgrade: live.phase === 'idle',
+  })
 
   // The workout to run: a library pick when the athlete chose one, otherwise a
   // workout generated from the current recipe (M35). The generation is
