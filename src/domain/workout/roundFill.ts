@@ -620,6 +620,26 @@ export function fillScoredRound(
       }
       specs.push(spec)
     }
+
+    // Single-rep top-off: the 2-rep repair blocks are ~3.5-5s each, so
+    // block granularity — not the margin — was leaving ~4s of dead air
+    // before the ding (switch-test lab). One-rep closers fill the last
+    // gap almost to the margin, one breath at a time.
+    let topOff = 0
+    while (closing && workMs - span() > REPAIR_BELL_MARGIN_MS && topOff++ < 6) {
+      const spec = comboSpecFor(
+        nextId(),
+        closing.notation,
+        1,
+        Math.max(MIN_GAP_BEATS, gap * 0.8),
+        closing.offsets,
+      )
+      if (spanWith(specs, spec, bpm) > workMs) {
+        blockCount -= 1
+        break
+      }
+      specs.push(spec)
+    }
   }
 
   // ---- mandatory same-move announcement (Set Ceremonies, Kyle's rule):
