@@ -84,6 +84,31 @@ export class TrackerCoordinator {
     }
   }
 
+  /**
+   * Force-evict a slot down to the radio, even when no JS binding exists.
+   *
+   * `disconnectSlot` only touches the radio when it holds a binding — but
+   * a FAILED connect tears its binding down while the OS may still hold a
+   * half-open GATT attempt for the device. This always issues the
+   * facade-level disconnect (which cancels any pending connection by id),
+   * so a retry pass starts from a radio-clean slate.
+   */
+  async evictSlot(hand: TrackerSlotHand, deviceId: string): Promise<void> {
+    this.tearDownBinding(hand)
+    try {
+      await this.facade.disconnect(deviceId)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      logger.warn('ble.slot.evict.fail', 'Tracker slot evict failed', {
+        hand: safe(hand),
+        deviceId: deviceSensitive(deviceId),
+        error: safe(message),
+      })
+    } finally {
+      clearSlot(hand)
+    }
+  }
+
   async disconnectSlot(hand: TrackerSlotHand): Promise<void> {
     const binding = this.bindings[hand]
     this.tearDownBinding(hand)

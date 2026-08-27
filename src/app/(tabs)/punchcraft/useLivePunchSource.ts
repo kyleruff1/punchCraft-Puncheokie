@@ -26,7 +26,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 
 import { getBleManager } from '@ble/BleManagerFacade'
-import { autoConnectKnownTrackers } from '@ble/autoConnectTrackers'
+import { armAutoRetry } from '@ble/autoConnectTrackers'
 import { logger, safe } from '@diagnostics/logger'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { MonotonicClock } from '@domain/time/MonotonicClock'
@@ -164,7 +164,7 @@ export function useLivePunchSource(clock: MonotonicClock): LivePunchSource {
   // is idempotent — if both slots are actually live and receiving events, the
   // probe skips them.
   useEffect(() => {
-    void autoConnectKnownTrackers({ timeoutMs: 10_000 })
+    void armAutoRetry({ timeoutMs: 10_000 })
       .then((result) => {
         if (result.scanError) {
           logger.info('autoconnect.live.skipped', 'live-screen auto-connect could not scan', {

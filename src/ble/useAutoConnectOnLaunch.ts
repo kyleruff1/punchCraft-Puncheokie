@@ -14,7 +14,7 @@
 
 import { useEffect } from 'react'
 
-import { autoConnectKnownTrackers } from '@ble/autoConnectTrackers'
+import { armAutoRetry } from '@ble/autoConnectTrackers'
 import { logger, safe } from '@/diagnostics/logger'
 
 const LAUNCH_DELAY_MS = 1_500
@@ -24,7 +24,7 @@ export function useAutoConnectOnLaunch(): void {
     let cancelled = false
     const timer = setTimeout(() => {
       if (cancelled) return
-      void autoConnectKnownTrackers({ timeoutMs: 10_000 })
+      void armAutoRetry({ timeoutMs: 10_000 })
         .then((result) => {
           if (result.scanError) {
             logger.info('autoconnect.launch.skipped', 'launch auto-connect could not scan', {

@@ -37,6 +37,9 @@ jest.mock('@ble/BleManagerFacade', () => ({
 
 jest.mock('../autoConnectTrackers', () => ({
   autoConnectKnownTrackers: () => mockAutoConnect(),
+  // bounceBluetooth arms the retry scheduler after a successful bounce;
+  // the mock treats it as one pass, which is what the assertions count.
+  armAutoRetry: () => mockAutoConnect(),
 }))
 
 beforeEach(() => {

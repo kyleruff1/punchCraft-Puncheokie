@@ -311,6 +311,17 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       this.emitStatus(status)
       return status
     } catch (e) {
+      // Best-effort cancel of the half-open attempt. Android (this
+      // tablet's MediaTek stack in particular) keeps a pending GATT
+      // handle after a failed direct connect — "Device was disconnected"
+      // mid-handshake — and while that handle exists every later connect
+      // to the same device fails too. Cancelling clears it; if there is
+      // nothing to cancel this is a no-op.
+      try {
+        await manager.cancelDeviceConnection(deviceId)
+      } catch {
+        /* nothing pending — fine */
+      }
       const status: ConnectionStatus = {
         deviceId,
         state: 'error',

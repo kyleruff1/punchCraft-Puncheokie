@@ -28,7 +28,7 @@
  */
 
 import { getBleManager } from './BleManagerFacade'
-import { autoConnectKnownTrackers } from './autoConnectTrackers'
+import { armAutoRetry } from './autoConnectTrackers'
 import { logger, safe } from '@/diagnostics/logger'
 
 export type BounceStatus =
@@ -149,10 +149,10 @@ export async function bounceBluetoothAndReconnect(opts: BounceOptions): Promise<
 
   if (outcome.status !== 'ok') return outcome
 
-  // The adapter is on again. Run auto-connect to re-arm the trackers; the
-  // caller does not have to know about that step.
+  // The adapter is on again. Run auto-connect (with the retry scheduler
+  // armed) to re-arm the trackers; the caller does not know about that step.
   try {
-    await autoConnectKnownTrackers({ timeoutMs: 10_000 })
+    await armAutoRetry({ timeoutMs: 10_000 })
   } catch (err) {
     logger.warn('ble.bounce.reconnectFailed', 'auto-connect after adapter bounce threw', {
       errorMessage: safe(err instanceof Error ? err.message : String(err)),

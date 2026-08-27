@@ -12,10 +12,16 @@
  * tracker will not connect.
  */
 
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
-import { autoConnectKnownTrackers, isAutoConnectInFlight } from '@ble/autoConnectTrackers'
+import {
+  AUTO_RETRY_BUDGET,
+  armAutoRetry,
+  getAutoRetryState,
+  isAutoConnectInFlight,
+  subscribeAutoRetry,
+} from '@ble/autoConnectTrackers'
 import { useTrackerStore } from '@/state/useTrackerStore'
 import { colors } from '@/theme/colors'
 
@@ -29,12 +35,18 @@ export function ConnectTrackersButton(): React.ReactElement {
   const right = useTrackerStore((s) => s.slots.right)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [retry, setRetry] = useState(getAutoRetryState())
+
+  useEffect(() => subscribeAutoRetry(() => setRetry(getAutoRetryState())), [])
 
   const onPress = useCallback(async () => {
     if (busy || isAutoConnectInFlight()) return
     setBusy(true)
     setNote(null)
-    const result = await autoConnectKnownTrackers({ timeoutMs: 12_000 })
+    // Arms the retry scheduler with a fresh 5-attempt budget: after this
+    // pass, follow-up passes fire automatically until both hands connect
+    // or the budget runs out.
+    const result = await armAutoRetry({ timeoutMs: 12_000 })
     setBusy(false)
 
     if (result.scanError) {
@@ -60,6 +72,17 @@ export function ConnectTrackersButton(): React.ReactElement {
 
   const bothLive = READY_STATES.has(left?.state ?? '') && READY_STATES.has(right?.state ?? '')
 
+  // The retry scheduler's status rides under the button. While retries are
+  // pending the athlete sees the countdown of automatic attempts; once the
+  // budget is spent they see that a manual press is what starts it again.
+  const retryNote = bothLive
+    ? null
+    : retry.retrying
+      ? `Retrying automatically — ${AUTO_RETRY_BUDGET - retry.attemptsLeft + 1} of ${AUTO_RETRY_BUDGET}`
+      : retry.exhausted
+        ? 'Auto-retry paused. Tap to try again.'
+        : null
+
   return (
     <View style={styles.wrap}>
       <Pressable
@@ -81,6 +104,11 @@ export function ConnectTrackersButton(): React.ReactElement {
       {note ? (
         <Text style={styles.note} testID="connect-trackers-note">
           {note}
+        </Text>
+      ) : null}
+      {retryNote ? (
+        <Text style={styles.note} testID="connect-trackers-retry-note">
+          {retryNote}
         </Text>
       ) : null}
     </View>
