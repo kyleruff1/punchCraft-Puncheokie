@@ -1,20 +1,34 @@
 /**
- * The pulsing ring that marks the active token (M32-06, doc §13).
+ * The heavy outline that marks the active token (M32-06, doc §13).
  *
- * Built on React Native's core `Animated` rather than reanimated. The issue
- * prefers reanimated on the grounds that it needs no new native module and
- * no dev-client rebuild — core `Animated` satisfies that same reason, needs
- * no babel plugin (none is configured in this repo yet) and renders in
- * jest-expo without a mock. Animation *timing against the cue clock* is
- * M32-08's job; this is a decorative loop, so the simpler dependency wins.
+ * Reads as a chunky forged outline standing off the circle rather than a
+ * thin ripple. The whole visual point of "active" is that the ring lights
+ * up thick and obvious — an athlete glancing at the stage should not have
+ * to squint. A gentle pulse loop breathes the opacity so the ring feels
+ * alive without changing size (so the symmetric space around it stays
+ * symmetric across the whole cycle).
  *
- * With `reducedMotion` the loop is replaced by a static heavy outline
- * (doc §25) — the state still reads, it just does not move.
+ * Built on React Native's core `Animated` rather than reanimated. Timing
+ * *against the cue clock* is M32-08's job; this is a decorative loop, so
+ * the simpler dependency wins.
+ *
+ * With `reducedMotion` the pulse is replaced by a static full-opacity
+ * outline (doc §25) — the state still reads, it just does not breathe.
  */
 import React, { useEffect, useRef } from 'react'
 import { Animated, StyleSheet, type ViewStyle } from 'react-native'
 
 import { colors } from '@/theme/colors'
+
+/**
+ * How far the ring stands off the token's edge on each side. Exported so
+ * a parent can size its slot to `diameter + ACTIVE_RING_INSET * 2` and
+ * the ring sits fully within the slot with symmetric space around it.
+ */
+export const ACTIVE_RING_INSET = 10
+
+/** Ring line weight when the token is active. Kyle: "really thick." */
+export const ACTIVE_RING_WIDTH = 6
 
 export function ActiveRing(props: {
   diameter: number
@@ -29,8 +43,8 @@ export function ActiveRing(props: {
     if (reducedMotion) return undefined
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 600, useNativeDriver: true }),
       ]),
     )
     loop.start()
@@ -39,10 +53,11 @@ export function ActiveRing(props: {
     }
   }, [pulse, reducedMotion])
 
+  const ringSize = diameter + ACTIVE_RING_INSET * 2
   const style: ViewStyle = {
-    width: diameter + 16,
-    height: diameter + 16,
-    borderRadius: borderRadius + 8,
+    width: ringSize,
+    height: ringSize,
+    borderRadius: borderRadius + ACTIVE_RING_INSET,
   }
 
   if (reducedMotion) {
@@ -56,10 +71,9 @@ export function ActiveRing(props: {
         styles.ring,
         style,
         {
-          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
-          transform: [
-            { scale: pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.06] }) },
-          ],
+          // Opacity-only pulse. Size stays fixed so the symmetric space
+          // around the ring never breathes in and out.
+          opacity: pulse.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }),
         },
       ]}
     />
@@ -69,9 +83,9 @@ export function ActiveRing(props: {
 const styles = StyleSheet.create({
   ring: {
     position: 'absolute',
-    borderWidth: 3,
+    borderWidth: ACTIVE_RING_WIDTH,
     borderColor: colors.accent,
   },
-  /** Reduced motion: heavier, fully opaque, and still. */
-  static: { borderWidth: 5, opacity: 1 },
+  /** Reduced motion: same weight, fully opaque, no pulse. */
+  static: { opacity: 1 },
 })

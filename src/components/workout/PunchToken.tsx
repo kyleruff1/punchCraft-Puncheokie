@@ -13,7 +13,7 @@
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
 
-import { ActiveRing } from './ActiveRing'
+import { ACTIVE_RING_INSET, ActiveRing } from './ActiveRing'
 import { AffirmationRing } from './AffirmationRing'
 import {
   STATE_VISUALS,
@@ -75,14 +75,20 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
       style={[styles.root, body && styles.bodyPlacement]}
       testID={`punch-token-${number}${body ? 'b' : ''}`}
     >
-      {/* Token slot — sized exactly to the circle, with alignItems/
-          justifyContent 'center' so the absolutely-positioned rings
-          center on the CIRCLE, not on the outer flex group that also
-          contains the state marker and hand hint. Without this wrapper
-          the rings default to the root's centre, which sits below the
-          circle because marker + hand-hint push the flex group's centroid
-          down — that's the "ring hanging low" bug. */}
-      <View style={styles.tokenSlot}>
+      {/* Token slot — sized to include the active ring so the ring
+          sits fully within the slot with symmetric space on every
+          side rather than poking past its edges. alignItems /
+          justifyContent 'center' pin every child (including the
+          absolute rings and the circle itself) to the slot's centre. */}
+      <View
+        style={[
+          styles.tokenSlot,
+          {
+            width: diameter + ACTIVE_RING_INSET * 2,
+            height: diameter + ACTIVE_RING_INSET * 2,
+          },
+        ]}
+      >
         {state === 'active' ? (
           <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
         ) : null}
@@ -151,7 +157,13 @@ const styles = StyleSheet.create({
   root: { alignItems: 'center', justifyContent: 'center', padding: 8 },
   /** Body shots sit lower on screen — the placement cue from doc §13. */
   bodyPlacement: { paddingTop: 24 },
-  tokenSlot: { alignItems: 'center', justifyContent: 'center' },
+  tokenSlot: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // The affirmation ring overshoots past the slot during its burst;
+    // 'visible' ensures Android doesn't clip the reward animation.
+    overflow: 'visible',
+  },
   circle: { alignItems: 'center', justifyContent: 'center' },
   number: { fontWeight: '800' },
   bodyBadge: {
