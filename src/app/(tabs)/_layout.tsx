@@ -119,6 +119,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    // Ride the wordmark toward the top of the bar: the tablet's floating
+    // OS taskbar overlays the bottom edge of the app window, and a
+    // dead-centred wordmark gets its lower half clipped behind it.
+    paddingBottom: 18,
   },
   // The inactive wordmarks dim rather than tint — the art is an image, so
   // opacity is the "inactive" signal where a text label would grey out.
