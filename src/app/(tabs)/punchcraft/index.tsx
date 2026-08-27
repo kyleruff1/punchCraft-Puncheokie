@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 
-import { ForgedButton } from '@/components/branding/ForgedButton'
+import { ActionButton } from '@/components/branding/ActionButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { PickerProvider } from '@/components/ui/PickerContext'
 import { PickerRow, type PickerOption } from '@/components/ui/PickerRow'
@@ -60,19 +60,16 @@ export default function PunchCraftLanding() {
         </Text>
 
         <Link href="/(tabs)/punchcraft/recipe" asChild>
-          {/* Text label until the next action-label art drop — the first
-              pass (see dev/button-lab) read poorly on every base. */}
-          <ForgedButton
-            variant="primary"
+          {/* The authored art IS the button — pill, icon, chevron and neon
+              rim are baked into the PNG, so no ForgedButton chrome here. */}
+          <ActionButton
+            action="buildAWorkout"
             testID="setup-workout"
-            accessibilityLabel="Build a workout"
             // Mint a fresh seed and drop any library pick, so the recipe opens on
             // a new generated workout rather than the last one built or picked.
             onPress={() => startNewBuild()}
             style={styles.primaryActionSpacing}
-          >
-            Build a workout
-          </ForgedButton>
+          />
         </Link>
 
         <PickerRow

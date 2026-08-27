@@ -271,11 +271,11 @@ describe('punchCraft landing — the workout home', () => {
   })
 
   it('offers the entry point into the recipe screen', () => {
-    // The label is the branded image now; the action phrase lives in the
-    // button's accessibility label rather than in rendered text.
+    // The button is the branded image now; the action phrase lives in the
+    // pressable's accessibility label rather than in rendered text.
     const tree = render(<PunchCraftLanding />)
-    const button = tree.root.findByProps({ testID: 'setup-workout' })
-    expect(button.props.accessibilityLabel).toBe('Build a workout')
+    const button = tree.root.findByProps({ accessibilityLabel: 'Build a workout' })
+    expect(button.props.accessibilityRole).toBe('button')
   })
 
   it('lists the designed-workout library in the collapsed picker', () => {

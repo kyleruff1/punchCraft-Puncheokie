@@ -20,6 +20,7 @@ import { Link, Stack } from 'expo-router'
 
 import { ConflictNotice } from '@components/workout/ConflictNotice'
 import { EnablementMenu } from '@components/workout/EnablementMenu'
+import { ActionButton } from '@components/branding/ActionButton'
 import { ForgedButton } from '@components/branding/ForgedButton'
 import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
 import { Stepper } from '@components/workout/RecipeControls'
@@ -332,15 +333,9 @@ export default function RecipeScreen(): React.JSX.Element {
 
         <View style={styles.actions}>
           <Link href="/(tabs)/punchcraft/live" asChild>
-            {/* Text label until the next action-label art drop — the first
-                pass (see dev/button-lab) read poorly on every base. */}
-            <ForgedButton
-              variant="primary"
-              testID="start-button"
-              accessibilityLabel="Start workout"
-            >
-              Start workout
-            </ForgedButton>
+            {/* The authored art IS the button — pill, icon, chevron and neon
+                rim are baked into the PNG, so no ForgedButton chrome here. */}
+            <ActionButton action="startWorkout" testID="start-button" />
           </Link>
           <Text style={styles.startCaption}>
             Runs on simulated punches until the trackers are wired in (M33-01).

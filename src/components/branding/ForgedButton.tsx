@@ -54,9 +54,12 @@ interface VariantVisual {
 }
 
 const VARIANTS: Record<ForgedVariant, VariantVisual> = {
+  // Gradients run inverted — dark at the top, lit at the bottom edge —
+  // so every button reads as under-glowing, matching the neon under-glow
+  // in the authored action-button art.
   primary: {
-    gradient: [punch.aqua, punch.turquoise, punch.tealDeep],
-    gradientPressed: [punch.turquoise, punch.turquoiseDeep, punch.tealDeep],
+    gradient: [punch.tealDeep, punch.turquoise, punch.aqua],
+    gradientPressed: [punch.tealDeep, punch.turquoiseDeep, punch.turquoise],
     bevelTop: punch.aqua,
     bevelBottom: punch.tealBlack,
     textColor: colors.textOnAccent,
@@ -70,24 +73,24 @@ const VARIANTS: Record<ForgedVariant, VariantVisual> = {
    * cyan bevel carry the "this is the big action" signal instead.
    */
   hero: {
-    gradient: [punch.gunmetal, punch.charcoal, punch.tealBlack],
-    gradientPressed: [punch.charcoal, punch.tealBlack, punch.tealBlack],
+    gradient: [punch.tealBlack, punch.charcoal, punch.gunmetal],
+    gradientPressed: [punch.tealBlack, punch.tealBlack, punch.charcoal],
     bevelTop: punch.turquoise,
     bevelBottom: punch.tealDark,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonPrimary,
   },
   secondary: {
-    gradient: [punch.silver, punch.steel, punch.tealBlack],
-    gradientPressed: [punch.steel, punch.gunmetal, punch.tealBlack],
+    gradient: [punch.tealBlack, punch.steel, punch.silver],
+    gradientPressed: [punch.tealBlack, punch.gunmetal, punch.steel],
     bevelTop: punch.silver,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonSecondary,
   },
   subtle: {
-    gradient: [punch.steel, punch.gunmetal, punch.tealBlack],
-    gradientPressed: [punch.gunmetal, punch.charcoal, punch.tealBlack],
+    gradient: [punch.tealBlack, punch.gunmetal, punch.steel],
+    gradientPressed: [punch.tealBlack, punch.charcoal, punch.gunmetal],
     bevelTop: punch.steel,
     bevelBottom: punch.tealBlack,
     textColor: colors.textPrimary,
