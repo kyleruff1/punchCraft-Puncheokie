@@ -33,6 +33,15 @@ import { silenceFor } from './voiceAssets/silenceManifest'
 /** Pump cadence — the error bound on completion detection, not on audio. */
 const PUMP_INTERVAL_MS = 150
 
+/**
+ * After the planned end, how long a still-playing playlist may hold the
+ * bell. Kyle heard the ding land before the workout truly began: a late
+ * native start let the planned clock declare completion while the coach
+ * was still talking. The bell now waits for the playlist to actually
+ * finish — bounded, because the countdown cap is the final authority.
+ */
+const INTRO_COMPLETE_GRACE_MS = 8_000
+
 export class IntroPlayer {
   private playlist: AudioPlaylist | null = null
   private pump: ReturnType<typeof setInterval> | null = null
@@ -115,7 +124,20 @@ export class IntroPlayer {
     })
     this.doneAt = Date.now() + this.plannedMs + (opts.tailMs ?? 0)
     this.pump = setInterval(() => {
-      if (this.doneAt !== null && Date.now() >= this.doneAt) this.finish('planned-end')
+      if (this.doneAt === null) return
+      const now = Date.now()
+      if (now < this.doneAt) return
+      // Planned end reached — but the NATIVE playlist is the truth. If it
+      // started late, it is still speaking; the ding must not ring over
+      // the coach or before the athlete's cue that the round begins.
+      let stillPlaying = false
+      try {
+        stillPlaying = this.playlist?.playing === true
+      } catch {
+        // Treat an unreadable playlist as done.
+      }
+      if (stillPlaying && now < this.doneAt + INTRO_COMPLETE_GRACE_MS) return
+      this.finish(stillPlaying ? 'grace-elapsed' : 'planned-end')
     }, PUMP_INTERVAL_MS)
   }
 
