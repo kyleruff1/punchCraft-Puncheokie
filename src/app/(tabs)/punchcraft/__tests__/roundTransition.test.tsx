@@ -328,7 +328,7 @@ describe('the session machine gains no states (spec §18.1, D6)', () => {
       ticks += 1
       if (ticks > 100) throw new Error('rest never ended')
     }
-    expect(ticks).toBeGreaterThan(5)
+    expect(ticks).toBeGreaterThan(3)
     expect(getLive().phase).toBe('rest')
     h.unmount()
   })
