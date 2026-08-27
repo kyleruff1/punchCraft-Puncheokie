@@ -120,7 +120,7 @@ function Metric(props: {
   )
 }
 
-export function MetricsRail(props: MetricsRailProps): React.JSX.Element {
+function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
   const {
     counts,
     roundGoal,
@@ -251,3 +251,12 @@ const styles = StyleSheet.create({
   metricCaption: { fontSize: 10, color: colors.textMuted },
   tiles: { gap: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
 })
+
+/**
+ * Memoized: the live screen re-renders on every store push, and this
+ * component's subtree is heavy — re-committing it at store cadence was
+ * part of the JS churn that starved the responder system (dead buttons
+ * during work). Props are plain values/stable objects, so a shallow
+ * compare skips most commits.
+ */
+export const MetricsRail = React.memo(MetricsRailInner)

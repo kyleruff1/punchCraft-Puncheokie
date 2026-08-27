@@ -319,7 +319,10 @@ describe('the session machine gains no states (spec §18.1, D6)', () => {
     // steps, so an overflow tick at the round boundary cannot walk the loop
     // past the end of the rest.
     let ticks = 0
-    while (getLive().roundRemainingMs > 200) {
+    // Margin covers the store throttle (250ms) plus one step: the
+    // remaining reading can be one push stale, and stepping past the
+    // boundary flips the phase (which IS pushed immediately).
+    while (getLive().roundRemainingMs > 600) {
       expect(getLive().phase).toBe('rest')
       h.step(100)
       ticks += 1

@@ -65,8 +65,15 @@ import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkou
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
 export const TICK_INTERVAL_MS = 50
-/** Store write ceiling (spec §15.3). The UI cannot use more than 10 Hz. */
-export const STORE_THROTTLE_MS = 100
+/**
+ * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
+ * found Pressables dead DURING work while fine in idle: the 10Hz
+ * full-screen re-render churn starved the JS responder system, so taps
+ * were processed after the finger lifted (native surfaces like the dev
+ * menu still worked). 4Hz halves-again the churn; punch-count changes
+ * still flush immediately on the punch, so scoring feel is untouched.
+ */
+export const STORE_THROTTLE_MS = 250
 /**
  * How many recent punch events stay resolvable when a cue settles. A cue's
  * window closes within a couple of seconds of its punches, so this is far
@@ -953,7 +960,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // down at some point in it (doc §23).
       if (getLive().degraded) freezeRef.current.noteTrackerDropped()
       const transitions = session.advance()
-      if (transitions.length > 0) applyTransitions(transitions)
+      if (transitions.length > 0) {
+        applyTransitions(transitions)
+        // A phase boundary must reach the UI NOW — the throttle exists to
+        // calm mid-phase churn, never to let the screen show "work" after
+        // the bell.
+        pushStore(true)
+      }
       const snapshot = session.snapshot()
       // Doc §25's final warning fires off the round clock, so the announcer
       // needs the same sample the store gets.

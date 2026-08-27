@@ -201,7 +201,7 @@ function CueRow(props: {
   )
 }
 
-export function CueStage(props: CueStageProps): React.JSX.Element {
+function CueStageInner(props: CueStageProps): React.JSX.Element {
   const { current, next, reducedMotion = false, idleLabel } = props
 
   return (
@@ -275,3 +275,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
 })
+
+/**
+ * Memoized: the live screen re-renders on every store push, and this
+ * component's subtree is heavy — re-committing it at store cadence was
+ * part of the JS churn that starved the responder system (dead buttons
+ * during work). Props are plain values/stable objects, so a shallow
+ * compare skips most commits.
+ */
+export const CueStage = React.memo(CueStageInner)
