@@ -20,6 +20,7 @@ import { Link, Stack } from 'expo-router'
 
 import { ConflictNotice } from '@components/workout/ConflictNotice'
 import { EnablementMenu } from '@components/workout/EnablementMenu'
+import { ActionLabel } from '@components/branding/ActionLabel'
 import { ForgedButton } from '@components/branding/ForgedButton'
 import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
 import { Stepper } from '@components/workout/RecipeControls'
@@ -332,8 +333,12 @@ export default function RecipeScreen(): React.JSX.Element {
 
         <View style={styles.actions}>
           <Link href="/(tabs)/punchcraft/live" asChild>
-            <ForgedButton variant="primary" testID="start-button">
-              Start workout
+            <ForgedButton
+              variant="primary"
+              testID="start-button"
+              accessibilityLabel="Start workout"
+            >
+              <ActionLabel action="startWorkout" />
             </ForgedButton>
           </Link>
           <Text style={styles.startCaption}>

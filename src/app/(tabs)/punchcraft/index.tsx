@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 
+import { ActionLabel } from '@/components/branding/ActionLabel'
 import { ForgedButton } from '@/components/branding/ForgedButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { PickerProvider } from '@/components/ui/PickerContext'
@@ -63,12 +64,13 @@ export default function PunchCraftLanding() {
           <ForgedButton
             variant="primary"
             testID="setup-workout"
+            accessibilityLabel="Build a workout"
             // Mint a fresh seed and drop any library pick, so the recipe opens on
             // a new generated workout rather than the last one built or picked.
             onPress={() => startNewBuild()}
             style={styles.primaryActionSpacing}
           >
-            Build a workout
+            <ActionLabel action="buildAWorkout" />
           </ForgedButton>
         </Link>
 
