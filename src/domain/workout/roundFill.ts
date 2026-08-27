@@ -77,6 +77,13 @@ const PHASE_SHARE = {
 const MAX_REPAIR_PASSES = 24
 
 /**
+ * How close to the bell the repair pass fills. Was 4s; the switch-test
+ * lab measured 3.8-4.2s of dead air before the end ding and Kyle wants
+ * the coach working closer to it — 2s leaves one breath, not a hole.
+ */
+const REPAIR_BELL_MARGIN_MS = 2_000
+
+/**
  * Voice cadence bands in order (doc §17). A phase may shift the CALLED
  * rendering a band up (bursts, pressure) or down (movement) from the
  * workout's profile — the beat grid stays put; the recording changes.
@@ -599,7 +606,7 @@ export function fillScoredRound(
       specs[specs.length - 1]
     if (repairPick) blockCount += 0 // probe spec above never enters the list
     let guard = 0
-    while (closing && workMs - span() > 4_000 && guard++ < MAX_REPAIR_PASSES) {
+    while (closing && workMs - span() > REPAIR_BELL_MARGIN_MS && guard++ < MAX_REPAIR_PASSES) {
       const spec = comboSpecFor(
         nextId(),
         closing.notation,
