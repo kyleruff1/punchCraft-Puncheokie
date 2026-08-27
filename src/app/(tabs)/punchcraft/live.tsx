@@ -29,7 +29,6 @@ import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
-import { logger, safe } from '@diagnostics/logger'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
 import { RestPhases } from '@components/workout/RestPhases'
