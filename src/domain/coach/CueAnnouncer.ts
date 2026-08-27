@@ -192,7 +192,7 @@ export class CueAnnouncer {
   private readonly durations: Readonly<Partial<Record<VoiceAssetId, number>>> | undefined
   private readonly onSkip: ((skip: AnnouncerSkip) => void) | undefined
   private readonly cadence: string
-  private readonly vocabulary: CalloutVocabulary
+  private vocabulary: CalloutVocabulary
   private readonly performanceFor: (cue: CueInstance) => PerformanceState
   private readonly delivery: CueDelivery
 
@@ -242,6 +242,18 @@ export class CueAnnouncer {
   }
 
   /** D1 input from M34-05's playback detector. */
+  /**
+   * Switch the callout vocabulary MID-WORKOUT (Kyle's live radio toggle).
+   * Takes effect at the next dispatch — clips resolve at play time, so no
+   * engine rebuild and no rhythm-map change. Placement margins were
+   * compiled with the starting vocabulary's phrase lengths; a longer
+   * techniques phrase may finish slightly into the window, which the
+   * overrun reporting already tolerates.
+   */
+  setVocabulary(vocabulary: CalloutVocabulary): void {
+    this.vocabulary = vocabulary
+  }
+
   setThirdPartyPlayback(active: boolean): void {
     this.playbackActive = active
   }

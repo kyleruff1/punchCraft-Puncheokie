@@ -136,6 +136,8 @@ export interface WorkoutRunner {
   skipRest(): void
   /** End the lead-in now — the walkout finished ahead of its cap. */
   skipCountdown(): void
+  /** Live vocabulary switch (numbers ⇄ techniques) — next call speaks it. */
+  setVocabulary(vocabulary: 'numbers' | 'techniques'): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
   readCues(): { current?: CueView; next?: CueView; freeWork?: boolean }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
@@ -1046,6 +1048,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         applyTransitions(sessionRef.current?.skipRest() ?? [])
         syncFromEngine()
         pushStore(true)
+      },
+      setVocabulary: (vocabulary: 'numbers' | 'techniques') => {
+        announcerRef.current?.setVocabulary(vocabulary)
       },
       skipCountdown: () => {
         // The intro finished ahead of its padded cap; ring the bell now

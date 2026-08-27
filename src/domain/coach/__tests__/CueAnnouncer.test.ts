@@ -593,16 +593,25 @@ describe('a rendered combination is preferred over per-word clips', () => {
   /** A port that has a phrase for whatever it is asked for. */
   function phraseHarness(
     over: { has?: boolean; durationMs?: number } = {},
-  ): { port: RecordingPort; announcer: CueAnnouncer; calls: Array<[string, string, number?]> } {
+  ): {
+    port: RecordingPort
+    announcer: CueAnnouncer
+    calls: Array<[string, string, number?, CombinationVoice?]>
+  } {
     const port = new RecordingPort()
-    const calls: Array<[string, string, number?]> = []
+    const calls: Array<[string, string, number?, CombinationVoice?]> = []
     const has = over.has ?? true
     const announcer = new CueAnnouncer({
       policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
       output: Object.assign(port, {
-        playCombination: (combination: string, cadence: string, atMs?: number) => {
+        playCombination: (
+          combination: string,
+          cadence: string,
+          atMs?: number,
+          voice?: CombinationVoice,
+        ) => {
           if (!has) return false
-          calls.push([combination, cadence, atMs])
+          calls.push([combination, cadence, atMs, voice])
           return true
         },
         combinationDurationMs: () => (has ? (over.durationMs ?? 600) : undefined),
@@ -620,6 +629,20 @@ describe('a rendered combination is preferred over per-word clips', () => {
     // The per-word path did not also run — that would double the call.
     expect(h.port.calls.some((c) => c.kind === 'phrase')).toBe(false)
     expect(h.port.assets()).toEqual([])
+  })
+
+  it('switches vocabulary mid-workout — the very next call speaks it', () => {
+    // Kyle's live radio: numbers ⇄ techniques flips at dispatch time, no
+    // engine rebuild — the announcer's vocabulary is mutable state.
+    const h = phraseHarness()
+    h.announcer.onCueEvent(cueEvent('cue-announcing', cue({ tokens: [punch(1), punch(2)] })))
+    expect(h.calls[0]?.[3]?.vocabulary).toBe('numbers')
+
+    h.announcer.setVocabulary('techniques')
+    h.announcer.onCueEvent(
+      cueEvent('cue-announcing', cue({ id: 'cue-2', tokens: [punch(1), punch(2)] })),
+    )
+    expect(h.calls[1]?.[3]?.vocabulary).toBe('techniques')
   })
 
   it('asks for the cadence it was configured with', () => {

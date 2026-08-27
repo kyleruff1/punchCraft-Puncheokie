@@ -450,7 +450,15 @@ console.log('Setting movement beats and trimming…')
 for (const job of jobs) {
   if (!existsSync(job.wav)) continue
   insertBeats(job.wav, job.plan.beats)
-  trimEnds(job.wav, job.plan.profile === 'single' ? { tailMs: 70 } : {})
+  // `--soft-head` protects low-energy consonant onsets (the /dʒ/ in
+  // "jab" was being eaten by the default head trim — heard as "chap"
+  // through the tablet speaker). More retained lead, gentler threshold.
+  trimEnds(job.wav, {
+    ...(job.plan.profile === 'single' ? { tailMs: 70 } : {}),
+    ...(process.argv.includes('--soft-head')
+      ? { headMs: 140, thresholdRatio: 0.0015 }
+      : {}),
+  })
 }
 
 console.log('Applying pitch contour, finish and aged drift…')

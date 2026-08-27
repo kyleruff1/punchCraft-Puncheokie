@@ -119,14 +119,22 @@ export default function LiveScreen(): React.JSX.Element {
     }
   }, [output])
 
+  // Live vocabulary override (Kyle's mid-workout radio): dispatch-time
+  // only. Clips resolve at play time and preload keeps BOTH tracks warm,
+  // so the flip is instant — no engine rebuild, no rhythm-map change.
+  // (Placement margins stay compiled with the starting vocabulary; a
+  // longer techniques phrase may finish slightly into its window, which
+  // the overrun reporting already tolerates.)
+  const [liveVocabulary, setLiveVocabulary] = useState<'numbers' | 'names' | null>(null)
+  const effectiveVocabulary = liveVocabulary ?? recipe.voiceVocabulary
+
   React.useEffect(() => {
     // Preload during the countdown, not at the first cue: M34-01 measured a
     // cold clip at roughly twice the jitter of a preloaded one. Re-runs on a
-    // vocabulary change so switching to names actually loads the names clips
-    // rather than leaving the coach saying "one".
-    output.setVocabulary(policy.vocabulary)
+    // vocabulary change; preload also warms the OTHER vocabulary's openers.
+    output.setVocabulary(effectiveVocabulary)
     void output.preload()
-  }, [output, policy.vocabulary])
+  }, [output, effectiveVocabulary])
 
   React.useEffect(() => {
     output.setVolumes(volumes)
@@ -267,6 +275,10 @@ export default function LiveScreen(): React.JSX.Element {
   }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.schedule])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
+  React.useEffect(() => {
+    runner.setVocabulary(effectiveVocabulary === 'names' ? 'techniques' : 'numbers')
+  }, [runner, effectiveVocabulary])
+
   const startedRef = useRef(false)
 
   useFocusEffect(
@@ -344,36 +356,6 @@ export default function LiveScreen(): React.JSX.Element {
         />
         <View style={styles.backdropScrim} />
       </View>
-
-      {/* Exit is the escape hatch — always visible, corner of the screen so
-          it never falls under the athlete's grip, small enough not to steal
-          from the cue stage. Top RIGHT, under the floating settings gear:
-          the top-left corner belongs to the round counter, and the first
-          bag test had this button sitting exactly on top of "Round 1/3".
-          The top bar wrapper below reserves the width so the glove chips
-          slide left rather than underlapping. Fires the same confirm flow
-          the Stop button does; a workout is real work and dropping it
-          silently would lose the athlete's session. */}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Exit workout"
-        onPress={() => {
-          // Nothing to stop and nothing to save on `idle` / `completed` /
-          // `cancelled` — leave directly. On a running/paused workout the
-          // same confirm the Stop button uses runs, so a mid-session tap
-          // does not silently lose the athlete's work.
-          if (live.phase === 'idle' || isOver) {
-            router.back()
-            return
-          }
-          runner.emergencyStop()
-          setConfirmingStop(true)
-        }}
-        style={styles.exitButton}
-        testID="exit-workout"
-      >
-        <Text style={styles.exitButtonText}>← Exit</Text>
-      </Pressable>
 
       {/* Right inset keeps the glove chips clear of the Exit button. */}
       <View style={styles.topBarInset}>
@@ -576,6 +558,77 @@ export default function LiveScreen(): React.JSX.Element {
           onPlayScript={(id: SimScriptId) => sim.playScript(id)}
         />
       ) : null}
+
+      {/* Tap controls are the LAST siblings in the root on purpose:
+          Kyle's bag testing found Exit "hardly ever records taps" — an
+          intermediate layer was winning Android's hit test. Rendering
+          these after everything else (plus elevation) makes them the
+          topmost layer no matter what the stage/rails do. */}
+      {/* Exit is the escape hatch — always visible, corner of the screen so
+          it never falls under the athlete's grip, small enough not to steal
+          from the cue stage. Top RIGHT, under the floating settings gear:
+          the top-left corner belongs to the round counter, and the first
+          bag test had this button sitting exactly on top of "Round 1/3".
+          The top bar wrapper below reserves the width so the glove chips
+          slide left rather than underlapping. Fires the same confirm flow
+          the Stop button does; a workout is real work and dropping it
+          silently would lose the athlete's session. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Exit workout"
+        onPress={() => {
+          // Nothing to stop and nothing to save on `idle` / `completed` /
+          // `cancelled` — leave directly. On a running/paused workout the
+          // same confirm the Stop button uses runs, so a mid-session tap
+          // does not silently lose the athlete's work.
+          if (live.phase === 'idle' || isOver) {
+            router.back()
+            return
+          }
+          runner.emergencyStop()
+          setConfirmingStop(true)
+        }}
+        style={styles.exitButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 8 }}
+        testID="exit-workout"
+      >
+        <Text style={styles.exitButtonText}>← Exit</Text>
+      </Pressable>
+
+      {/* Live vocabulary radio (Kyle): flip numbers ⇄ techniques mid-
+          workout. Sits left of Exit; the next call speaks the new set. */}
+      <View style={styles.vocabRadio} testID="vocab-radio">
+        {(['numbers', 'names'] as const).map((v) => (
+          <Pressable
+            key={v}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: effectiveVocabulary === v }}
+            accessibilityLabel={v === 'numbers' ? 'Numbers callouts' : 'Technique callouts'}
+            onPress={() => setLiveVocabulary(v)}
+            hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+            style={styles.vocabOption}
+            testID={`vocab-${v}`}
+          >
+            <Text
+              style={[
+                styles.vocabDot,
+                effectiveVocabulary === v && styles.vocabDotActive,
+              ]}
+            >
+              {effectiveVocabulary === v ? '◉' : '○'}
+            </Text>
+            <Text
+              style={[
+                styles.vocabLabel,
+                effectiveVocabulary === v && styles.vocabLabelActive,
+              ]}
+            >
+              {v === 'numbers' ? 'Numbers' : 'Techniques'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
     </View>
   )
 }
@@ -651,12 +704,34 @@ const styles = StyleSheet.create({
   },
   extras: { fontSize: 13, color: colors.textSecondary },
   pacingCue: { fontSize: 13, fontWeight: '700', color: colors.accent },
-  topBarInset: { paddingRight: 96 },
+  topBarInset: { paddingRight: 380 },
+  vocabRadio: {
+    position: 'absolute',
+    top: 8,
+    right: 110,
+    zIndex: 20,
+    elevation: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  vocabOption: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  vocabDot: { color: colors.textMuted, fontSize: sizes.body },
+  vocabDotActive: { color: colors.accent },
+  vocabLabel: { color: colors.textMuted, fontFamily: fonts.body, fontSize: sizes.label },
+  vocabLabelActive: { color: colors.accent },
   exitButton: {
     position: 'absolute',
     top: 8,
     right: 8,
-    zIndex: 10,
+    zIndex: 20,
+    elevation: 20,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,

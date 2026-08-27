@@ -147,8 +147,12 @@ export const FALLBACK_CLIP_MS = 320
  * is reached, which costs that clip a cold start next time it is needed
  * (M34-01 measured cold at roughly twice the jitter of warm) and costs
  * nothing at all for the clips actually in rotation.
+ *
+ * Raised 16 → 24 for the live vocabulary switch: BOTH vocabularies'
+ * opening clips stay warm (~20 players) so flipping numbers ⇄ techniques
+ * mid-workout costs no cold start. Still far under the ~48 that broke.
  */
-export const MAX_RESIDENT_PLAYERS = 16
+export const MAX_RESIDENT_PLAYERS = 24
 
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
@@ -259,6 +263,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     for (const [id, form] of warm) {
       if (this.playerFor(id, form)) loaded += 1
     }
+
+    // Both tracks loaded (Kyle's live vocabulary switch): warm the OTHER
+    // vocabulary's same opening set, so the radio flip is instant. The
+    // pool is keyed by vocabulary, so these coexist with the primary's.
+    const primary = this.vocabulary
+    this.vocabulary = primary === 'numbers' ? 'names' : 'numbers'
+    for (const [id, form] of warm) this.playerFor(id, form)
+    this.vocabulary = primary
 
     if (loaded === 0) {
       this.failed = true
