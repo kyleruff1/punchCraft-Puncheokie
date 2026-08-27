@@ -2,7 +2,6 @@ import React, { useMemo } from 'react'
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 
-import { ActionLabel } from '@/components/branding/ActionLabel'
 import { ForgedButton } from '@/components/branding/ForgedButton'
 import { Wordmark } from '@/components/branding/Wordmark'
 import { PickerProvider } from '@/components/ui/PickerContext'
@@ -61,8 +60,10 @@ export default function PunchCraftLanding() {
         </Text>
 
         <Link href="/(tabs)/punchcraft/recipe" asChild>
+          {/* Text label until the next action-label art drop — the first
+              pass (see dev/button-lab) read poorly on every base. */}
           <ForgedButton
-            variant="hero"
+            variant="primary"
             testID="setup-workout"
             accessibilityLabel="Build a workout"
             // Mint a fresh seed and drop any library pick, so the recipe opens on
@@ -70,7 +71,7 @@ export default function PunchCraftLanding() {
             onPress={() => startNewBuild()}
             style={styles.primaryActionSpacing}
           >
-            <ActionLabel action="buildAWorkout" size="md" />
+            Build a workout
           </ForgedButton>
         </Link>
 

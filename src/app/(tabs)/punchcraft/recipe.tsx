@@ -20,7 +20,6 @@ import { Link, Stack } from 'expo-router'
 
 import { ConflictNotice } from '@components/workout/ConflictNotice'
 import { EnablementMenu } from '@components/workout/EnablementMenu'
-import { ActionLabel } from '@components/branding/ActionLabel'
 import { ForgedButton } from '@components/branding/ForgedButton'
 import { RecipeSummaryCard } from '@components/workout/RecipeSummaryCard'
 import { Stepper } from '@components/workout/RecipeControls'
@@ -333,12 +332,14 @@ export default function RecipeScreen(): React.JSX.Element {
 
         <View style={styles.actions}>
           <Link href="/(tabs)/punchcraft/live" asChild>
+            {/* Text label until the next action-label art drop — the first
+                pass (see dev/button-lab) read poorly on every base. */}
             <ForgedButton
-              variant="hero"
+              variant="primary"
               testID="start-button"
               accessibilityLabel="Start workout"
             >
-              <ActionLabel action="startWorkout" size="md" />
+              Start workout
             </ForgedButton>
           </Link>
           <Text style={styles.startCaption}>
