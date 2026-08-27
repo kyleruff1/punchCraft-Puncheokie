@@ -98,6 +98,28 @@ export const SET_CALLOUT_QUIET_MS = 300
 export const SET_CALLOUT_PART_GAP_MS = 250
 /** Ceremony never starts before the previous cue's window has ended. */
 export const SET_CALLOUT_MIN_CLEAR_MS = 200
+/**
+ * Quiet after the round bell before the FIRST ceremony may speak — the
+ * ding-ding (and the walkout's tail on round one) needs room to land;
+ * without it the round opens as clutter (Kyle's live note).
+ */
+export const ROUND_OPEN_QUIET_MS = 1_500
+
+/**
+ * The 30-second closer (Kyle): every round, the coach yells "Thirty
+ * seconds left in this round!" and a rotating finisher. Compiled at
+ * T-30s, nudged earlier up to the search window to clear calls, skipped
+ * if no quiet exists — the voiced replacement for the retired warning
+ * beep, and the round-end hype the athlete actually wants.
+ */
+export const CLOSER_AT_REMAINING_MS = 30_000
+export const CLOSER_SEARCH_BACK_MS = 4_000
+export const CLOSER_ROTATION: readonly string[] = [
+  'co-closer-01', 'co-closer-02', 'co-closer-03', 'co-closer-04',
+  'co-closer-05', 'co-closer-06', 'co-closer-07', 'co-closer-08',
+  'co-closer-09', 'co-closer-10', 'co-closer-11', 'co-closer-12',
+  'co-closer-13',
+]
 
 export interface EncouragementPayload {
   asset:
@@ -275,7 +297,10 @@ export function compileRoundRhythmMap(
       const sentenceMs = opts.setupCalloutDurationFor(ceremony.asset)
       if (sentenceMs !== undefined) {
         const prev = round.cues[cueIndex - 1]
-        const earliest = prev === undefined ? 0 : prev.scheduledEndMs + SET_CALLOUT_MIN_CLEAR_MS
+        const earliest =
+          prev === undefined
+            ? ROUND_OPEN_QUIET_MS
+            : prev.scheduledEndMs + SET_CALLOUT_MIN_CLEAR_MS
         const anchor = callStartAt - SET_CALLOUT_QUIET_MS
         const reciteMs =
           ceremony.notation === undefined
@@ -337,6 +362,37 @@ export function compileRoundRhythmMap(
       payload: { at: mark },
       cancelsWith: 'round-end',
     })
+  }
+
+  // ---- The 30-second closer: placed against the round's real call
+  // schedule, in quiet, never moving anything else.
+  if (opts.setupCalloutDurationFor && round.workDurationMs > 60_000) {
+    const thirtyMs = opts.setupCalloutDurationFor('co-thirty-left')
+    const closerId = CLOSER_ROTATION[round.roundIndex % CLOSER_ROTATION.length] as string
+    const closerMs = opts.setupCalloutDurationFor(closerId)
+    if (thirtyMs !== undefined && closerMs !== undefined) {
+      // Unconditional at T-30s: this is HYPE OVER THE ACTION, not a
+      // ceremony needing quiet — the pressure phase it lands in has no
+      // multi-second gaps by design, and the coach yelling over the work
+      // is exactly the effect. Additive events only; nothing moves.
+      const start = round.workDurationMs - CLOSER_AT_REMAINING_MS
+      events.push({
+        id: 'closer#thirty',
+        cueId: 'closer',
+        kind: 'set-callout',
+        atMs: start,
+        payload: { asset: 'co-thirty-left' },
+        cancelsWith: 'round-end',
+      })
+      events.push({
+        id: 'closer#line',
+        cueId: 'closer',
+        kind: 'set-callout',
+        atMs: Math.round(start + thirtyMs + SET_CALLOUT_PART_GAP_MS),
+        payload: { asset: closerId },
+        cancelsWith: 'round-end',
+      })
+    }
   }
 
   if (opts.encouragement) {

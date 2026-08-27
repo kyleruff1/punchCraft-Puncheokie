@@ -57,6 +57,20 @@ export type CalloutClipId =
   | 'co-breathe-reset-02'
   | 'co-okay-go'
   | 'co-regular-speed-go'
+  | 'co-thirty-left'
+  | 'co-closer-01'
+  | 'co-closer-02'
+  | 'co-closer-03'
+  | 'co-closer-04'
+  | 'co-closer-05'
+  | 'co-closer-06'
+  | 'co-closer-07'
+  | 'co-closer-08'
+  | 'co-closer-09'
+  | 'co-closer-10'
+  | 'co-closer-11'
+  | 'co-closer-12'
+  | 'co-closer-13'
 
 /** In-round call-out sentence durations, keyed by VoiceAssetId. */
 export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number }>> = {
@@ -79,7 +93,7 @@ export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number 
   'co-buildup-start-02': { durationMs: 4674 },
   'co-buildup-start-03': { durationMs: 3969 },
   'co-buildup-next-01': { durationMs: 3024 },
-  'co-buildup-next-02': { durationMs: 5053 },
+  'co-buildup-next-02': { durationMs: 3166 },
   'co-volume-01': { durationMs: 3807 },
   'co-volume-02': { durationMs: 3146 },
   'co-volume-03': { durationMs: 3486 },
@@ -107,6 +121,20 @@ export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number 
   'co-breathe-reset-02': { durationMs: 4100 },
   'co-okay-go': { durationMs: 848 },
   'co-regular-speed-go': { durationMs: 2145 },
+  'co-thirty-left': { durationMs: 2205 },
+  'co-closer-01': { durationMs: 690 },
+  'co-closer-02': { durationMs: 2067 },
+  'co-closer-03': { durationMs: 1336 },
+  'co-closer-04': { durationMs: 1904 },
+  'co-closer-05': { durationMs: 1957 },
+  'co-closer-06': { durationMs: 2090 },
+  'co-closer-07': { durationMs: 2184 },
+  'co-closer-08': { durationMs: 1920 },
+  'co-closer-09': { durationMs: 1866 },
+  'co-closer-10': { durationMs: 3323 },
+  'co-closer-11': { durationMs: 2501 },
+  'co-closer-12': { durationMs: 1809 },
+  'co-closer-13': { durationMs: 1607 },
 }
 
 export const CALLOUT_REQUIRES_NUMBERS_STANDALONE: Readonly<Record<CalloutClipId, number>> = {
@@ -157,6 +185,20 @@ export const CALLOUT_REQUIRES_NUMBERS_STANDALONE: Readonly<Record<CalloutClipId,
   'co-breathe-reset-02': require('../../../assets/voice/numbers/standalone/co-breathe-reset-02.wav'),
   'co-okay-go': require('../../../assets/voice/numbers/standalone/co-okay-go.wav'),
   'co-regular-speed-go': require('../../../assets/voice/numbers/standalone/co-regular-speed-go.wav'),
+  'co-thirty-left': require('../../../assets/voice/numbers/standalone/co-thirty-left.wav'),
+  'co-closer-01': require('../../../assets/voice/numbers/standalone/co-closer-01.wav'),
+  'co-closer-02': require('../../../assets/voice/numbers/standalone/co-closer-02.wav'),
+  'co-closer-03': require('../../../assets/voice/numbers/standalone/co-closer-03.wav'),
+  'co-closer-04': require('../../../assets/voice/numbers/standalone/co-closer-04.wav'),
+  'co-closer-05': require('../../../assets/voice/numbers/standalone/co-closer-05.wav'),
+  'co-closer-06': require('../../../assets/voice/numbers/standalone/co-closer-06.wav'),
+  'co-closer-07': require('../../../assets/voice/numbers/standalone/co-closer-07.wav'),
+  'co-closer-08': require('../../../assets/voice/numbers/standalone/co-closer-08.wav'),
+  'co-closer-09': require('../../../assets/voice/numbers/standalone/co-closer-09.wav'),
+  'co-closer-10': require('../../../assets/voice/numbers/standalone/co-closer-10.wav'),
+  'co-closer-11': require('../../../assets/voice/numbers/standalone/co-closer-11.wav'),
+  'co-closer-12': require('../../../assets/voice/numbers/standalone/co-closer-12.wav'),
+  'co-closer-13': require('../../../assets/voice/numbers/standalone/co-closer-13.wav'),
 }
 
 export const CALLOUT_REQUIRES_NUMBERS_COMBO: Readonly<Record<CalloutClipId, number>> = {
@@ -207,6 +249,20 @@ export const CALLOUT_REQUIRES_NUMBERS_COMBO: Readonly<Record<CalloutClipId, numb
   'co-breathe-reset-02': require('../../../assets/voice/numbers/combo/co-breathe-reset-02.wav'),
   'co-okay-go': require('../../../assets/voice/numbers/combo/co-okay-go.wav'),
   'co-regular-speed-go': require('../../../assets/voice/numbers/combo/co-regular-speed-go.wav'),
+  'co-thirty-left': require('../../../assets/voice/numbers/combo/co-thirty-left.wav'),
+  'co-closer-01': require('../../../assets/voice/numbers/combo/co-closer-01.wav'),
+  'co-closer-02': require('../../../assets/voice/numbers/combo/co-closer-02.wav'),
+  'co-closer-03': require('../../../assets/voice/numbers/combo/co-closer-03.wav'),
+  'co-closer-04': require('../../../assets/voice/numbers/combo/co-closer-04.wav'),
+  'co-closer-05': require('../../../assets/voice/numbers/combo/co-closer-05.wav'),
+  'co-closer-06': require('../../../assets/voice/numbers/combo/co-closer-06.wav'),
+  'co-closer-07': require('../../../assets/voice/numbers/combo/co-closer-07.wav'),
+  'co-closer-08': require('../../../assets/voice/numbers/combo/co-closer-08.wav'),
+  'co-closer-09': require('../../../assets/voice/numbers/combo/co-closer-09.wav'),
+  'co-closer-10': require('../../../assets/voice/numbers/combo/co-closer-10.wav'),
+  'co-closer-11': require('../../../assets/voice/numbers/combo/co-closer-11.wav'),
+  'co-closer-12': require('../../../assets/voice/numbers/combo/co-closer-12.wav'),
+  'co-closer-13': require('../../../assets/voice/numbers/combo/co-closer-13.wav'),
 }
 
 export const CALLOUT_REQUIRES_NAMES_STANDALONE: Readonly<Record<CalloutClipId, number>> = {
@@ -257,6 +313,20 @@ export const CALLOUT_REQUIRES_NAMES_STANDALONE: Readonly<Record<CalloutClipId, n
   'co-breathe-reset-02': require('../../../assets/voice/names/standalone/co-breathe-reset-02.wav'),
   'co-okay-go': require('../../../assets/voice/names/standalone/co-okay-go.wav'),
   'co-regular-speed-go': require('../../../assets/voice/names/standalone/co-regular-speed-go.wav'),
+  'co-thirty-left': require('../../../assets/voice/names/standalone/co-thirty-left.wav'),
+  'co-closer-01': require('../../../assets/voice/names/standalone/co-closer-01.wav'),
+  'co-closer-02': require('../../../assets/voice/names/standalone/co-closer-02.wav'),
+  'co-closer-03': require('../../../assets/voice/names/standalone/co-closer-03.wav'),
+  'co-closer-04': require('../../../assets/voice/names/standalone/co-closer-04.wav'),
+  'co-closer-05': require('../../../assets/voice/names/standalone/co-closer-05.wav'),
+  'co-closer-06': require('../../../assets/voice/names/standalone/co-closer-06.wav'),
+  'co-closer-07': require('../../../assets/voice/names/standalone/co-closer-07.wav'),
+  'co-closer-08': require('../../../assets/voice/names/standalone/co-closer-08.wav'),
+  'co-closer-09': require('../../../assets/voice/names/standalone/co-closer-09.wav'),
+  'co-closer-10': require('../../../assets/voice/names/standalone/co-closer-10.wav'),
+  'co-closer-11': require('../../../assets/voice/names/standalone/co-closer-11.wav'),
+  'co-closer-12': require('../../../assets/voice/names/standalone/co-closer-12.wav'),
+  'co-closer-13': require('../../../assets/voice/names/standalone/co-closer-13.wav'),
 }
 
 export const CALLOUT_REQUIRES_NAMES_COMBO: Readonly<Record<CalloutClipId, number>> = {
@@ -307,6 +377,20 @@ export const CALLOUT_REQUIRES_NAMES_COMBO: Readonly<Record<CalloutClipId, number
   'co-breathe-reset-02': require('../../../assets/voice/names/combo/co-breathe-reset-02.wav'),
   'co-okay-go': require('../../../assets/voice/names/combo/co-okay-go.wav'),
   'co-regular-speed-go': require('../../../assets/voice/names/combo/co-regular-speed-go.wav'),
+  'co-thirty-left': require('../../../assets/voice/names/combo/co-thirty-left.wav'),
+  'co-closer-01': require('../../../assets/voice/names/combo/co-closer-01.wav'),
+  'co-closer-02': require('../../../assets/voice/names/combo/co-closer-02.wav'),
+  'co-closer-03': require('../../../assets/voice/names/combo/co-closer-03.wav'),
+  'co-closer-04': require('../../../assets/voice/names/combo/co-closer-04.wav'),
+  'co-closer-05': require('../../../assets/voice/names/combo/co-closer-05.wav'),
+  'co-closer-06': require('../../../assets/voice/names/combo/co-closer-06.wav'),
+  'co-closer-07': require('../../../assets/voice/names/combo/co-closer-07.wav'),
+  'co-closer-08': require('../../../assets/voice/names/combo/co-closer-08.wav'),
+  'co-closer-09': require('../../../assets/voice/names/combo/co-closer-09.wav'),
+  'co-closer-10': require('../../../assets/voice/names/combo/co-closer-10.wav'),
+  'co-closer-11': require('../../../assets/voice/names/combo/co-closer-11.wav'),
+  'co-closer-12': require('../../../assets/voice/names/combo/co-closer-12.wav'),
+  'co-closer-13': require('../../../assets/voice/names/combo/co-closer-13.wav'),
 }
 
 /** Rest-side theme clips ("Coming up — the Square Builder!"). */

@@ -61,7 +61,6 @@ const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
 /** Clips carried on the bells volume rather than the voice volume (doc §25). */
 const BELL_ASSETS: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
   'bell',
-  'gong',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

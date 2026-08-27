@@ -76,9 +76,6 @@ export type VoiceAssetId =
   | 'stop'
   | 'switch'
   | 'bell'
-  // The round-END sound: every round ends on the gong; the ding (bell)
-  // belongs to round starts. No other non-voice sounds exist.
-  | 'gong'
   // Coast announcements (D23) — the whole instruction in one clip, because
   // "coast for half a minute" is a sentence rather than a word, and stitching
   // it from parts at run time is exactly what D16 forbids. Lengths live in
@@ -150,6 +147,21 @@ export type VoiceAssetId =
   | 'co-breathe-reset-02'
   | 'co-okay-go'
   | 'co-regular-speed-go'
+  // The 30-second closer: 'Thirty seconds left!' + a rotating finisher.
+  | 'co-thirty-left'
+  | 'co-closer-01'
+  | 'co-closer-02'
+  | 'co-closer-03'
+  | 'co-closer-04'
+  | 'co-closer-05'
+  | 'co-closer-06'
+  | 'co-closer-07'
+  | 'co-closer-08'
+  | 'co-closer-09'
+  | 'co-closer-10'
+  | 'co-closer-11'
+  | 'co-closer-12'
+  | 'co-closer-13'
 
 /**
  * The callout vocabulary (D15) — which rendering of a combination is played.
@@ -204,7 +216,6 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'stop',
   'switch',
   'bell',
-  'gong',
   'coast-15',
   'coast-30',
   'coast-45',
@@ -262,6 +273,20 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'co-breathe-reset-02',
   'co-okay-go',
   'co-regular-speed-go',
+  'co-thirty-left',
+  'co-closer-01',
+  'co-closer-02',
+  'co-closer-03',
+  'co-closer-04',
+  'co-closer-05',
+  'co-closer-06',
+  'co-closer-07',
+  'co-closer-08',
+  'co-closer-09',
+  'co-closer-10',
+  'co-closer-11',
+  'co-closer-12',
+  'co-closer-13',
   'tone-ready',
   'tone-repeat',
   'tone-warning',

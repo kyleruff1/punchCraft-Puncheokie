@@ -226,10 +226,10 @@ describe('session phases reach the announcer', () => {
     const h = mount()
     await h.settle()
     h.begin()
-    // The round END is the gong now; the ding (bell) opens rounds only.
-    expect(h.port.assets.filter((a) => a === 'gong').length).toBe(0)
+    // Rounds start AND end on the ding-ding — the gong is retired.
+    const bellsBefore = h.port.assets.filter((a) => a === 'bell').length
     h.step(WORK_MS + TICK_INTERVAL_MS * 2)
-    expect(h.port.assets.filter((a) => a === 'gong').length).toBeGreaterThan(0)
+    expect(h.port.assets.filter((a) => a === 'bell').length).toBeGreaterThan(bellsBefore)
     h.unmount()
   })
 

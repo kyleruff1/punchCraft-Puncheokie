@@ -38,7 +38,7 @@ export function assetPriority(id: VoiceAssetId): AudioPriority {
   // A stop call is the safety rung: it outranks everything, including the
   // bell, because it is the one that means "stop moving".
   if (id === 'stop') return AUDIO_PRIORITY.safety
-  if (id === 'bell' || id === 'gong' || id === 'tone-warning') return AUDIO_PRIORITY.bell
+  if (id === 'bell' || id === 'tone-warning') return AUDIO_PRIORITY.bell
   if (DEFENSE_FOOTWORK.has(id)) return AUDIO_PRIORITY.defenseFootwork
   // Encouragement yields to everything — the map schedules it into audited
   // silence, and the queue drops it first if anything real intervenes.

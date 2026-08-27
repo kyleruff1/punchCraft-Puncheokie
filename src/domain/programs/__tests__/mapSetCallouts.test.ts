@@ -87,7 +87,9 @@ describe('set ceremonies on the rhythm map', () => {
       })
       const byCue = new Map<string, typeof map.events>()
       for (const e of map.events) {
-        if (e.kind !== 'set-callout') continue
+        // The 30-second closer is round-level hype, not a pre-set
+        // ceremony — it has no owning cue and its own placement rule.
+        if (e.kind !== 'set-callout' || e.cueId === 'closer') continue
         byCue.set(e.cueId, [...(byCue.get(e.cueId) ?? []), e])
       }
       for (const [cueId, parts] of byCue) {
@@ -173,5 +175,54 @@ describe('set ceremonies on the rhythm map', () => {
     const a = generatedRounds('same-seed').workout
     const b = generatedRounds('same-seed').workout
     expect(JSON.stringify(a.schedule)).toBe(JSON.stringify(b.schedule))
+  })
+})
+
+describe('the 30-second closer', () => {
+  const { timeline } = generatedRounds('closer-seed')
+  const scored = timeline.filter((r) => r.cues.length > 0)
+
+  it('compiles the pair near T-30s in quiet, rotating the finisher', () => {
+    let found = 0
+    const seen = new Set<string>()
+    for (const round of scored) {
+      const map = compileRoundRhythmMap(round, {
+        cadence: 'steady',
+        durationFor,
+        setupCalloutDurationFor,
+      })
+      const closer = map.events.filter((e) => e.cueId === 'closer')
+      if (closer.length === 0) continue
+      found += 1
+      expect(closer).toHaveLength(2)
+      const [thirty, line] = closer
+      expect((thirty!.payload as { asset: string }).asset).toBe('co-thirty-left')
+      seen.add((line!.payload as { asset: string }).asset)
+      const remaining = round.workDurationMs - thirty!.atMs
+      expect(remaining).toBe(30_000)
+      expect(line!.atMs).toBeGreaterThan(thirty!.atMs)
+    }
+    expect(found).toBeGreaterThan(0)
+    expect(seen.size).toBeGreaterThan(1) // rotation actually rotates
+  })
+
+  it('moves nothing else and respects the round-open quiet', () => {
+    for (const round of scored) {
+      const off = compileRoundRhythmMap(round, { cadence: 'steady', durationFor })
+      const on = compileRoundRhythmMap(round, {
+        cadence: 'steady',
+        durationFor,
+        setupCalloutDurationFor,
+      })
+      const times = (m: typeof off) =>
+        m.events
+          .filter((e) => e.kind === 'call' || e.kind === 'refire' || e.kind === 'phase-announce')
+          .map((e) => `${e.kind}:${e.id}@${e.atMs}`)
+          .sort()
+      expect(times(on)).toEqual(times(off))
+      for (const e of on.events.filter((x) => x.kind === 'set-callout')) {
+        expect(e.atMs).toBeGreaterThanOrEqual(1_500)
+      }
+    }
   })
 })

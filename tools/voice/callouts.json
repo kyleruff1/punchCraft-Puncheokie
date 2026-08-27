@@ -1,94 +1,356 @@
 {
   "comment": "Set-ceremony call-outs (Set Ceremonies plan). inRound entries become VoiceAssetIds (rendered once, copied to all four manifest dirs); themes play rest-side via RoundWarningPlayer and stay outside the port union. Variant ids end -01/-02/-03; fill-time rng picks the variant.",
   "inRound": [
-    { "id": "co-first-look-01", "text": "Here's today's pattern — nice and easy the first few." },
-    { "id": "co-first-look-02", "text": "This is the one we're working today. Feel it out first." },
-    { "id": "co-first-look-03", "text": "Take a look at today's pattern — smooth reps to start." },
-
-    { "id": "co-ones-twos-01", "text": "Okay, get ready — ones and twos!" },
-    { "id": "co-ones-twos-02", "text": "Straight punches now — jab and cross, sharp!" },
-    { "id": "co-ones-twos-03", "text": "Back to the basics — ones and twos, make them crisp!" },
-
-    { "id": "co-double-jab-01", "text": "Double up that jab — find your range!" },
-    { "id": "co-double-jab-02", "text": "Two jabs this time — stay long, stay light!" },
-
-    { "id": "co-hooks-01", "text": "Hooks coming — turn your hips into them!" },
-    { "id": "co-hooks-02", "text": "Time to hook — sit down and swivel!" },
-    { "id": "co-hooks-03", "text": "Get ready to bend those elbows — hooks are up next!" },
-
-    { "id": "co-uppercuts-01", "text": "Uppercuts now — right up the middle!" },
-    { "id": "co-uppercuts-02", "text": "Drop and lift — uppercuts coming!" },
-
-    { "id": "co-square-01", "text": "Square it up — turn with every shot!" },
-    { "id": "co-square-02", "text": "The square pattern — all four corners, keep it turning!" },
-
-    { "id": "co-buildup-start-01", "text": "Let's get ready for the buildup." },
-    { "id": "co-buildup-start-02", "text": "Time to build it — one piece at a time." },
-    { "id": "co-buildup-start-03", "text": "Here comes the buildup — start small, finish big." },
-
-    { "id": "co-buildup-next-01", "text": "We're adding a piece — here's the next rung." },
-    { "id": "co-buildup-next-02", "text": "Okay, it grows — listen to the new finish." },
-
-    { "id": "co-volume-01", "text": "Volume time — as many as you can, keep them clean!" },
-    { "id": "co-volume-02", "text": "Open it up — high volume, stay busy!" },
-    { "id": "co-volume-03", "text": "Let those hands go — volume round, no coasting!" },
-
-    { "id": "co-jab-volume-01", "text": "All jabs — snap them out, stay busy!" },
-    { "id": "co-jab-volume-02", "text": "Jabs only now — pump that lead hand!" },
-
-    { "id": "co-downstairs-01", "text": "Let's go downstairs — dig to the body!" },
-    { "id": "co-downstairs-02", "text": "Same pattern — now take it to the body!" },
-    { "id": "co-downstairs-03", "text": "Body work time — bend those knees and dig in!" },
-
-    { "id": "co-body-to-head-01", "text": "Body first — then bring it back upstairs!" },
-    { "id": "co-body-to-head-02", "text": "Go low, then high — make them look down first!" },
-
-    { "id": "co-movement-01", "text": "Movement now — react, counter, and get out!" },
-    { "id": "co-movement-02", "text": "Feet and head — slip it, answer it, slide away!" },
-
-    { "id": "co-pressure-01", "text": "Time to put it all together — the whole pattern!" },
-    { "id": "co-pressure-02", "text": "Full pattern now — everything you built, under pressure!" },
-    { "id": "co-pressure-03", "text": "This is the payoff — the complete combination, keep it coming!" },
-
-    { "id": "co-new-pattern-01", "text": "New pattern coming — listen up." },
-    { "id": "co-new-pattern-02", "text": "Something new for you — ears open, nice and clean." },
-
-    { "id": "co-settle-in-01", "text": "Settle in — we're going to live on this one for a bit!" },
-    { "id": "co-settle-in-02", "text": "Get comfortable with this one — we're here a while, make every rep count!" },
-
-    { "id": "co-flurry-01", "text": "Flurry time — empty the tank!" },
-    { "id": "co-flurry-02", "text": "Everything now — flurry to the bell!" },
-
-    { "id": "co-final-round-01", "text": "Last round — everything you've got left!" },
-    { "id": "co-final-round-02", "text": "Final round, champ — leave it all on the bag!" },
-
-    { "id": "co-breathe-reset-01", "text": "Reset — breathe, hands back up." },
-    { "id": "co-breathe-reset-02", "text": "Shake it out — breathe, and get your guard back." },
-
-    { "id": "co-okay-go", "text": "Okay — go!" },
-    { "id": "co-regular-speed-go", "text": "Regular speed — okay, go!" }
+    {
+      "id": "co-first-look-01",
+      "text": "Here's today's pattern — nice and easy the first few."
+    },
+    {
+      "id": "co-first-look-02",
+      "text": "This is the one we're working today. Feel it out first."
+    },
+    {
+      "id": "co-first-look-03",
+      "text": "Take a look at today's pattern — smooth reps to start."
+    },
+    {
+      "id": "co-ones-twos-01",
+      "text": "Okay, get ready — ones and twos!"
+    },
+    {
+      "id": "co-ones-twos-02",
+      "text": "Straight punches now — jab and cross, sharp!"
+    },
+    {
+      "id": "co-ones-twos-03",
+      "text": "Back to the basics — ones and twos, make them crisp!"
+    },
+    {
+      "id": "co-double-jab-01",
+      "text": "Double up that jab — find your range!"
+    },
+    {
+      "id": "co-double-jab-02",
+      "text": "Two jabs this time — stay long, stay light!"
+    },
+    {
+      "id": "co-hooks-01",
+      "text": "Hooks coming — turn your hips into them!"
+    },
+    {
+      "id": "co-hooks-02",
+      "text": "Time to hook — sit down and swivel!"
+    },
+    {
+      "id": "co-hooks-03",
+      "text": "Get ready to bend those elbows — hooks are up next!"
+    },
+    {
+      "id": "co-uppercuts-01",
+      "text": "Uppercuts now — right up the middle!"
+    },
+    {
+      "id": "co-uppercuts-02",
+      "text": "Drop and lift — uppercuts coming!"
+    },
+    {
+      "id": "co-square-01",
+      "text": "Square it up — turn with every shot!"
+    },
+    {
+      "id": "co-square-02",
+      "text": "The square pattern — all four corners, keep it turning!"
+    },
+    {
+      "id": "co-buildup-start-01",
+      "text": "Let's get ready for the buildup."
+    },
+    {
+      "id": "co-buildup-start-02",
+      "text": "Time to build it — one piece at a time."
+    },
+    {
+      "id": "co-buildup-start-03",
+      "text": "Here comes the buildup — start small, finish big."
+    },
+    {
+      "id": "co-buildup-next-01",
+      "text": "We're adding a piece — here's the next rung."
+    },
+    {
+      "id": "co-buildup-next-02",
+      "text": "Same pattern — one more punch on the end!"
+    },
+    {
+      "id": "co-volume-01",
+      "text": "Volume time — as many as you can, keep them clean!"
+    },
+    {
+      "id": "co-volume-02",
+      "text": "Open it up — high volume, stay busy!"
+    },
+    {
+      "id": "co-volume-03",
+      "text": "Let those hands go — volume round, no coasting!"
+    },
+    {
+      "id": "co-jab-volume-01",
+      "text": "All jabs — snap them out, stay busy!"
+    },
+    {
+      "id": "co-jab-volume-02",
+      "text": "Jabs only now — pump that lead hand!"
+    },
+    {
+      "id": "co-downstairs-01",
+      "text": "Let's go downstairs — dig to the body!"
+    },
+    {
+      "id": "co-downstairs-02",
+      "text": "Same pattern — now take it to the body!"
+    },
+    {
+      "id": "co-downstairs-03",
+      "text": "Body work time — bend those knees and dig in!"
+    },
+    {
+      "id": "co-body-to-head-01",
+      "text": "Body first — then bring it back upstairs!"
+    },
+    {
+      "id": "co-body-to-head-02",
+      "text": "Go low, then high — make them look down first!"
+    },
+    {
+      "id": "co-movement-01",
+      "text": "Movement now — react, counter, and get out!"
+    },
+    {
+      "id": "co-movement-02",
+      "text": "Feet and head — slip it, answer it, slide away!"
+    },
+    {
+      "id": "co-pressure-01",
+      "text": "Time to put it all together — the whole pattern!"
+    },
+    {
+      "id": "co-pressure-02",
+      "text": "Full pattern now — everything you built, under pressure!"
+    },
+    {
+      "id": "co-pressure-03",
+      "text": "This is the payoff — the complete combination, keep it coming!"
+    },
+    {
+      "id": "co-new-pattern-01",
+      "text": "New pattern coming — listen up."
+    },
+    {
+      "id": "co-new-pattern-02",
+      "text": "Something new for you — ears open, nice and clean."
+    },
+    {
+      "id": "co-settle-in-01",
+      "text": "Settle in — we're going to live on this one for a bit!"
+    },
+    {
+      "id": "co-settle-in-02",
+      "text": "Get comfortable with this one — we're here a while, make every rep count!"
+    },
+    {
+      "id": "co-flurry-01",
+      "text": "Flurry time — empty the tank!"
+    },
+    {
+      "id": "co-flurry-02",
+      "text": "Everything now — flurry to the bell!"
+    },
+    {
+      "id": "co-final-round-01",
+      "text": "Last round — everything you've got left!"
+    },
+    {
+      "id": "co-final-round-02",
+      "text": "Final round, champ — leave it all on the bag!"
+    },
+    {
+      "id": "co-breathe-reset-01",
+      "text": "Reset — breathe, hands back up."
+    },
+    {
+      "id": "co-breathe-reset-02",
+      "text": "Shake it out — breathe, and get your guard back."
+    },
+    {
+      "id": "co-okay-go",
+      "text": "Okay — go!"
+    },
+    {
+      "id": "co-regular-speed-go",
+      "text": "Regular speed — okay, go!"
+    },
+    {
+      "id": "co-thirty-left",
+      "text": "Thirty seconds left in this round!"
+    },
+    {
+      "id": "co-closer-01",
+      "text": "Tear it up!"
+    },
+    {
+      "id": "co-closer-02",
+      "text": "Finish strong!"
+    },
+    {
+      "id": "co-closer-03",
+      "text": "You're almost there!"
+    },
+    {
+      "id": "co-closer-04",
+      "text": "Empty those hands!"
+    },
+    {
+      "id": "co-closer-05",
+      "text": "Make these seconds count!"
+    },
+    {
+      "id": "co-closer-06",
+      "text": "All gas — no brakes!"
+    },
+    {
+      "id": "co-closer-07",
+      "text": "Push through — right to the bell!"
+    },
+    {
+      "id": "co-closer-08",
+      "text": "Strong to the horn!"
+    },
+    {
+      "id": "co-closer-09",
+      "text": "Leave nothing behind!"
+    },
+    {
+      "id": "co-closer-10",
+      "text": "This is where rounds are won!"
+    },
+    {
+      "id": "co-closer-11",
+      "text": "Dig deep — thirty more!"
+    },
+    {
+      "id": "co-closer-12",
+      "text": "Close the show, champ!"
+    },
+    {
+      "id": "co-closer-13",
+      "text": "Sprint to the finish!"
+    }
   ],
   "themes": [
-    { "id": "theme-straight-extension", "theme": "Straight Extension", "text": "Coming up — the Straight Extension!" },
-    { "id": "theme-jab-volume-ladder", "theme": "Jab Volume Ladder", "text": "Coming up — the Jab Volume Ladder!" },
-    { "id": "theme-hook-finish-ladder", "theme": "Hook Finish Ladder", "text": "Coming up — the Hook Finish Ladder!" },
-    { "id": "theme-lead-side-disguise", "theme": "Lead-Side Disguise", "text": "Coming up — the Lead-Side Disguise!" },
-    { "id": "theme-body-jab-rise", "theme": "Body-Jab Rise", "text": "Coming up — the Body-Jab Rise!" },
-    { "id": "theme-body-hook-finish", "theme": "Body-Hook Finish", "text": "Coming up — the Body-Hook Finish!" },
-    { "id": "theme-double-jab-power-chain", "theme": "Double-Jab Power Chain", "text": "Coming up — the Double-Jab Power Chain!" },
-    { "id": "theme-square-builder", "theme": "Square Builder", "text": "Coming up — the Square Builder!" },
-    { "id": "theme-uppercut-cascade", "theme": "Uppercut Cascade", "text": "Coming up — the Uppercut Cascade!" },
-    { "id": "theme-body-head-hook-double", "theme": "Body-Head Hook Double", "text": "Coming up — the Body-Head Hook Double!" },
-    { "id": "theme-body-staircase", "theme": "Body Staircase", "text": "Coming up — the Body Staircase!" },
-    { "id": "theme-rear-uppercut-line", "theme": "Rear-Uppercut Line", "text": "Coming up — the Rear-Uppercut Line!" },
-    { "id": "theme-extended-square-ladder", "theme": "Extended Square Ladder", "text": "Coming up — the Extended Square Ladder!" },
-    { "id": "theme-body-head-pressure-ladder", "theme": "Body-Head Pressure Ladder", "text": "Coming up — the Body-Head Pressure Ladder!" },
-    { "id": "theme-alternating-uppercut-ladder", "theme": "Alternating Uppercut Ladder", "text": "Coming up — the Alternating Uppercut Ladder!" },
-    { "id": "theme-rolling-pressure-chain", "theme": "Rolling Pressure Chain", "text": "Coming up — the Rolling Pressure Chain!" },
-    { "id": "theme-body-to-head-staircase", "theme": "Body-to-Head Staircase", "text": "Coming up — the Body-to-Head Staircase!" },
-    { "id": "theme-split-level-wave", "theme": "Split-Level Wave", "text": "Coming up — the Split-Level Wave!" },
-    { "id": "theme-find-your-range", "theme": "Find your range", "text": "Coming up — range finding. Stay long, stay loose!" },
-    { "id": "theme-build-combinations", "theme": "Build combinations", "text": "Coming up — we're building combinations!" },
-    { "id": "theme-empty-the-tank", "theme": "Empty the tank", "text": "Coming up — it's time to empty the tank!" }
+    {
+      "id": "theme-straight-extension",
+      "theme": "Straight Extension",
+      "text": "Coming up — the Straight Extension!"
+    },
+    {
+      "id": "theme-jab-volume-ladder",
+      "theme": "Jab Volume Ladder",
+      "text": "Coming up — the Jab Volume Ladder!"
+    },
+    {
+      "id": "theme-hook-finish-ladder",
+      "theme": "Hook Finish Ladder",
+      "text": "Coming up — the Hook Finish Ladder!"
+    },
+    {
+      "id": "theme-lead-side-disguise",
+      "theme": "Lead-Side Disguise",
+      "text": "Coming up — the Lead-Side Disguise!"
+    },
+    {
+      "id": "theme-body-jab-rise",
+      "theme": "Body-Jab Rise",
+      "text": "Coming up — the Body-Jab Rise!"
+    },
+    {
+      "id": "theme-body-hook-finish",
+      "theme": "Body-Hook Finish",
+      "text": "Coming up — the Body-Hook Finish!"
+    },
+    {
+      "id": "theme-double-jab-power-chain",
+      "theme": "Double-Jab Power Chain",
+      "text": "Coming up — the Double-Jab Power Chain!"
+    },
+    {
+      "id": "theme-square-builder",
+      "theme": "Square Builder",
+      "text": "Coming up — the Square Builder!"
+    },
+    {
+      "id": "theme-uppercut-cascade",
+      "theme": "Uppercut Cascade",
+      "text": "Coming up — the Uppercut Cascade!"
+    },
+    {
+      "id": "theme-body-head-hook-double",
+      "theme": "Body-Head Hook Double",
+      "text": "Coming up — the Body-Head Hook Double!"
+    },
+    {
+      "id": "theme-body-staircase",
+      "theme": "Body Staircase",
+      "text": "Coming up — the Body Staircase!"
+    },
+    {
+      "id": "theme-rear-uppercut-line",
+      "theme": "Rear-Uppercut Line",
+      "text": "Coming up — the Rear-Uppercut Line!"
+    },
+    {
+      "id": "theme-extended-square-ladder",
+      "theme": "Extended Square Ladder",
+      "text": "Coming up — the Extended Square Ladder!"
+    },
+    {
+      "id": "theme-body-head-pressure-ladder",
+      "theme": "Body-Head Pressure Ladder",
+      "text": "Coming up — the Body-Head Pressure Ladder!"
+    },
+    {
+      "id": "theme-alternating-uppercut-ladder",
+      "theme": "Alternating Uppercut Ladder",
+      "text": "Coming up — the Alternating Uppercut Ladder!"
+    },
+    {
+      "id": "theme-rolling-pressure-chain",
+      "theme": "Rolling Pressure Chain",
+      "text": "Coming up — the Rolling Pressure Chain!"
+    },
+    {
+      "id": "theme-body-to-head-staircase",
+      "theme": "Body-to-Head Staircase",
+      "text": "Coming up — the Body-to-Head Staircase!"
+    },
+    {
+      "id": "theme-split-level-wave",
+      "theme": "Split-Level Wave",
+      "text": "Coming up — the Split-Level Wave!"
+    },
+    {
+      "id": "theme-find-your-range",
+      "theme": "Find your range",
+      "text": "Coming up — range finding. Stay long, stay loose!"
+    },
+    {
+      "id": "theme-build-combinations",
+      "theme": "Build combinations",
+      "text": "Coming up — we're building combinations!"
+    },
+    {
+      "id": "theme-empty-the-tank",
+      "theme": "Empty the tank",
+      "text": "Coming up — it's time to empty the tank!"
+    }
   ]
 }

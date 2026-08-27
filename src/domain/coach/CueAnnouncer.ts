@@ -476,19 +476,19 @@ export class CueAnnouncer {
 
       case 'rest-entered':
         this.inCombo = false
-        // The round ENDS on a gong, not the bell — the ding belongs to
-        // round starts (Kyle's sound design).
+        // Rounds end on the same ding-ding that starts them — the gong is
+        // retired (Kyle: "the ding ding sounds perfect, we want it for
+        // the end of the round").
         if (voiceAllowed(this.policy, this.playbackActive) && this.speakable('bell')) {
-          this.output.playAsset('gong')
+          this.output.playAsset('bell')
         }
         this.flushMetric()
         return
 
       case 'finishing':
-        // The last round has no rest after it, but it earned its gong too
-        // — every round ends on the gong (Kyle's sound design).
+        // The last round ends on the ding-ding like every other.
         if (voiceAllowed(this.policy, this.playbackActive) && this.speakable('bell')) {
-          this.output.playAsset('gong')
+          this.output.playAsset('bell')
         }
         return
 

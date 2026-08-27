@@ -472,19 +472,19 @@ describe('pause and resume (doc §18)', () => {
 })
 
 describe('bells and the final warning', () => {
-  it('opens work on the ding and ends the round on the gong', () => {
+  it('opens and closes the round on the ding-ding — the gong is retired', () => {
     const h = harness()
     h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 0, nowMs: 0 })
     h.announcer.onSessionPhase({ type: 'rest-entered', nowMs: 0 })
-    expect(h.port.assets()).toEqual(['bell', 'gong'])
+    expect(h.port.assets()).toEqual(['bell', 'bell'])
   })
 
-  it('gives the final round its gong too, at finishing', () => {
+  it('rings the final round out too, at finishing', () => {
     const h = harness()
     h.announcer.onSessionPhase({ type: 'work-entered', roundIndex: 0, nowMs: 0 })
     h.port.reset()
     h.announcer.onSessionPhase({ type: 'finishing', nowMs: 0 })
-    expect(h.port.assets()).toEqual(['gong'])
+    expect(h.port.assets()).toEqual(['bell'])
   })
 
   it('warns once per round on the first sample past the threshold', () => {
