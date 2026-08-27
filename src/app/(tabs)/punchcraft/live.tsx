@@ -29,6 +29,7 @@ import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
+import { TAB_BAR_STYLE } from '../_layout'
 import { ActionButton } from '@components/branding/ActionButton'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
@@ -295,7 +296,11 @@ export default function LiveScreen(): React.JSX.Element {
       parent?.setOptions({ tabBarStyle: { display: 'none' } })
 
       return () => {
-        parent?.setOptions({ tabBarStyle: undefined })
+        // Restore the shared style object, not `undefined`: an explicit
+        // undefined overrides the navigator-level tabBarStyle in the
+        // options merge and leaves the bar unstyled (it collapses to a
+        // few pixels — the "no navigation bar" bug).
+        parent?.setOptions({ tabBarStyle: TAB_BAR_STYLE })
         // Release rather than force portrait: the global setting is
         // 'default', so unlocking hands control back to the OS.
         void ScreenOrientation.unlockAsync().catch(() => undefined)

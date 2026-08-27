@@ -72,6 +72,7 @@ const mockParent = { setOptions: jest.fn() }
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 import LiveScreen from '../live'
+import { TAB_BAR_STYLE } from '../../_layout'
 import { colors } from '@/theme/colors'
 import { setLive, useLiveStore, useWorkoutStore } from '@state/useWorkoutStore'
 import type { LiveState } from '@state/useWorkoutStore'
@@ -164,7 +165,11 @@ describe('navigation is unreachable during a workout (doc §19)', () => {
     act(() => {
       for (const cleanup of mockCleanups.splice(0)) cleanup()
     })
-    expect(mockParent.setOptions).toHaveBeenLastCalledWith({ tabBarStyle: undefined })
+    // Restores the shared style object, never `undefined`: an explicit
+    // undefined overrides the navigator-level tabBarStyle in the options
+    // merge and collapses the bar to a few pixels (the "no navigation
+    // bar after a workout" bug).
+    expect(mockParent.setOptions).toHaveBeenLastCalledWith({ tabBarStyle: TAB_BAR_STYLE })
   })
 })
 

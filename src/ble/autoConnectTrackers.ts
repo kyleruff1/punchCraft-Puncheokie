@@ -22,6 +22,7 @@
  */
 
 import { getTrackerCoordinator, type TrackerSlotHand } from '@ble/TrackerCoordinator'
+import { PermissionService } from '@ble/PermissionService'
 import { findKnownTracker, KNOWN_TRACKERS } from '@ble/knownTrackers'
 import { getTrackerSlots } from '@state/useTrackerStore'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
@@ -102,6 +103,31 @@ export function isAutoConnectInFlight(): boolean {
 async function runAutoConnect(options: { timeoutMs?: number }): Promise<AutoConnectResult> {
   const timeoutMs = options.timeoutMs ?? 10_000
   const nowMs = systemMonotonicClock().now()
+
+  // Runtime permissions gate every scan. A fresh install (or reinstall —
+  // `adb uninstall` wipes prior grants) has no BLE permissions, and a scan
+  // without them silently finds nothing: the app looks like "trackers
+  // won't connect" with no error anywhere. Ask the OS here, in the one
+  // path every connect flow funnels through; once granted this resolves
+  // without a prompt.
+  const perm = await PermissionService.current()
+  if (!perm.granted) {
+    const requested = await PermissionService.request()
+    if (!requested.granted) {
+      logger.warn('autoconnect.permissions.denied', 'BLE permissions missing; scan skipped', {
+        missing: deviceSensitive(requested.missing),
+        permanentlyDenied: deviceSensitive(requested.permanentlyDenied),
+      })
+      return {
+        outcomes: [],
+        connectedCount: 0,
+        scanError:
+          requested.permanentlyDenied.length > 0
+            ? 'Bluetooth permission denied — enable Nearby devices in system settings.'
+            : 'Bluetooth permission needed to find the trackers.',
+      }
+    }
+  }
 
   // Short-circuit before touching the radio if everything is genuinely up —
   // "genuinely" measured against `lastEventAtMs`, not just `state`.

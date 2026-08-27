@@ -1,7 +1,23 @@
+import React from 'react'
 import { Tabs } from 'expo-router'
+import { Pressable, StyleSheet } from 'react-native'
+import type { GestureResponderEvent } from 'react-native'
 
-import { Wordmark } from '@/components/branding/Wordmark'
+import { Wordmark, type WordmarkApp } from '@/components/branding/Wordmark'
 import { colors } from '@/theme/colors'
+
+/**
+ * The slice of react-navigation's BottomTabBarButtonProps this button
+ * uses. Typed locally: `@react-navigation/bottom-tabs` is an indirect
+ * dependency (bundled through expo-router), so importing its types
+ * directly is not resolvable from this package.
+ */
+interface TabButtonProps {
+  onPress?: ((e: GestureResponderEvent) => void) | null
+  onLongPress?: ((e: GestureResponderEvent) => void) | null
+  accessibilityState?: { selected?: boolean }
+  testID?: string
+}
 
 /**
  * Open on punchCraft, where the workouts are, rather than the Velocity Lab
@@ -10,31 +26,58 @@ import { colors } from '@/theme/colors'
  */
 export const unstable_settings = { initialRouteName: 'punchcraft' }
 
+/**
+ * The tab bar's container style, exported so the live screen can restore
+ * it verbatim after hiding the bar for a workout (see live.tsx). Restoring
+ * `undefined` instead used to leave the bar unstyled, which is one half of
+ * the collapsed-bar bug this file works around.
+ */
+export const TAB_BAR_STYLE = {
+  backgroundColor: colors.surface,
+  borderTopColor: colors.border,
+  // Sized to fit the `tab` Wordmark (40pt) with breathing room; without an
+  // explicit height the bar collapses to its content, and the wordmark
+  // buttons render at zero height on lazily-mounted tabs.
+  height: 72,
+} as const
+
+/**
+ * Wordmark tab button. Rendered through `tabBarButton` rather than the
+ * label/icon slots: the label slot gave the wordmark images zero size
+ * whenever focus moved to a tab that mounted lazily (velocity-lab,
+ * puncheokie), collapsing the whole bar to a few pixels. A custom button
+ * owns its own layout, so the bar keeps its height no matter which tab
+ * is focused. The Wordmark's fixed accessibilityLabel still names the
+ * tab to assistive tech; `accessibilityState` from the navigator carries
+ * the selected flag.
+ */
+function wordmarkTabButton(app: WordmarkApp) {
+  function WordmarkTabButton(props: TabButtonProps): React.JSX.Element {
+    const { onPress, onLongPress, accessibilityState, testID } = props
+    const selected = accessibilityState?.selected === true
+    return (
+      <Pressable
+        onPress={onPress ?? undefined}
+        onLongPress={onLongPress ?? undefined}
+        accessibilityRole="tab"
+        accessibilityState={{ selected }}
+        testID={testID}
+        style={[styles.tabButton, !selected && styles.tabButtonInactive]}
+      >
+        <Wordmark app={app} size="tab" />
+      </Pressable>
+    )
+  }
+  return WordmarkTabButton
+}
+
 const tabScreenOptions = {
   headerShown: true,
   headerStyle: { backgroundColor: colors.surface },
   headerTintColor: colors.textPrimary,
   headerTitleStyle: { color: colors.textPrimary },
   sceneStyle: { backgroundColor: colors.background },
-  tabBarStyle: {
-    backgroundColor: colors.surface,
-    borderTopColor: colors.border,
-    // Sized to fit the `tab` Wordmark (40pt) with breathing room above
-    // and below; without this the bar stays at the RN default and crops
-    // the top of the wordmark.
-    height: 72,
-    paddingTop: 8,
-    paddingBottom: 8,
-  },
-  tabBarLabelStyle: {
-    // Center the wordmark in the label slot rather than bottom-anchoring
-    // to where a text label would have sat.
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tabBarActiveTintColor: colors.accent,
-  tabBarInactiveTintColor: colors.textSecondary,
+  tabBarStyle: TAB_BAR_STYLE,
 } as const
 
 export default function TabsLayout() {
@@ -44,8 +87,7 @@ export default function TabsLayout() {
         name="velocity-lab"
         options={{
           title: 'Velocity Lab',
-          tabBarIcon: () => null,
-          tabBarLabel: () => <Wordmark app="velocityLab" size="tab" />,
+          tabBarButton: wordmarkTabButton('velocityLab'),
           headerTitle: () => <Wordmark app="velocityLab" size="sm" />,
         }}
       />
@@ -54,11 +96,9 @@ export default function TabsLayout() {
         options={{
           // Each tab renders its own wordmark instead of prose type: the
           // app never writes its own mode names in text when a wordmark is
-          // available. The label render still names the tab to the
-          // accessibility layer via the Wordmark's fixed a11y label.
+          // available.
           title: 'punchCraft',
-          tabBarIcon: () => null,
-          tabBarLabel: () => <Wordmark app="punchCraft" size="tab" />,
+          tabBarButton: wordmarkTabButton('punchCraft'),
           headerTitle: () => <Wordmark app="punchCraft" size="sm" />,
         }}
       />
@@ -66,11 +106,21 @@ export default function TabsLayout() {
         name="puncheokie"
         options={{
           title: 'Puncheokie',
-          tabBarIcon: () => null,
-          tabBarLabel: () => <Wordmark app="puncheokie" size="tab" />,
+          tabBarButton: wordmarkTabButton('puncheokie'),
           headerTitle: () => <Wordmark app="puncheokie" size="sm" />,
         }}
       />
     </Tabs>
   )
 }
+
+const styles = StyleSheet.create({
+  tabButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // The inactive wordmarks dim rather than tint — the art is an image, so
+  // opacity is the "inactive" signal where a text label would grey out.
+  tabButtonInactive: { opacity: 0.45 },
+})
