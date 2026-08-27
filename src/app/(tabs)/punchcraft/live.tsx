@@ -29,6 +29,7 @@ import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
+import { ActionButton } from '@components/branding/ActionButton'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
 import { RestPhases } from '@components/workout/RestPhases'
@@ -381,14 +382,7 @@ export default function LiveScreen(): React.JSX.Element {
       <View style={styles.body}>
         <View style={styles.stage}>
           {live.phase === 'idle' ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleStart}
-              style={styles.startButton}
-              testID="start-workout"
-            >
-              <Text style={styles.startButtonText}>Start workout</Text>
-            </Pressable>
+            <ActionButton action="startWorkout" onPress={handleStart} testID="start-workout" />
           ) : live.phase === 'rest' && frozen ? (
             <RestPhases
               frozen={frozen}
@@ -659,18 +653,6 @@ const styles = StyleSheet.create({
   },
   body: { flex: 1, flexDirection: 'row' },
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  startButton: {
-    paddingHorizontal: 32,
-    paddingVertical: 20,
-    borderRadius: 12,
-    backgroundColor: colors.accent,
-  },
-  startButtonText: {
-    fontSize: sizes.title,
-    fontFamily: fonts.display,
-    fontWeight: weights.black,
-    color: colors.textOnAccent,
-  },
   pausedOverlay: {
     position: 'absolute',
     top: 0,
