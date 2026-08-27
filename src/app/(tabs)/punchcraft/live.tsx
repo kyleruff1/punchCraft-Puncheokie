@@ -89,7 +89,17 @@ export default function LiveScreen(): React.JSX.Element {
 
   // The Voice Coach. Built once per screen: the output owns players and a
   // focus request, and rebuilding it mid-workout would drop both.
-  const policy = useVoiceSettingsStore((s) => s.policy)
+  const storePolicy = useVoiceSettingsStore((s) => s.policy)
+  // The recipe is the single source of truth for HOW the coach speaks
+  // (voiceMode) and WHICH words it uses (voiceVocabulary) — Kyle's
+  // recipe redesign. The persisted settings store still carries style,
+  // overlay opt-in, etc., but its stale mode/vocabulary must never win:
+  // the lab caught the coach saying "jab, cross" against a recipe that
+  // plainly said Numbers, because the store defaulted to 'names'.
+  const policy = React.useMemo(
+    () => ({ ...storePolicy, mode: recipe.voiceMode, vocabulary: recipe.voiceVocabulary }),
+    [storePolicy, recipe.voiceMode, recipe.voiceVocabulary],
+  )
   const volumes = useVoiceSettingsStore((s) => s.volumes)
   const detector = React.useMemo(() => createPlaybackDetector(), [])
   // Built once, never per render: the output owns players and a focus
@@ -142,7 +152,7 @@ export default function LiveScreen(): React.JSX.Element {
   // rendered clip drops that ladder from selection rather than sending the
   // coach to the per-word fallback for a whole round.
   const generated = useMemo(() => {
-    const vocabulary = policy.vocabulary === 'names' ? 'techniques' : 'numbers'
+    const vocabulary = recipe.voiceVocabulary === 'names' ? 'techniques' : 'numbers'
     return generateWorkout(recipe, {
       voiceReady: (notation) =>
         findPhraseAsset(notation, recipe.cadenceProfile, vocabulary) !== undefined,
@@ -150,7 +160,7 @@ export default function LiveScreen(): React.JSX.Element {
       // lengths so the fill can reserve exactly the lead-in the coach
       // needs. Any missing clip prices to undefined — the ceremony is
       // skipped, never guessed.
-      ...(policy.mode === 'off'
+      ...(recipe.voiceMode === 'off'
         ? {}
         : {
             setupCallouts: {
@@ -178,7 +188,7 @@ export default function LiveScreen(): React.JSX.Element {
             },
           }),
     })
-  }, [recipe, policy.vocabulary, policy.mode])
+  }, [recipe])
   const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
 
   // The walkout announcement: "Hello! Welcome to punch craft. I'm your
