@@ -44,6 +44,7 @@ import {
   familyPatternFor,
   MANDATORY_SAME_MOVE_MS,
   pickCallout,
+  SETUP_ROUND_OPEN_EXTRA_MS,
   type ReserveMsFor,
   type SetupPatternId,
 } from './setupCallouts'
@@ -427,14 +428,20 @@ export function fillScoredRound(
       : p <= 0
         ? 'co-first-look'
         : familyPatternFor(base.notation)
-    addRepeatPhase(
-      base,
-      phaseBudget(PHASE_SHARE.base),
-      phasePunches(0.17),
-      1,
-      undefined,
-      calloutFor(basePattern, base.notation),
-    )
+    {
+      const opener = calloutFor(basePattern, base.notation)
+      // The round opener pays for the post-bell quiet too, so the
+      // compiler always finds room instead of silently dropping it.
+      if (opener !== undefined) opener.reserveMs += SETUP_ROUND_OPEN_EXTRA_MS
+      addRepeatPhase(
+        base,
+        phaseBudget(PHASE_SHARE.base),
+        phasePunches(0.17),
+        1,
+        undefined,
+        opener,
+      )
+    }
     // 2 — first build-up stage: "Let's get ready for the buildup…"
     addRepeatPhase(
       build1,

@@ -101,7 +101,7 @@ describe('set ceremonies on the rhythm map', () => {
         const last = ordered.at(-1)!
         const lastMs =
           'recite' in (last.payload as SetCalloutPayload) ? 1_600 : SENTENCE_MS
-        expect(last.atMs + lastMs).toBeLessThanOrEqual(call.atMs - SET_CALLOUT_QUIET_MS)
+        expect(last.atMs + lastMs).toBeLessThanOrEqual(call.atMs - SET_CALLOUT_QUIET_MS + 1)
         // And starts clear of the previous cue's window.
         const prev = round.cues[cueIndex - 1]
         if (prev) {

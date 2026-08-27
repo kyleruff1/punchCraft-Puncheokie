@@ -58,6 +58,17 @@ const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   warning: 'tone-warning',
 }
 
+/**
+ * Clips that DUCK the combination phrase while they sound — the
+ * 30-second closer must cut through the pressure-phase calls it is
+ * deliberately yelled over (the listening lab heard the finisher get
+ * buried under same-voice calls at equal volume).
+ */
+const DUCKS_PHRASE_PREFIXES = ['co-thirty-left', 'co-closer-'] as const
+
+/** How far the phrase player drops while a ducking clip sounds. */
+export const PHRASE_DUCK_FACTOR = 0.35
+
 /** Clips carried on the bells volume rather than the voice volume (doc §25). */
 const BELL_ASSETS: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
   'bell',
@@ -643,6 +654,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // its own end and produce silence.
       player.seekTo(0)
       player.play()
+      if (DUCKS_PHRASE_PREFIXES.some((prefix) => id.startsWith(prefix))) {
+        this.duckPhraseFor(this.durations.get(this.keyFor(id, form)) ?? 2_500)
+      }
       // Success-path record for the QA loop — see playCombination's note.
       logger.info('puncheokie.voice.play', 'clip playing', {
         asset: safe(id),
@@ -657,6 +671,32 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         error: safe(String(err)),
       })
     }
+  }
+
+  /** Restore handle for the phrase duck — cosmetic, not a scheduler. */
+  private duckRestore: ReturnType<typeof setTimeout> | null = null
+
+  /**
+   * Drop the combination-phrase player under a clip that must cut
+   * through, restoring after the clip's measured length. A wall timer is
+   * acceptable here: it only restores VOLUME — a late restore leaves the
+   * calls quiet a moment longer, it never moves any scheduled sound.
+   */
+  private duckPhraseFor(durationMs: number): void {
+    try {
+      if (this.phrasePlayer) this.phrasePlayer.volume = this.volumes.voice * PHRASE_DUCK_FACTOR
+    } catch {
+      return
+    }
+    if (this.duckRestore !== null) clearTimeout(this.duckRestore)
+    this.duckRestore = setTimeout(() => {
+      this.duckRestore = null
+      try {
+        if (this.phrasePlayer) this.phrasePlayer.volume = this.volumes.voice
+      } catch {
+        // Player already gone.
+      }
+    }, durationMs + 250)
   }
 
   /**

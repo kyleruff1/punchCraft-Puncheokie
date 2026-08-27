@@ -74,13 +74,13 @@ export type CalloutClipId =
 
 /** In-round call-out sentence durations, keyed by VoiceAssetId. */
 export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number }>> = {
-  'co-first-look-01': { durationMs: 8192 },
+  'co-first-look-01': { durationMs: 4301 },
   'co-first-look-02': { durationMs: 4893 },
   'co-first-look-03': { durationMs: 3767 },
   'co-ones-twos-01': { durationMs: 2470 },
   'co-ones-twos-02': { durationMs: 5497 },
   'co-ones-twos-03': { durationMs: 3505 },
-  'co-double-jab-01': { durationMs: 2191 },
+  'co-double-jab-01': { durationMs: 2845 },
   'co-double-jab-02': { durationMs: 2900 },
   'co-hooks-01': { durationMs: 2693 },
   'co-hooks-02': { durationMs: 2676 },
@@ -106,7 +106,7 @@ export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number 
   'co-body-to-head-02': { durationMs: 4071 },
   'co-movement-01': { durationMs: 3613 },
   'co-movement-02': { durationMs: 5162 },
-  'co-pressure-01': { durationMs: 4013 },
+  'co-pressure-01': { durationMs: 5543 },
   'co-pressure-02': { durationMs: 5533 },
   'co-pressure-03': { durationMs: 8373 },
   'co-new-pattern-01': { durationMs: 3773 },

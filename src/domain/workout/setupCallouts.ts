@@ -83,6 +83,15 @@ export const SETUP_PATTERNS: Readonly<Record<SetupPatternId, PatternDef>> = {
 export const MANDATORY_SAME_MOVE_MS = 60_000
 
 /**
+ * Extra reservation for the ROUND-OPENING ceremony, covering the
+ * compiler's post-bell quiet (ROUND_OPEN_QUIET_MS) plus margin. Without
+ * it the first block's ceremony is priced tight against the bell and the
+ * compiler silently drops it when geometry lands short — the listening
+ * lab caught V3 opening with no ceremony while V1/V4 got theirs.
+ */
+export const SETUP_ROUND_OPEN_EXTRA_MS = 2_000
+
+/**
  * A reservation past this would eat the set it announces. Sized for the
  * longest real chain (a 4.7s buildup sentence + technical recitation +
  * "regular speed — okay, go!" ≈ 10.5s with gaps and slack) — the first
