@@ -193,13 +193,14 @@ export function useLivePunchSource(
   // is idempotent — if both slots are actually live and receiving events, the
   // probe skips them.
   useEffect(() => {
-    // trustReadyState: entering the live screen must NEVER bounce healthy
-    // connections. Off the live screen no slot carries lastEventAtMs, so
-    // the strict probe would evict and rebuild both trackers right as the
-    // athlete walks onto the bag — killing the punch-stream subscriptions
-    // ("connected but nothing counted") and, if the first render landed
-    // mid-eviction, latching the whole workout onto the simulator.
-    void armAutoRetry({ timeoutMs: 10_000, trustReadyState: true })
+    // Entering the live screen never bounces healthy connections: the pass
+    // probes the NATIVE stack for each hand ("connected to the current
+    // session") and only chases hands that are genuinely down. The old
+    // freshness heuristic evicted and rebuilt both trackers right as the
+    // athlete walked onto the bag — killing the punch-stream subscriptions
+    // and, if the first render landed mid-eviction, latching the whole
+    // workout onto the simulator.
+    void armAutoRetry({ timeoutMs: 10_000 })
       .then((result) => {
         if (result.scanError) {
           logger.info('autoconnect.live.skipped', 'live-screen auto-connect could not scan', {

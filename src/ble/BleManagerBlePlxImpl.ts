@@ -334,6 +334,15 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
     }
   }
 
+  async isConnected(deviceId: string): Promise<boolean> {
+    if (!this.manager) return false
+    try {
+      return await this.manager.isDeviceConnected(deviceId)
+    } catch {
+      return false
+    }
+  }
+
   async disconnect(deviceId: string): Promise<void> {
     const sub = this.disconnectSubs.get(deviceId)
     if (sub) { sub.remove(); this.disconnectSubs.delete(deviceId) }

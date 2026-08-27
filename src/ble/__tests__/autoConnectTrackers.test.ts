@@ -16,6 +16,7 @@ import {
   autoConnectKnownTrackers,
   getAutoRetryState,
   resetAutoRetryForTest,
+  setAutoRetrySuspended,
 } from '../autoConnectTrackers'
 import { KNOWN_TRACKERS } from '../knownTrackers'
 
@@ -28,6 +29,7 @@ const mockScan = jest.fn()
 const mockConnectSlot = jest.fn()
 const mockDisconnectSlot = jest.fn()
 const mockEvictSlot = jest.fn()
+const mockIsDeviceConnected = jest.fn()
 let mockSlots: { left: unknown; right: unknown } = { left: null, right: null }
 
 jest.mock('@ble/TrackerCoordinator', () => ({
@@ -36,6 +38,7 @@ jest.mock('@ble/TrackerCoordinator', () => ({
     connectSlot: (...a: unknown[]) => mockConnectSlot(...a),
     disconnectSlot: (...a: unknown[]) => mockDisconnectSlot(...a),
     evictSlot: (...a: unknown[]) => mockEvictSlot(...a),
+    isDeviceConnected: (...a: unknown[]) => mockIsDeviceConnected(...a),
   }),
 }))
 
@@ -43,24 +46,10 @@ jest.mock('@state/useTrackerStore', () => ({
   getTrackerSlots: () => mockSlots,
 }))
 
-/**
- * The freshness stamp the auto-connect probe treats as evidence of a live
- * connection. Any positive number that is at most a few seconds behind
- * `systemMonotonicClock().now()` reads as fresh; using the same clock keeps
- * the test in sync with the fresh-window logic (10s in production).
- */
-const nowMs = (): number => {
-  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
-    return performance.now()
-  }
-  return Date.now()
-}
-/** A slot object annotated as freshly live. */
-const liveSlot = (deviceId: string, state: string) => ({
-  deviceId,
-  state,
-  lastEventAtMs: nowMs(),
-})
+/** A slot in a connected-looking state; whether it counts as "connected to
+ * the current session" is decided by the native probe (mockIsDeviceConnected),
+ * which is the whole point of the precise rule. */
+const liveSlot = (deviceId: string, state: string) => ({ deviceId, state })
 
 const ad = (deviceId: string) => ({ deviceId })
 
@@ -69,9 +58,12 @@ beforeEach(() => {
   mockConnectSlot.mockReset()
   mockDisconnectSlot.mockReset()
   mockEvictSlot.mockReset()
+  mockIsDeviceConnected.mockReset()
   mockConnectSlot.mockResolvedValue(undefined)
   mockDisconnectSlot.mockResolvedValue(undefined)
   mockEvictSlot.mockResolvedValue(undefined)
+  // Default: the native stack knows nothing — every hand is pending.
+  mockIsDeviceConnected.mockResolvedValue(false)
   mockSlots = { left: null, right: null }
   resetAutoRetryForTest()
 })
@@ -106,10 +98,10 @@ describe('autoConnectKnownTrackers', () => {
     expect(mockConnectSlot).not.toHaveBeenCalled()
   })
 
-  it('leaves a slot alone when it is ready AND has fresh liveness evidence', async () => {
-    // "Ready" is not enough (D24) — the state can survive a killed process
-    // while the actual GATT link is gone. A recent `lastEventAtMs` is what
-    // proves the connection is live.
+  it('leaves a slot alone when it is ready AND the native stack confirms it', async () => {
+    // "Ready" is not enough (D24) — the state can outlive the actual GATT
+    // link. The native probe is what proves the connection is live.
+    mockIsDeviceConnected.mockResolvedValue(true)
     mockSlots = { left: liveSlot(blue.address, 'streaming'), right: null }
     mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
 
@@ -121,7 +113,8 @@ describe('autoConnectKnownTrackers', () => {
     expect(mockEvictSlot).not.toHaveBeenCalledWith('left', expect.anything())
   })
 
-  it('does not touch the radio at all when both slots are live and fresh', async () => {
+  it('does not scan or connect when both hands are connected to this session', async () => {
+    mockIsDeviceConnected.mockResolvedValue(true)
     mockSlots = {
       left: liveSlot(blue.address, 'ready'),
       right: liveSlot(red.address, 'streaming'),
@@ -135,13 +128,13 @@ describe('autoConnectKnownTrackers', () => {
   })
 
   it('evicts a phantom ready slot — the very bug that stranded the athlete', async () => {
-    // A slot the store still says is `'ready'` but with no `lastEventAtMs`
-    // and no recent event is exactly the phantom-connection case: a killed
-    // process left the state behind while the tracker returned to slow-blink
-    // advertising. Without the reclaim path, auto-connect used to skip such
-    // slots and there was no way back onto the bag (D24).
+    // The store says `'ready'` but the native stack says the device is not
+    // connected: the phantom-connection case. Without the reclaim path,
+    // auto-connect used to skip such slots and there was no way back onto
+    // the bag (D24).
+    mockIsDeviceConnected.mockResolvedValue(false)
     mockSlots = {
-      left: { deviceId: blue.address, state: 'ready' }, // no lastEventAtMs
+      left: { deviceId: blue.address, state: 'ready' },
       right: null,
     }
     mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
@@ -208,24 +201,28 @@ describe('autoConnectKnownTrackers', () => {
     let leftInFlight = false
     let overlapped = false
     let releaseLeft: () => void = () => {}
-    mockConnectSlot.mockImplementation((hand: string) => {
-      if (hand === 'left') {
-        leftInFlight = true
-        return new Promise<void>((resolve) => {
-          releaseLeft = () => {
-            leftInFlight = false
-            resolve()
-          }
-        })
-      }
-      if (leftInFlight) overlapped = true
-      return Promise.resolve()
+    // Resolves the moment the LEFT connect actually starts — the pass has
+    // evictions, permission checks and the scan ahead of it, so a fixed
+    // number of microtask turns cannot time the release reliably.
+    const leftStarted = new Promise<void>((started) => {
+      mockConnectSlot.mockImplementation((hand: string) => {
+        if (hand === 'left') {
+          leftInFlight = true
+          started()
+          return new Promise<void>((resolve) => {
+            releaseLeft = () => {
+              leftInFlight = false
+              resolve()
+            }
+          })
+        }
+        if (leftInFlight) overlapped = true
+        return Promise.resolve()
+      })
     })
 
     const pass = autoConnectKnownTrackers()
-    // Let the scan resolve and the left connect start.
-    await Promise.resolve()
-    await Promise.resolve()
+    await leftStarted
     releaseLeft()
     await pass
 
@@ -260,22 +257,41 @@ describe('autoConnectKnownTrackers', () => {
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('connected')
   })
 
-  it('trustReadyState preserves a ready slot without liveness evidence', async () => {
-    // Retry passes must not bounce the working hand while the other is
-    // chased: off the live screen no slot ever gains lastEventAtMs, so the
-    // strict probe would evict and rebuild a healthy connection each pass.
+  it('a hand connected to this session is untouchable while the other is chased', async () => {
+    // The precise rule: store ready + native confirms = leave it alone,
+    // on every pass. The other hand still gets evicted, scanned and
+    // connected.
+    mockIsDeviceConnected.mockImplementation((deviceId: string) =>
+      Promise.resolve(deviceId === red.address),
+    )
     mockSlots = {
-      right: { deviceId: red.address, state: 'ready' }, // no lastEventAtMs
+      right: { deviceId: red.address, state: 'ready' },
       left: null,
     }
     mockScan.mockResolvedValue([ad(blue.address)])
 
-    const result = await autoConnectKnownTrackers({ trustReadyState: true })
+    const result = await autoConnectKnownTrackers()
 
     expect(mockEvictSlot).not.toHaveBeenCalledWith('right', expect.anything())
     expect(mockConnectSlot).not.toHaveBeenCalledWith('right', expect.anything(), expect.anything())
     expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('already-connected')
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('connected')
+  })
+
+  it('reclaims a reload orphan — store empty, native still connected', async () => {
+    // After a JS reload the store forgets the slots while the NATIVE
+    // connections survive. A natively-connected tracker does not advertise,
+    // so without the by-address eviction every scan comes back empty and
+    // the retry budget burns on a device that was attached all along.
+    mockSlots = { left: null, right: null }
+    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
+
+    const result = await autoConnectKnownTrackers()
+
+    // Both hands evicted by their permanent addresses before the scan.
+    expect(mockEvictSlot).toHaveBeenCalledWith('left', blue.address)
+    expect(mockEvictSlot).toHaveBeenCalledWith('right', red.address)
+    expect(result.connectedCount).toBe(2)
   })
 })
 
@@ -313,7 +329,10 @@ describe('persistent auto-retry', () => {
 
     await armAutoRetry()
     for (let i = 0; i < AUTO_RETRY_BUDGET; i += 1) {
-      jest.advanceTimersByTime(RETRY_DELAY_MS)
+      // Async advancement interleaves timer firing with the pass's own
+      // microtasks, so each cycle's `.then(scheduleRetryIfNeeded)` lands
+      // before the next advance.
+      await jest.advanceTimersByTimeAsync(RETRY_DELAY_MS)
       await flush()
     }
 
@@ -341,5 +360,23 @@ describe('persistent auto-retry', () => {
     jest.advanceTimersByTime(RETRY_DELAY_MS * 3)
     await flush()
     expect(mockScan).toHaveBeenCalledTimes(1)
+  })
+
+  it('suspension freezes the chain mid-workout and resume picks it back up', async () => {
+    mockScan.mockResolvedValue([ad(red.address)]) // left keeps hiding
+
+    await armAutoRetry()
+    expect(getAutoRetryState().retrying).toBe(true)
+
+    // The workout starts: no retry may scan or evict while punches stream.
+    setAutoRetrySuspended(true)
+    jest.advanceTimersByTime(RETRY_DELAY_MS * 4)
+    await flush()
+    expect(mockScan).toHaveBeenCalledTimes(1) // only the arming pass ran
+
+    // Workout over: the interrupted chase resumes immediately.
+    setAutoRetrySuspended(false)
+    await flush()
+    expect(mockScan).toHaveBeenCalledTimes(2)
   })
 })

@@ -30,6 +30,7 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
 import { TAB_BAR_STYLE } from '../_layout'
+import { setAutoRetrySuspended } from '@ble/autoConnectTrackers'
 import { ActionButton } from '@components/branding/ActionButton'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
@@ -156,6 +157,21 @@ export default function LiveScreen(): React.JSX.Element {
     // the athlete who opened the screen while a reconnect was in flight.
     allowUpgrade: live.phase === 'idle',
   })
+
+  // The auto-retry scheduler must not scan or evict while a workout is
+  // RUNNING — a retry pass mid-round churns the radios and drops the very
+  // connections the athlete is punching through (observed: streaming hand
+  // knocked to Off, other hand's GATT dead). Suspend for every non-idle
+  // phase; resume (which also re-evaluates an interrupted chase) when the
+  // session returns to idle or the screen goes away.
+  React.useEffect(() => {
+    setAutoRetrySuspended(live.phase !== 'idle')
+  }, [live.phase])
+  React.useEffect(() => {
+    return () => {
+      setAutoRetrySuspended(false)
+    }
+  }, [])
 
   // The workout to run: a library pick when the athlete chose one, otherwise a
   // workout generated from the current recipe (M35). The generation is

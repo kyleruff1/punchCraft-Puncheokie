@@ -100,6 +100,17 @@ export interface BleManagerFacade {
   connect(deviceId: string, options?: ConnectOptions): Promise<ConnectionStatus>
   disconnect(deviceId: string): Promise<void>
 
+  /**
+   * Ground truth from the native stack: is this device connected RIGHT NOW?
+   *
+   * The store's slot state is event-driven and can lie in both directions —
+   * a GATT link that died without a disconnect event leaves a phantom
+   * 'ready', and a JS reload forgets slots whose native connections
+   * survived. The auto-connect probe asks the radio instead of guessing.
+   * Implementations resolve false on any error.
+   */
+  isConnected(deviceId: string): Promise<boolean>
+
   /** Subscribe to per-device connection-state transitions (§11.5). */
   onConnectionChange(deviceId: string, cb: (status: ConnectionStatus) => void): UnsubscribeFn
 

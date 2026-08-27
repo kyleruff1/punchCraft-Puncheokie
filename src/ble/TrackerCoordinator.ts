@@ -44,6 +44,11 @@ export class TrackerCoordinator {
     return this.scanner.run(options)
   }
 
+  /** Native-stack ground truth for the auto-connect probe. */
+  async isDeviceConnected(deviceId: string): Promise<boolean> {
+    return this.facade.isConnected(deviceId)
+  }
+
   async connectSlot(hand: TrackerSlotHand, deviceId: string, name?: string): Promise<void> {
     // Tear down any previous binding for this slot first — reassigning a
     // slot to a new device must not leak the old change-listener.

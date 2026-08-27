@@ -27,8 +27,10 @@
  *   still unconnected, schedules follow-up passes every RETRY_DELAY_MS —
  *   up to AUTO_RETRY_BUDGET automatic attempts, then goes dormant until
  *   the athlete presses Connect trackers again (which re-arms the budget).
- *   Retry passes trust ready state so a working hand is never torn down
- *   while the other hand is being chased.
+ * - **The precise probe.** A hand connected TO THE CURRENT SESSION (store
+ *   ready AND the native stack confirms) is untouchable on every pass —
+ *   a working hand is never torn down while the other is chased. The
+ *   scheduler is also suspended entirely while a workout runs.
  */
 
 import { getTrackerCoordinator, type TrackerSlotHand } from '@ble/TrackerCoordinator'
@@ -36,7 +38,6 @@ import { PermissionService } from '@ble/PermissionService'
 import { findKnownTracker, KNOWN_TRACKERS } from '@ble/knownTrackers'
 import { getTrackerSlots } from '@state/useTrackerStore'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
-import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 
 export interface AutoConnectOutcome {
   hand: TrackerSlotHand
@@ -56,45 +57,36 @@ export interface AutoConnectResult {
 const READY_STATES = new Set(['ready', 'streaming'])
 
 /**
- * How long a `'ready'` slot may go silent before we stop trusting the state.
+ * True when this hand is connected TO THE CURRENT SESSION — the precise
+ * rule (Kyle's words) for "leave it alone".
  *
- * Chosen for the situation this whole function exists to survive: the app
- * process gets killed (or Metro reloads) mid-workout, so the store rehydrates
- * to `'ready'` from before the crash while the real GATT link is long gone.
- * The trackers themselves fall back to slow-blink advertising within seconds.
- * Ten seconds is long enough that a live tracker between throws will not be
- * mistaken for stale, and short enough that a phantom `'ready'` on launch is
- * caught before the athlete taps Start.
- */
-const STALE_AFTER_MS = 10_000
-
-/**
- * True when a slot already holds a usable connection to the expected device.
+ * Two conditions, both required:
+ * 1. The store's slot says ready/streaming for the expected device — the
+ *    event-driven, this-session view.
+ * 2. The NATIVE stack confirms the device is connected right now
+ *    (`isDeviceConnected`) — ground truth from the radio.
  *
- * "Usable" here means the store says ready **and** we have evidence — a punch
- * frame or an explicit liveness stamp — inside the freshness window. Without
- * the second half, a `'ready'` value left behind by a killed process short-
- * circuits auto-connect forever and there is no path back onto the bag. That
- * was the bug this reads as slow-blinking trackers with the app looking
- * connected but no punches landing.
+ * The pairing is what makes it precise. Store-only lies both ways: a GATT
+ * link that died without a disconnect event leaves a phantom 'ready', and
+ * a JS reload forgets slots whose native connections survived. The old
+ * probe approximated truth with `lastEventAtMs` freshness, which off the
+ * live screen no slot ever earns — so it bounced healthy connections at
+ * every workout start. Asking the radio needs no approximation.
  */
-function slotAlreadyUsable(
+async function slotConnectedThisSession(
+  coordinator: { isDeviceConnected(deviceId: string): Promise<boolean> },
   hand: TrackerSlotHand,
   address: string,
-  nowMs: number,
-  trustReadyState: boolean,
-): boolean {
+): Promise<boolean> {
   const slot = getTrackerSlots()[hand]
   if (!slot) return false
   if (slot.deviceId.toUpperCase() !== address.toUpperCase()) return false
   if (!READY_STATES.has(slot.state)) return false
-  // Scheduler-triggered retry passes trust the state: `lastEventAtMs` is
-  // only stamped on the live screen, so off-live a healthy connection has
-  // no liveness proof and the strict probe would evict and rebuild it on
-  // every retry — bouncing the good hand while the other is chased.
-  if (trustReadyState) return true
-  if (slot.lastEventAtMs === undefined) return false
-  return nowMs - slot.lastEventAtMs <= STALE_AFTER_MS
+  try {
+    return await coordinator.isDeviceConnected(slot.deviceId)
+  } catch {
+    return false
+  }
 }
 
 let inFlight: Promise<AutoConnectResult> | null = null
@@ -107,12 +99,6 @@ let inFlight: Promise<AutoConnectResult> | null = null
  */
 export interface AutoConnectOptions {
   timeoutMs?: number
-  /**
-   * Treat ready/streaming slots as usable without the liveness probe.
-   * Used by scheduler retry passes so a working hand is not torn down
-   * while the other is chased. Manual passes keep the strict probe.
-   */
-  trustReadyState?: boolean
 }
 
 export async function autoConnectKnownTrackers(
@@ -132,8 +118,6 @@ export function isAutoConnectInFlight(): boolean {
 
 async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectResult> {
   const timeoutMs = options.timeoutMs ?? 10_000
-  const trustReadyState = options.trustReadyState ?? false
-  const nowMs = systemMonotonicClock().now()
 
   // Runtime permissions gate every scan. A fresh install (or reinstall —
   // `adb uninstall` wipes prior grants) has no BLE permissions, and a scan
@@ -160,12 +144,16 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
     }
   }
 
-  // Short-circuit before touching the radio if everything is genuinely up —
-  // "genuinely" measured against `lastEventAtMs`, not just `state` (unless
-  // this is a retry pass trusting ready state; see slotAlreadyUsable).
-  const pending = KNOWN_TRACKERS.filter(
-    (t) => !slotAlreadyUsable(t.hand, t.address, nowMs, trustReadyState),
-  )
+  const coordinator = getTrackerCoordinator()
+
+  // The precise rule: a hand connected TO THE CURRENT SESSION — store says
+  // ready AND the native stack confirms — is untouchable. Everything else
+  // is pending. One rule for every pass; no manual/retry modes.
+  const usable: Record<TrackerSlotHand, boolean> = { left: false, right: false }
+  for (const t of KNOWN_TRACKERS) {
+    usable[t.hand] = await slotConnectedThisSession(coordinator, t.hand, t.address)
+  }
+  const pending = KNOWN_TRACKERS.filter((t) => !usable[t.hand])
   if (pending.length === 0) {
     return {
       outcomes: KNOWN_TRACKERS.map((t) => ({
@@ -177,26 +165,23 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
     }
   }
 
-  const coordinator = getTrackerCoordinator()
-
-  // A pending slot that still carries connection state — phantom 'ready'
-  // from a killed process, a wedged 'connecting', or an 'error' left by a
-  // failed handshake — blocks a fresh connect: the OS keeps a cached or
-  // half-open GATT handle that keeps the device off the air. Evict down to
-  // the radio (`evictSlot` cancels by device id even with no JS binding)
-  // so the tracker returns to advertising and the scan can find it. Safe
-  // on a truly dormant slot too — cancelling nothing is a no-op.
-  const EVICTABLE = new Set(['ready', 'streaming', 'connecting', 'error'])
+  // Evict EVERY pending slot down to the radio before scanning — by
+  // address, regardless of what the store believes. The store lies in two
+  // directions: a phantom 'ready'/'error' left by a killed process hides a
+  // cached or half-open GATT handle, and after a JS reload the store
+  // forgets slots entirely while the NATIVE connection survives — a
+  // connected tracker does not advertise, so scans come back empty and
+  // the retry budget burns on a device that was attached all along.
+  // Cancelling by address covers both; on a truly dormant device it is a
+  // no-op.
   for (const tracker of pending) {
     const slot = getTrackerSlots()[tracker.hand]
-    if (!slot) continue
-    if (!EVICTABLE.has(slot.state)) continue
     try {
-      await coordinator.evictSlot(tracker.hand, slot.deviceId || tracker.address)
+      await coordinator.evictSlot(tracker.hand, slot?.deviceId || tracker.address)
       logger.info('autoconnect.reclaim.disconnected', 'evicted stale connection', {
         hand: safe(tracker.hand),
         deviceId: deviceSensitive(tracker.address),
-        priorState: safe(slot.state),
+        priorState: safe(slot?.state ?? 'absent'),
       })
     } catch (err) {
       // Non-fatal — the scan may still find it, and if it doesn't the
@@ -231,7 +216,7 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
   // failure mode on this tablet. Left is index 0 and connects first.
   const results: AutoConnectOutcome[] = []
   for (const tracker of KNOWN_TRACKERS) {
-    if (slotAlreadyUsable(tracker.hand, tracker.address, nowMs, trustReadyState)) {
+    if (usable[tracker.hand]) {
       results.push({ hand: tracker.hand, address: tracker.address, status: 'already-connected' })
       continue
     }
@@ -295,6 +280,8 @@ export interface AutoRetryState {
 
 let retryAttemptsLeft = 0
 let retryExhausted = false
+let retrySuspended = false
+let retryResumePending = false
 let retryTimer: ReturnType<typeof setTimeout> | null = null
 const retryListeners = new Set<() => void>()
 
@@ -337,7 +324,46 @@ function passIncomplete(result: AutoConnectResult): boolean {
   return result.outcomes.some((o) => o.status === 'failed' || o.status === 'not-found')
 }
 
+/**
+ * Suspend or resume the retry scheduler.
+ *
+ * The live screen suspends while a workout is RUNNING: a retry pass scans
+ * and evicts, and doing either mid-round churns the radios — observed as a
+ * streaming hand's badge dropping to Off and the other hand's GATT dying
+ * ("failed to snapshot") while the athlete was mid-combination. Spec §19.3
+ * agrees: a tracker dropping mid-workout changes the top bar, never the
+ * connection strategy. On resume, an interrupted chase picks back up with
+ * whatever budget it had left.
+ */
+export function setAutoRetrySuspended(suspended: boolean): void {
+  if (retrySuspended === suspended) return
+  retrySuspended = suspended
+  if (suspended) {
+    if (retryTimer !== null) {
+      clearRetryTimer()
+      retryResumePending = true
+    }
+    notifyRetryListeners()
+    return
+  }
+  if (retryResumePending && retryAttemptsLeft > 0) {
+    retryResumePending = false
+    // Re-evaluate immediately rather than waiting a full delay — the
+    // workout just ended and the athlete is looking at the badges.
+    void autoConnectKnownTrackers().then(scheduleRetryIfNeeded)
+  }
+  notifyRetryListeners()
+}
+
 function scheduleRetryIfNeeded(result: AutoConnectResult): void {
+  // While suspended (mid-workout), never schedule; remember that a chase
+  // was in progress so resume can pick it back up.
+  if (retrySuspended) {
+    clearRetryTimer()
+    if (passIncomplete(result)) retryResumePending = true
+    notifyRetryListeners()
+    return
+  }
   // A permission refusal must not loop: each retry would re-prompt the OS
   // dialog five times in a row. Stay dormant until a manual press.
   if (result.scanError !== undefined && /permission/i.test(result.scanError)) {
@@ -371,7 +397,7 @@ function scheduleRetryIfNeeded(result: AutoConnectResult): void {
     notifyRetryListeners()
     // Retry passes trust ready state so a connected hand is never torn
     // down while the other hand is chased.
-    void autoConnectKnownTrackers({ trustReadyState: true }).then(scheduleRetryIfNeeded)
+    void autoConnectKnownTrackers().then(scheduleRetryIfNeeded)
   }, RETRY_DELAY_MS)
   notifyRetryListeners()
 }
@@ -395,10 +421,15 @@ export async function armAutoRetry(options: AutoConnectOptions = {}): Promise<Au
   return result
 }
 
-/** Test hook — reset scheduler state between tests. */
+/** Test hook — reset scheduler state between tests. Also drops a leaked
+ * in-flight pass: a test whose pass never settles would otherwise occupy
+ * the single-flight slot and time out every later test in the file. */
 export function resetAutoRetryForTest(): void {
   clearRetryTimer()
   retryAttemptsLeft = 0
   retryExhausted = false
+  retrySuspended = false
+  retryResumePending = false
   retryListeners.clear()
+  inFlight = null
 }
