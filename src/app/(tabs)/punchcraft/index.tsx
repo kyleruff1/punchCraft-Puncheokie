@@ -62,7 +62,7 @@ export default function PunchCraftLanding() {
 
         <Link href="/(tabs)/punchcraft/recipe" asChild>
           <ForgedButton
-            variant="primary"
+            variant="hero"
             testID="setup-workout"
             accessibilityLabel="Build a workout"
             // Mint a fresh seed and drop any library pick, so the recipe opens on
@@ -70,7 +70,7 @@ export default function PunchCraftLanding() {
             onPress={() => startNewBuild()}
             style={styles.primaryActionSpacing}
           >
-            <ActionLabel action="buildAWorkout" />
+            <ActionLabel action="buildAWorkout" size="md" />
           </ForgedButton>
         </Link>
 

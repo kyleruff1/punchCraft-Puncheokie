@@ -334,11 +334,11 @@ export default function RecipeScreen(): React.JSX.Element {
         <View style={styles.actions}>
           <Link href="/(tabs)/punchcraft/live" asChild>
             <ForgedButton
-              variant="primary"
+              variant="hero"
               testID="start-button"
               accessibilityLabel="Start workout"
             >
-              <ActionLabel action="startWorkout" />
+              <ActionLabel action="startWorkout" size="md" />
             </ForgedButton>
           </Link>
           <Text style={styles.startCaption}>

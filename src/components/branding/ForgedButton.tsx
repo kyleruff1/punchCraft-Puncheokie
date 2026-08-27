@@ -39,7 +39,7 @@ import type { AccessibilityRole, StyleProp, TextStyle, ViewStyle } from 'react-n
 import { colors, punch } from '@/theme/colors'
 import { recipes } from '@/theme/typography'
 
-export type ForgedVariant = 'primary' | 'secondary' | 'subtle'
+export type ForgedVariant = 'primary' | 'hero' | 'secondary' | 'subtle'
 
 interface VariantVisual {
   /** Three-stop vertical gradient top → mid → bottom. */
@@ -60,6 +60,21 @@ const VARIANTS: Record<ForgedVariant, VariantVisual> = {
     bevelTop: punch.aqua,
     bevelBottom: punch.tealBlack,
     textColor: colors.textOnAccent,
+    textRecipe: recipes.buttonPrimary,
+  },
+  /**
+   * Dark forged body with a cyan bevel. For buttons carrying the
+   * silver-metal ActionLabel art: that art was authored for a dark
+   * ground (like the wordmarks) and drowns on the bright `primary`
+   * fill, so the hero button provides the dark field and lets the
+   * cyan bevel carry the "this is the big action" signal instead.
+   */
+  hero: {
+    gradient: [punch.gunmetal, punch.charcoal, punch.tealBlack],
+    gradientPressed: [punch.charcoal, punch.tealBlack, punch.tealBlack],
+    bevelTop: punch.turquoise,
+    bevelBottom: punch.tealDark,
+    textColor: colors.textPrimary,
     textRecipe: recipes.buttonPrimary,
   },
   secondary: {

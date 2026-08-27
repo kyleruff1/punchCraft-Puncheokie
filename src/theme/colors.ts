@@ -45,6 +45,12 @@ export const punch = {
   turquoiseDeep: '#1EBBC4',
   /** Highlight cyan — brighter than accent; the "yes / glow" signal. */
   turquoiseBright: '#54E8EF',
+  /**
+   * Deep turquoise — the mid-dark member of Kyle's authored palette.
+   * Dark enough for silver-metal label art to pop, saturated enough to
+   * still read as the turquoise action colour.
+   */
+  turquoiseMid: '#15949C',
   /** Light aqua — the brightest cool; the reward-badge fill. */
   aqua: '#8CF4F7',
   /** Deep teal — accent-tinted selected rows. */
