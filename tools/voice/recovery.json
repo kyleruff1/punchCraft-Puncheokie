@@ -1,0 +1,870 @@
+{
+  "schemaVersion": "1.0.0",
+  "corpusId": "puncheokie-inter-round-recovery-v1",
+  "title": "Puncheokie Inter-Round Recovery Coach Corpus",
+  "purpose": "Twenty interchangeable spoken recovery modules for a sixty-second rest between three-minute boxing rounds.",
+  "restWindow": {
+    "restDurationSec": 60,
+    "maximumScriptDurationSec": 45,
+    "recommendedScriptStartOffsetSec": 1,
+    "recommendedNextRoundPreviewReserveSec": 14,
+    "timingEstimateWordsPerMinute": 145,
+    "timingRule": "At build time, replace estimated duration with measured rendered-audio duration plus scheduled pauses. Reject or retime any asset above 45 seconds."
+  },
+  "voiceDirection": {
+    "persona": "Old-school cornerman",
+    "delivery": "Dramatically aged, caring, calm, and authoritative. Less melodic than active combo calls. Use grounded phrasing, clear anatomical directions, and a firm readiness line.",
+    "holdBehavior": "Lower the energy during holds. Do not fill every pause. A brief 'hold it' may be spoken, but silence is allowed.",
+    "finalLine": "Increase firmness slightly on the final readiness cue without shouting."
+  },
+  "globalSafety": [
+    "All movements are gentle mobility or short, comfortable holds; never bounce or force range.",
+    "Stop the movement if it causes sharp pain, numbness, loss of balance, chest pain, unusual shortness of breath, or dizziness.",
+    "Forward-fold scripts should be skipped when the user feels dizzy or light-headed; rise slowly with soft knees.",
+    "Bag-assisted scripts require a stable bag and only light contact. The athlete must not hang body weight from a swinging or unstable bag.",
+    "Hydration prompts are optional. The athlete may drink when thirsty and should place the bottle clear of the work area before the next round.",
+    "These scripts are general fitness guidance, not individualized medical or rehabilitation instructions."
+  ],
+  "selectionPolicy": {
+    "noExactRepeatWithinWorkout": true,
+    "avoidSameCategoryConsecutively": true,
+    "minimumInterveningRestsBetweenHydrationPrompts": 2,
+    "minimumInterveningRestsBetweenBagAssistedScripts": 2,
+    "minimumInterveningRestsBetweenForwardFoldScripts": 2,
+    "preferAlternatingBodyRegions": true,
+    "defaultHydrationPromptWeight": 0.25,
+    "excludeBagAssistedWhenBagIsUnstable": true,
+    "excludeForwardFoldsWhenUserReportsDizziness": true,
+    "reserveFinalSecondsFor": [
+      "next_round_theme",
+      "stance_reminder",
+      "countdown"
+    ]
+  },
+  "scripts": [
+    {
+      "id": "R01",
+      "title": "Reach High, Settle Low",
+      "category": "mixed",
+      "tags": [
+        "breathing",
+        "overhead_reach",
+        "side_bend"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Easy now. Stand tall, feet under you, and let those shoulders drop away from your ears.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Reach both gloves straight for the ceiling. Grow long through your ribs. Hold it there.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Lean gently to your lead side. No twisting. Breathe out and hold.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Back through center. Now the rear side. Long and easy. Hold.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Come tall, shake the arms loose, and give me one slow breath in, one longer breath out. Good. Get ready.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 74,
+      "totalPauseMs": 12000,
+      "estimatedDurationSec": 42.6,
+      "symmetry": "lead_then_rear",
+      "style": "mixed",
+      "deliveryMode": "calm_authoritative",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R02",
+      "title": "Cross-Body Shoulder Reset",
+      "category": "upper_body",
+      "tags": [
+        "breathing",
+        "shoulder",
+        "cross_body",
+        "hydration_optional"
+      ],
+      "hydrationPrompt": true,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Bring your lead arm across your chest at shoulder height. Use the opposite forearm to draw it in gently. Keep that lead shoulder down.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Release it. Switch arms. Rear arm across, opposite forearm supporting it. No yanking. Hold steady.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Let both arms hang and roll the shoulders back twice.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "If you are thirsty, take one small drink now. Then set your feet, loosen your jaw, and breathe out long.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 69,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 39.6,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R03",
+      "title": "Bag-Side Chest Opener",
+      "category": "upper_body",
+      "tags": [
+        "chest",
+        "front_shoulder",
+        "bag_assisted",
+        "breathing"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": true,
+      "segments": [
+        {
+          "text": "Place your lead glove lightly against the side of the bag at shoulder height. Do not lean on it.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Turn your chest away from that glove until you feel the front of the shoulder and chest open. Gentle pressure. Hold it.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Come back square. Change hands and turn the other way. Keep the shoulder low. Hold it, hold it.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Release. Face the bag, hands loose, and take one calm breath. That is enough. Save the power for the bell.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 79,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 43.7,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R04",
+      "title": "Elbow High, Side Long",
+      "category": "upper_body",
+      "tags": [
+        "triceps",
+        "lat",
+        "side_bend",
+        "symmetrical"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Lift your lead elbow toward the ceiling and let that glove fall behind your head. Use the other forearm to guide it back gently.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Add a small lean toward the rear side. Feel the arm and ribs lengthen. Hold.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Come up and switch. Rear elbow high, glove behind the head, lead forearm guiding. Easy pressure.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Lean the other way. Hold. Release both arms, shake them out, and bring the guard home.",
+          "pauseAfterMs": 3000
+        }
+      ],
+      "wordCount": 71,
+      "totalPauseMs": 14000,
+      "estimatedDurationSec": 43.4,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "calm_authoritative",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R05",
+      "title": "Shoulder and Elbow Mobility",
+      "category": "upper_body",
+      "tags": [
+        "dynamic_mobility",
+        "shoulder_rolls",
+        "elbows",
+        "guard_reset"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Keep moving softly on your feet. Give me four slow shoulder rolls backward. Big circles, no shrugging.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Now four forward. Let the shoulder blades move, but keep your neck relaxed.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Bring the elbows close to your ribs. Open and close the arms like small gates, smooth and controlled.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Extend both gloves forward, pull the elbows back, and do it twice more.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Good. Hands up without squeezing the fists. Breathe. You are loose, not lazy.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 74,
+      "totalPauseMs": 10500,
+      "estimatedDurationSec": 41.1,
+      "symmetry": "bilateral",
+      "style": "dynamic_mobility",
+      "deliveryMode": "light_rhythmic",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R06",
+      "title": "Upper-Back Reach and Sip",
+      "category": "upper_body",
+      "tags": [
+        "upper_back",
+        "scapular",
+        "hydration_optional",
+        "breathing"
+      ],
+      "hydrationPrompt": true,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Put both gloves in front of your chest and press them forward, like you are reaching around a big barrel.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Tuck the chin slightly. Let the shoulder blades spread. Hold that upper-back stretch.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Release and draw the elbows behind you without forcing them. Open the chest. Hold.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "One more reach forward, then relax.",
+          "pauseAfterMs": 2000
+        },
+        {
+          "text": "Take a small sip if you want it. Set the bottle down safely, breathe out, and bring your eyes back to the bag.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 76,
+      "totalPauseMs": 12000,
+      "estimatedDurationSec": 43.4,
+      "symmetry": "bilateral",
+      "style": "mixed",
+      "deliveryMode": "caring_recovery",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R07",
+      "title": "Easy Torso Turns",
+      "category": "torso",
+      "tags": [
+        "dynamic_mobility",
+        "rotation",
+        "hips",
+        "guard_reset"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Feet planted, knees soft. Hold the gloves lightly near your ribs.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Turn the shoulders to the lead side and let the rear heel respond. Come back through center.",
+          "pauseAfterMs": 1500
+        },
+        {
+          "text": "Turn to the rear side and let the lead heel respond. No snapping. This is recovery.",
+          "pauseAfterMs": 1500
+        },
+        {
+          "text": "Now flow side to side four times, smooth through the waist and hips.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Settle square. Shoulders down, chin easy, hands home. One breath in, longer breath out. Ready again.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 73,
+      "totalPauseMs": 9000,
+      "estimatedDurationSec": 39.2,
+      "symmetry": "lead_then_rear",
+      "style": "dynamic_mobility",
+      "deliveryMode": "light_rhythmic",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R08",
+      "title": "Rib-Cage Breathing",
+      "category": "torso",
+      "tags": [
+        "breathing",
+        "side_bend",
+        "ribs",
+        "recovery"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Stand tall and put your lead glove against the side of your ribs. Reach the rear glove overhead.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Lean gently toward the lead side. Breathe into the open ribs under that raised arm. Hold.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Come through center and switch. Rear glove to the ribs, lead glove overhead. Lean the other way.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Come tall. Lower both hands. Inhale comfortably, then let the exhale run longer than the inhale. Good. Keep that calm into the next round.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 75,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 42.0,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "calm_authoritative",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R09",
+      "title": "Soft-Knee Toe Reach",
+      "category": "lower_body",
+      "tags": [
+        "hamstring",
+        "forward_hinge",
+        "toe_reach",
+        "breathing"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Step your feet about shoulder width. Soften both knees and hinge from the hips, not the low back.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Let the gloves reach toward your toes. Stop wherever comfortable. No bouncing. Hold it there.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Take one easy breath. Bend the knees a little more, then rise slowly with your head coming up last.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Roll the shoulders back, stand tall, and shake the legs loose.",
+          "pauseAfterMs": 2000
+        },
+        {
+          "text": "Good. Eyes forward. Let the breathing settle and be ready when the count starts.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 77,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 42.9,
+      "symmetry": "bilateral",
+      "style": "short_static",
+      "deliveryMode": "slow_careful",
+      "avoidIfDizzy": true,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R10",
+      "title": "Split-Stance Hamstrings",
+      "category": "lower_body",
+      "tags": [
+        "hamstring",
+        "split_stance",
+        "hydration_optional",
+        "symmetrical"
+      ],
+      "hydrationPrompt": true,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Put the lead heel a short step forward, toes up. Sit the hips back and rest the gloves lightly on the rear thigh.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Keep the back long. Feel the stretch behind the lead leg. Hold.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Stand up and switch feet. Rear heel forward, toes up, hips back. Same gentle stretch. Hold.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Come tall and shake both legs out. If you need water, take one small drink. Then reset your stance and breathe.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 72,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 40.8,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R11",
+      "title": "Calves Against the Floor",
+      "category": "lower_body",
+      "tags": [
+        "calf",
+        "ankle",
+        "split_stance",
+        "bag_optional"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Place both gloves lightly on the bag if you want balance. Step the rear foot back and press that heel toward the floor.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Keep the rear toes pointing forward and the knee straight but not locked. Hold that calf stretch.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Switch legs. Other foot back, heel reaching down, hips facing the bag. Hold.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Bring the feet under you. Lift both heels twice, lower them slowly, and settle into your stance. Light feet next round.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 74,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 41.6,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R12",
+      "title": "Hip-Flexor Stance Reset",
+      "category": "lower_body",
+      "tags": [
+        "hip_flexor",
+        "split_stance",
+        "glute",
+        "posture"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Take a short split stance with the lead foot forward. Bend both knees just a little.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Tuck the pelvis under and squeeze the rear-side glute. Keep your chest tall. Hold the front of that rear hip open.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Step together, then change legs. Tuck the pelvis, squeeze the other glute, and stay tall. Hold.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Release. Walk the feet back to boxing stance, loosen the hips, and breathe out. Strong base, relaxed upper body.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 72,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 40.8,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R13",
+      "title": "Ankles and Light Feet",
+      "category": "lower_body",
+      "tags": [
+        "dynamic_mobility",
+        "ankle",
+        "calf",
+        "footwork"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Keep the body upright and shift your weight onto the rear leg. Tap the lead toes, then the lead heel, slow and easy.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Switch the weight. Rear toes, rear heel. Let the ankle loosen without twisting the knee.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Now lift both heels and lower them four times, smooth and controlled.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Finish with tiny steps in place. Quiet feet, soft knees, shoulders loose. Good. Stop bouncing and set your stance for the next bell.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 73,
+      "totalPauseMs": 10000,
+      "estimatedDurationSec": 40.2,
+      "symmetry": "lead_then_rear",
+      "style": "dynamic_mobility",
+      "deliveryMode": "light_rhythmic",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R14",
+      "title": "Reach, Fold, Rise, Drink",
+      "category": "mixed",
+      "tags": [
+        "overhead_reach",
+        "forward_hinge",
+        "breathing",
+        "hydration_optional"
+      ],
+      "hydrationPrompt": true,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Reach both gloves high and take one comfortable breath in. Make yourself tall.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Breathe out as you hinge forward with soft knees. Let the gloves reach toward the floor or your toes. No bounce.",
+          "pauseAfterMs": 5000
+        },
+        {
+          "text": "Bend the knees, rise slowly, and open the chest with the elbows wide.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "If you are thirsty, take a small sip now. Settle the shoulders, find the bag with your eyes, and let one long exhale clear the round.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 73,
+      "totalPauseMs": 10500,
+      "estimatedDurationSec": 40.7,
+      "symmetry": "bilateral",
+      "style": "mixed",
+      "deliveryMode": "caring_recovery",
+      "avoidIfDizzy": true,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R15",
+      "title": "Breath and Jaw Reset",
+      "category": "breathing",
+      "tags": [
+        "breathing",
+        "jaw",
+        "posture",
+        "mental_reset"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "No stretch this time. Stand easy and let the arms hang. Unclench the teeth and let the tongue rest.",
+          "pauseAfterMs": 1500
+        },
+        {
+          "text": "Breathe in comfortably. Now breathe out slowly, like you are cooling hot tea.",
+          "pauseAfterMs": 4500
+        },
+        {
+          "text": "Again. Easy breath in. Longer breath out. Let the shoulders fall as the air leaves.",
+          "pauseAfterMs": 4500
+        },
+        {
+          "text": "One more. In, then a smooth long exhale.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Good. Bring the gloves back to your cheeks without tension. Calm eyes, calm feet, sharp hands.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 71,
+      "totalPauseMs": 14500,
+      "estimatedDurationSec": 43.9,
+      "symmetry": "bilateral",
+      "style": "breath_reset",
+      "deliveryMode": "quiet_cornerman",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R16",
+      "title": "Shake Out the Arms",
+      "category": "upper_body",
+      "tags": [
+        "arm_shake",
+        "shoulder_depression",
+        "recovery",
+        "guard_reset"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Drop the hands for a moment and shake both arms loose from the shoulders all the way into the gloves.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Now lift the shoulders toward your ears. Hold for one beat, then let them drop heavy.",
+          "pauseAfterMs": 2000
+        },
+        {
+          "text": "Do that twice more. Up, and drop. Up, and drop.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Bend and straighten both elbows three times without snapping them.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "There you go. Bring the guard back softly. You do not need tight shoulders to throw hard punches.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 74,
+      "totalPauseMs": 12000,
+      "estimatedDurationSec": 42.6,
+      "symmetry": "bilateral",
+      "style": "dynamic_mobility",
+      "deliveryMode": "caring_firm",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R17",
+      "title": "Bag Press for the Shoulder Blades",
+      "category": "upper_body",
+      "tags": [
+        "scapular",
+        "bag_assisted",
+        "upper_back",
+        "dynamic_mobility"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": true,
+      "segments": [
+        {
+          "text": "Place both gloves against the bag at chest height. Feet solid. Do not lean your body weight into it.",
+          "pauseAfterMs": 1000
+        },
+        {
+          "text": "Keep the elbows almost straight and press your chest gently away, spreading the shoulder blades. Hold.",
+          "pauseAfterMs": 4500
+        },
+        {
+          "text": "Now let the chest move slightly toward the bag as the shoulder blades come together. Easy range.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Press away once more. Hold it, then release.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Step back into stance. Neck long, shoulders free, guard ready. That upper back should feel awake, not strained.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 78,
+      "totalPauseMs": 12500,
+      "estimatedDurationSec": 44.8,
+      "symmetry": "bilateral",
+      "style": "dynamic_mobility",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R18",
+      "title": "Across and Away",
+      "category": "upper_body",
+      "tags": [
+        "shoulder",
+        "cross_body",
+        "bag_assisted",
+        "symmetrical"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": true,
+      "segments": [
+        {
+          "text": "Take the lead arm across your chest and support it with the rear forearm. Draw it in gently. Hold.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Release. Put that lead glove lightly on the bag and turn your chest away a little. Hold.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Switch the pattern. Rear arm across, supported gently. Hold.",
+          "pauseAfterMs": 4000
+        },
+        {
+          "text": "Rear glove to the bag, turn away softly, and hold.",
+          "pauseAfterMs": 3000
+        },
+        {
+          "text": "Come square, shake both arms, and breathe. Even shoulders, even work.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 66,
+      "totalPauseMs": 14000,
+      "estimatedDurationSec": 41.3,
+      "symmetry": "lead_then_rear",
+      "style": "short_static",
+      "deliveryMode": "technical_supportive",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R19",
+      "title": "Tall, Turn, and Hinge",
+      "category": "mixed",
+      "tags": [
+        "overhead_reach",
+        "rotation",
+        "forward_hinge",
+        "full_body"
+      ],
+      "hydrationPrompt": false,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Reach both gloves high. Stay tall and turn the ribs gently toward the lead side, then center.",
+          "pauseAfterMs": 2000
+        },
+        {
+          "text": "Turn toward the rear side, then come back. Keep the hips quiet and knees soft.",
+          "pauseAfterMs": 2000
+        },
+        {
+          "text": "Hinge forward and let the gloves travel toward your shins or toes. Stop before strain. Hold.",
+          "pauseAfterMs": 4500
+        },
+        {
+          "text": "Rise slowly, reach high once more, and lower the arms with a long breath out.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Good. Whole body reset. Find your stance and get ready to work.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 75,
+      "totalPauseMs": 11000,
+      "estimatedDurationSec": 42.0,
+      "symmetry": "lead_then_rear",
+      "style": "mixed",
+      "deliveryMode": "calm_authoritative",
+      "avoidIfDizzy": true,
+      "enabledByDefault": true
+    },
+    {
+      "id": "R20",
+      "title": "Cornerman's Full Reset",
+      "category": "mixed",
+      "tags": [
+        "breathing",
+        "shoulder_rolls",
+        "calf",
+        "hydration_optional",
+        "mental_reset"
+      ],
+      "hydrationPrompt": true,
+      "requiresStableBag": false,
+      "segments": [
+        {
+          "text": "Good round. Walk two small steps and let the arms swing loose. Now stop and roll both shoulders backward.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "Step the lead foot back and press that heel down for a short calf stretch. Hold.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Switch feet. Other heel down. Hold.",
+          "pauseAfterMs": 3500
+        },
+        {
+          "text": "Come square. If you are thirsty, take one small drink, not a rush.",
+          "pauseAfterMs": 2500
+        },
+        {
+          "text": "One breath in, longer breath out. Put the bottle clear, raise the guard, and give me calm pressure when that bell goes.",
+          "pauseAfterMs": 0
+        }
+      ],
+      "wordCount": 76,
+      "totalPauseMs": 12000,
+      "estimatedDurationSec": 43.4,
+      "symmetry": "lead_then_rear",
+      "style": "mixed",
+      "deliveryMode": "caring_firm",
+      "avoidIfDizzy": false,
+      "enabledByDefault": true
+    }
+  ]
+}

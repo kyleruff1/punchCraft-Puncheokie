@@ -49,8 +49,12 @@ import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
-import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { RecoveryPlayer } from '@audio/RecoveryPlayer'
+import { CALLOUT_CLIPS, THEME_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { INTRO_SEGMENTS } from '@audio/voiceAssets/introManifest'
+import { RECOVERY_SCRIPTS } from '@audio/voiceAssets/recoveryManifest'
 import { RoundWarningPlayer } from '@audio/RoundWarningPlayer'
+import { planRecoverySequence } from '@domain/coach/recoveryPlan'
 import {
   INTRO_COUNTDOWN_SLACK_MS,
   INTRO_TAIL_PAD_MS,
@@ -297,6 +301,70 @@ export default function LiveScreen(): React.JSX.Element {
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
   }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.schedule])
   React.useEffect(() => () => warnRef.current?.stop(), [])
+
+  // Inter-round recovery walkthrough — the cornerman works the corner
+  // between rounds. One recovery script per rest, chosen deterministically
+  // from the workout's seed; every rest gets a bell-clearance pause then
+  // ~40s of guided mobility/breathing that finishes before the next-round
+  // warning starts. Same doctrine as the warn effect: prepare on rest
+  // entry, run every store tick, stop when the phase leaves rest.
+  const recoveryPlan = React.useMemo(() => {
+    const restCount = Math.max(0, workout.schedule.length - 1)
+    // The warning owns the rest's tail; leave it worst-case room.
+    const openerMax = Math.max(
+      ...Array.from({ length: 15 }, (_, i) => {
+        const key = `warn-opener-${String(i + 1).padStart(2, '0')}`
+        return INTRO_SEGMENTS[key]?.durationMs ?? 0
+      }),
+    )
+    const themeMax = Math.max(0, ...THEME_CLIPS.map((t) => t.durationMs))
+    const maxTotalMsFor = (restIndex: number): number => {
+      const upcoming = workout.schedule[restIndex + 1]
+      const coreKey = upcoming ? `warn-round-${restIndex + 2}` : ''
+      const coreMs = INTRO_SEGMENTS[coreKey]?.durationMs ?? 0
+      // openerMax + 350 breath + themeMax + 350 breath + core + 400 slack + 500 margin.
+      const warnWorstMs = openerMax + 350 + themeMax + 350 + coreMs + 400 + 500
+      const restMs = upcoming ? workout.schedule[restIndex]?.restAfterMs ?? 0 : 0
+      return Math.max(0, restMs - 1_000 - warnWorstMs)
+    }
+    return planRecoverySequence(
+      RECOVERY_SCRIPTS,
+      restCount,
+      workout.recipe.seed,
+      { maxTotalMsFor },
+    )
+  }, [workout.recipe.seed, workout.schedule])
+
+  const recoveryRef = useRef<RecoveryPlayer | null>(null)
+  React.useEffect(() => {
+    if (policy.mode === 'off') return
+    if (live.phase !== 'rest') {
+      recoveryRef.current?.stop()
+      return
+    }
+    const scriptId = recoveryPlan[live.roundIndex]
+    if (!scriptId) return
+    const script = RECOVERY_SCRIPTS.find((s) => s.scriptId === scriptId)
+    if (!script) return
+    recoveryRef.current ??= new RecoveryPlayer()
+    recoveryRef.current.prepare(script)
+    // Rest elapsed from the same monotonic timer the rest phase reads —
+    // never a wall clock, never a timer of its own (D6). Duplicated
+    // rather than lifted from the render body: this effect fires on
+    // every store tick and the derivation is a single subtraction.
+    const restMs = workout.schedule[Math.max(0, live.roundIndex)]?.restAfterMs ?? 0
+    const elapsedMs = Math.max(0, restMs - live.roundRemainingMs)
+    recoveryRef.current.playIfDue(elapsedMs, volumes.voice)
+  }, [
+    live.phase,
+    live.roundIndex,
+    live.roundRemainingMs,
+    policy.mode,
+    volumes.voice,
+    recoveryPlan,
+    workout.schedule,
+  ])
+  React.useEffect(() => () => recoveryRef.current?.stop(), [])
 
   React.useEffect(() => {
     runner.setVocabulary(effectiveVocabulary === 'names' ? 'techniques' : 'numbers')
