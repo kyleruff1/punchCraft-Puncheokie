@@ -305,6 +305,28 @@ for (const combination of combinations) {
   }
 }
 
+// `--dump-expectations=<path>` writes the exact render-script text for EVERY
+// clip (the same expectText the ASR gate scored) and exits. The token audit
+// (tools/voice/phrase_token_audit.py) transcribes the shipped wavs and holds
+// them to these texts token-for-token — the exactness the fuzzy gate lacks.
+const dumpArg = process.argv.find((a) => a.startsWith('--dump-expectations='))
+if (dumpArg) {
+  const out = dumpArg.slice('--dump-expectations='.length)
+  const entries = {}
+  for (const j of allJobs) {
+    entries[j.key] = {
+      wav: join(OUT_ROOT, `${j.key}.wav`).replaceAll('\\', '/'),
+      text: j.plan.renderedText,
+      tokens: j.tokens,
+      vocabulary: j.vocabulary,
+      cadence: j.cadence,
+    }
+  }
+  writeFileSync(out, JSON.stringify(entries, null, 1))
+  console.log(`Wrote ${Object.keys(entries).length} expectations to ${out}`)
+  process.exit(0)
+}
+
 // `--missing-only` renders just the clips with no file on disk — the
 // corpus-expansion batch: new notations render, the shipped 248 stay
 // untouched. Like other subset renders it skips the index/manifest writes;
