@@ -83,9 +83,16 @@ export function computeAnchors(sessionDir) {
   }
   const logPath = join(sessionDir, 'log.txt')
   try {
-    const first = readFileSync(logPath, 'utf8').split(/\r?\n/, 1)[0] ?? ''
-    const m = /^\s*(\d+\.\d+)\s/.exec(first)
-    if (m) anchors.logcatFirstEpochMs = Math.round(Number(m[1]) * 1000)
+    // logcat prepends '--------- beginning of main' before the first epoch
+    // line; walk until we find a decimal-epoch prefix.
+    const lines = readFileSync(logPath, 'utf8').split(/\r?\n/)
+    for (const line of lines) {
+      const m = /^\s*(\d+\.\d+)\s/.exec(line)
+      if (m) {
+        anchors.logcatFirstEpochMs = Math.round(Number(m[1]) * 1000)
+        break
+      }
+    }
   } catch (err) {
     if (!String(err.message).includes('ENOENT')) throw err
   }

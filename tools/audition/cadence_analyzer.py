@@ -61,6 +61,23 @@ from asr_match import canonical_tokens
 
 AUDIBLE_DRIFT_MS = 80
 
+
+def _find_ffmpeg() -> str:
+    """Match the render pipeline's ffmpeg lookup so this tool works on
+    the same box without extra config."""
+    import shutil
+    p = shutil.which("ffmpeg")
+    if p:
+        return p
+    winget = os.path.expanduser(
+        "~/AppData/Local/Microsoft/WinGet/Packages/"
+        "Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/"
+        "ffmpeg-9.0-full_build/bin/ffmpeg.exe"
+    )
+    if os.path.exists(winget):
+        return winget
+    raise RuntimeError("ffmpeg not found on PATH or in the winget install location")
+
 _TOKEN_DUE_RE = re.compile(
     r"^\s*(\d+\.\d+)\s.*puncheokie\.cue\.tokenDue.*"
     r"cueId:\s*'([^']+)'.*combination:\s*'([^']+)'.*"
@@ -142,47 +159,45 @@ def load_anchors(session_dir: str) -> dict:
 
 
 def slice_and_transcribe(capture_path: str, audio_t0_ms: int, start_epoch_ms: int, end_epoch_ms: int, asr):
-    """Read a slice of the WAV and whisper-timestamp it. Returns a list of
-    {word, epochMs} for every heard word in the slice.
+    """Slice via ffmpeg (byte-identical to the CLI path that produces
+    per-word timestamps) and whisper-transcribe. Returns per-word
+    {word, epochMs, endEpochMs} lists.
+
+    Using Python's `wave` module to slice + Whisper's numpy path
+    collapsed multi-word phrases into a single span; ffmpeg avoids that.
     """
-    import wave
-    import struct
+    import subprocess
+    import tempfile
 
     start_s = max(0.0, (start_epoch_ms - audio_t0_ms) / 1000.0)
     end_s = max(start_s + 0.05, (end_epoch_ms - audio_t0_ms) / 1000.0)
+    duration_s = end_s - start_s
 
-    with wave.open(capture_path, "rb") as wf:
-        sample_rate = wf.getframerate()
-        channels = wf.getnchannels()
-        sampwidth = wf.getsampwidth()
-        total_frames = wf.getnframes()
-        start_frame = min(total_frames, int(start_s * sample_rate))
-        end_frame = min(total_frames, int(end_s * sample_rate))
-        wf.setpos(start_frame)
-        raw = wf.readframes(end_frame - start_frame)
-    if sampwidth != 2:
-        return []
-    fmt = f"<{(end_frame - start_frame) * channels}h"
-    samples = struct.unpack(fmt, raw)
-    if channels > 1:
-        samples = [sum(samples[i * channels + c] for c in range(channels)) / channels for i in range(end_frame - start_frame)]
+    ffmpeg = _find_ffmpeg()
+    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    tmp.close()
+    try:
+        subprocess.run(
+            [ffmpeg, "-hide_banner", "-loglevel", "error", "-y",
+             "-ss", f"{start_s:.3f}", "-t", f"{duration_s:.3f}",
+             "-i", capture_path, "-ac", "1", "-ar", "16000",
+             tmp.name],
+            check=True,
+        )
+        result = asr.transcribe(
+            tmp.name,
+            language="en",
+            temperature=0.0,
+            condition_on_previous_text=False,
+            word_timestamps=True,
+            fp16=True,
+        )
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
 
-    import numpy as np
-    audio = np.array(samples, dtype=np.float32) / 32768.0
-    if sample_rate != 16000:
-        from scipy.signal import resample_poly
-        from math import gcd
-        g = gcd(16000, sample_rate)
-        audio = resample_poly(audio, 16000 // g, sample_rate // g).astype("float32")
-
-    result = asr.transcribe(
-        audio,
-        language="en",
-        temperature=0.0,
-        condition_on_previous_text=False,
-        word_timestamps=True,
-        fp16=True,
-    )
     words = []
     for seg in result.get("segments", []):
         for w in seg.get("words", []):
@@ -303,11 +318,17 @@ def main() -> int:
         cue_id = play["cueId"]
         tokens = play["combination"].split("-")
         # Slice around the play: launch − 150 to launch + duration + 250.
+        # Slice window is generous — RN dispatch + expo-audio buffer +
+        # Android audio stack + Focusrite input can push the ACTUAL audio
+        # by hundreds of ms after the voice.play log timestamp. A tight
+        # ±150 ms window misses the audio entirely; ±1800 ms on the tail
+        # gives Whisper enough runway to find every word even on a
+        # laggy stack.
         heard_words = slice_and_transcribe(
             capture_path,
             audio_t0,
-            play["epochMs"] - 150,
-            play["epochMs"] + play["durationMs"] + 250,
+            play["epochMs"] - 400,
+            play["epochMs"] + play["durationMs"] + 1800,
             asr,
         )
         aligned = align_to_tokens(tokens, heard_words)
