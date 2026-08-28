@@ -366,8 +366,18 @@ if (onlyKeys) {
  * in final terms (the announce placement simply starts it earlier), and
  * the final-bounds window still holds as the promise.
  */
+/**
+ * Techniques snap (Kyle, 2026-08-27): the technique names read as pedantic
+ * at the numbers side's energy — "the numeric twin" won an A/B at 28%
+ * tighter. Baked here so every future techniques render lands at the
+ * approved pace; the shipped library was batch-tightened by the same
+ * factor with the same rubberband settings.
+ */
+const TECHNIQUES_SNAP = 1.28
+
 function fitRateForJob(job) {
-  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION * (job.override?.tempo ?? 1)
+  const snap = job.vocabulary === 'techniques' ? TECHNIQUES_SNAP : 1
+  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION * snap * (job.override?.tempo ?? 1)
   return Number.isFinite(rate) && rate > 0 ? rate : 1
 }
 
