@@ -27,8 +27,19 @@
       "1",
       "1"
     ],
-    "durationMs": 1345,
-    "wordMarks": [],
+    "durationMs": 1227,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 620
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -59,17 +70,17 @@
       "1",
       "1"
     ],
-    "durationMs": 1960,
+    "durationMs": 1636,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 110
+        "offsetMs": 20
       },
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 1210
+        "offsetMs": 1220
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -192,7 +203,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 2241,
+    "durationMs": 2746,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -202,17 +213,17 @@
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 450
+        "offsetMs": 540
       },
       {
         "tokenIndex": 2,
         "token": "1",
-        "offsetMs": 860
+        "offsetMs": 1200
       },
       {
         "tokenIndex": 3,
         "token": "2b",
-        "offsetMs": 1320
+        "offsetMs": 1760
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -249,7 +260,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 1751,
+    "durationMs": 1912,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -285,8 +296,29 @@
       "1",
       "2b"
     ],
-    "durationMs": 3960,
-    "wordMarks": [],
+    "durationMs": 1718,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 340
+      },
+      {
+        "tokenIndex": 2,
+        "token": "1",
+        "offsetMs": 640
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2b",
+        "offsetMs": 1030
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -321,7 +353,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 1403,
+    "durationMs": 1334,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -355,8 +387,24 @@
       "1",
       "2"
     ],
-    "durationMs": 1114,
-    "wordMarks": [],
+    "durationMs": 1590,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 480
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1030
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -389,7 +437,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1269,
+    "durationMs": 1246,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -423,7 +471,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1490,
+    "durationMs": 1078,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -433,12 +481,12 @@
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 510
+        "offsetMs": 350
       },
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 1050
+        "offsetMs": 710
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -473,7 +521,7 @@
       "1",
       "2"
     ],
-    "durationMs": 999,
+    "durationMs": 1264,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -483,12 +531,12 @@
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 300
+        "offsetMs": 560
       },
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 620
+        "offsetMs": 890
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -582,7 +630,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1876,
+    "durationMs": 1361,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -618,7 +666,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1350,
+    "durationMs": 1390,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -777,7 +825,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2325,
+    "durationMs": 2119,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -815,7 +863,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1614,
+    "durationMs": 1945,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -879,7 +927,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2071,
+    "durationMs": 1952,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -925,7 +973,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4231,
+    "durationMs": 3985,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -971,7 +1019,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3871,
+    "durationMs": 4518,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1017,7 +1065,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3723,
+    "durationMs": 2908,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1099,7 +1147,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 2198,
+    "durationMs": 1549,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1135,7 +1183,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 1728,
+    "durationMs": 1797,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1171,29 +1219,8 @@
       "2",
       "3b"
     ],
-    "durationMs": 3200,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 90
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 890
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1780
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3b",
-        "offsetMs": 2320
-      }
-    ],
+    "durationMs": 1571,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -1266,7 +1293,7 @@
       "3b",
       "2"
     ],
-    "durationMs": 2727,
+    "durationMs": 2833,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1304,8 +1331,34 @@
       "3b",
       "2"
     ],
-    "durationMs": 2199,
-    "wordMarks": [],
+    "durationMs": 2716,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 430
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 810
+      },
+      {
+        "tokenIndex": 3,
+        "token": "3b",
+        "offsetMs": 1260
+      },
+      {
+        "tokenIndex": 4,
+        "token": "2",
+        "offsetMs": 2260
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -1380,7 +1433,7 @@
       "3b",
       "2"
     ],
-    "durationMs": 1916,
+    "durationMs": 1962,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1418,7 +1471,7 @@
       "3b",
       "3"
     ],
-    "durationMs": 3045,
+    "durationMs": 3362,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1494,7 +1547,7 @@
       "3b",
       "3"
     ],
-    "durationMs": 2632,
+    "durationMs": 2163,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1598,7 +1651,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2968,
+    "durationMs": 4209,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1749,7 +1802,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2777,
+    "durationMs": 2160,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1837,7 +1890,7 @@
       "5",
       "2"
     ],
-    "durationMs": 4085,
+    "durationMs": 3530,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1925,7 +1978,7 @@
       "5",
       "2"
     ],
-    "durationMs": 10800,
+    "durationMs": 2598,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -1965,7 +2018,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3680,
+    "durationMs": 2767,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2005,7 +2058,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4116,
+    "durationMs": 2846,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2045,7 +2098,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2211,
+    "durationMs": 2051,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2116,7 +2169,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2603,
+    "durationMs": 2232,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2150,7 +2203,7 @@
       "1",
       "4b"
     ],
-    "durationMs": 2600,
+    "durationMs": 2701,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2184,24 +2237,8 @@
       "1",
       "4b"
     ],
-    "durationMs": 1600,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 400
-      },
-      {
-        "tokenIndex": 2,
-        "token": "4b",
-        "offsetMs": 790
-      }
-    ],
+    "durationMs": 1315,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2234,7 +2271,7 @@
       "1",
       "4b"
     ],
-    "durationMs": 1438,
+    "durationMs": 1430,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2268,7 +2305,7 @@
       "1",
       "4b"
     ],
-    "durationMs": 1595,
+    "durationMs": 1405,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2352,7 +2389,7 @@
       "1",
       "step off"
     ],
-    "durationMs": 1191,
+    "durationMs": 1314,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2386,7 +2423,7 @@
       "1",
       "step off"
     ],
-    "durationMs": 1410,
+    "durationMs": 1330,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2420,7 +2457,7 @@
       "1",
       "step off"
     ],
-    "durationMs": 1405,
+    "durationMs": 1087,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2452,8 +2489,19 @@
       "1",
       "2"
     ],
-    "durationMs": 928,
-    "wordMarks": [],
+    "durationMs": 1133,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 520
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2484,17 +2532,17 @@
       "1",
       "2"
     ],
-    "durationMs": 741,
+    "durationMs": 856,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 20
+        "offsetMs": 30
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 310
+        "offsetMs": 440
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -2527,8 +2575,19 @@
       "1",
       "2"
     ],
-    "durationMs": 630,
-    "wordMarks": [],
+    "durationMs": 750,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 380
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2570,7 +2629,7 @@
       "1",
       "2"
     ],
-    "durationMs": 588,
+    "durationMs": 664,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2620,7 +2679,7 @@
       "2",
       "1"
     ],
-    "durationMs": 1727,
+    "durationMs": 1604,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -2630,12 +2689,12 @@
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 620
+        "offsetMs": 540
       },
       {
         "tokenIndex": 2,
         "token": "1",
-        "offsetMs": 1140
+        "offsetMs": 1030
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -2686,22 +2745,22 @@
       "2",
       "1"
     ],
-    "durationMs": 1705,
+    "durationMs": 1195,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 20
+        "offsetMs": 30
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 590
+        "offsetMs": 390
       },
       {
         "tokenIndex": 2,
         "token": "1",
-        "offsetMs": 1170
+        "offsetMs": 740
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -2752,24 +2811,8 @@
       "2",
       "1"
     ],
-    "durationMs": 1223,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 400
-      },
-      {
-        "tokenIndex": 2,
-        "token": "1",
-        "offsetMs": 800
-      }
-    ],
+    "durationMs": 1013,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2802,24 +2845,8 @@
       "2",
       "1"
     ],
-    "durationMs": 1009,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 310
-      },
-      {
-        "tokenIndex": 2,
-        "token": "1",
-        "offsetMs": 680
-      }
-    ],
+    "durationMs": 1598,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2854,7 +2881,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1339,
+    "durationMs": 1405,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2890,7 +2917,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1840,
+    "durationMs": 1487,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -2926,29 +2953,8 @@
       "1",
       "2"
     ],
-    "durationMs": 1978,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 440
-      },
-      {
-        "tokenIndex": 2,
-        "token": "1",
-        "offsetMs": 1040
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 1500
-      }
-    ],
+    "durationMs": 1410,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -2983,8 +2989,29 @@
       "1",
       "2"
     ],
-    "durationMs": 1174,
-    "wordMarks": [],
+    "durationMs": 1414,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 40
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 310
+      },
+      {
+        "tokenIndex": 2,
+        "token": "1",
+        "offsetMs": 790
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1010
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -3017,7 +3044,7 @@
       "2",
       "3"
     ],
-    "durationMs": 3151,
+    "durationMs": 1352,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3067,7 +3094,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1797,
+    "durationMs": 1177,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3117,7 +3144,7 @@
       "2",
       "3"
     ],
-    "durationMs": 3960,
+    "durationMs": 1129,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3187,7 +3214,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2278,
+    "durationMs": 1696,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3223,7 +3250,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1590,
+    "durationMs": 2290,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3259,7 +3286,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1377,
+    "durationMs": 1578,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3333,34 +3360,8 @@
       "2",
       "1"
     ],
-    "durationMs": 2913,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 60
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 380
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3",
-        "offsetMs": 890
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 2190
-      },
-      {
-        "tokenIndex": 4,
-        "token": "1",
-        "offsetMs": 2790
-      }
-    ],
+    "durationMs": 2542,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -3397,7 +3398,7 @@
       "2",
       "1"
     ],
-    "durationMs": 2050,
+    "durationMs": 2073,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3435,7 +3436,7 @@
       "2",
       "1"
     ],
-    "durationMs": 4400,
+    "durationMs": 1831,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3473,7 +3474,7 @@
       "2",
       "1"
     ],
-    "durationMs": 1581,
+    "durationMs": 1557,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3511,7 +3512,7 @@
       "2",
       "3"
     ],
-    "durationMs": 3488,
+    "durationMs": 3548,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3575,8 +3576,34 @@
       "2",
       "3"
     ],
-    "durationMs": 3800,
-    "wordMarks": [],
+    "durationMs": 2382,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 40
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 260
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 690
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1370
+      },
+      {
+        "tokenIndex": 4,
+        "token": "3",
+        "offsetMs": 1850
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -3613,7 +3640,7 @@
       "2",
       "3"
     ],
-    "durationMs": 2113,
+    "durationMs": 2371,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3687,7 +3714,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2198,
+    "durationMs": 2701,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3759,7 +3786,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1571,
+    "durationMs": 1811,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3833,7 +3860,7 @@
       "6",
       "3"
     ],
-    "durationMs": 2278,
+    "durationMs": 3098,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3871,7 +3898,7 @@
       "6",
       "3"
     ],
-    "durationMs": 2544,
+    "durationMs": 2486,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -3909,7 +3936,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1971,
+    "durationMs": 1851,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4013,7 +4040,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2895,
+    "durationMs": 3134,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4053,7 +4080,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2830,
+    "durationMs": 3588,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4093,7 +4120,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4960,
+    "durationMs": 2532,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4208,7 +4235,7 @@
       "3",
       "2"
     ],
-    "durationMs": 8000,
+    "durationMs": 4209,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4252,7 +4279,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3880,
+    "durationMs": 3244,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4296,7 +4323,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3704,
+    "durationMs": 3365,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4397,7 +4424,7 @@
       "3",
       "pivot"
     ],
-    "durationMs": 1881,
+    "durationMs": 1578,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4490,7 +4517,7 @@
       "3",
       "pivot"
     ],
-    "durationMs": 1350,
+    "durationMs": 1470,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4581,7 +4608,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 2159,
+    "durationMs": 1854,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4615,7 +4642,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 2693,
+    "durationMs": 1452,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4649,7 +4676,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 1097,
+    "durationMs": 1027,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4683,7 +4710,7 @@
       "2",
       "3b"
     ],
-    "durationMs": 1228,
+    "durationMs": 1036,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4719,8 +4746,29 @@
       "3b",
       "2"
     ],
-    "durationMs": 2040,
-    "wordMarks": [],
+    "durationMs": 2436,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 550
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3b",
+        "offsetMs": 990
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1980
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -4755,7 +4803,7 @@
       "3b",
       "2"
     ],
-    "durationMs": 1981,
+    "durationMs": 1935,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -4765,17 +4813,17 @@
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 250
+        "offsetMs": 370
       },
       {
         "tokenIndex": 2,
         "token": "3b",
-        "offsetMs": 670
+        "offsetMs": 660
       },
       {
         "tokenIndex": 3,
         "token": "2",
-        "offsetMs": 1540
+        "offsetMs": 1500
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -4848,7 +4896,7 @@
       "3b",
       "2"
     ],
-    "durationMs": 2075,
+    "durationMs": 1631,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4884,7 +4932,7 @@
       "3b",
       "3"
     ],
-    "durationMs": 2226,
+    "durationMs": 2807,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4956,7 +5004,7 @@
       "3b",
       "3"
     ],
-    "durationMs": 2960,
+    "durationMs": 1959,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -4992,7 +5040,7 @@
       "3b",
       "3"
     ],
-    "durationMs": 1934,
+    "durationMs": 1881,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5030,7 +5078,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3640,
+    "durationMs": 2350,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5068,7 +5116,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2302,
+    "durationMs": 2784,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5144,7 +5192,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2322,
+    "durationMs": 1773,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5188,7 +5236,7 @@
       "5",
       "2"
     ],
-    "durationMs": 4224,
+    "durationMs": 4447,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5276,7 +5324,7 @@
       "5",
       "2"
     ],
-    "durationMs": 4281,
+    "durationMs": 3001,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5320,7 +5368,7 @@
       "5",
       "2"
     ],
-    "durationMs": 8040,
+    "durationMs": 2858,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5358,34 +5406,8 @@
       "3",
       "2"
     ],
-    "durationMs": 5200,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 250
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 610
-      },
-      {
-        "tokenIndex": 2,
-        "token": "4",
-        "offsetMs": 1030
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 1970
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 2820
-      }
-    ],
+    "durationMs": 2489,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -5422,7 +5444,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2188,
+    "durationMs": 1820,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5460,7 +5482,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2079,
+    "durationMs": 1851,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5524,7 +5546,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1809,
+    "durationMs": 1793,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5566,7 +5588,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2951,
+    "durationMs": 4134,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5608,7 +5630,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3801,
+    "durationMs": 3133,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5650,7 +5672,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3072,
+    "durationMs": 3032,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5692,7 +5714,7 @@
       "3",
       "2"
     ],
-    "durationMs": 6760,
+    "durationMs": 3054,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5726,7 +5748,7 @@
       "2",
       "5"
     ],
-    "durationMs": 1431,
+    "durationMs": 1802,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5760,7 +5782,7 @@
       "2",
       "5"
     ],
-    "durationMs": 1522,
+    "durationMs": 1384,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5794,7 +5816,7 @@
       "2",
       "5"
     ],
-    "durationMs": 1230,
+    "durationMs": 1671,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5828,7 +5850,7 @@
       "2",
       "5"
     ],
-    "durationMs": 2800,
+    "durationMs": 1193,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5864,7 +5886,7 @@
       "5",
       "6"
     ],
-    "durationMs": 3044,
+    "durationMs": 1669,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5900,7 +5922,7 @@
       "5",
       "6"
     ],
-    "durationMs": 1912,
+    "durationMs": 2073,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5936,7 +5958,7 @@
       "5",
       "6"
     ],
-    "durationMs": 1731,
+    "durationMs": 1591,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -5972,7 +5994,7 @@
       "5",
       "6"
     ],
-    "durationMs": 1687,
+    "durationMs": 1828,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6010,7 +6032,7 @@
       "6",
       "3"
     ],
-    "durationMs": 3003,
+    "durationMs": 2947,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6048,7 +6070,7 @@
       "6",
       "3"
     ],
-    "durationMs": 2502,
+    "durationMs": 2637,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6164,7 +6186,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3565,
+    "durationMs": 2910,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6204,7 +6226,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4400,
+    "durationMs": 2884,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6244,7 +6266,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4640,
+    "durationMs": 2598,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6328,7 +6350,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3571,
+    "durationMs": 3788,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6372,7 +6394,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3374,
+    "durationMs": 3232,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6531,7 +6553,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4605,
+    "durationMs": 4135,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6571,7 +6593,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3134,
+    "durationMs": 3306,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6689,7 +6711,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2542,
+    "durationMs": 3242,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6727,7 +6749,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2897,
+    "durationMs": 2303,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6765,34 +6787,8 @@
       "3",
       "2"
     ],
-    "durationMs": 5120,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 90
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 510
-      },
-      {
-        "tokenIndex": 2,
-        "token": "6b",
-        "offsetMs": 960
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 3290
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 4350
-      }
-    ],
+    "durationMs": 2051,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -6863,8 +6859,24 @@
       "2",
       "circle"
     ],
-    "durationMs": 1092,
-    "wordMarks": [],
+    "durationMs": 1217,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 290
+      },
+      {
+        "tokenIndex": 2,
+        "token": "circle",
+        "offsetMs": 930
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -6897,7 +6909,7 @@
       "2",
       "circle"
     ],
-    "durationMs": 1154,
+    "durationMs": 979,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -6947,22 +6959,22 @@
       "2",
       "circle"
     ],
-    "durationMs": 1025,
+    "durationMs": 1178,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1",
-        "offsetMs": 20
+        "offsetMs": 30
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 340
+        "offsetMs": 400
       },
       {
         "tokenIndex": 2,
         "token": "circle",
-        "offsetMs": 700
+        "offsetMs": 790
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -6997,8 +7009,24 @@
       "2",
       "circle"
     ],
-    "durationMs": 918,
-    "wordMarks": [],
+    "durationMs": 1083,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 60
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 410
+      },
+      {
+        "tokenIndex": 2,
+        "token": "circle",
+        "offsetMs": 720
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -7047,8 +7075,24 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1640,
-    "wordMarks": [],
+    "durationMs": 1365,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 480
+      },
+      {
+        "tokenIndex": 2,
+        "token": "pivot",
+        "offsetMs": 1010
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -7081,24 +7125,8 @@
       "2",
       "pivot"
     ],
-    "durationMs": 1520,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 60
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2",
-        "offsetMs": 380
-      },
-      {
-        "tokenIndex": 2,
-        "token": "pivot",
-        "offsetMs": 980
-      }
-    ],
+    "durationMs": 1327,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -7277,7 +7305,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 2480,
+    "durationMs": 1020,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7309,7 +7337,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 950,
+    "durationMs": 992,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7341,7 +7369,7 @@
       "1",
       "2b"
     ],
-    "durationMs": 858,
+    "durationMs": 823,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7375,7 +7403,7 @@
       "2b",
       "3"
     ],
-    "durationMs": 1749,
+    "durationMs": 1458,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7409,7 +7437,7 @@
       "2b",
       "3"
     ],
-    "durationMs": 1889,
+    "durationMs": 1590,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7545,7 +7573,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2091,
+    "durationMs": 2278,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7581,7 +7609,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1855,
+    "durationMs": 1592,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7653,7 +7681,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1574,
+    "durationMs": 1450,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7729,7 +7757,7 @@
       "2",
       "5b"
     ],
-    "durationMs": 2490,
+    "durationMs": 2670,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7767,7 +7795,7 @@
       "2",
       "5b"
     ],
-    "durationMs": 4760,
+    "durationMs": 2992,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7805,7 +7833,7 @@
       "2",
       "5b"
     ],
-    "durationMs": 2139,
+    "durationMs": 2586,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -7845,7 +7873,7 @@
       "5b",
       "2"
     ],
-    "durationMs": 3004,
+    "durationMs": 3600,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8001,7 +8029,7 @@
       "3",
       "2b"
     ],
-    "durationMs": 2754,
+    "durationMs": 2518,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8037,7 +8065,7 @@
       "3",
       "2b"
     ],
-    "durationMs": 2440,
+    "durationMs": 2555,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8073,7 +8101,7 @@
       "3",
       "2b"
     ],
-    "durationMs": 1891,
+    "durationMs": 1871,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8109,7 +8137,7 @@
       "3",
       "2b"
     ],
-    "durationMs": 1934,
+    "durationMs": 1899,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8149,7 +8177,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3504,
+    "durationMs": 3574,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8189,7 +8217,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2887,
+    "durationMs": 3795,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8229,7 +8257,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3332,
+    "durationMs": 2624,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8269,39 +8297,8 @@
       "3",
       "2"
     ],
-    "durationMs": 6480,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 60
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 850
-      },
-      {
-        "tokenIndex": 2,
-        "token": "3b",
-        "offsetMs": 1930
-      },
-      {
-        "tokenIndex": 3,
-        "token": "2",
-        "offsetMs": 4780
-      },
-      {
-        "tokenIndex": 4,
-        "token": "3",
-        "offsetMs": 5000
-      },
-      {
-        "tokenIndex": 5,
-        "token": "2",
-        "offsetMs": 6000
-      }
-    ],
+    "durationMs": 2894,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -8332,19 +8329,8 @@
       "1",
       "3"
     ],
-    "durationMs": 1403,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 790
-      }
-    ],
+    "durationMs": 1669,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -8386,7 +8372,7 @@
       "1",
       "3"
     ],
-    "durationMs": 925,
+    "durationMs": 856,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8429,7 +8415,7 @@
       "1",
       "3"
     ],
-    "durationMs": 1640,
+    "durationMs": 1269,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8533,7 +8519,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2013,
+    "durationMs": 1749,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8583,7 +8569,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1430,
+    "durationMs": 1567,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8633,8 +8619,24 @@
       "3",
       "2"
     ],
-    "durationMs": 1050,
-    "wordMarks": [],
+    "durationMs": 1587,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 360
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1460
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -8683,7 +8685,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1052,
+    "durationMs": 853,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8719,7 +8721,7 @@
       "2",
       "3"
     ],
-    "durationMs": 2013,
+    "durationMs": 2304,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8755,7 +8757,7 @@
       "2",
       "3"
     ],
-    "durationMs": 2716,
+    "durationMs": 1682,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8791,7 +8793,7 @@
       "2",
       "3"
     ],
-    "durationMs": 2800,
+    "durationMs": 1159,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8848,7 +8850,7 @@
       "2",
       "3"
     ],
-    "durationMs": 939,
+    "durationMs": 1228,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -8886,7 +8888,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2066,
+    "durationMs": 2675,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9000,7 +9002,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1344,
+    "durationMs": 1546,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9042,7 +9044,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3733,
+    "durationMs": 3574,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9084,7 +9086,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3473,
+    "durationMs": 3129,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9218,7 +9220,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2600,
+    "durationMs": 1488,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9252,7 +9254,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1573,
+    "durationMs": 1531,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9286,7 +9288,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1130,
+    "durationMs": 1170,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9320,7 +9322,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2080,
+    "durationMs": 1052,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9352,7 +9354,7 @@
       "1",
       "4"
     ],
-    "durationMs": 734,
+    "durationMs": 820,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9384,7 +9386,7 @@
       "1",
       "4"
     ],
-    "durationMs": 810,
+    "durationMs": 1154,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9416,7 +9418,7 @@
       "1",
       "4"
     ],
-    "durationMs": 3280,
+    "durationMs": 949,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9459,7 +9461,7 @@
       "1",
       "4"
     ],
-    "durationMs": 939,
+    "durationMs": 670,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9493,7 +9495,7 @@
       "4",
       "2"
     ],
-    "durationMs": 2119,
+    "durationMs": 1537,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9543,7 +9545,7 @@
       "4",
       "2"
     ],
-    "durationMs": 1453,
+    "durationMs": 1039,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9577,7 +9579,7 @@
       "4",
       "2"
     ],
-    "durationMs": 1290,
+    "durationMs": 1263,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9663,7 +9665,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1696,
+    "durationMs": 1907,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9720,7 +9722,7 @@
       "2",
       "3"
     ],
-    "durationMs": 3400,
+    "durationMs": 2347,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9756,7 +9758,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1991,
+    "durationMs": 1486,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9792,7 +9794,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1687,
+    "durationMs": 1247,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9830,7 +9832,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2870,
+    "durationMs": 2400,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9868,7 +9870,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2238,
+    "durationMs": 2392,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -9906,7 +9908,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2238,
+    "durationMs": 2300,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10024,7 +10026,7 @@
       "6",
       "5"
     ],
-    "durationMs": 3578,
+    "durationMs": 3478,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10064,7 +10066,7 @@
       "6",
       "5"
     ],
-    "durationMs": 2517,
+    "durationMs": 2518,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10104,7 +10106,7 @@
       "6",
       "5"
     ],
-    "durationMs": 5240,
+    "durationMs": 2238,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10146,7 +10148,7 @@
       "5",
       "2"
     ],
-    "durationMs": 3237,
+    "durationMs": 5064,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10188,7 +10190,7 @@
       "5",
       "2"
     ],
-    "durationMs": 3014,
+    "durationMs": 3376,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10308,7 +10310,7 @@
       "5",
       "2"
     ],
-    "durationMs": 5640,
+    "durationMs": 2463,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10352,7 +10354,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3903,
+    "durationMs": 5590,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10484,49 +10486,8 @@
       "3",
       "2"
     ],
-    "durationMs": 5840,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 140
-      },
-      {
-        "tokenIndex": 1,
-        "token": "4",
-        "offsetMs": 480
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1080
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 1390
-      },
-      {
-        "tokenIndex": 4,
-        "token": "6",
-        "offsetMs": 2500
-      },
-      {
-        "tokenIndex": 5,
-        "token": "5",
-        "offsetMs": 3050
-      },
-      {
-        "tokenIndex": 6,
-        "token": "3",
-        "offsetMs": 4000
-      },
-      {
-        "tokenIndex": 7,
-        "token": "2",
-        "offsetMs": 5110
-      }
-    ],
+    "durationMs": 3338,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -10561,7 +10522,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2410,
+    "durationMs": 2516,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10597,7 +10558,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1659,
+    "durationMs": 2073,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10654,7 +10615,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1551,
+    "durationMs": 1791,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10690,8 +10651,29 @@
       "3",
       "2"
     ],
-    "durationMs": 1634,
-    "wordMarks": [],
+    "durationMs": 1740,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "4",
+        "offsetMs": 350
+      },
+      {
+        "tokenIndex": 2,
+        "token": "3",
+        "offsetMs": 1020
+      },
+      {
+        "tokenIndex": 3,
+        "token": "2",
+        "offsetMs": 1320
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -10776,7 +10758,7 @@
       "1",
       "5"
     ],
-    "durationMs": 1032,
+    "durationMs": 787,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -10912,7 +10894,7 @@
       "5",
       "2"
     ],
-    "durationMs": 1934,
+    "durationMs": 1679,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11132,7 +11114,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2578,
+    "durationMs": 2206,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11208,34 +11190,8 @@
       "3",
       "2"
     ],
-    "durationMs": 4400,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1",
-        "offsetMs": 90
-      },
-      {
-        "tokenIndex": 1,
-        "token": "5",
-        "offsetMs": 530
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 2950
-      },
-      {
-        "tokenIndex": 3,
-        "token": "3",
-        "offsetMs": 3340
-      },
-      {
-        "tokenIndex": 4,
-        "token": "2",
-        "offsetMs": 4020
-      }
-    ],
+    "durationMs": 1449,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -11274,7 +11230,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3389,
+    "durationMs": 3334,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11314,7 +11270,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3198,
+    "durationMs": 2991,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11480,7 +11436,7 @@
       "1",
       "6"
     ],
-    "durationMs": 1106,
+    "durationMs": 1452,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11523,7 +11479,7 @@
       "1",
       "6"
     ],
-    "durationMs": 930,
+    "durationMs": 870,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11589,7 +11545,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1696,
+    "durationMs": 1511,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11623,7 +11579,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1682,
+    "durationMs": 1430,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11707,7 +11663,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1387,
+    "durationMs": 1995,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11743,7 +11699,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1960,
+    "durationMs": 2516,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11779,7 +11735,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1636,
+    "durationMs": 2394,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11815,7 +11771,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1691,
+    "durationMs": 1711,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11851,7 +11807,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1352,
+    "durationMs": 1687,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -11931,7 +11887,7 @@
       "5",
       "2"
     ],
-    "durationMs": 2853,
+    "durationMs": 3278,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12011,7 +11967,7 @@
       "5",
       "2"
     ],
-    "durationMs": 2365,
+    "durationMs": 2424,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12045,8 +12001,24 @@
       "1",
       "2"
     ],
-    "durationMs": 1616,
-    "wordMarks": [],
+    "durationMs": 1889,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 850
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1360
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -12079,7 +12051,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1476,
+    "durationMs": 1522,
     "wordMarks": [
       {
         "tokenIndex": 0,
@@ -12089,12 +12061,12 @@
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 690
+        "offsetMs": 770
       },
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 1040
+        "offsetMs": 1150
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -12129,22 +12101,22 @@
       "1",
       "2"
     ],
-    "durationMs": 1586,
+    "durationMs": 1303,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "1b",
-        "offsetMs": 50
+        "offsetMs": 20
       },
       {
         "tokenIndex": 1,
         "token": "1",
-        "offsetMs": 800
+        "offsetMs": 440
       },
       {
         "tokenIndex": 2,
         "token": "2",
-        "offsetMs": 1190
+        "offsetMs": 960
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -12195,8 +12167,24 @@
       "1",
       "2"
     ],
-    "durationMs": 1196,
-    "wordMarks": [],
+    "durationMs": 1140,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 540
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 850
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -12237,7 +12225,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4067,
+    "durationMs": 3865,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12279,7 +12267,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3450,
+    "durationMs": 2858,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12357,7 +12345,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2766,
+    "durationMs": 2898,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12399,7 +12387,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2890,
+    "durationMs": 2649,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12437,7 +12425,7 @@
       "5",
       "2"
     ],
-    "durationMs": 2172,
+    "durationMs": 3336,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12513,7 +12501,7 @@
       "5",
       "2"
     ],
-    "durationMs": 2219,
+    "durationMs": 2365,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12680,8 +12668,19 @@
       "1b",
       "2"
     ],
-    "durationMs": 1090,
-    "wordMarks": [],
+    "durationMs": 1250,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 30
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 800
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -12773,7 +12772,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1554,
+    "durationMs": 1352,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12807,7 +12806,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1361,
+    "durationMs": 1430,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12891,7 +12890,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1211,
+    "durationMs": 804,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12927,7 +12926,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2172,
+    "durationMs": 1960,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -12963,7 +12962,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1758,
+    "durationMs": 1632,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13056,7 +13055,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1674,
+    "durationMs": 1581,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13096,7 +13095,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3000,
+    "durationMs": 3362,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13136,7 +13135,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2762,
+    "durationMs": 3349,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13176,7 +13175,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2692,
+    "durationMs": 1975,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13248,7 +13247,7 @@
       "1b",
       "2b"
     ],
-    "durationMs": 1828,
+    "durationMs": 1352,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13280,19 +13279,8 @@
       "1b",
       "2b"
     ],
-    "durationMs": 1452,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "1b",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "2b",
-        "offsetMs": 770
-      }
-    ],
+    "durationMs": 1315,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -13323,7 +13311,7 @@
       "1b",
       "2b"
     ],
-    "durationMs": 1050,
+    "durationMs": 1230,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13366,8 +13354,19 @@
       "1b",
       "2b"
     ],
-    "durationMs": 1387,
-    "wordMarks": [],
+    "durationMs": 1493,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "1b",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2b",
+        "offsetMs": 690
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -13400,7 +13399,7 @@
       "2b",
       "3"
     ],
-    "durationMs": 2807,
+    "durationMs": 1934,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13434,7 +13433,7 @@
       "2b",
       "3"
     ],
-    "durationMs": 1797,
+    "durationMs": 1888,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13502,7 +13501,7 @@
       "2b",
       "3"
     ],
-    "durationMs": 1581,
+    "durationMs": 1545,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13574,7 +13573,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1876,
+    "durationMs": 2337,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13610,7 +13609,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2155,
+    "durationMs": 1851,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13646,7 +13645,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1966,
+    "durationMs": 2042,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13682,7 +13681,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2727,
+    "durationMs": 3018,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13718,7 +13717,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2554,
+    "durationMs": 2509,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13754,7 +13753,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2572,
+    "durationMs": 2331,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13790,7 +13789,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1810,
+    "durationMs": 2181,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13830,7 +13829,7 @@
       "3",
       "2"
     ],
-    "durationMs": 3788,
+    "durationMs": 4897,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13870,7 +13869,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4683,
+    "durationMs": 3381,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13910,7 +13909,7 @@
       "3",
       "2"
     ],
-    "durationMs": 4112,
+    "durationMs": 2984,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13950,7 +13949,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2812,
+    "durationMs": 2392,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -13993,7 +13992,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1195,
+    "durationMs": 1667,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14036,7 +14035,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1244,
+    "durationMs": 1085,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14079,7 +14078,7 @@
       "2",
       "3"
     ],
-    "durationMs": 623,
+    "durationMs": 1321,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14172,7 +14171,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1881,
+    "durationMs": 1258,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14206,24 +14205,8 @@
       "3",
       "2"
     ],
-    "durationMs": 1430,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "2",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "3",
-        "offsetMs": 380
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 1020
-      }
-    ],
+    "durationMs": 1446,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -14256,7 +14239,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1228,
+    "durationMs": 1199,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14340,7 +14323,7 @@
       "3",
       "6"
     ],
-    "durationMs": 2025,
+    "durationMs": 2754,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14374,7 +14357,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1764,
+    "durationMs": 1590,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14424,7 +14407,7 @@
       "3",
       "6"
     ],
-    "durationMs": 970,
+    "durationMs": 1050,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14474,7 +14457,7 @@
       "3",
       "6"
     ],
-    "durationMs": 1017,
+    "durationMs": 999,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14508,7 +14491,7 @@
       "3b",
       "5"
     ],
-    "durationMs": 1802,
+    "durationMs": 1669,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14542,7 +14525,7 @@
       "3b",
       "5"
     ],
-    "durationMs": 1613,
+    "durationMs": 1806,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14576,7 +14559,7 @@
       "3b",
       "5"
     ],
-    "durationMs": 1152,
+    "durationMs": 1931,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14660,7 +14643,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1583,
+    "durationMs": 2091,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14694,7 +14677,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1935,
+    "durationMs": 1731,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14778,7 +14761,7 @@
       "6",
       "3"
     ],
-    "durationMs": 1616,
+    "durationMs": 1151,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14810,7 +14793,7 @@
       "3",
       "2"
     ],
-    "durationMs": 955,
+    "durationMs": 2410,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14853,8 +14836,19 @@
       "3",
       "2"
     ],
-    "durationMs": 948,
-    "wordMarks": [],
+    "durationMs": 1728,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "3",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 1080
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -14885,7 +14879,7 @@
       "3",
       "2"
     ],
-    "durationMs": 830,
+    "durationMs": 1200,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14917,7 +14911,7 @@
       "3",
       "2"
     ],
-    "durationMs": 734,
+    "durationMs": 752,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14951,7 +14945,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1535,
+    "durationMs": 1696,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -14985,7 +14979,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1650,
+    "durationMs": 2325,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15019,7 +15013,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1792,
+    "durationMs": 1891,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15103,7 +15097,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1616,
+    "durationMs": 1749,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15137,7 +15131,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1476,
+    "durationMs": 1315,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15187,7 +15181,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1651,
+    "durationMs": 1250,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15237,7 +15231,7 @@
       "2",
       "3"
     ],
-    "durationMs": 1140,
+    "durationMs": 847,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15271,7 +15265,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1378,
+    "durationMs": 1388,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15305,7 +15299,7 @@
       "1",
       "2"
     ],
-    "durationMs": 879,
+    "durationMs": 1108,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15355,7 +15349,7 @@
       "1",
       "2"
     ],
-    "durationMs": 890,
+    "durationMs": 1137,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15389,7 +15383,7 @@
       "1",
       "2"
     ],
-    "durationMs": 858,
+    "durationMs": 928,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15423,24 +15417,8 @@
       "1",
       "2"
     ],
-    "durationMs": 1458,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 30
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 570
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 880
-      }
-    ],
+    "durationMs": 1352,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -15523,7 +15501,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1531,
+    "durationMs": 1611,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15573,24 +15551,8 @@
       "1",
       "2"
     ],
-    "durationMs": 928,
-    "wordMarks": [
-      {
-        "tokenIndex": 0,
-        "token": "roll",
-        "offsetMs": 20
-      },
-      {
-        "tokenIndex": 1,
-        "token": "1",
-        "offsetMs": 300
-      },
-      {
-        "tokenIndex": 2,
-        "token": "2",
-        "offsetMs": 410
-      }
-    ],
+    "durationMs": 1065,
+    "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -15623,7 +15585,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1352,
+    "durationMs": 1590,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15657,7 +15619,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1085,
+    "durationMs": 1338,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15741,8 +15703,24 @@
       "3",
       "2"
     ],
-    "durationMs": 1387,
-    "wordMarks": [],
+    "durationMs": 1405,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "roll",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "3",
+        "offsetMs": 280
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 1000
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -15791,7 +15769,7 @@
       "1",
       "2"
     ],
-    "durationMs": 1881,
+    "durationMs": 1352,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -15825,8 +15803,24 @@
       "1",
       "2"
     ],
-    "durationMs": 1177,
-    "wordMarks": [],
+    "durationMs": 970,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 10
+      },
+      {
+        "tokenIndex": 1,
+        "token": "1",
+        "offsetMs": 330
+      },
+      {
+        "tokenIndex": 2,
+        "token": "2",
+        "offsetMs": 600
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -15952,8 +15946,19 @@
       "slip",
       "2"
     ],
-    "durationMs": 1643,
-    "wordMarks": [],
+    "durationMs": 1192,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 630
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -15995,8 +16000,19 @@
       "slip",
       "2"
     ],
-    "durationMs": 1776,
-    "wordMarks": [],
+    "durationMs": 684,
+    "wordMarks": [
+      {
+        "tokenIndex": 0,
+        "token": "slip",
+        "offsetMs": 20
+      },
+      {
+        "tokenIndex": 1,
+        "token": "2",
+        "offsetMs": 320
+      }
+    ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
   {
@@ -16081,17 +16097,17 @@
       "slip",
       "2"
     ],
-    "durationMs": 1228,
+    "durationMs": 1175,
     "wordMarks": [
       {
         "tokenIndex": 0,
         "token": "slip",
-        "offsetMs": 10
+        "offsetMs": 20
       },
       {
         "tokenIndex": 1,
         "token": "2",
-        "offsetMs": 890
+        "offsetMs": 830
       }
     ],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
@@ -16128,7 +16144,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2357,
+    "durationMs": 1643,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -16164,7 +16180,7 @@
       "3",
       "2"
     ],
-    "durationMs": 2164,
+    "durationMs": 1728,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   },
@@ -16236,7 +16252,7 @@
       "3",
       "2"
     ],
-    "durationMs": 1369,
+    "durationMs": 1634,
     "wordMarks": [],
     "renderer": "chatterbox-cornerman-theatrical-broadcast"
   }
