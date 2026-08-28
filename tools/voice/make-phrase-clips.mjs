@@ -165,14 +165,15 @@ function measureWordOnsets(path, expectedWords) {
  * Envelope-based word onset+offset detection.
  *
  * Returns `[{startMs, endMs}, ...]` when the detected count matches
- * `expectedWords`; `null` otherwise. Same detector as `measureWordOnsets`
- * but keeps the fall-off frame too, so the cadence lab can measure
- * end-of-word → ring-fire offsets (Kyle's precise sync bar).
- *
- * Kept in a single walk so onsets and offsets always come from the same
- * envelope pass — no risk of one going stale relative to the other.
+ * `expectedWords`; `null` otherwise. `opts` tunes the two knobs:
+ *   thresholdRatio (default 0.12): peak fraction that counts as voiced
+ *   minGapWindows  (default 5)   : consecutive quiet windows that end a word
+ * Relaxing both (0.08, 3) rescues clips where the coach ran words together
+ * — the "two-pass envelope" of the scalable cadence rail: strict first,
+ * relaxed on miss.
  */
-function measureWordSpans(path, expectedWords) {
+function measureWordSpans(path, expectedWords, opts = {}) {
+  const { thresholdRatio = 0.12, minGapWindows = 5 } = opts
   const wav = readWav(path)
   if (!wav) return null
   const { buffer, fmt, data, bytesPerFrame, frames } = wav
@@ -193,8 +194,7 @@ function measureWordSpans(path, expectedWords) {
   }
 
   const loudest = envelope.reduce((m, e) => Math.max(m, e.peak), 0)
-  const threshold = loudest * 0.12
-  const minGapWindows = 5
+  const threshold = loudest * thresholdRatio
 
   const spans = []
   let inWord = false
@@ -584,7 +584,22 @@ for (const job of jobs) {
     (t) => spokenFor(t, { vocabulary: job.vocabulary }).split(' ').length,
   )
   const expectedWords = wordCounts.reduce((a, b) => a + b, 0)
-  const spans = measureWordSpans(job.wav, expectedWords) ?? []
+
+  // Two-pass envelope: strict first (Kyle's original detector), then
+  // relaxed on miss. The relaxed pass rescues clips where the coach ran
+  // words together — a longer minGap forgives the join.
+  let spans = measureWordSpans(job.wav, expectedWords) ?? []
+  let source = spans.length === expectedWords ? 'envelope' : 'none'
+  if (source === 'none') {
+    const relaxed = measureWordSpans(job.wav, expectedWords, {
+      thresholdRatio: 0.08,
+      minGapWindows: 3,
+    })
+    if (relaxed) {
+      spans = relaxed
+      source = 'envelope-relaxed'
+    }
+  }
   const wordMarks = []
   let wordIndex = 0
   for (let t = 0; t < job.tokens.length; t += 1) {
@@ -615,11 +630,79 @@ for (const job of jobs) {
     tokens: job.tokens,
     durationMs,
     wordMarks,
+    wordMarksSource: wordMarks.length === job.tokens.length ? source : 'none',
     renderer: RENDERER,
   })
 
   const kb = (statSync(job.wav).size / 1024).toFixed(0)
   console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB`)
+}
+
+// Whisper backfill (source: 'whisper') for entries the envelope couldn't
+// resolve. Runs once per manifest emission, skipped for subset renders
+// (which don't write the manifest anyway). The rail depends on populated
+// wordMarks; a clip that fails all three sources is flagged and Kyle
+// investigates. --skip-whisper-backfill bypasses the pass entirely for
+// fast iteration.
+const skipWhisperBackfill = process.argv.includes('--skip-whisper-backfill')
+if (!skipWhisperBackfill && !onlyArg && !onlyKeys && !missingOnly) {
+  const needsWhisper = index.filter((e) => e.wordMarksSource === 'none')
+  if (needsWhisper.length > 0) {
+    console.log(`\nWhisper word-onset backfill for ${needsWhisper.length} clips…`)
+    try {
+      const CHATTERBOX_PYTHON = process.env.CHATTERBOX_PYTHON ??
+        'F:/voice-tools/venv/Scripts/python.exe'
+      const jobs = needsWhisper.map((e) => ({
+        cueId: e.cueId,
+        wav: join(OUT_ROOT, e.file),
+        tokens: e.tokens,
+      }))
+      const raw = execFileSync(
+        CHATTERBOX_PYTHON,
+        [join('tools', 'voice', 'whisper_word_spans.py')],
+        { input: JSON.stringify(jobs), encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 },
+      )
+      let filled = 0
+      let stillMissing = 0
+      const byId = new Map(index.map((e) => [e.cueId, e]))
+      for (const line of raw.split(/\r?\n/)) {
+        if (!line.trim()) continue
+        let result
+        try { result = JSON.parse(line) } catch { continue }
+        const entry = byId.get(result.cueId)
+        if (!entry) continue
+        if (!result.ok || !Array.isArray(result.onsets)) {
+          stillMissing += 1
+          continue
+        }
+        entry.wordMarks = result.onsets.map((onset, t) => ({
+          tokenIndex: t,
+          token: entry.tokens[t],
+          offsetMs: Math.round(onset),
+          endOffsetMs: Math.round(result.ends[t]),
+        }))
+        entry.wordMarksSource = 'whisper'
+        filled += 1
+      }
+      console.log(`  filled ${filled}/${needsWhisper.length} via Whisper; ${stillMissing} still 'none'`)
+    } catch (err) {
+      console.warn(`  Whisper backfill skipped: ${err.message.split('\n')[0]}`)
+    }
+  }
+}
+
+// Rail-coverage report — the "how mechanically scalable is the library"
+// number Kyle asked for. A clip without wordMarks can't feed the ring
+// cadence rail and falls back to the beat grid.
+{
+  const bySource = { envelope: 0, 'envelope-relaxed': 0, whisper: 0, none: 0 }
+  for (const e of index) bySource[e.wordMarksSource ?? 'none'] = (bySource[e.wordMarksSource ?? 'none'] ?? 0) + 1
+  const populated = index.length - bySource.none
+  console.log(
+    `\nwordMarks coverage: ${populated}/${index.length} clips ` +
+      `(envelope ${bySource.envelope}, relaxed ${bySource['envelope-relaxed']}, ` +
+      `whisper ${bySource.whisper}, none ${bySource.none})`,
+  )
 }
 
 // A `--only`/`--only-keys` render is a subset: writing the index or the app
@@ -685,6 +768,12 @@ const lines = [
   '  endOffsetMs?: number',
   '}',
   '',
+  '/** Where the wordMarks came from. `envelope` is the strict envelope',
+  " * detector's find; `envelope-relaxed` used softer thresholds; `whisper`",
+  " * used ASR word_timestamps as the last resort. `none` means the clip",
+  " * shipped without wordMarks — the rail falls back to the beat grid.*/",
+  "export type WordMarksSource = 'envelope' | 'envelope-relaxed' | 'whisper' | 'none'",
+  '',
   'export interface PhraseAsset {',
   '  cueId: string',
   '  /** Which voice this clip is spoken in. See tools/voice/personas.mjs. */',
@@ -696,6 +785,8 @@ const lines = [
   '  tokens: string[]',
   '  durationMs: number',
   '  wordMarks: PhraseWordMark[]',
+  '  /** How the wordMarks were sourced — see WordMarksSource. */',
+  '  wordMarksSource?: WordMarksSource',
   '  /**',
   '   * Cadence-lab per-clip placement shift (ms). Positive = start the clip',
   '   * EARLIER (fixes a clip whose spoken token landed after its ring);',
@@ -728,6 +819,7 @@ for (const entry of index) {
     `    tokens: ${JSON.stringify(entry.tokens)},`,
     `    durationMs: ${entry.durationMs},`,
     `    wordMarks: ${JSON.stringify(entry.wordMarks)},`,
+    `    wordMarksSource: ${JSON.stringify(entry.wordMarksSource ?? 'none')},`,
     ...(shift !== undefined ? [`    startPadMs: ${shift},`] : []),
     `    module: require('../../../assets/voice/phrases/${entry.persona}/${entry.file}'),`,
     `    renderer: ${JSON.stringify(entry.renderer)},`,

@@ -134,6 +134,16 @@ export interface CueInstance {
    * reservation.
    */
   setupCallout?: SetupCallout
+  /**
+   * Scalable cadence rail (2026-08-28): when a phrase clip drives this
+   * cue's timing, the compiler stamps per-token ring-fire offsets here so
+   * ring N lights up in the same rhythm as the coach's spoken words —
+   * ring N fires K ms after word N's audible envelope ends. Offsets are
+   * relative to `scheduledStartMs`, same reference as `tokenOffsetsMs`.
+   * Absent means the cue falls back to the beat-grid `tokenOffsetsMs`
+   * (per-word calls, missing wordMarks, or non-phrase mode).
+   */
+  phraseTokenTimesMs?: number[]
 }
 
 export interface RoundTimeline {

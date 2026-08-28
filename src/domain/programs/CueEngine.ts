@@ -457,9 +457,16 @@ export class CueEngine {
     // tokens of a truncated cue that a 10ms tick never reaches, and the
     // event stream would depend on frame rate.
     const until = Math.min(t, cue.windowEndMs)
+    // Scalable cadence rail (2026-08-28): when a phrase clip drives this
+    // cue, `phraseTokenTimesMs` overrides the beat-grid `tokenOffsetsMs`
+    // for ring-fire purposes only. The physical throw window
+    // (`windowEndMs`) and cue scoring stay on the beat grid — this is a
+    // DISPLAY concern; the athlete still throws when they hear the coach.
     cue.tokenOffsetsMs.forEach((offset, tokenIndex) => {
       if (runtime.firedTokens.has(tokenIndex)) return
-      if (until < cue.scheduledStartMs + offset) return
+      const railOffset = cue.phraseTokenTimesMs?.[tokenIndex]
+      const effective = railOffset ?? offset
+      if (until < cue.scheduledStartMs + effective) return
       runtime.firedTokens.add(tokenIndex)
       this.publish({
         type: 'token-due',

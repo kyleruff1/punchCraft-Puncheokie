@@ -260,6 +260,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // starts moving the day the audit's report authors clip-shifts.json.
         phraseShiftFor: (combination, cadence) =>
           findPhraseAsset(combination, cadence, vocabulary, 'work')?.startPadMs,
+        // Scalable cadence rail: per-token word onsets + ends from the
+        // manifest. When present for every token, RhythmMap places the
+        // clip so word 0 ends RAIL_K_MS before ring 0 and drives rings
+        // 1+ from the clip's inter-word spacing. Clips without full
+        // wordMarks fall back to the beat grid unchanged.
+        wordMarksFor: (combination, cadence) => {
+          const asset = findPhraseAsset(combination, cadence, vocabulary, 'work')
+          if (!asset || asset.wordMarks.length === 0) return undefined
+          return asset.wordMarks.map((m) => ({
+            tokenIndex: m.tokenIndex,
+            offsetMs: m.offsetMs,
+            endOffsetMs: m.endOffsetMs,
+          }))
+        },
         encouragement:
           workout.recipe.enabledCoachCalls.length > 0 && workout.recipe.voiceMode !== 'off',
         // Set Ceremonies: measured sentence lengths from the generated

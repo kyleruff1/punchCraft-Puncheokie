@@ -204,6 +204,22 @@ export interface RoundRhythmMap {
   voicedEvents: number[]
 }
 
+/** Per-token word timing from the phrase manifest, for the cadence rail. */
+export interface WordMark {
+  tokenIndex: number
+  offsetMs: number
+  endOffsetMs?: number
+}
+
+/**
+ * The scalable cadence rail's constant: ring N fires this long after
+ * word N's audible envelope ends, giving both vocabularies a predictable
+ * proportional lag between the coach's voice and the ring animation.
+ * A single project constant so cross-vocab consistency is a property of
+ * the rail, not of per-vocab tuning.
+ */
+export const RAIL_K_MS = 120
+
 export interface CompileOptions {
   /** The workout's cadence profile — the default when a cue names none. */
   cadence: string
@@ -223,6 +239,16 @@ export interface CompileOptions {
    * Absent or 0 = shipped behaviour unchanged.
    */
   phraseShiftFor?: (combination: string, cadence: string) => number | undefined
+  /**
+   * Scalable cadence rail (2026-08-28): per-token word onsets and ends
+   * (ms into the clip) that let the compiler derive ring-fire times from
+   * the coach's actual word timing instead of the beat grid. When
+   * provided AND every token has both `offsetMs` and `endOffsetMs`, the
+   * clip is placed so word 0's END lands `RAIL_K_MS` before ring 0, and
+   * rings 1+ follow the clip's inter-word spacing. Absent OR gap in the
+   * marks → beat-grid fallback, byte-identical to the pre-rail behaviour.
+   */
+  wordMarksFor?: (combination: string, cadence: string) => WordMark[] | undefined
   leadTimes?: AnnouncerLeadTimes
   /**
    * Schedule encouragement into voiced gaps longer than the grid (M4).
@@ -280,11 +306,52 @@ export function compileRoundRhythmMap(
     } else {
       // A phrase is placed to FINISH by the ready tone; when it cannot, it
       // starts at the preview and runs slightly long — reported by the
-      // executor, never silent (doc §18 rule, unchanged).
+      // executor, never silent (doc §18 rule, unchanged). The scalable
+      // rail refines this: when the clip has per-token wordMarks with
+      // end-of-word times, the clip is placed so word 0 ends RAIL_K_MS
+      // before ring 0, and rings 1+ follow the clip's inter-word spacing
+      // via phraseTokenTimesMs. Without wordMarks the old placement holds
+      // and ring cadence stays on the beat grid.
+      const marks = opts.wordMarksFor?.(combination, cadence)
+      const railMarks = marks && marks.length === cue.tokens.length &&
+        marks.every((m) => typeof m.endOffsetMs === 'number')
+        ? marks
+        : null
+
       const finishBy = cue.scheduledStartMs - leadTimes.readyToneMs
       const phraseShift = opts.phraseShiftFor?.(combination, cadence) ?? 0
-      const startAt = Math.max(cue.previewAt, finishBy - lengthMs - phraseShift)
+      const railWord0End = railMarks?.[0]?.endOffsetMs
+      const railStartAt =
+        railMarks && railWord0End !== undefined
+          ? cue.scheduledStartMs - RAIL_K_MS - railWord0End
+          : null
+      // Rail placement respects the preview floor same as the classic rule.
+      const railStartFits = railStartAt !== null && railStartAt >= cue.previewAt
+      const startAt = railStartFits
+        ? (railStartAt as number)
+        : Math.max(cue.previewAt, finishBy - lengthMs - phraseShift)
       callStartAt = startAt
+      // Stamp per-token ring times on the cue when the rail is active.
+      // Ring N fires (word[N] end wall time) + RAIL_K_MS, expressed as an
+      // offset from cue.scheduledStartMs (same reference as tokenOffsetsMs).
+      if (railMarks && railStartFits) {
+        const railStart = railStartAt as number
+        const times: number[] = []
+        for (let i = 0; i < railMarks.length; i += 1) {
+          const mark = railMarks[i]
+          const end = mark?.endOffsetMs
+          if (end === undefined) {
+            // Should be unreachable per the `railMarks` guard, but be
+            // defensive: if any token is missing an end, fall back to
+            // the beat grid rather than stamping a partial override.
+            cue.phraseTokenTimesMs = undefined
+            break
+          }
+          const wordEndWall = railStart + end
+          times.push(Math.round(wordEndWall + RAIL_K_MS - cue.scheduledStartMs))
+        }
+        if (times.length === railMarks.length) cue.phraseTokenTimesMs = times
+      }
       // Repeat thinning: a same-combination rep that lands while the
       // previous phrase is still sounding is NOT re-called. Ceremony
       // cues are exempt — their placement anchors on this call.

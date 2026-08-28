@@ -88,6 +88,11 @@ REPORT_PATH = os.path.join(REPORT_DIR, "cadence-audit.json")
 
 AUDIBLE_DRIFT_MS = 80  # Kyle's ear-check bar.
 
+# The rail's constant: ring N fires this long after word N's audible
+# envelope ends. Tunable; kept in one place so the audit's rail-mode
+# simulation and the runtime placement math agree. See rail_default_K().
+DEFAULT_RAIL_K_MS = 120
+
 # ------------------------------------------------------------- manifest parse
 
 _ENTRY_RE = re.compile(
@@ -407,11 +412,23 @@ def score(
 
 # --------------------------------------------------------------- main
 
+def rail_default_K() -> int:
+    return DEFAULT_RAIL_K_MS
+
+
 def main() -> int:
     only_arg = next((a for a in sys.argv[1:] if a.startswith("--only=")), None)
     only = set(only_arg[len("--only="):].split(",")) if only_arg else None
     limit_arg = next((a for a in sys.argv[1:] if a.startswith("--limit=")), None)
     limit = int(limit_arg[len("--limit="):]) if limit_arg else None
+    rail_arg = next((a for a in sys.argv[1:] if a.startswith("--rail")), None)
+    rail_mode = rail_arg is not None
+    rail_k = DEFAULT_RAIL_K_MS
+    if rail_arg and "=" in rail_arg:
+        try:
+            rail_k = int(rail_arg.split("=", 1)[1])
+        except ValueError:
+            pass
 
     entries = parse_manifest()
     if only is not None:
@@ -544,6 +561,30 @@ def main() -> int:
     for r in with_end[:25]:
         print(f"  spread={r['spreadEndToRingMs']:>6.1f}ms  mean={r['meanEndToRingMs']:>6.1f}ms  "
               f"{r['cueId']:<40}  endToRing={r['endToRingMs']}  ({r['source']})")
+
+    if rail_mode:
+        # The scalable rail: ring N fires K ms after word N's envelope ends.
+        # By construction, endToRingMs[N] = K for all N in every clip that
+        # has populated wordMarks. Clips without wordMarks fall back to the
+        # beat grid and keep their pre-rail drift.
+        rail_eligible = with_end  # Every clip with per-token endOffsetMs.
+        rail_ineligible = [r for r in measured if r.get("spreadEndToRingMs") is None]
+        eligible_ratio = len(rail_eligible) / len(measured) if measured else 0.0
+        # For rail-eligible clips: perfect uniformity by construction — all
+        # tokens end K ms before their ring. We report this to make the
+        # win-picture explicit; the *actual* audit-under-rail is trivial.
+        print(f"\n=== rail-mode simulation (K = {rail_k} ms) ===")
+        print(f"eligible (has endOffsetMs): {len(rail_eligible)}/{len(measured)} "
+              f"= {eligible_ratio * 100:.1f}%")
+        print(f"under the rail, eligible clips have endToRingMs = {rail_k} ms for every token "
+              f"(spread = 0, stdDev = 0) by construction.")
+        print(f"ineligible clips ({len(rail_ineligible)}) fall back to the beat grid — their "
+              "current drift is the ledger above.")
+        for v in ("numbers", "techniques"):
+            m = sum(1 for r in measured if r["vocabulary"] == v)
+            e = sum(1 for r in rail_eligible if r["vocabulary"] == v)
+            if m:
+                print(f"  {v}: {e}/{m} eligible = {e/m*100:.1f}%")
 
     print(f"\nreport -> {REPORT_PATH}")
     return 1 if unavailable else 0
