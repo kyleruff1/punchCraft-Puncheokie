@@ -50,7 +50,7 @@ import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
 import { RecoveryPlayer } from '@audio/RecoveryPlayer'
-import { CALLOUT_CLIPS, THEME_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { CALLOUT_CLIPS, themeClipFor } from '@audio/voiceAssets/calloutManifest'
 import { INTRO_SEGMENTS } from '@audio/voiceAssets/introManifest'
 import { RECOVERY_SCRIPTS } from '@audio/voiceAssets/recoveryManifest'
 import { RoundWarningPlayer } from '@audio/RoundWarningPlayer'
@@ -317,13 +317,20 @@ export default function LiveScreen(): React.JSX.Element {
         return INTRO_SEGMENTS[key]?.durationMs ?? 0
       }),
     )
-    const themeMax = Math.max(0, ...THEME_CLIPS.map((t) => t.durationMs))
     const maxTotalMsFor = (restIndex: number): number => {
       const upcoming = workout.schedule[restIndex + 1]
       const coreKey = upcoming ? `warn-round-${restIndex + 2}` : ''
       const coreMs = INTRO_SEGMENTS[coreKey]?.durationMs ?? 0
-      // openerMax + 350 breath + themeMax + 350 breath + core + 400 slack + 500 margin.
-      const warnWorstMs = openerMax + 350 + themeMax + 350 + coreMs + 400 + 500
+      // The ACTUAL upcoming theme's clip, not the corpus-wide worst case:
+      // the theme is known at plan time (it is the very value handed to
+      // warnRef.prepare below), and budgeting the 8.7s outlier clip for
+      // every rest starved the fit filter until exactly one recovery
+      // script (R13) survived — every rest of every workout played the
+      // same walkthrough, with the other twelve scripts unreachable.
+      const themeMs =
+        upcoming?.theme === undefined ? 0 : themeClipFor(upcoming.theme)?.durationMs ?? 0
+      // openerMax + 350 breath + theme + 350 breath + core + 400 slack + 500 margin.
+      const warnWorstMs = openerMax + 350 + themeMs + 350 + coreMs + 400 + 500
       const restMs = upcoming ? workout.schedule[restIndex]?.restAfterMs ?? 0 : 0
       return Math.max(0, restMs - 1_000 - warnWorstMs)
     }
