@@ -26,6 +26,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
@@ -442,6 +443,12 @@ export default function LiveScreen(): React.JSX.Element {
 
   const roundGoal = workout.schedule[Math.max(0, live.roundIndex)]?.targetPunches
 
+  // The tab bar is hidden on this screen, so nothing holds the content off
+  // the Android system bar any more — without this inset the entire
+  // control strip (Stop/Pause/Skip/Repeat) laid out UNDER the taskbar:
+  // present in the accessibility tree, invisible on the glass, untappable.
+  const insets = useSafeAreaInsets()
+
   // Rest presentation (M33-04). Elapsed is derived from the remaining time
   // the session clock already publishes — the sub-phases read the same
   // monotonic timer as the rest itself, never a timer of their own (D6).
@@ -451,7 +458,7 @@ export default function LiveScreen(): React.JSX.Element {
   const preview = nextRoundPreview(workout.schedule[live.roundIndex + 1], live.stance)
 
   return (
-    <View style={styles.root} testID="live-screen">
+    <View style={[styles.root, { paddingBottom: insets.bottom }]} testID="live-screen">
       {/* Header hidden: the zones are the chrome, and a nav bar would eat
           the width the cue stage needs (doc §19). */}
       <Stack.Screen options={{ headerShown: false }} />

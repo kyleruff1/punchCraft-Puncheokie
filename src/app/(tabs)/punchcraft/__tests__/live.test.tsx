@@ -13,6 +13,7 @@
 import React from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { StyleSheet } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { readFileSync } from 'node:fs'
 
 // The screen now builds a `VoiceOutputExpo`, which imports the native audio
@@ -79,10 +80,21 @@ import type { LiveState } from '@state/useWorkoutStore'
 
 const mounted: ReactTestRenderer[] = []
 
+// The screen reads the bottom safe-area inset (the control strip must
+// clear the Android taskbar), so renders need a provider with metrics.
+const SAFE_AREA_METRICS = {
+  frame: { x: 0, y: 0, width: 2000, height: 1200 },
+  insets: { top: 0, left: 0, right: 0, bottom: 0 },
+}
+
 function render(): ReactTestRenderer {
   let tree!: ReactTestRenderer
   act(() => {
-    tree = create(<LiveScreen />)
+    tree = create(
+      <SafeAreaProvider initialMetrics={SAFE_AREA_METRICS}>
+        <LiveScreen />
+      </SafeAreaProvider>,
+    )
   })
   mounted.push(tree)
   return tree
