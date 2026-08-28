@@ -356,13 +356,27 @@ if (onlyKeys) {
  * Same words, same fit; the scaling is what makes the window a promise
  * about the file the athlete hears rather than one about the intermediate.
  */
+/**
+ * The tempo-fit rate for a job, including the per-key override multiplier.
+ *
+ * `override.tempo` < 1 compresses LESS: the token audit proved the 1.35×
+ * fit crushes the "bee" syllable out of the b-family clips — the raw
+ * takes passed the exact ASR gate, the fitted files transcribe without
+ * it, and Kyle heard exactly that hole live. A relaxed clip runs longer
+ * in final terms (the announce placement simply starts it earlier), and
+ * the final-bounds window still holds as the promise.
+ */
+function fitRateForJob(job) {
+  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION * (job.override?.tempo ?? 1)
+  return Number.isFinite(rate) && rate > 0 ? rate : 1
+}
+
 function chatterboxBoundsForJob(job) {
   const base = finalBoundsMs(job.spokenWordCount)
   // Overrides speak in final-file terms, same as the base window.
   const minMs = job.override?.minMs ?? base.minMs
   const maxMs = job.override?.maxMs ?? base.maxMs
-  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
-  const scale = Number.isFinite(rate) && rate > 0 ? rate : 1
+  const scale = fitRateForJob(job)
   return {
     minDurationMs: Math.round(minMs * scale),
     maxDurationMs: Math.round(maxMs * scale),
@@ -451,8 +465,8 @@ if (ENGINE === 'chatterbox') {
   console.log('Fitting tempo to the cue windows…')
   for (const job of jobs) {
     if (!existsSync(job.wav)) continue
-    const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION
-    if (!Number.isFinite(rate) || Math.abs(rate - 1) < 0.02) continue
+    const rate = fitRateForJob(job)
+    if (Math.abs(rate - 1) < 0.02) continue
     const temp = `${job.wav}.t.wav`
     try {
       execFileSync(

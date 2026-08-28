@@ -81,6 +81,96 @@
   "1b-1-2.sprint.numbers.push": {
     "cfgWeight": 0.6,
     "exaggeration": 0.75,
-    "attempts": 24
-  }
+    "attempts": 20,
+    "tempo": 0.7,
+    "text": "One, bee, one... Two!"
+  },
+  "1-1-2-3b-3-2-5-2.sprint.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1-2-3b-3-2.pressure.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1-2-3b-3-2.steady.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1-2b-3-2.sprint.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1-2b-3.pressure.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1-2b-3.sprint.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One two, bee, three!"
+  },
+  "1-2b-3.steady.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One two, bee, three!"
+  },
+  "1-2b-3.technical.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One two, bee, three!"
+  },
+  "1b-1-2.steady.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-1-2.technical.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-2-3-2.pressure.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One, bee, two... Three two!"
+  },
+  "1b-2-3-2.sprint.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-2-3-2.steady.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-2-3-2.technical.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-2-3.steady.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "1b-2.pressure.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One, bee, two!"
+  },
+  "1b-2.steady.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One, bee, two!"
+  },
+  "1b-2.technical.numbers.push": {
+    "tempo": 0.7,
+    "attempts": 20,
+    "text": "One, bee, two!"
+  },
+  "slip-2-3-2.steady.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "slip-2.pressure.numbers.push": {
+    "tempo": 0.8,
+    "attempts": 16
+  },
+  "_comment_tempo": "tempo overrides (2026-08-27): the 1.35x fit crushes the bee syllable out of b-family clips and smears slip; these keys ship 20% less compressed. Any future batch re-rendering them inherits this via the override."
 }
