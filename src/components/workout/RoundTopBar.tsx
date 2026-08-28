@@ -12,7 +12,7 @@
  * Presentational only — no store, engine or clock imports.
  */
 import React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { colors, stateColors } from '@/theme/colors'
 import type { ConnectionState } from '@ble/bleTypes'
@@ -33,6 +33,14 @@ export interface RoundTopBarProps {
   connection: { left: LiveConnectionState; right: LiveConnectionState }
   batteryPct?: { left?: number; right?: number }
   degraded?: string
+  /**
+   * When provided, the glove chips become a pressable reconnect
+   * affordance. The live screen passes it only in the idle phase: the
+   * auto-retry budget can go dormant while the athlete is still waking
+   * trackers up, and without this the only re-arm was leaving the screen.
+   * Tapping the chips is the "manual push" that re-arms the chase.
+   */
+  onReconnectPress?: () => void
 }
 
 const STANCE_LABEL: Record<Stance, string> = {
@@ -100,8 +108,31 @@ function GloveChip(props: {
 }
 
 export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
-  const { roundIndex, roundCount, roundRemainingMs, stance, connection, batteryPct, degraded } =
-    props
+  const {
+    roundIndex,
+    roundCount,
+    roundRemainingMs,
+    stance,
+    connection,
+    batteryPct,
+    degraded,
+    onReconnectPress,
+  } = props
+
+  const gloves = (
+    <>
+      <GloveChip
+        hand="L"
+        state={connection.left}
+        {...(batteryPct?.left === undefined ? {} : { batteryPct: batteryPct.left })}
+      />
+      <GloveChip
+        hand="R"
+        state={connection.right}
+        {...(batteryPct?.right === undefined ? {} : { batteryPct: batteryPct.right })}
+      />
+    </>
+  )
 
   return (
     <View style={styles.root} testID="round-top-bar">
@@ -118,18 +149,19 @@ export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
           {STANCE_LABEL[stance]}
         </Text>
 
-        <View style={styles.gloves}>
-          <GloveChip
-            hand="L"
-            state={connection.left}
-            {...(batteryPct?.left === undefined ? {} : { batteryPct: batteryPct.left })}
-          />
-          <GloveChip
-            hand="R"
-            state={connection.right}
-            {...(batteryPct?.right === undefined ? {} : { batteryPct: batteryPct.right })}
-          />
-        </View>
+        {onReconnectPress ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Reconnect trackers"
+            onPress={onReconnectPress}
+            style={styles.gloves}
+            testID="glove-reconnect"
+          >
+            {gloves}
+          </Pressable>
+        ) : (
+          <View style={styles.gloves}>{gloves}</View>
+        )}
       </View>
 
       {degraded ? (

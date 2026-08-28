@@ -30,7 +30,7 @@ import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
 import { TAB_BAR_STYLE } from '../_layout'
-import { setAutoRetrySuspended } from '@ble/autoConnectTrackers'
+import { armAutoRetry, setAutoRetrySuspended } from '@ble/autoConnectTrackers'
 import { ActionButton } from '@components/branding/ActionButton'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
@@ -461,6 +461,18 @@ export default function LiveScreen(): React.JSX.Element {
           stance={live.stance}
           connection={connection}
           {...(live.degraded ? { degraded: live.degraded } : {})}
+          // Idle only: tapping the glove chips re-arms the auto-connect
+          // chase with a fresh budget — the manual push Kyle's retry rule
+          // requires once the budget goes dormant, reachable without
+          // leaving the screen. Mid-workout the chips stay display-only
+          // (no radio churn while punches stream).
+          {...(live.phase === 'idle'
+            ? {
+                onReconnectPress: () => {
+                  void armAutoRetry({ timeoutMs: 10_000 })
+                },
+              }
+            : {})}
         />
       </View>
 
