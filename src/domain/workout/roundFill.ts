@@ -486,7 +486,9 @@ export function fillScoredRound(
         phasePunches(0.14),
         1,
         undefined,
-        variation ? calloutFor('co-downstairs') : undefined,
+        // Thinned (Kyle): the body call-out is occasional flavor now,
+        // not an every-round announcement.
+        variation && calloutRng.chance(0.35) ? calloutFor('co-downstairs') : undefined,
       )
     }
 
@@ -502,7 +504,9 @@ export function fillScoredRound(
         const spec = commandSpecFor(nextId(), rng.pick(pool), gap)
         spec.cadence = shiftCadence(recipe.cadenceProfile, -1)
         if (!movementAnnounced) {
-          const callout = calloutFor('co-movement')
+          // Thinned (Kyle): movement gets a call-out about a third of the
+          // time — the band-down cadence already signals the change.
+          const callout = calloutRng.chance(0.35) ? calloutFor('co-movement') : undefined
           if (callout !== undefined) {
             spec.leadInBeats = msToBeats(callout.reserveMs, bpm)
             spec.setupCallout = callout
