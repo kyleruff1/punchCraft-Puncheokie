@@ -28,7 +28,7 @@ import sys
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from asr_match import FILLER_VOWELS, normalize  # noqa: E402
+from asr_match import FILLER_VOWELS, canonical_tokens  # noqa: E402
 
 # Same decode settings as the render gate (chatterbox_render.py) — a
 # different prompt or temperature here would make the audit disagree with
@@ -42,25 +42,9 @@ ASR_PROMPT = (
 REPORT_DIR = os.path.join("tools", "analysis", "reports")
 REPORT_PATH = os.path.join(REPORT_DIR, "phrase-token-audit.json")
 
-_FUSED_B = re.compile(r"^([1-6])b$")
-
-
-def canonical(text: str) -> list[str]:
-    """asr_match's normalization, plus the fused-notation fold.
-
-    Whisper sometimes hears "two bee" as the notation itself ("2B"), which
-    the shared normalizer keeps as one token. Expanding it here keeps the
-    comparison about SPOKEN tokens, not transcription spelling.
-    """
-    digits = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"}
-    out: list[str] = []
-    for token in normalize(text):
-        fused = _FUSED_B.fullmatch(token)
-        if fused:
-            out.extend([digits[fused.group(1)], "bee"])
-        else:
-            out.append(token)
-    return out
+# The ONE canonicalization for exactness checks — shared with the render
+# gate's asrExact mode so the audit and the gate can never disagree.
+canonical = canonical_tokens
 
 
 def main() -> int:
@@ -96,18 +80,30 @@ def main() -> int:
         if rate != 16000:
             g = gcd(16000, rate)
             samples = resample_poly(samples, 16000 // g, rate // g).astype("float32")
-        transcript = model.transcribe(
-            samples,
-            language="en",
-            temperature=0.0,
-            condition_on_previous_text=False,
-            initial_prompt=ASR_PROMPT,
-            fp16=True,
-        )["text"].strip()
+        def transcribe(prompt):
+            return model.transcribe(
+                samples,
+                language="en",
+                temperature=0.0,
+                condition_on_previous_text=False,
+                initial_prompt=prompt,
+                fp16=True,
+            )["text"].strip()
 
         want = canonical(entry["text"])
+        transcript = transcribe(ASR_PROMPT)
         got = canonical(transcript)
         ok = want == got
+        if not ok:
+            # On short clips the domain prompt can be regurgitated as a
+            # hallucinated tail ("slip two three four five six bee jab
+            # jab..."); a promptless second opinion clears those without
+            # excusing a genuinely wrong clip.
+            transcript = transcribe(None)
+            got2 = canonical(transcript)
+            if want == got2:
+                ok = True
+                got = got2
         results[key] = {
             "ok": ok,
             "expected": want,

@@ -63,7 +63,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from asr_match import match_score  # noqa: E402
+from asr_match import canonical_tokens, match_score  # noqa: E402
 
 MODEL_DEVICE = "cuda"
 DEFAULT_ASR_MIN_SCORE = 0.85
@@ -84,7 +84,7 @@ def _load_whisper(device: str):
     return whisper.load_model("turbo", device=device)
 
 
-def _transcribe_candidate(asr_model, samples, sample_rate: int) -> str:
+def _transcribe_candidate(asr_model, samples, sample_rate: int, prompt: str | None = ASR_PROMPT) -> str:
     import numpy as np
     from scipy.signal import resample_poly
 
@@ -100,10 +100,23 @@ def _transcribe_candidate(asr_model, samples, sample_rate: int) -> str:
         language="en",
         temperature=0.0,
         condition_on_previous_text=False,
-        initial_prompt=ASR_PROMPT,
+        initial_prompt=prompt,
         fp16=True,
     )
     return result["text"].strip()
+
+
+def _is_token_exact(asr_model, samples, sample_rate: int, expect_text: str, transcript: str) -> bool:
+    """Token-exact acceptance for `asrExact` jobs.
+
+    The prompted transcript is checked first; on a miss, a promptless second
+    opinion clears prompt-regurgitation hallucinations on short clips
+    without excusing a genuinely wrong take.
+    """
+    want = canonical_tokens(expect_text)
+    if canonical_tokens(transcript) == want:
+        return True
+    return canonical_tokens(_transcribe_candidate(asr_model, samples, sample_rate, prompt=None)) == want
 
 
 def main() -> int:
@@ -156,6 +169,11 @@ def main() -> int:
         max_ms = entry.get("maxDurationMs")
         expect_text = entry.get("expectText")
         gated = bool(expect_text) and asr_model is not None
+        # Token-exact mode: fuzzy similarity tolerates a dropped/doubled
+        # token in repeat-heavy combos (1-1-2 shipped saying "one, two");
+        # an asrExact job additionally requires the exact canonical token
+        # sequence before a take is accepted.
+        exact = bool(entry.get("asrExact")) and gated
         min_score = float(entry.get("asrMinScore", spec_min_score))
         bounded = min_ms is not None or max_ms is not None
         attempts = int(entry.get("attempts", attempts_cap)) if (bounded or gated) else 1
@@ -195,16 +213,22 @@ def main() -> int:
                     samples = samples.squeeze()
                 duration_ms = len(samples) / model.sr * 1000
 
-                take = {"samples": samples, "durationMs": duration_ms, "score": None, "transcript": None}
+                take = {"samples": samples, "durationMs": duration_ms, "score": None, "transcript": None, "exact": None}
                 duration_ok = in_bounds(duration_ms)
                 # Transcribing an out-of-window take is wasted GPU: it cannot
                 # be accepted, and the fallback ranking below still sees it.
                 if gated and duration_ok:
                     take["transcript"] = _transcribe_candidate(asr_model, samples, model.sr)
                     take["score"] = match_score(expect_text, take["transcript"])["score"]
+                    if exact and take["score"] >= min_score:
+                        take["exact"] = _is_token_exact(
+                            asr_model, samples, model.sr, expect_text, take["transcript"]
+                        )
                 takes.append(take)
 
-                if duration_ok and (not gated or take["score"] >= min_score):
+                if duration_ok and (
+                    not gated or (take["score"] >= min_score and (not exact or take["exact"]))
+                ):
                     accepted = take
                     break
 
@@ -214,7 +238,11 @@ def main() -> int:
                 # the duration window.
                 accepted_take = max(
                     takes,
-                    key=lambda t: ((t["score"] if t["score"] is not None else -1.0), -middleness(t["durationMs"])),
+                    key=lambda t: (
+                        1 if t.get("exact") else 0,
+                        (t["score"] if t["score"] is not None else -1.0),
+                        -middleness(t["durationMs"]),
+                    ),
                 )
             else:
                 accepted_take = accepted
@@ -249,6 +277,7 @@ def main() -> int:
                             "durationMs": round(t["durationMs"]),
                             "score": t["score"],
                             "transcript": t["transcript"],
+                            "exact": t.get("exact"),
                         }
                         for t in takes
                     ],

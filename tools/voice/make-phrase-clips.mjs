@@ -389,6 +389,10 @@ const renderOut =
             ...chatterboxBoundsForJob(j),
             // The ASR gate: a take must transcribe as the scripted words.
             expectText: j.plan.renderedText,
+            // `--asr-exact` upgrades the gate to token-exact acceptance —
+            // the fuzzy score alone let repeat-heavy combos ship with a
+            // dropped token (1-1-2 saying "one, two").
+            ...(process.argv.includes('--asr-exact') ? { asrExact: true } : {}),
             ...(j.override.cfgWeight !== undefined ? { cfgWeight: j.override.cfgWeight } : {}),
             ...(j.override.exaggeration !== undefined
               ? { exaggeration: j.override.exaggeration }

@@ -82,6 +82,30 @@ def normalize(text: str) -> list[str]:
     return merged
 
 
+_FUSED_B = re.compile(r"^([1-6])b$")
+_DIGIT_WORDS = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"}
+
+
+def canonical_tokens(text: str) -> list[str]:
+    """`normalize` plus the exactness folds the token audit compares with.
+
+    - "2B" heard as one fused token expands to the spoken form ("two bee").
+    - "uppercut" folds to "upper": compact cadences script "lead upper" and
+      Whisper's language model autocompletes the technique name — same
+      token either way, and the audit is about sequence, not wording.
+    """
+    out: list[str] = []
+    for token in normalize(text):
+        fused = _FUSED_B.fullmatch(token)
+        if fused:
+            out.extend([_DIGIT_WORDS[fused.group(1)], "bee"])
+        elif token == "uppercut":
+            out.append("upper")
+        else:
+            out.append(token)
+    return out
+
+
 def match_score(expected: str, transcript: str) -> dict:
     """Compare a transcript against the scripted text.
 
