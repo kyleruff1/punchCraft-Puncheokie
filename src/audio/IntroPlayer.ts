@@ -42,6 +42,12 @@ const PUMP_INTERVAL_MS = 150
  */
 const INTRO_COMPLETE_GRACE_MS = 8_000
 
+/** Monotonic milliseconds — immune to wall-clock steps during a pause. */
+const monotonicNowMs = (): number =>
+  typeof performance !== 'undefined' && typeof performance.now === 'function'
+    ? performance.now()
+    : Date.now()
+
 export class IntroPlayer {
   private playlist: AudioPlaylist | null = null
   private pump: ReturnType<typeof setInterval> | null = null
@@ -50,6 +56,8 @@ export class IntroPlayer {
   private plannedMs = 0
   private doneAt: number | null = null
   private onComplete: (() => void) | null = null
+  /** Monotonic moment a pause() suspended playback, or null. */
+  private pausedAt: number | null = null
 
   /**
    * Build the native playlist — clips interleaved with their planned
@@ -105,7 +113,52 @@ export class IntroPlayer {
     volume: number,
     opts: { tailMs?: number; onComplete?: () => void } = {},
   ): void {
-    if (this.started || this.playlist === null) return
+    if (this.playlist === null) return
+    if (this.started) {
+      if (this.pausedAt !== null) {
+        // Resume-in-place after a pause(): the countdown's session clock
+        // froze with the playlist, so continuing from position keeps the
+        // walkout aligned with the extended countdown. The pause length
+        // is measured on the MONOTONIC clock — a wall-clock step (NTP,
+        // DST, manual change) during an arbitrarily-long pause must not
+        // corrupt the deadline shift — and clamped non-negative.
+        const pausedForMs = Math.max(0, monotonicNowMs() - this.pausedAt)
+        this.pausedAt = null
+        if (this.doneAt !== null) this.doneAt += pausedForMs
+        // The pause callback may have been replaced by a re-render; keep
+        // the freshest one so skipCountdown fires on the live closure.
+        if (opts.onComplete) this.onComplete = opts.onComplete
+        try {
+          this.playlist.volume = volume
+          this.playlist.play()
+        } catch (error) {
+          logger.warn('puncheokie.intro', 'playlist resume failed', {
+            error: safe(String(error)),
+          })
+          this.finish('resume-failed')
+          return
+        }
+        logger.info('puncheokie.intro', 'intro resumed in place', {
+          pausedForMs: safe(pausedForMs),
+        })
+        this.startPump()
+        return
+      }
+      if (this.doneAt === null) {
+        // The intro FINISHED while the app was paused: the pump's
+        // completion fired into a 'paused' session where skipCountdown
+        // no-ops, swallowing the bell. Re-deliver the completion on the
+        // fresh callback now that the countdown is live again — never
+        // play() a finished playlist (it would restart from the top).
+        if (opts.onComplete) {
+          logger.info('puncheokie.intro', 'intro completion re-delivered after pause', {})
+          opts.onComplete()
+        }
+        return
+      }
+      // Running normally — idempotent as before.
+      return
+    }
     this.started = true
     this.onComplete = opts.onComplete ?? null
     try {
@@ -123,6 +176,40 @@ export class IntroPlayer {
       plannedMs: safe(this.plannedMs),
     })
     this.doneAt = Date.now() + this.plannedMs + (opts.tailMs ?? 0)
+    this.startPump()
+  }
+
+  /**
+   * Suspend the walkout in place — the athlete paused mid-countdown.
+   * The playlist holds its position and the completion deadline shifts
+   * by the pause length on resume; `play()` (re-fired when the phase
+   * returns to countdown) continues the speech. Stopping the pump here
+   * matters as much as pausing the audio: a paused walkout must not
+   * "complete" on the wall clock and ring the bell into a paused app.
+   */
+  pause(): void {
+    if (!this.started || this.pausedAt !== null || this.playlist === null) return
+    // finish() may have raced this call (the pause effect runs a commit
+    // after the phase change; the pump can fire in that gap). A finished
+    // walkout has nothing to hold — arming pausedAt here would make the
+    // later resume re-play a finished playlist from the top and re-arm a
+    // pump that can never fire.
+    if (this.doneAt === null) return
+    this.pausedAt = monotonicNowMs()
+    if (this.pump !== null) {
+      clearInterval(this.pump)
+      this.pump = null
+    }
+    try {
+      this.playlist.pause()
+    } catch {
+      // Already stopped.
+    }
+    logger.info('puncheokie.intro', 'intro paused in place', {})
+  }
+
+  private startPump(): void {
+    if (this.pump !== null) clearInterval(this.pump)
     this.pump = setInterval(() => {
       if (this.doneAt === null) return
       const now = Date.now()
@@ -166,6 +253,7 @@ export class IntroPlayer {
       this.pump = null
     }
     this.doneAt = null
+    this.pausedAt = null
     this.onComplete = null // The bell already rang; nothing left to skip.
     this.dispose()
   }

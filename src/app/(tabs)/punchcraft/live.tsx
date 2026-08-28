@@ -276,7 +276,14 @@ export default function LiveScreen(): React.JSX.Element {
     })
   }, [live.phase, policy.mode, volumes.voice, runner.skipCountdown])
   React.useEffect(() => {
-    // The bell has authority: a still-talking intro is cut, never waited on.
+    // A pause holds the walkout in place (resume-in-place: the playlist
+    // keeps its position, the completion deadline shifts by the pause);
+    // any other departure from idle/countdown is the bell's authority —
+    // a still-talking intro is cut, never waited on.
+    if (live.phase === 'paused') {
+      introRef.current?.pause()
+      return
+    }
     if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()
   }, [live.phase])
   React.useEffect(() => () => introRef.current?.stop(), [])
@@ -288,6 +295,12 @@ export default function LiveScreen(): React.JSX.Element {
   const warnRef = useRef<RoundWarningPlayer | null>(null)
   React.useEffect(() => {
     if (policy.mode === 'off') return
+    if (live.phase === 'paused') {
+      // Resume-in-place: hold a talking warning where it is — replaying
+      // it from the top on resume would run into the bell.
+      warnRef.current?.pause()
+      return
+    }
     if (live.phase !== 'rest') {
       warnRef.current?.stop()
       return
@@ -345,6 +358,12 @@ export default function LiveScreen(): React.JSX.Element {
   const recoveryRef = useRef<RecoveryPlayer | null>(null)
   React.useEffect(() => {
     if (policy.mode === 'off') return
+    if (live.phase === 'paused') {
+      // Resume-in-place: hold the walkthrough where it is rather than
+      // restarting it from the top over the round warning.
+      recoveryRef.current?.pause()
+      return
+    }
     if (live.phase !== 'rest') {
       recoveryRef.current?.stop()
       return

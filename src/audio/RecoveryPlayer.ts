@@ -37,6 +37,7 @@ export class RecoveryPlayer {
   private playlist: AudioPlaylist | null = null
   private preparedScriptId: string | null = null
   private started = false
+  private paused = false
 
   /**
    * Build the native playlist for a recovery script — segment / silence
@@ -86,11 +87,45 @@ export class RecoveryPlayer {
   }
 
   /**
+   * Suspend playback in place — the athlete paused mid-rest. The native
+   * playlist keeps its position; the next `playIfDue` resumes it. A
+   * walkthrough that has not started yet has nothing to suspend.
+   */
+  pause(): void {
+    if (!this.started || this.paused || this.playlist === null) return
+    this.paused = true
+    try {
+      this.playlist.pause()
+    } catch {
+      // Already stopped.
+    }
+    logger.info('puncheokie.recovery', 'recovery paused in place', {
+      scriptId: safe(this.preparedScriptId),
+    })
+  }
+
+  /**
    * Start the walkthrough once, after the bell has cleared. Called
-   * every store tick during rest; the guard makes repeats a no-op.
+   * every store tick during rest; the guard makes repeats a no-op —
+   * except after a pause, where it resumes from position (the session
+   * clock froze with the playlist, so alignment is preserved).
    */
   playIfDue(restElapsedMs: number, volume: number): void {
-    if (this.started || this.playlist === null) return
+    if (this.playlist === null) return
+    if (this.started) {
+      if (!this.paused) return
+      this.paused = false
+      try {
+        this.playlist.volume = volume
+        this.playlist.play()
+      } catch {
+        // The rest continues without the walkthrough.
+      }
+      logger.info('puncheokie.recovery', 'recovery resumed in place', {
+        scriptId: safe(this.preparedScriptId),
+      })
+      return
+    }
     if (restElapsedMs < RECOVERY_BELL_CLEARANCE_MS) return
     this.started = true
     try {
@@ -119,6 +154,7 @@ export class RecoveryPlayer {
     this.dispose()
     this.preparedScriptId = null
     this.started = false
+    this.paused = false
   }
 
   private dispose(): void {

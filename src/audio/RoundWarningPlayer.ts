@@ -41,6 +41,7 @@ export class RoundWarningPlayer {
   private totalMs = 0
   private preparedRound: number | null = null
   private played = false
+  private paused = false
 
   /**
    * Build the playlist for the upcoming round. Call at rest entry — the
@@ -96,11 +97,48 @@ export class RoundWarningPlayer {
   }
 
   /**
+   * Suspend a talking warning in place — the athlete paused inside the
+   * warning window. The playlist keeps its position and the session
+   * clock keeps the remaining rest, so on resume the countdown still
+   * lands on the bell. A warning that has not started has nothing to
+   * suspend.
+   */
+  pause(): void {
+    if (!this.played || this.paused || this.playlist === null) return
+    this.paused = true
+    try {
+      this.playlist.pause()
+    } catch {
+      // Already stopped.
+    }
+    logger.info('puncheokie.warn', 'round warning paused in place', {
+      round: safe(this.preparedRound),
+    })
+  }
+
+  /**
    * Start the warning on the first rest tick inside its window, so the
-   * countdown's measured end lands on the bell. Idempotent per prepare().
+   * countdown's measured end lands on the bell. Idempotent per prepare()
+   * — except after a pause, where it resumes from position rather than
+   * replaying from the top (which the bell would cut).
    */
   playIfDue(remainingMs: number, volume: number): void {
-    if (this.played || this.playlist === null) return
+    if (this.playlist === null) return
+    if (this.played) {
+      if (!this.paused) return
+      this.paused = false
+      try {
+        this.playlist.volume = volume
+        this.playlist.play()
+      } catch {
+        // The bell still rings without the countdown.
+      }
+      logger.info('puncheokie.warn', 'round warning resumed in place', {
+        round: safe(this.preparedRound),
+        remainingMs: safe(remainingMs),
+      })
+      return
+    }
     if (remainingMs > this.totalMs + LEAD_SLACK_MS) return
     this.played = true
     try {
@@ -123,6 +161,7 @@ export class RoundWarningPlayer {
     this.dispose()
     this.preparedRound = null
     this.played = false
+    this.paused = false
   }
 
   private dispose(): void {
