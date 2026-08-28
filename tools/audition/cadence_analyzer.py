@@ -186,8 +186,13 @@ def slice_and_transcribe(capture_path: str, audio_t0_ms: int, start_epoch_ms: in
     words = []
     for seg in result.get("segments", []):
         for w in seg.get("words", []):
-            heard_epoch = start_epoch_ms + int(round(float(w["start"]) * 1000))
-            words.append({"word": w["word"], "epochMs": heard_epoch})
+            heard_start = start_epoch_ms + int(round(float(w["start"]) * 1000))
+            heard_end = start_epoch_ms + int(round(float(w["end"]) * 1000))
+            words.append({
+                "word": w["word"],
+                "epochMs": heard_start,
+                "endEpochMs": heard_end,
+            })
     return words
 
 
@@ -204,18 +209,19 @@ def _token_key(token: str) -> str:
     return lower
 
 
-def align_to_tokens(tokens: list[str], heard_words: list[dict]) -> list[int | None]:
+def align_to_tokens(tokens: list[str], heard_words: list[dict]) -> list[tuple[int, int] | None]:
     """Greedy: for each token in order, pick the first unassigned heard
-    word whose canonical form matches. Returns per-token heard epoch or
-    None if no match found.
+    word whose canonical form matches. Returns per-token (startEpoch,
+    endEpoch) or None. Both times matter for the rail: end-of-word is
+    the anchor Kyle judges against ring fire.
     """
-    onsets: list[int | None] = []
+    onsets: list[tuple[int, int] | None] = []
     cursor = 0
     for token in tokens:
         want = _token_key(token)
         # Compare against Whisper's word — canonicalise the same way as the
         # token audit does so 'B' folds to 'bee' etc.
-        found = None
+        found: tuple[int, int] | None = None
         while cursor < len(heard_words):
             heard = heard_words[cursor]["word"]
             key = canonical_tokens(heard)
@@ -227,7 +233,8 @@ def align_to_tokens(tokens: list[str], heard_words: list[dict]) -> list[int | No
                     head_num = key[0]
             cursor += 1
             if head_num == want or head_num == _DIGIT_MAP.get(want, want):
-                found = heard_words[cursor - 1]["epochMs"]
+                w = heard_words[cursor - 1]
+                found = (w["epochMs"], w["endEpochMs"])
                 break
         onsets.append(found)
     return onsets
@@ -303,17 +310,32 @@ def main() -> int:
             play["epochMs"] + play["durationMs"] + 250,
             asr,
         )
-        onsets = align_to_tokens(tokens, heard_words)
+        aligned = align_to_tokens(tokens, heard_words)
 
-        # Measured drift per token: heard_epoch − scheduled_ring_epoch.
-        drift: list[float | None] = []
-        for i, onset in enumerate(onsets):
+        # Rail metric: end-of-word to ring-fire, per token. This is what
+        # Kyle's ear is actually judging. Positive = ring lags coach's
+        # end-of-word; the target under the rail is a small consistent K.
+        end_to_ring: list[float | None] = []
+        # Legacy: onset to ring, kept for continuity across older reports.
+        onset_to_ring: list[float | None] = []
+        for i, pair in enumerate(aligned):
             sched = scheduled.get((cue_id, i))
-            if onset is None or sched is None:
-                drift.append(None)
+            if pair is None or sched is None:
+                end_to_ring.append(None)
+                onset_to_ring.append(None)
             else:
-                drift.append(float(onset - sched))
-        max_abs = max((abs(d) for d in drift if d is not None), default=None)
+                onset_epoch, end_epoch = pair
+                end_to_ring.append(float(sched - end_epoch))
+                onset_to_ring.append(float(sched - onset_epoch))
+        measured_pairs = [v for v in end_to_ring if v is not None]
+        max_abs = max((abs(d) for d in measured_pairs), default=None)
+        if measured_pairs:
+            mean = sum(measured_pairs) / len(measured_pairs)
+            spread = max(measured_pairs) - min(measured_pairs)
+            var = sum((v - mean) ** 2 for v in measured_pairs) / len(measured_pairs)
+            std = var ** 0.5
+        else:
+            mean = spread = std = None
 
         rows.append({
             "cueId": cue_id,
@@ -322,34 +344,50 @@ def main() -> int:
             "playEpochMs": play["epochMs"],
             "durationMs": play["durationMs"],
             "launchLateMs": play["launchLateMs"],
-            "measuredDriftMs": drift,
-            "maxAbsDriftMs": max_abs,
-            "matchesAudit": matches_audit(drift, audit.get(cue_id)),
+            "endToRingMs": end_to_ring,
+            "onsetToRingMs": onset_to_ring,
+            "meanEndToRingMs": None if mean is None else round(mean, 1),
+            "spreadEndToRingMs": None if spread is None else round(spread, 1),
+            "stdDevEndToRingMs": None if std is None else round(std, 1),
+            "maxAbsDriftMs": max_abs,  # legacy field
+            "matchesAudit": matches_audit(onset_to_ring, audit.get(cue_id)),
         })
 
-    measured = [r for r in rows if r["maxAbsDriftMs"] is not None]
-    aligned = [r for r in measured if r["maxAbsDriftMs"] < AUDIBLE_DRIFT_MS]
-    ratio = len(aligned) / len(measured) if measured else 0.0
+    with_end = [r for r in rows if r["spreadEndToRingMs"] is not None]
+    tight = [r for r in with_end if r["spreadEndToRingMs"] < 60.0]
+    tight_ratio = len(tight) / len(with_end) if with_end else 0.0
+    means = [r["meanEndToRingMs"] for r in with_end]
+    if means:
+        cross_mean = sum(means) / len(means)
+        cross_var = sum((m - cross_mean) ** 2 for m in means) / len(means)
+        cross_std = cross_var ** 0.5
+    else:
+        cross_mean = cross_std = 0.0
 
-    measured.sort(key=lambda r: r["maxAbsDriftMs"], reverse=True)
+    with_end.sort(key=lambda r: r["spreadEndToRingMs"], reverse=True)
 
     report_path = os.path.join(session_dir, "cadence-report.json")
     with open(report_path, "w", encoding="utf-8") as fh:
         json.dump({
             "audibleDriftMs": AUDIBLE_DRIFT_MS,
             "plays": len(rows),
-            "measured": len(measured),
-            "aligned": len(aligned),
-            "alignedRatio": round(ratio, 3),
+            "measured": len(with_end),
+            "tightWithin60ms": len(tight),
+            "tightRatio": round(tight_ratio, 3),
+            "crossClipMeanEndToRingMs": round(cross_mean, 1),
+            "crossClipStdDevMs": round(cross_std, 1),
             "rows": rows,
         }, fh, indent=1)
 
-    print(f"\n{len(aligned)}/{len(measured)} plays within ±{AUDIBLE_DRIFT_MS} ms "
-          f"= {ratio * 100:.1f}%")
-    print("\nWorst offenders (top 20):")
-    for r in measured[:20]:
-        print(f"  {r['maxAbsDriftMs']:>6.1f} ms  {r['cueId']:<40}  "
-              f"drift={r['measuredDriftMs']}  launchLate={r['launchLateMs']}  audit={r['matchesAudit']}")
+    print(f"\n=== end-of-word to ring-fire (mic-measured) ===")
+    print(f"clips with measurable end-of-word: {len(with_end)}/{len(rows)}")
+    print(f"within-clip spread < 60 ms: {len(tight)}/{len(with_end)} = {tight_ratio * 100:.1f}%")
+    print(f"cross-clip meanEndToRingMs: mean {cross_mean:.0f} ms  stdDev {cross_std:.0f} ms")
+    print(f"(rail's target: uniform K ms across the session; K = 120 by default)")
+    print("\nWorst offenders (top 20 by within-clip spread):")
+    for r in with_end[:20]:
+        print(f"  spread={r['spreadEndToRingMs']:>6.1f}ms  mean={r['meanEndToRingMs']:>6.1f}ms  "
+              f"{r['cueId']:<40}  endToRing={r['endToRingMs']}  launchLate={r['launchLateMs']}")
     print(f"\nreport -> {report_path}")
     return 0
 

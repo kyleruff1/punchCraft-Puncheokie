@@ -103,7 +103,9 @@ _ENTRY_RE = re.compile(
     r'performance:\s*"([^"]+)",\s*'
     r'tokens:\s*(\[[^\]]*\]),\s*'
     r'durationMs:\s*(\d+),\s*'
-    r"wordMarks:\s*(\[[^\]]*\]),\s*"
+    r'wordMarks:\s*(\[[^\]]*\]),\s*'
+    r'(?:wordMarksSource:\s*"[^"]*",\s*)?'
+    r'(?:startPadMs:\s*-?\d+,\s*)?'
     r"module:\s*require\('([^']+)'\)",
 )
 
