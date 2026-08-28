@@ -409,6 +409,14 @@ const renderOut =
             path: j.wav,
             text: j.plan.renderedText,
             ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work),
+            // Techniques delivery (Kyle's energy A/D pick, 2026-08-28):
+            // the technique names read flat next to the numeric twin, so
+            // that side performs HOTTER — more exaggeration, looser hold
+            // on the reference. Delivery, never tempo: the fit rate stays
+            // grid-locked (see fitRateForJob).
+            ...(j.vocabulary === 'techniques'
+              ? { exaggeration: 1.35, cfgWeight: 0.25 }
+              : {}),
             ...chatterboxBoundsForJob(j),
             // The ASR gate: a take must transcribe as the scripted words.
             expectText: j.plan.renderedText,
