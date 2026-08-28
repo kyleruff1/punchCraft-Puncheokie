@@ -157,8 +157,24 @@ function postProcess(path, { profile, finalAccentDb }) {
  * the wrong circle. The runtime does not read this today.
  */
 function measureWordOnsets(path, expectedWords) {
+  const spans = measureWordSpans(path, expectedWords)
+  return spans === null ? [] : spans.map((s) => s.startMs)
+}
+
+/**
+ * Envelope-based word onset+offset detection.
+ *
+ * Returns `[{startMs, endMs}, ...]` when the detected count matches
+ * `expectedWords`; `null` otherwise. Same detector as `measureWordOnsets`
+ * but keeps the fall-off frame too, so the cadence lab can measure
+ * end-of-word → ring-fire offsets (Kyle's precise sync bar).
+ *
+ * Kept in a single walk so onsets and offsets always come from the same
+ * envelope pass — no risk of one going stale relative to the other.
+ */
+function measureWordSpans(path, expectedWords) {
   const wav = readWav(path)
-  if (!wav) return []
+  if (!wav) return null
   const { buffer, fmt, data, bytesPerFrame, frames } = wav
   const peakAt = (frame) => {
     let peak = 0
@@ -180,23 +196,31 @@ function measureWordOnsets(path, expectedWords) {
   const threshold = loudest * 0.12
   const minGapWindows = 5
 
-  const onsets = []
+  const spans = []
   let inWord = false
   let belowFor = 0
+  let currentStart = 0
+  let lastLoud = 0
   for (const point of envelope) {
     if (point.peak >= threshold) {
       if (!inWord) {
-        onsets.push(point.atMs)
+        currentStart = point.atMs
         inWord = true
       }
+      lastLoud = point.atMs
       belowFor = 0
     } else if (inWord) {
       belowFor += 1
-      if (belowFor >= minGapWindows) inWord = false
+      if (belowFor >= minGapWindows) {
+        spans.push({ startMs: currentStart, endMs: lastLoud + window })
+        inWord = false
+      }
     }
   }
+  // A word that was still voicing at EOF closes at the file's last frame.
+  if (inWord) spans.push({ startMs: currentStart, endMs: lastLoud + window })
 
-  return onsets.length === expectedWords ? onsets : []
+  return spans.length === expectedWords ? spans : null
 }
 
 /* ------------------------------------------------------------------- build */
@@ -554,18 +578,29 @@ for (const job of jobs) {
   }
   const durationMs = measureDuration(job.wav)
 
-  // A token can be more than one word — "two bee" — so onsets are matched by
+  // A token can be more than one word — "two bee" — so spans are matched by
   // walking both lists rather than by index.
   const wordCounts = job.tokens.map(
     (t) => spokenFor(t, { vocabulary: job.vocabulary }).split(' ').length,
   )
   const expectedWords = wordCounts.reduce((a, b) => a + b, 0)
-  const onsets = measureWordOnsets(job.wav, expectedWords)
+  const spans = measureWordSpans(job.wav, expectedWords) ?? []
   const wordMarks = []
   let wordIndex = 0
   for (let t = 0; t < job.tokens.length; t += 1) {
-    const onset = onsets[wordIndex]
-    if (onset !== undefined) wordMarks.push({ tokenIndex: t, token: job.tokens[t], offsetMs: onset })
+    const startSpan = spans[wordIndex]
+    // A multi-word token spans multiple envelope words — take the FIRST
+    // word's start and the LAST word's end so the mark envelopes the whole
+    // token ("two bee" starts on 'two' and ends on 'bee').
+    const endSpan = spans[wordIndex + wordCounts[t] - 1]
+    if (startSpan !== undefined && endSpan !== undefined) {
+      wordMarks.push({
+        tokenIndex: t,
+        token: job.tokens[t],
+        offsetMs: startSpan.startMs,
+        endOffsetMs: endSpan.endMs,
+      })
+    }
     wordIndex += wordCounts[t]
   }
 
@@ -639,8 +674,15 @@ const lines = [
   'export interface PhraseWordMark {',
   '  tokenIndex: number',
   '  token: string',
-  '  /** Milliseconds from the start of the clip. */',
+  '  /** Onset in milliseconds from the start of the clip. */',
   '  offsetMs: number',
+  '  /**',
+  '   * End of the audible envelope for this token, in milliseconds from',
+  '   * the start of the clip. Populated by the same envelope-detector pass',
+  '   * as `offsetMs`. The cadence-lab measures ring fire − wordEnd, and the',
+  '   * scalable ring-cadence rail (proposed) drives ring N off this field.',
+  '   */',
+  '  endOffsetMs?: number',
   '}',
   '',
   'export interface PhraseAsset {',

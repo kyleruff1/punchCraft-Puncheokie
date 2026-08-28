@@ -1,26 +1,50 @@
 """Static cadence drift audit — 100 % of the phrase library, no mic.
 
-Kyle hears the coach's call and the ring-highlight animation at
-~75 % clean, drift set-dependent. This tool scores every one of the 776
-phrase clips against the beat grid the workout runner would use, so we
-can find the ~25 % that drift without a live workout — and, more usefully,
-we can find them BEFORE they land on the bag.
+Kyle's precise ask (2026-08-28): measure the exact offset from
+"end of noise on each word" to "corresponding punch node lighting up",
+per-clip and per-token, then find the clips where that offset is
+inconsistent (varies across tokens or across the library). A library
+with uniform end-of-word → ring-fire offsets is what the future scalable
+mapping architecture guarantees; the audit measures how far we are from
+it today.
 
 ## What it measures
 
-For each phrase clip:
+For each phrase clip WITH populated wordMarks (endOffsetMs baked in):
 
-- **alignment_offset_ms**: how the current placement rule
-  (`startAt = firstStrikeMs - readyToneMs - lengthMs`) lands the FIRST
-  spoken word relative to the first ring fire. Negative = coach speaks
-  before ring 0 (this is the call-ahead contract; ~500–800 ms is normal).
-- **cadence_drift_ms[N]** for N ≥ 1: how much the internal spacing of
-  spoken words differs from the ring beat grid:
-  `(wordOnset[N] - wordOnset[0]) - beatsToMs(N, nominalBpm)`. Positive =
-  coach's Nth word falls behind ring N; negative = gets ahead. This is
-  the drift Kyle hears — cadence mismatch inside a clip.
-- **max_abs_drift_ms** = max |cadence_drift_ms|. The 80 ms bar is the
-  "audible" threshold; count of clips below it should match Kyle's ear.
+- **endToRingMs[N]**: at the current placement rule
+  (`startAt = firstStrikeMs - readyToneMs - lengthMs`), how many ms after
+  the coach's Nth word ENDS does ring N light up? Formula:
+    `endToRingMs[N] = beatsToMs(N, bpm) + readyToneMs + (lengthMs - endOffsetMs[N])`
+  Positive = ring lags coach; negative = ring precedes end-of-word.
+- **meanEndToRingMs**: average across the clip's tokens.
+- **spreadEndToRingMs**: max(endToRingMs) − min(endToRingMs). This is
+  the WITHIN-clip drift Kyle hears: if the first ring fires 150 ms after
+  the first word and the last ring fires 900 ms after the last word,
+  spread = 750 ms and the coach's rhythm doesn't match the ring rhythm.
+- **stdDevEndToRingMs**: statistical variability of the offset.
+
+Legacy metric (kept for continuity but no longer the ranking key):
+- **cadenceDriftMs[N]**: `(wordOnset[N] - wordOnset[0]) - beatsToMs(N, bpm)`.
+  Ranks clips by internal cadence mismatch; noisy on compact previews.
+
+## Per-word onsets/ends
+
+- Manifest's `wordMarks` when populated with `endOffsetMs` (the
+  primary source; 127/776 today after the endOffsetMs backfill).
+- Otherwise envelope-based re-detection here in Python.
+- Otherwise Whisper turbo with `word_timestamps=True` (onset-only;
+  end-of-word estimated as onset + 300 ms — coarse fallback).
+
+## Output
+
+- `tools/analysis/reports/cadence-audit.json` — full ledger, per clip:
+  onsetsMs, endsMs, endToRingMs, spreadEndToRingMs, stdDevEndToRingMs,
+  meanEndToRingMs, source. Machine-readable.
+- Printable summary: histogram of spread across library, top-25 clips
+  with largest spread (worst within-clip drift), and the median
+  cross-clip endToRingMs (the CANDIDATE target K for the eventual
+  scalable rail).
 
 ## Per-word onsets
 
@@ -119,15 +143,26 @@ def beats_to_ms(beats: int | float, bpm: int) -> float:
 
 # --------------------------------------------------------------- word onsets
 
-def per_token_onsets_from_marks(entry: dict) -> list[float] | None:
-    """Use populated wordMarks when they cover every token."""
+def per_token_marks_from_manifest(entry: dict) -> tuple[list[float], list[float | None]] | None:
+    """Return (onsets, ends) when wordMarks cover every token. ends[N] may
+    be None for legacy marks lacking `endOffsetMs`."""
     marks = entry["wordMarks"]
     if len(marks) != len(entry["tokens"]):
         return None
     marks = sorted(marks, key=lambda m: m["tokenIndex"])
     if [m["tokenIndex"] for m in marks] != list(range(len(entry["tokens"]))):
         return None
-    return [float(m["offsetMs"]) for m in marks]
+    onsets = [float(m["offsetMs"]) for m in marks]
+    ends: list[float | None] = [
+        float(m["endOffsetMs"]) if isinstance(m.get("endOffsetMs"), (int, float)) else None
+        for m in marks
+    ]
+    return onsets, ends
+
+
+def per_token_onsets_from_marks(entry: dict) -> list[float] | None:
+    result = per_token_marks_from_manifest(entry)
+    return None if result is None else result[0]
 
 
 _DIGIT_WORDS = {"one": 0, "two": 1, "three": 2, "four": 3, "five": 4, "six": 5, "1": 0, "2": 1, "3": 2, "4": 3, "5": 4, "6": 5}
@@ -143,6 +178,69 @@ def _token_key(token: str) -> str:
     else:
         return lower  # movement words like 'slip', 'roll' — match as-is
     return {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"}[digit]
+
+
+def per_token_marks_from_envelope(entry: dict) -> tuple[list[float], list[float]] | None:
+    """Envelope-peak span detector, returns (onsets, ends). Same algorithm
+    as make-phrase-clips.mjs:measureWordSpans. Deterministic, mic-free.
+    """
+    import wave
+    import struct
+    expected = len(entry["tokens"])
+    try:
+        with wave.open(entry["wav"], "rb") as wf:
+            sample_rate = wf.getframerate()
+            channels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            frames = wf.getnframes()
+            raw = wf.readframes(frames)
+    except Exception:
+        return None
+    if sampwidth != 2:
+        return None
+    fmt = f"<{frames * channels}h"
+    samples = struct.unpack(fmt, raw)
+    if channels > 1:
+        samples = [max(abs(samples[i * channels + c]) for c in range(channels)) for i in range(frames)]
+    else:
+        samples = [abs(s) for s in samples]
+
+    window = max(1, int(sample_rate * 0.01))
+    envelope: list[tuple[int, int]] = []
+    for f in range(0, frames, window):
+        end = min(f + window, frames)
+        peak = max(samples[f:end])
+        envelope.append((int(round((f / sample_rate) * 1000)), peak))
+    loudest = max(peak for _, peak in envelope)
+    if loudest == 0:
+        return None
+    threshold = loudest * 0.12
+    min_gap_windows = 5
+    window_ms = int(round((window / sample_rate) * 1000))
+
+    spans: list[tuple[float, float]] = []
+    in_word = False
+    below_for = 0
+    cur_start = 0
+    last_loud = 0
+    for at_ms, peak in envelope:
+        if peak >= threshold:
+            if not in_word:
+                cur_start = at_ms
+                in_word = True
+            last_loud = at_ms
+            below_for = 0
+        elif in_word:
+            below_for += 1
+            if below_for >= min_gap_windows:
+                spans.append((float(cur_start), float(last_loud + window_ms)))
+                in_word = False
+    if in_word:
+        spans.append((float(cur_start), float(last_loud + window_ms)))
+
+    if len(spans) != expected:
+        return None
+    return [s[0] for s in spans], [s[1] for s in spans]
 
 
 def per_token_onsets_from_envelope(entry: dict) -> list[float] | None:
@@ -251,20 +349,59 @@ def per_token_onsets_from_whisper(entry: dict, asr) -> list[float] | None:
 
 # --------------------------------------------------------------- scoring
 
-def score(entry: dict, onsets: list[float], bpm: int, ready_tone_ms: int) -> dict:
+def score(
+    entry: dict,
+    onsets: list[float],
+    ends: list[float | None],
+    bpm: int,
+    ready_tone_ms: int,
+) -> dict:
+    """Kyle's precise metric: for each token N with a known end-of-word,
+    compute the milliseconds between word[N] ending and ring[N] lighting
+    under the current placement rule (startAt = firstStrikeMs − readyToneMs
+    − lengthMs). The library's goal is a NARROW distribution of this offset
+    across every token in every clip — that's what the scalable rail
+    guarantees. spread + stdDev measure how far a clip is from that goal.
+
+    Legacy `cadenceDriftMs` is kept alongside so we can compare rankings
+    while the metric is being calibrated.
+    """
     length_ms = entry["durationMs"]
+
+    # Legacy per-token cadence drift (onset-based).
     align_offset_ms = round(onsets[0] - length_ms - ready_tone_ms, 1)
-    drift = []
+    cadence_drift = []
     for n in range(1, len(onsets)):
-        expected_span = beats_to_ms(n, bpm)
-        actual_span = onsets[n] - onsets[0]
-        drift.append(round(actual_span - expected_span, 1))
-    max_abs = round(max((abs(d) for d in drift), default=0.0), 1)
+        cadence_drift.append(round((onsets[n] - onsets[0]) - beats_to_ms(n, bpm), 1))
+    max_abs_drift = round(max((abs(d) for d in cadence_drift), default=0.0), 1)
+
+    # Precise end-of-word → ring metric.
+    end_to_ring: list[float | None] = []
+    for n, end in enumerate(ends):
+        if end is None:
+            end_to_ring.append(None)
+        else:
+            end_to_ring.append(round(beats_to_ms(n, bpm) + ready_tone_ms + (length_ms - end), 1))
+    measured = [v for v in end_to_ring if v is not None]
+
+    if measured:
+        mean = round(sum(measured) / len(measured), 1)
+        spread = round(max(measured) - min(measured), 1)
+        var = sum((v - mean) ** 2 for v in measured) / len(measured)
+        std_dev = round(var ** 0.5, 1)
+    else:
+        mean = spread = std_dev = None
+
     return {
         "onsetsMs": [round(o, 1) for o in onsets],
+        "endsMs": [None if e is None else round(e, 1) for e in ends],
+        "endToRingMs": end_to_ring,
+        "meanEndToRingMs": mean,
+        "spreadEndToRingMs": spread,
+        "stdDevEndToRingMs": std_dev,
         "alignOffsetMs": align_offset_ms,
-        "cadenceDriftMs": drift,
-        "maxAbsDriftMs": max_abs,
+        "cadenceDriftMs": cadence_drift,
+        "maxAbsDriftMs": max_abs_drift,
     }
 
 
@@ -305,24 +442,40 @@ def main() -> int:
     rows = []
     for idx, entry in enumerate(entries):
         bpm = bpm_of[entry["cadence"]]
-        onsets = per_token_onsets_from_marks(entry)
+        # Prefer manifest wordMarks (deterministic + carries endOffsetMs);
+        # fall back to a fresh envelope scan (also carries ends); Whisper
+        # is the last resort and only knows onsets (ends are estimated).
+        marks = per_token_marks_from_manifest(entry)
         source = "wordMarks"
-        if onsets is None:
-            onsets = per_token_onsets_from_envelope(entry)
-            if onsets is not None:
+        if marks is None or all(e is None for e in marks[1]):
+            env = per_token_marks_from_envelope(entry)
+            if env is not None:
+                marks = (env[0], list(env[1]))
                 source = "envelope"
-        if onsets is None:
+        if marks is None:
             onsets = per_token_onsets_from_whisper(entry, ensure_asr())
             if onsets is not None:
+                # Whisper is onset-only; estimate end-of-word as +300 ms per
+                # word or clip end, whichever is smaller. Coarse; flagged so
+                # a Kyle-eye can see which rows to trust.
+                length_ms = entry["durationMs"]
+                ends = [min(o + 300.0, float(length_ms)) for o in onsets]
+                marks = (onsets, ends)
                 source = "whisper"
+        if marks is None:
+            onsets = None
+        else:
+            onsets, ends = marks
         if onsets is None:
             rows.append({**{k: entry[k] for k in ("cueId", "combination", "cadence", "vocabulary")},
                          "tokens": entry["tokens"], "durationMs": entry["durationMs"],
-                         "source": "unavailable", "onsetsMs": None,
+                         "source": "unavailable", "onsetsMs": None, "endsMs": None,
+                         "endToRingMs": None, "meanEndToRingMs": None,
+                         "spreadEndToRingMs": None, "stdDevEndToRingMs": None,
                          "alignOffsetMs": None, "cadenceDriftMs": None,
                          "maxAbsDriftMs": None})
             continue
-        scored = score(entry, onsets, bpm, ready_tone_ms)
+        scored = score(entry, onsets, ends, bpm, ready_tone_ms)
         rows.append({**{k: entry[k] for k in ("cueId", "combination", "cadence", "vocabulary")},
                      "tokens": entry["tokens"], "durationMs": entry["durationMs"],
                      "source": source, **scored})
@@ -334,7 +487,23 @@ def main() -> int:
     aligned = [r for r in measured if r["maxAbsDriftMs"] < AUDIBLE_DRIFT_MS]
     ratio = len(aligned) / len(measured) if measured else 0.0
 
-    # Sort worst first for the report.
+    # Precise-metric summary (Kyle's ask: end-of-word to ring-fire).
+    with_end = [r for r in measured if r.get("spreadEndToRingMs") is not None]
+    within_clip_tight = [r for r in with_end if r["spreadEndToRingMs"] < 60.0]
+    within_ratio = len(within_clip_tight) / len(with_end) if with_end else 0.0
+    means = [r["meanEndToRingMs"] for r in with_end]
+    if means:
+        means_sorted = sorted(means)
+        mid = means_sorted[len(means_sorted) // 2]
+        cross_mean = sum(means) / len(means)
+        cross_var = sum((m - cross_mean) ** 2 for m in means) / len(means)
+        cross_std = cross_var ** 0.5
+    else:
+        mid = cross_mean = cross_std = 0.0
+
+    # Sort worst first: by the new spread metric (per-clip within-drift).
+    with_end.sort(key=lambda r: r["spreadEndToRingMs"], reverse=True)
+    # Keep the legacy list too for the tail of the report.
     measured.sort(key=lambda r: r["maxAbsDriftMs"], reverse=True)
 
     os.makedirs(REPORT_DIR, exist_ok=True)
@@ -356,8 +525,13 @@ def main() -> int:
             "rows": measured + unavailable,
         }, fh, indent=1)
 
-    print(f"\naligned (|maxAbsDriftMs|<{AUDIBLE_DRIFT_MS}): {len(aligned)}/{len(measured)} "
-          f"= {ratio*100:.1f}% (Kyle's ear: ~75%)")
+    print(f"\n=== end-of-word to ring-fire (Kyle's precise metric) ===")
+    print(f"clips with endOffsetMs: {len(with_end)}/{len(measured)}")
+    print(f"within-clip spread < 60 ms: {len(within_clip_tight)}/{len(with_end)} = {within_ratio*100:.1f}%")
+    print(f"cross-clip meanEndToRingMs: median {mid:.0f} ms  mean {cross_mean:.0f} ms  stdDev {cross_std:.0f} ms")
+    print(f"(a rail-mode library should have per-clip spread ~ 0 and cross-clip stdDev ~ 0 around a constant K)")
+
+    print(f"\n=== legacy: |maxAbsDriftMs|<{AUDIBLE_DRIFT_MS}: {len(aligned)}/{len(measured)} = {ratio*100:.1f}% ===")
     for v in ("numbers", "techniques"):
         m = sum(1 for r in measured if r["vocabulary"] == v)
         a = sum(1 for r in aligned if r["vocabulary"] == v)
@@ -366,10 +540,10 @@ def main() -> int:
     if unavailable:
         print(f"  unavailable (couldn't measure): {len(unavailable)}")
 
-    print(f"\nTop-25 offenders (worst |maxAbsDriftMs|):")
-    for r in measured[:25]:
-        print(f"  {r['maxAbsDriftMs']:>6.1f} ms  {r['cueId']:<40}  "
-              f"onsets={r['onsetsMs']}  drift={r['cadenceDriftMs']}  ({r['source']})")
+    print(f"\nTop-25 offenders (worst spreadEndToRingMs — the ear-drift signal):")
+    for r in with_end[:25]:
+        print(f"  spread={r['spreadEndToRingMs']:>6.1f}ms  mean={r['meanEndToRingMs']:>6.1f}ms  "
+              f"{r['cueId']:<40}  endToRing={r['endToRingMs']}  ({r['source']})")
 
     print(f"\nreport -> {REPORT_PATH}")
     return 1 if unavailable else 0
