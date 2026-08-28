@@ -33,6 +33,7 @@ import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
@@ -254,6 +255,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             vocabulary,
             performance: 'work',
           }),
+        // Cadence-lab per-clip placement shift (2026-08-28): read from the
+        // manifest's baked `startPadMs`. Empty for the shipped library —
+        // starts moving the day the audit's report authors clip-shifts.json.
+        phraseShiftFor: (combination, cadence) =>
+          findPhraseAsset(combination, cadence, vocabulary, 'work')?.startPadMs,
         encouragement:
           workout.recipe.enabledCoachCalls.length > 0 && workout.recipe.voiceMode !== 'off',
         // Set Ceremonies: measured sentence lengths from the generated
@@ -513,6 +519,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         const ordinal = event.cue.expectedPunches.findIndex(
           (p) => p.tokenIndex === event.tokenIndex,
         )
+        // Cadence lab (2026-08-28): the ring-highlight moment. Externalising
+        // it lets the mic-anchored analyzer compute per-token drift between
+        // when the coach's voice said the token and when its ring lit. Kyle's
+        // ear read the library at ~75 % clean, drift set-dependent — no way
+        // to find which combos drift without this signal.
+        logger.info('puncheokie.cue.tokenDue', 'ring token fired', {
+          roundIndex: safe(sessionRef.current?.snapshot()?.roundIndex ?? -1),
+          cueId: safe(event.cue.id),
+          combination: safe(event.cue.tokens.join('-')),
+          tokenIndex: safe(event.tokenIndex),
+          ordinal: safe(ordinal),
+          workElapsedMs: safe(event.workElapsedMs),
+          monotonicTimeMs: safe(event.nowMs),
+        })
         if (ordinal > beatCursorRef.current) {
           beatCursorRef.current = ordinal
           syncFromEngine()
@@ -906,6 +926,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // Call the combo ahead of the throw at speed; call each punch in time
           // at a slow technical cadence (doc §18.1).
           delivery: deliveryForCadence(workout.recipe.cadenceProfile),
+          // Same cadence-lab shift the compiled map uses, so live-driven and
+          // executor-driven placement agree.
+          phraseShiftFor: (combination, cadence) =>
+            findPhraseAsset(
+              combination,
+              cadence,
+              voice.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
+              'work',
+            )?.startPadMs,
         })
       : null
     announcerRef.current = announcer

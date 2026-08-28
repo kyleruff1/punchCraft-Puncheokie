@@ -30,6 +30,15 @@ export interface PhraseAsset {
   tokens: string[]
   durationMs: number
   wordMarks: PhraseWordMark[]
+  /**
+   * Cadence-lab per-clip placement shift (ms). Positive = start the clip
+   * EARLIER (fixes a clip whose spoken token landed after its ring);
+   * negative = later. Absent or 0 = shipped placement unchanged. Sourced
+   * from tools/voice/clip-shifts.json — never edit here; regenerate the
+   * manifest instead. Baked into the manifest so it travels with the app
+   * bundle, not resolved at runtime.
+   */
+  startPadMs?: number
   /** Metro module id for the clip. */
   module: number
   renderer: string

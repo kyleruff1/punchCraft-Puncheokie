@@ -213,6 +213,16 @@ export interface CompileOptions {
    * lives outside the domain. Undefined selects the per-word call mode.
    */
   durationFor: (combination: string, cadence: string) => number | undefined
+  /**
+   * Per-clip placement shift in milliseconds — the cadence-lab surgical
+   * knob (2026-08-28). Positive starts the clip EARLIER (fixes a clip
+   * whose spoken token lagged its ring); negative starts it later. Kept
+   * as a per-clip nudge rather than a global lead-time change because
+   * Kyle's ear read the library as ~75 % clean, drift set-dependent —
+   * a blanket adjustment would move the aligned 75 % out of alignment.
+   * Absent or 0 = shipped behaviour unchanged.
+   */
+  phraseShiftFor?: (combination: string, cadence: string) => number | undefined
   leadTimes?: AnnouncerLeadTimes
   /**
    * Schedule encouragement into voiced gaps longer than the grid (M4).
@@ -272,7 +282,8 @@ export function compileRoundRhythmMap(
       // starts at the preview and runs slightly long — reported by the
       // executor, never silent (doc §18 rule, unchanged).
       const finishBy = cue.scheduledStartMs - leadTimes.readyToneMs
-      const startAt = Math.max(cue.previewAt, finishBy - lengthMs)
+      const phraseShift = opts.phraseShiftFor?.(combination, cadence) ?? 0
+      const startAt = Math.max(cue.previewAt, finishBy - lengthMs - phraseShift)
       callStartAt = startAt
       // Repeat thinning: a same-combination rep that lands while the
       // previous phrase is still sounding is NOT re-called. Ceremony

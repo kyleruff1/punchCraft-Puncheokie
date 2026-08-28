@@ -444,11 +444,18 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // Success-path record: the QA loop aligns mic recordings of a session
         // against these lines (LogRecord carries both clocks), and a silent
         // round with no .play entries means nothing was even attempted.
+        // `launchLateMs` (2026-08-28, cadence lab): how late we actually
+        // fired vs. when the announcer wanted us to. RN starvation, focus
+        // loss and scheduling drift all show up here; the mic-side analyzer
+        // subtracts it from measured offsets so per-clip drift is separable
+        // from platform jitter.
+        const launchLateMs = atMs === undefined ? 0 : Math.round(this.clock() - atMs)
         logger.info('puncheokie.voice.play', 'combination phrase playing', {
           cueId: safe(asset.cueId),
           combination: safe(combination),
           cadence: safe(cadence),
           durationMs: safe(asset.durationMs),
+          launchLateMs: safe(launchLateMs),
         })
       } catch (err) {
         logger.warn('puncheokie.voice.phraseFailed', 'combination phrase did not play', {

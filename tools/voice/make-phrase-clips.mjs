@@ -601,6 +601,24 @@ if (onlyArg || onlyKeys || missingOnly) {
 
 writeFileSync(join(OUT_ROOT, 'index.json'), `${JSON.stringify(index, null, 2)}\n`)
 
+/* -------------------------------- per-clip placement shifts (cadence lab) */
+
+// The sidecar maps cueId to milliseconds of extra head start for the phrase
+// clip's placement (positive = earlier, negative = later). Absent keys keep
+// the shipped placement rule; empty file = no shifts. Populated from
+// cadence_audit.py / cadence_analyzer.py reports.
+let clipShifts = {}
+try {
+  const raw = JSON.parse(readFileSync(join('tools', 'voice', 'clip-shifts.json'), 'utf8'))
+  clipShifts = raw?.shifts ?? {}
+} catch {
+  // Absent file is fine — no shifts.
+}
+const shiftFor = (cueId) => {
+  const v = clipShifts[cueId]
+  return typeof v === 'number' && Number.isFinite(v) && v !== 0 ? Math.round(v) : undefined
+}
+
 /* ------------------------------------------------------------- app manifest */
 
 const lines = [
@@ -636,6 +654,15 @@ const lines = [
   '  tokens: string[]',
   '  durationMs: number',
   '  wordMarks: PhraseWordMark[]',
+  '  /**',
+  '   * Cadence-lab per-clip placement shift (ms). Positive = start the clip',
+  '   * EARLIER (fixes a clip whose spoken token landed after its ring);',
+  '   * negative = later. Absent or 0 = shipped placement unchanged. Sourced',
+  '   * from tools/voice/clip-shifts.json — never edit here; regenerate the',
+  '   * manifest instead. Baked into the manifest so it travels with the app',
+  '   * bundle, not resolved at runtime.',
+  '   */',
+  '  startPadMs?: number',
   '  /** Metro module id for the clip. */',
   '  module: number',
   '  renderer: string',
@@ -647,6 +674,7 @@ const lines = [
   'export const phraseAssets: readonly PhraseAsset[] = [',
 ]
 for (const entry of index) {
+  const shift = shiftFor(entry.cueId)
   lines.push(
     '  {',
     `    cueId: ${JSON.stringify(entry.cueId)},`,
@@ -658,6 +686,7 @@ for (const entry of index) {
     `    tokens: ${JSON.stringify(entry.tokens)},`,
     `    durationMs: ${entry.durationMs},`,
     `    wordMarks: ${JSON.stringify(entry.wordMarks)},`,
+    ...(shift !== undefined ? [`    startPadMs: ${shift},`] : []),
     `    module: require('../../../assets/voice/phrases/${entry.persona}/${entry.file}'),`,
     `    renderer: ${JSON.stringify(entry.renderer)},`,
     '  },',

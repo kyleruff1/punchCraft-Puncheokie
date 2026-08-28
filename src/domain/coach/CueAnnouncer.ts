@@ -183,6 +183,12 @@ export interface CueAnnouncerOptions {
    */
   delivery?: CueDelivery
   onSkip?: (skip: AnnouncerSkip) => void
+  /**
+   * Cadence-lab per-clip placement shift in milliseconds — mirrors the
+   * compiled map's `phraseShiftFor` so live-driven and executor-driven
+   * placement stay in agreement. Absent = shipped behaviour unchanged.
+   */
+  phraseShiftFor?: (combination: string, cadence: string) => number | undefined
 }
 
 export class CueAnnouncer {
@@ -195,6 +201,9 @@ export class CueAnnouncer {
   private vocabulary: CalloutVocabulary
   private readonly performanceFor: (cue: CueInstance) => PerformanceState
   private readonly delivery: CueDelivery
+  private readonly phraseShiftFor:
+    | ((combination: string, cadence: string) => number | undefined)
+    | undefined
 
   private playbackActive = false
   /** Phrase plans resolved at preview, so nothing is computed at announce. */
@@ -232,6 +241,7 @@ export class CueAnnouncer {
     this.durations = opts.assetDurationsMs
     this.onSkip = opts.onSkip
     this.cadence = opts.cadence ?? 'steady'
+    this.phraseShiftFor = opts.phraseShiftFor
     this.vocabulary = opts.vocabulary ?? 'numbers'
     this.performanceFor = opts.performanceFor ?? (() => 'work')
     this.delivery = opts.delivery ?? 'call-ahead'
@@ -678,7 +688,8 @@ export class CueAnnouncer {
     if (lengthMs === undefined) return false
 
     const finishBy = cue.scheduledStartMs - this.leadTimes.readyToneMs
-    let startAt = finishBy - lengthMs
+    const phraseShift = this.phraseShiftFor?.(combination, this.cadence) ?? 0
+    let startAt = finishBy - lengthMs - phraseShift
     if (startAt < cue.previewAt) {
       this.onSkip?.({
         cueId: cue.id,

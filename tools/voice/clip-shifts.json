@@ -1,0 +1,4 @@
+{
+  "_comment": "Per-clip phrase placement shifts in milliseconds — the cadence-lab surgical knob. Positive starts the clip EARLIER (fixes a clip whose spoken tokens land after their rings); negative starts later (fixes ahead). Values map cueId (e.g. '1-2b-3.steady.numbers.push') to shiftMs. Absent keys use the shipped placement rule unchanged, which is the whole point — Kyle's ear read the library at ~75 % clean, so a global lead-time nudge would move the aligned 75 % out of alignment. Fill from tools/analysis/reports/cadence-audit.json (Part B) or tools/analysis/monitor/<name>/cadence-report.json (Part C); the simple heuristic is shiftMs = -perTokenOffsetMs[0] to align token 0 to ring 0. Empty by design; do not populate without a measurement.",
+  "shifts": {}
+}

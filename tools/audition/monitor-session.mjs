@@ -23,6 +23,8 @@ import { spawn, execFile } from 'node:child_process'
 import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { computeAnchors, writeAnchors } from './anchor.mjs'
+
 const DEVICE_NAME = process.env.AUDITION_MIC ?? 'Analogue 1 + 2 (16- Focusrite USB Audio)'
 const SHOT_INTERVAL_MS = 2_500
 
@@ -99,7 +101,16 @@ function finish(reason) {
       join(outDir, 'manifest.json'),
       `${JSON.stringify({ startedEpochMs, endedEpochMs: Date.now(), shotIntervalMs: SHOT_INTERVAL_MS, shots }, null, 1)}\n`,
     )
-    console.log(`Wrote ${join(outDir, 'manifest.json')}`)
+    // Merge computed anchors (audio-t0 from wav mtime−duration, logcat
+    // first epoch) into the manifest so cadence_analyzer.py can align the
+    // three streams without re-deriving the math.
+    try {
+      const anchors = computeAnchors(outDir)
+      writeAnchors(outDir, anchors)
+      console.log(`Wrote ${join(outDir, 'manifest.json')}   anchors: ${JSON.stringify(anchors)}`)
+    } catch (err) {
+      console.warn(`Wrote ${join(outDir, 'manifest.json')} — anchor compute failed: ${err.message}`)
+    }
     process.exit(0)
   }, 1500)
 }

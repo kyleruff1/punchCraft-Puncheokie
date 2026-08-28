@@ -1,0 +1,33 @@
+{
+  "note": "Mirror of CADENCE_PROFILES + DEFAULT_ANNOUNCE_LEAD_TIMES. Regenerate with build-cadence-grid.mjs.",
+  "profiles": {
+    "technical": {
+      "id": "technical",
+      "minBpm": 80,
+      "maxBpm": 90,
+      "nominalBpm": 85
+    },
+    "steady": {
+      "id": "steady",
+      "minBpm": 95,
+      "maxBpm": 110,
+      "nominalBpm": 100
+    },
+    "pressure": {
+      "id": "pressure",
+      "minBpm": 110,
+      "maxBpm": 130,
+      "nominalBpm": 120
+    },
+    "sprint": {
+      "id": "sprint",
+      "minBpm": 130,
+      "maxBpm": 150,
+      "nominalBpm": 140
+    }
+  },
+  "leadTimes": {
+    "announceMs": 750,
+    "readyToneMs": 100
+  }
+}
