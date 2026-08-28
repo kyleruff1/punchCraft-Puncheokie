@@ -45,16 +45,25 @@ ref = encoder.embed_utterance(preprocess_wav(REFERENCE))
 
 
 def score(path: str, expected_tokens: list[str]):
-    r = model.transcribe(
-        path,
-        language="en",
-        temperature=0.0,
-        condition_on_previous_text=False,
-        initial_prompt=ASR_PROMPT,
-        fp16=True,
-    )
-    heard = canonical(r["text"])
+    def transcribe(prompt):
+        return model.transcribe(
+            path,
+            language="en",
+            temperature=0.0,
+            condition_on_previous_text=False,
+            initial_prompt=prompt,
+            fp16=True,
+        )["text"]
+
+    # Audit parity: a promptless second opinion clears the prompt-
+    # regurgitation hallucinations short clips provoke. Without it this
+    # arbiter restored audit-verified fixes (wave 3, 2026-08-27).
+    heard = canonical(transcribe(ASR_PROMPT))
     exact = 1 if heard == expected_tokens else 0
+    if not exact:
+        heard2 = canonical(transcribe(None))
+        if heard2 == expected_tokens:
+            exact, heard = 1, heard2
     try:
         emb = encoder.embed_utterance(preprocess_wav(path))
         sim = float(np.dot(ref, emb) / (np.linalg.norm(ref) * np.linalg.norm(emb)))
