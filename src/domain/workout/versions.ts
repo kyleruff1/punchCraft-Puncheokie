@@ -18,7 +18,7 @@
  * identical plan (R18, doc §16). Bump on any change to template selection,
  * theme planning, or block arrangement.
  */
-export const GENERATOR_VERSION = '1.1.0'
+export const GENERATOR_VERSION = '1.2.0'
 
 /**
  * Schema of the persisted `WorkoutRecipe` object in `workout_recipes.params_json`.

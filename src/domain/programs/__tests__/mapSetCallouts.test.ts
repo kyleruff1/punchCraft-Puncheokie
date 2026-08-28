@@ -16,7 +16,7 @@ import { coverageAudit } from '../mapValidation'
 import { generateWorkout } from '../../workout/generateWorkout'
 import { defaultRecipe } from '../../workout/WorkoutRecipe'
 import { MANDATORY_SAME_MOVE_MS } from '../../workout/setupCallouts'
-import { formatCombo } from '../../workout/WorkoutTokens'
+import { formatCombo, punchTokens } from '../../workout/WorkoutTokens'
 
 const durationFor = (combination: string, cadence: string): number | undefined =>
   combination.includes('-') ? (cadence === 'technical' ? 1600 : 1200) : undefined
@@ -222,6 +222,43 @@ describe('the 30-second closer', () => {
       expect(times(on)).toEqual(times(off))
       for (const e of on.events.filter((x) => x.kind === 'set-callout')) {
         expect(e.atMs).toBeGreaterThanOrEqual(1_500)
+      }
+    }
+  })
+})
+
+describe('ceremony tone scales with the pattern (Kyle: "the big payoff" for a 4-punch combo)', () => {
+  const seeds = ['ceremony-seed', 'tone-a', 'tone-b', 'tone-c', 'tone-d']
+
+  it('reserves the payoff variant for chains of six or more punches', () => {
+    for (const seed of seeds) {
+      const { workout } = generatedRounds(seed)
+      for (const round of workout.schedule) {
+        for (const block of round.blocks) {
+          const asset = block.setupCallout?.asset
+          if (asset !== 'co-pressure-03') continue
+          expect(punchTokens(block.tokens).length).toBeGreaterThanOrEqual(6)
+        }
+      }
+    }
+  })
+
+  it('never announces "adding a piece" when the stage does not grow', () => {
+    for (const seed of seeds) {
+      const { workout } = generatedRounds(seed)
+      for (const round of workout.schedule) {
+        for (const block of round.blocks) {
+          const asset = block.setupCallout?.asset
+          if (asset === undefined || !asset.startsWith('co-buildup-next')) continue
+          // The nearest preceding buildup-start block is the stage this one
+          // claims to extend — the notation must actually differ.
+          const before = round.blocks.slice(0, round.blocks.indexOf(block))
+          const start = [...before]
+            .reverse()
+            .find((b) => b.setupCallout?.asset.startsWith('co-buildup-start'))
+          if (!start) continue
+          expect(formatCombo(block.tokens)).not.toBe(formatCombo(start.tokens))
+        }
       }
     }
   })

@@ -154,11 +154,21 @@ describe('generateWorkout — distribution', () => {
         .filter(([key]) => [2, 4, 6].includes(Number(key.replace('b', ''))))
         .reduce((sum, [, share]) => sum + share, 0)
 
-    const lead = generateWorkout(recipe({ durationMinutes: 40, bias: 'lead' }))
-    const rear = generateWorkout(recipe({ durationMinutes: 40, bias: 'rear' }))
-    expect(rearShare(rear.expectedTechniqueDistribution)).toBeGreaterThan(
-      rearShare(lead.expectedTechniqueDistribution),
-    )
+    // A single draw can land the two biases equal by luck of the block
+    // deals (it did, at generator 1.2.0), so the property is asserted on
+    // the average across seeds rather than one workout.
+    const seeds = ['bias-a', 'bias-b', 'bias-c', 'bias-d']
+    const mean = (bias: 'lead' | 'rear') =>
+      seeds.reduce(
+        (sum, seed) =>
+          sum +
+          rearShare(
+            generateWorkout(recipe({ durationMinutes: 40, bias, seed }))
+              .expectedTechniqueDistribution,
+          ),
+        0,
+      ) / seeds.length
+    expect(mean('rear')).toBeGreaterThan(mean('lead'))
   })
 })
 

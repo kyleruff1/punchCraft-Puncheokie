@@ -59,15 +59,28 @@ const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
 }
 
 /**
- * Clips that DUCK the combination phrase while they sound — the
- * 30-second closer must cut through the pressure-phase calls it is
- * deliberately yelled over (the listening lab heard the finisher get
- * buried under same-voice calls at equal volume).
+ * Chime-ins (Kyle): a coach interjection — the 30-second closer, an
+ * encouragement line, a power call, a ceremony sentence — MUTES the main
+ * shot-calling track while it sounds, and the calls come back at the same
+ * volume after. Two takes of the same voice at once read as chaos; a
+ * 0.35 duck (the first attempt) still left the finisher fighting the
+ * calls under it. `co-` covers every ceremony/closer/thirty sentence.
  */
-const DUCKS_PHRASE_PREFIXES = ['co-thirty-left', 'co-closer-'] as const
+const CHIME_IN_PREFIXES = [
+  'co-',
+  'power-strikes',
+  'double-up',
+  'hands-up',
+  'put-it-on-em',
+  'breathe',
+  'touch-and-go',
+] as const
 
-/** How far the phrase player drops while a ducking clip sounds. */
-export const PHRASE_DUCK_FACTOR = 0.35
+export const isChimeInAsset = (id: string): boolean =>
+  CHIME_IN_PREFIXES.some((prefix) => id.startsWith(prefix))
+
+/** Clearance after a chime-in before the calls come back. */
+export const CHIME_IN_RELEASE_MS = 250
 
 /** Clips carried on the bells volume rather than the voice volume (doc §25). */
 const BELL_ASSETS: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
@@ -424,7 +437,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       try {
         const player = this.makePlayer(asset.module)
         this.phrasePlayer = player
-        player.volume = this.volumes.voice
+        // Born silent inside a chime-in's mute window; the window's
+        // restore timer brings this same player back to voice volume.
+        player.volume = this.callsMuted() ? 0 : this.volumes.voice
         player.play()
         // Success-path record: the QA loop aligns mic recordings of a session
         // against these lines (LogRecord carries both clocks), and a silent
@@ -661,13 +676,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     if (!player) return
     this.requestFocus()
     try {
-      player.volume = BELL_ASSETS.has(id) ? this.volumes.bells : this.volumes.voice
+      // Bells carry their own volume; a chime-in always sounds at full
+      // voice; a shot-call word inside a chime-in's mute window is born
+      // silent (it out-lives no window — word clips are shorter).
+      player.volume = BELL_ASSETS.has(id)
+        ? this.volumes.bells
+        : !isChimeInAsset(id) && this.callsMuted()
+          ? 0
+          : this.volumes.voice
       // Rewind first: a clip played twice in a row would otherwise resume from
       // its own end and produce silence.
       player.seekTo(0)
       player.play()
-      if (DUCKS_PHRASE_PREFIXES.some((prefix) => id.startsWith(prefix))) {
-        this.duckPhraseFor(this.durations.get(this.keyFor(id, form)) ?? 2_500)
+      if (isChimeInAsset(id)) {
+        this.muteCallsFor(this.durations.get(this.keyFor(id, form)) ?? 2_500)
       }
       // Success-path record for the QA loop — see playCombination's note.
       logger.info('puncheokie.voice.play', 'clip playing', {
@@ -685,30 +707,40 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
   }
 
-  /** Restore handle for the phrase duck — cosmetic, not a scheduler. */
-  private duckRestore: ReturnType<typeof setTimeout> | null = null
+  /** Restore handle for the chime-in mute — cosmetic, not a scheduler. */
+  private muteRestore: unknown = null
+  /** End of the current chime-in mute window, on the injected clock. */
+  private callsMutedUntil = 0
+
+  /** Whether the shot-calling track is muted under a chime-in right now. */
+  private callsMuted(): boolean {
+    return this.clock() < this.callsMutedUntil
+  }
 
   /**
-   * Drop the combination-phrase player under a clip that must cut
-   * through, restoring after the clip's measured length. A wall timer is
-   * acceptable here: it only restores VOLUME — a late restore leaves the
-   * calls quiet a moment longer, it never moves any scheduled sound.
+   * Mute the shot-calling track under a chime-in, restoring after the
+   * clip's measured length. A timer is acceptable here: it only restores
+   * VOLUME — a late restore leaves the calls quiet a moment longer, it
+   * never moves any scheduled sound. Pooled word players started inside
+   * the window are born at volume 0 and are shorter than the window, so
+   * only the phrase player needs the explicit restore.
    */
-  private duckPhraseFor(durationMs: number): void {
+  private muteCallsFor(durationMs: number): void {
+    this.callsMutedUntil = this.clock() + durationMs + CHIME_IN_RELEASE_MS
     try {
-      if (this.phrasePlayer) this.phrasePlayer.volume = this.volumes.voice * PHRASE_DUCK_FACTOR
+      if (this.phrasePlayer) this.phrasePlayer.volume = 0
     } catch {
       return
     }
-    if (this.duckRestore !== null) clearTimeout(this.duckRestore)
-    this.duckRestore = setTimeout(() => {
-      this.duckRestore = null
+    if (this.muteRestore !== null) this.cancelScheduled(this.muteRestore)
+    this.muteRestore = this.schedule(() => {
+      this.muteRestore = null
       try {
         if (this.phrasePlayer) this.phrasePlayer.volume = this.volumes.voice
       } catch {
         // Player already gone.
       }
-    }, durationMs + 250)
+    }, durationMs + CHIME_IN_RELEASE_MS)
   }
 
   /**

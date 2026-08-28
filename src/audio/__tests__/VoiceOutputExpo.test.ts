@@ -28,7 +28,12 @@ jest.mock('expo-audio', () => ({
 }))
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
-import { FALLBACK_CLIP_MS, MIN_CLIP_GAP_MS, VoiceOutputExpo } from '../VoiceOutputExpo'
+import {
+  CHIME_IN_RELEASE_MS,
+  FALLBACK_CLIP_MS,
+  MIN_CLIP_GAP_MS,
+  VoiceOutputExpo,
+} from '../VoiceOutputExpo'
 import {
   PHRASE_FORMS,
   missingAssetIds,
@@ -54,6 +59,7 @@ function harness(
 ): {
   output: VoiceOutputExpo
   plays: PlayEvent[]
+  created: Array<{ source: number; volume: number }>
   spoken: string[]
   stops: number
   now: () => number
@@ -61,6 +67,7 @@ function harness(
   modes: string[]
 } {
   const plays: PlayEvent[] = []
+  const created: Array<{ source: number; volume: number }> = []
   const spoken: string[] = []
   const modes: string[] = []
   let stops = 0
@@ -82,7 +89,8 @@ function harness(
     createPlayer: (source) => {
       if (opts.failPlayers) throw new Error('no binding')
       let volume = 1
-      return {
+      const player = {
+        source,
         get volume() {
           return volume
         },
@@ -92,7 +100,9 @@ function harness(
         seekTo: () => {},
         play: () => plays.push({ source, volume }),
         remove: () => {},
-      } as never
+      }
+      created.push(player)
+      return player as never
     },
     speaker: {
       speak: (text: string) => {
@@ -111,6 +121,7 @@ function harness(
   return {
     output,
     plays,
+    created,
     spoken,
     get stops() {
       return stops
@@ -518,6 +529,48 @@ describe('volumes are independent (doc §25)', () => {
     const h = harness()
     expect(Object.keys({ voice: 0, bells: 0, haptics: 0 })).not.toContain('music')
     expect(h.output.available).toBe(true)
+  })
+})
+
+describe('a chime-in mutes the shot calling, then it comes back (Kyle)', () => {
+  // Unmeasured clips fall back to 2.5s in `emit`'s mute call.
+  const CHIME_FALLBACK_MS = 2_500
+
+  it('silences a sounding combination phrase and restores its volume', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+    expect(phrase.volume).toBe(1)
+
+    h.output.playAsset('co-closer-01')
+    expect(phrase.volume).toBe(0)
+
+    h.advance(CHIME_FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(1)
+  })
+
+  it('births a phrase silent inside the window, restored by the same timer', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('double-up')
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+    expect(phrase.volume).toBe(0)
+
+    h.advance(CHIME_FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(1)
+  })
+
+  it('mutes per-word calls but never the bell', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('co-thirty-left')
+    h.output.playAsset('1')
+    expect(h.plays[h.plays.length - 1]!.volume).toBe(0)
+
+    h.output.playAsset('bell')
+    expect(h.plays[h.plays.length - 1]!.volume).not.toBe(0)
   })
 })
 

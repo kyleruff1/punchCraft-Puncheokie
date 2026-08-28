@@ -18,7 +18,7 @@ import { defaultVoiceCoachPolicy } from '../../coach/VoiceCoachPolicy'
 import type { VoiceOutputPort } from '../../coach/VoiceOutputPort'
 import { CueEngine, DEFAULT_LEAD_TIMES } from '../CueEngine'
 import { expandTimeline } from '../CueTimeline'
-import { compileRoundRhythmMap } from '../RhythmMap'
+import { compileRoundRhythmMap, REANNOUNCE_MIN_CLEAR_MS } from '../RhythmMap'
 import { generateWorkout } from '../../workout/generateWorkout'
 import { defaultRecipe } from '../../workout/WorkoutRecipe'
 import { threeRoundFundamentals } from '../../workout/samples/threeRoundFundamentals'
@@ -98,10 +98,20 @@ function describeParity(name: string, workout: Parameters<typeof expandTimeline>
     it('round 1: every compiled call, refire and tone matches the live announcer', () => {
       const { round, recorded, map } = driveRound(workout, 0)
 
-      const livePhrases = recorded
-        .filter((r) => r.kind === 'phrase')
-        .map((r) => `${r.detail}@${Math.round(r.at)}`)
-        .sort()
+      // The map thins same-combination repeats whose phrase cannot clear
+      // before the next one starts (Kyle's overlapping-tail fix); the
+      // legacy announcer re-called every rep, so its recording is put
+      // through the identical rule before comparing.
+      const phraseRecords = recorded.filter((r) => r.kind === 'phrase').sort((a, b) => a.at - b.at)
+      const thinned: Recorded[] = []
+      let lastKept: { detail: string; end: number } | null = null
+      for (const r of phraseRecords) {
+        if (lastKept && lastKept.detail === r.detail && r.at < lastKept.end + REANNOUNCE_MIN_CLEAR_MS)
+          continue
+        lastKept = { detail: r.detail, end: r.at + PHRASE_MS }
+        thinned.push(r)
+      }
+      const livePhrases = thinned.map((r) => `${r.detail}@${Math.round(r.at)}`).sort()
       const mapPhrases = map.events
         .filter(
           (e) =>

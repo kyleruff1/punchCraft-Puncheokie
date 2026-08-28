@@ -304,9 +304,10 @@ export function fillScoredRound(
   const calloutFor = (
     pattern: SetupPatternId,
     notation?: string,
+    pickOpts: { variantCeiling?: number } = {},
   ): SetupCallout | undefined =>
     opts.setupCallouts
-      ? pickCallout(pattern, calloutRng, opts.setupCallouts.reserveMsFor, notation)
+      ? pickCallout(pattern, calloutRng, opts.setupCallouts.reserveMsFor, notation, pickOpts)
       : undefined
   const workMs = entry.workDurationMs
   const gap = gapBeatsAt(p)
@@ -464,14 +465,19 @@ export function fillScoredRound(
       else blockCount -= 1
     }
 
-    // 4 — second build-up stage: "we're adding a piece."
+    // 4 — second build-up stage: "we're adding a piece" — but ONLY when
+    // the pattern actually grows. Short ladders clamp build2 to build1,
+    // and announcing growth that never happens reads as a broken promise
+    // (Kyle: "it said it's adding... then it didn't").
     addRepeatPhase(
       build2,
       phaseBudget(PHASE_SHARE.build2),
       phasePunches(0.17),
       1,
       undefined,
-      calloutFor('co-buildup-next', build2.notation),
+      build2.notation === build1.notation
+        ? undefined
+        : calloutFor('co-buildup-next', build2.notation),
     )
 
     // 5 — base with an approved body variation (falls back to the base).
@@ -551,7 +557,11 @@ export function fillScoredRound(
       phasePunches(0.22),
       0.7,
       shiftCadence(recipe.cadenceProfile, 1),
-      calloutFor('co-pressure', completed.notation),
+      // "The payoff" grandeur is earned by real chains; a 4-punch
+      // pattern gets the plain variants.
+      calloutFor('co-pressure', completed.notation, {
+        variantCeiling: completed.punchCount >= 6 ? 3 : 2,
+      }),
     )
   } else {
     // No ladder survives the recipe (narrow enabledPunches, tiny combo cap,

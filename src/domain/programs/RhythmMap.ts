@@ -149,6 +149,18 @@ export const ENCOURAGEMENT_ROTATION: readonly EncouragementPayload['asset'][] = 
   'touch-and-go',
 ]
 
+/**
+ * Repeat thinning (Kyle: "end of this round with 10 seconds left,
+ * overlapping audio"): a tightened pressure phase can rep a combination
+ * faster than its phrase clip plays — 1b-pairs carry an extra "body" and
+ * run ~1.5s against a ~1.2s rep interval, so every rep's call stepped on
+ * the last for the final 20s of the round. When the SAME combination
+ * repeats before the previous phrase (plus this clearance) can finish,
+ * the repeat is not re-called — the athlete knows the combo and the
+ * strike grid is untouched. A changed combination is always called.
+ */
+export const REANNOUNCE_MIN_CLEAR_MS = 150
+
 /** Voiced gaps longer than this earn an encouragement (research: 15-20s grid). */
 export const ENCOURAGEMENT_GAP_MS = 15_000
 /** Density cap per round — a coach interjects, never narrates. */
@@ -223,6 +235,9 @@ export function compileRoundRhythmMap(
 ): RoundRhythmMap {
   const leadTimes = opts.leadTimes ?? { ...DEFAULT_ANNOUNCE_LEAD_TIMES }
   const events: RhythmEvent[] = []
+  // The repeat-thinning window: the phrase currently "on air", so a
+  // same-combination rep arriving before it clears is not re-called.
+  let lastPhrase: { combination: string; endMs: number } | null = null
 
   for (let cueIndex = 0; cueIndex < round.cues.length; cueIndex += 1) {
     const cue = round.cues[cueIndex] as RoundTimeline['cues'][number]
@@ -241,7 +256,9 @@ export function compileRoundRhythmMap(
     let callStartAt = cue.announceAt
     if (lengthMs === undefined) {
       // No rendered phrase: the per-word fallback starts at the announce
-      // lead, exactly where the event-driven announcer started it.
+      // lead, exactly where the event-driven announcer started it. Its
+      // length is unknown here, so the thinning window resets.
+      lastPhrase = null
       events.push({
         id: `${cue.id}/call`,
         cueId: cue.id,
@@ -257,14 +274,25 @@ export function compileRoundRhythmMap(
       const finishBy = cue.scheduledStartMs - leadTimes.readyToneMs
       const startAt = Math.max(cue.previewAt, finishBy - lengthMs)
       callStartAt = startAt
-      events.push({
-        id: `${cue.id}/call`,
-        cueId: cue.id,
-        kind: 'call',
-        atMs: startAt,
-        payload: { mode: 'phrase', combination, cadence },
-        cancelsWith: 'cue-end',
-      })
+      // Repeat thinning: a same-combination rep that lands while the
+      // previous phrase is still sounding is NOT re-called. Ceremony
+      // cues are exempt — their placement anchors on this call.
+      const crowded =
+        lastPhrase !== null &&
+        lastPhrase.combination === combination &&
+        startAt < lastPhrase.endMs + REANNOUNCE_MIN_CLEAR_MS &&
+        cue.setupCallout === undefined
+      if (!crowded) {
+        lastPhrase = { combination, endMs: startAt + lengthMs }
+        events.push({
+          id: `${cue.id}/call`,
+          cueId: cue.id,
+          kind: 'call',
+          atMs: startAt,
+          payload: { mode: 'phrase', combination, cadence },
+          cancelsWith: 'cue-end',
+        })
+      }
 
       if (cue.scoring === 'count') {
         const windowMs = cue.windowEndMs - cue.scheduledStartMs
@@ -470,7 +498,14 @@ export function compileRoundRhythmMap(
               : opts.setupCalloutDurationFor?.(payload.asset) ?? 2_500
           return [e.atMs, e.atMs + lengthMs]
         }
-        return [e.atMs]
+        if (e.kind === 'call' || e.kind === 'refire') {
+          const payload = e.payload as CallPayload
+          const lengthMs = opts.durationFor(payload.combination, payload.cadence) ?? 1_500
+          return [e.atMs, e.atMs + lengthMs]
+        }
+        // Encouragement lines are short interjections; a nominal length
+        // keeps a rotation line from being packed against a power call.
+        return [e.atMs, e.atMs + 1_800]
       })
       .sort((a, b) => a - b)
     const bounds = [0, ...voicedTimes, round.workDurationMs]

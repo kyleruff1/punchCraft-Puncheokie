@@ -122,11 +122,18 @@ export function pickCallout(
   rng: Rng,
   reserveMsFor: ReserveMsFor,
   notation?: string,
+  opts: { variantCeiling?: number } = {},
 ): SetupCallout | undefined {
   const def = SETUP_PATTERNS[pattern]
   // Always draw, even if we end up skipping — keeps the callout rng
   // stream's draw count stable across clip-availability differences.
-  const variant = 1 + rng.int(def.variants)
+  const drawn = 1 + rng.int(def.variants)
+  // Tone scaling (Kyle: "this is the payoff" before a 4-punch combo,
+  // unironically): a caller may cap the variant range so the grandest
+  // phrasings are reserved for patterns that earn them. The draw stays
+  // unconditional; only the mapping narrows.
+  const ceiling = Math.max(1, Math.min(def.variants, opts.variantCeiling ?? def.variants))
+  const variant = 1 + ((drawn - 1) % ceiling)
   const asset = `${pattern}-${String(variant).padStart(2, '0')}`
   const recite = def.recite ? notation : undefined
   const reserveMs = reserveMsFor(asset, recite, def.tail)
