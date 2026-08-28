@@ -165,15 +165,34 @@ function measureWordOnsets(path, expectedWords) {
  * Envelope-based word onset+offset detection.
  *
  * Returns `[{startMs, endMs}, ...]` when the detected count matches
- * `expectedWords`; `null` otherwise. `opts` tunes the two knobs:
- *   thresholdRatio (default 0.12): peak fraction that counts as voiced
- *   minGapWindows  (default 5)   : consecutive quiet windows that end a word
- * Relaxing both (0.08, 3) rescues clips where the coach ran words together
- * — the "two-pass envelope" of the scalable cadence rail: strict first,
- * relaxed on miss.
+ * `expectedWords`; `null` otherwise. Uses hysteresis so `endMs` tracks
+ * the perceptual end of the syllable rather than the acoustic decay
+ * tail — starts a word when energy crosses `startThresholdRatio` of
+ * peak, ends it when energy drops below `endThresholdRatio` (higher).
+ * A `minGapWindows` fallback still terminates a word when energy sits
+ * between the two thresholds too long (rare in real speech).
+ *
+ * `opts`:
+ *   startThresholdRatio (default 0.12): peak fraction that STARTS a word
+ *   endThresholdRatio   (default 0.25): higher threshold that ENDS one
+ *   minGapWindows       (default 5)   : safety-net silence gap in windows
+ *
+ * The tighter `endThresholdRatio` was Kyle's ask (2026-08-28) — the old
+ * end-of-word ran into the syllable's decay, so the rail's "expected
+ * ring N ms after word ends" fired later than the coach's perceived
+ * word end, producing ~100 ms per-clip spread on envelope-sourced
+ * clips.  Relaxed second-pass callers pass smaller ratios (0.08 / 0.15).
  */
 function measureWordSpans(path, expectedWords, opts = {}) {
-  const { thresholdRatio = 0.12, minGapWindows = 5 } = opts
+  const {
+    startThresholdRatio = 0.12,
+    endThresholdRatio = 0.25,
+    minGapWindows = 5,
+    // Back-compat: `thresholdRatio` sets BOTH start and end.
+    thresholdRatio,
+  } = opts
+  const startThr = thresholdRatio ?? startThresholdRatio
+  const endThr = thresholdRatio ?? endThresholdRatio
   const wav = readWav(path)
   if (!wav) return null
   const { buffer, fmt, data, bytesPerFrame, frames } = wav
@@ -194,31 +213,41 @@ function measureWordSpans(path, expectedWords, opts = {}) {
   }
 
   const loudest = envelope.reduce((m, e) => Math.max(m, e.peak), 0)
-  const threshold = loudest * thresholdRatio
+  const startLevel = loudest * startThr
+  const endLevel = loudest * endThr
 
   const spans = []
   let inWord = false
   let belowFor = 0
   let currentStart = 0
-  let lastLoud = 0
+  // The last frame ABOVE the end threshold — the perceptual end of the
+  // syllable, before decay. `endMs` snaps here (no + window padding).
+  let lastAboveEnd = 0
   for (const point of envelope) {
-    if (point.peak >= threshold) {
-      if (!inWord) {
+    if (!inWord) {
+      if (point.peak >= startLevel) {
         currentStart = point.atMs
+        lastAboveEnd = point.atMs
         inWord = true
+        belowFor = 0
       }
-      lastLoud = point.atMs
-      belowFor = 0
-    } else if (inWord) {
-      belowFor += 1
-      if (belowFor >= minGapWindows) {
-        spans.push({ startMs: currentStart, endMs: lastLoud + window })
-        inWord = false
+    } else {
+      if (point.peak >= endLevel) {
+        lastAboveEnd = point.atMs
+        belowFor = 0
+      } else {
+        belowFor += 1
+        // End the word once we've had `minGapWindows` frames below the
+        // END threshold. Snapping to lastAboveEnd trims the decay tail
+        // that would otherwise inflate endMs by 50-150 ms.
+        if (belowFor >= minGapWindows) {
+          spans.push({ startMs: currentStart, endMs: lastAboveEnd })
+          inWord = false
+        }
       }
     }
   }
-  // A word that was still voicing at EOF closes at the file's last frame.
-  if (inWord) spans.push({ startMs: currentStart, endMs: lastLoud + window })
+  if (inWord) spans.push({ startMs: currentStart, endMs: lastAboveEnd })
 
   return spans.length === expectedWords ? spans : null
 }
@@ -592,7 +621,8 @@ for (const job of jobs) {
   let source = spans.length === expectedWords ? 'envelope' : 'none'
   if (source === 'none') {
     const relaxed = measureWordSpans(job.wav, expectedWords, {
-      thresholdRatio: 0.08,
+      startThresholdRatio: 0.08,
+      endThresholdRatio: 0.15,
       minGapWindows: 3,
     })
     if (relaxed) {
@@ -617,6 +647,34 @@ for (const job of jobs) {
       })
     }
     wordIndex += wordCounts[t]
+  }
+  // Rail sanity guard (2026-08-28): reject wordMarks that would make the
+  // rings fire chaotically. The rail faithfully follows whatever cadence
+  // the marks describe, so a clip with words that ran together (envelope
+  // finding a 100 ms end-to-end gap) or with a spike between two
+  // otherwise-uniform gaps (Whisper mis-timing a word) produces rings the
+  // athlete can't throw on. Better: fall back to the beat grid for that
+  // one clip — Kyle-consistent even if not Kyle-tight. Thresholds:
+  //   MIN_INTER_TOKEN_GAP_MS: rings any closer look/feel overlapping.
+  //   MIN_WORD_SPAN_MS: a token whose audible envelope is under this is
+  //     probably a mis-detection (word ran into its neighbor).
+  const MIN_INTER_TOKEN_GAP_MS = 150
+  const MIN_WORD_SPAN_MS = 50
+  let sane = wordMarks.length === job.tokens.length
+  if (sane && wordMarks.length >= 2) {
+    for (let i = 0; i < wordMarks.length; i += 1) {
+      const span = (wordMarks[i].endOffsetMs ?? 0) - wordMarks[i].offsetMs
+      if (span < MIN_WORD_SPAN_MS) { sane = false; break }
+      if (i > 0) {
+        const gap = wordMarks[i].endOffsetMs - wordMarks[i - 1].endOffsetMs
+        if (gap < MIN_INTER_TOKEN_GAP_MS) { sane = false; break }
+      }
+    }
+  }
+  if (!sane) {
+    // Drop the marks; runtime falls back to beat-grid rings for this clip.
+    wordMarks.length = 0
+    source = 'none'
   }
 
   index.push({
@@ -675,16 +733,36 @@ if (!skipWhisperBackfill && !onlyArg && !onlyKeys && !missingOnly) {
           stillMissing += 1
           continue
         }
-        entry.wordMarks = result.onsets.map((onset, t) => ({
+        const marks = result.onsets.map((onset, t) => ({
           tokenIndex: t,
           token: entry.tokens[t],
           offsetMs: Math.round(onset),
           endOffsetMs: Math.round(result.ends[t]),
         }))
+        // Same rail sanity guard as the envelope path — Whisper's word
+        // timings on repeat-heavy short combos frequently spike (1-2-1-2
+        // with a 100 ms tail-off), and firing rings on those spikes reads
+        // as chaos on the bag. Drop the marks and let the beat grid drive.
+        let sane = marks.length >= 2
+        if (sane) {
+          for (let i = 0; i < marks.length; i += 1) {
+            const span = marks[i].endOffsetMs - marks[i].offsetMs
+            if (span < 50) { sane = false; break }
+            if (i > 0 && marks[i].endOffsetMs - marks[i - 1].endOffsetMs < 150) {
+              sane = false
+              break
+            }
+          }
+        }
+        if (!sane) {
+          stillMissing += 1
+          continue
+        }
+        entry.wordMarks = marks
         entry.wordMarksSource = 'whisper'
         filled += 1
       }
-      console.log(`  filled ${filled}/${needsWhisper.length} via Whisper; ${stillMissing} still 'none'`)
+      console.log(`  filled ${filled}/${needsWhisper.length} via Whisper; ${stillMissing} still 'none' (incl. rail-insane)`)
     } catch (err) {
       console.warn(`  Whisper backfill skipped: ${err.message.split('\n')[0]}`)
     }
