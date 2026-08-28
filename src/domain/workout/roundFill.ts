@@ -41,10 +41,8 @@ import { parseCombo } from './WorkoutTokens'
 import { tierFor, type WorkoutRecipe, type Frequency } from './WorkoutRecipe'
 import { makeRng, type Rng } from './seededRandom'
 import {
-  familyPatternFor,
   MANDATORY_SAME_MOVE_MS,
   pickCallout,
-  SETUP_ROUND_OPEN_EXTRA_MS,
   type ReserveMsFor,
   type SetupPatternId,
 } from './setupCallouts'
@@ -426,29 +424,13 @@ export function fillScoredRound(
     const effTarget = Math.round(target * 0.88)
     const phasePunches = (share: number): number => Math.max(4, Math.round(effTarget * share))
 
-    // 1 — base pattern. The round opens with a ceremony: the last round
-    // gets its send-off, the first gets the pattern introduction, and
-    // middle rounds get the family flavor of the base notation.
+    // 1 — base pattern. NO ceremony after the bell (Kyle: "that type of
+    // intro should either be removed, or sequenced before the beginning
+    // bell") — round 1 is introduced by the walkout, rounds 2+ by the
+    // rest ceremony's theme line. The ding is followed by the first
+    // call, nothing else.
     const lastRound = p >= 1
-    const basePattern: SetupPatternId = lastRound
-      ? 'co-final-round'
-      : p <= 0
-        ? 'co-first-look'
-        : familyPatternFor(base.notation)
-    {
-      const opener = calloutFor(basePattern, base.notation)
-      // The round opener pays for the post-bell quiet too, so the
-      // compiler always finds room instead of silently dropping it.
-      if (opener !== undefined) opener.reserveMs += SETUP_ROUND_OPEN_EXTRA_MS
-      addRepeatPhase(
-        base,
-        phaseBudget(PHASE_SHARE.base),
-        phasePunches(0.17),
-        1,
-        undefined,
-        opener,
-      )
-    }
+    addRepeatPhase(base, phaseBudget(PHASE_SHARE.base), phasePunches(0.17))
     // 2 — first build-up stage: "Let's get ready for the buildup…"
     addRepeatPhase(
       build1,

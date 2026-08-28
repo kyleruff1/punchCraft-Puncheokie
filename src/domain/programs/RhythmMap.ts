@@ -93,9 +93,14 @@ export type SetCalloutPayload =
   | { recite: string; cadence: 'technical' }
 
 /** Ceremony must FINISH this long before the set's first call starts. */
-export const SET_CALLOUT_QUIET_MS = 300
-/** Breath between ceremony parts (sentence → recitation → tail). */
-export const SET_CALLOUT_PART_GAP_MS = 250
+export const SET_CALLOUT_QUIET_MS = 500
+/**
+ * Breath between ceremony parts (sentence → recitation → tail). Widened
+ * 250 → 450 after Kyle heard parts stack under tick jitter ("chaos"):
+ * a dispatch that lands one busy tick late must not run into the next
+ * part's absolute time.
+ */
+export const SET_CALLOUT_PART_GAP_MS = 450
 /** Ceremony never starts before the previous cue's window has ended. */
 export const SET_CALLOUT_MIN_CLEAR_MS = 200
 /**
@@ -444,9 +449,11 @@ export function compileRoundRhythmMap(
     // slot, density-capped. The compiler placed every call, so a scheduled
     // encouragement can never collide with one — it lands in guaranteed
     // quiet (the runtime queue still yields it first if anything moves).
+    // Ceremonies and closers are SPANS, not instants: a rotation line
+    // placed between two ceremony parts lands inside the ceremony (the
+    // overlapping-voices chaos Kyle heard). Every voiced event
+    // contributes its END too, so gap bounds respect real durations.
     const voicedTimes = events
-      // Power call-outs (added above) count as voiced here, so a rotation
-      // line is never scheduled right on top of one.
       .filter(
         (e) =>
           e.kind === 'call' ||
@@ -454,7 +461,17 @@ export function compileRoundRhythmMap(
           e.kind === 'encouragement' ||
           e.kind === 'set-callout',
       )
-      .map((e) => e.atMs)
+      .flatMap((e) => {
+        if (e.kind === 'set-callout') {
+          const payload = e.payload as SetCalloutPayload
+          const lengthMs =
+            'recite' in payload
+              ? opts.durationFor(payload.recite, payload.cadence) ?? 2_000
+              : opts.setupCalloutDurationFor?.(payload.asset) ?? 2_500
+          return [e.atMs, e.atMs + lengthMs]
+        }
+        return [e.atMs]
+      })
       .sort((a, b) => a - b)
     const bounds = [0, ...voicedTimes, round.workDurationMs]
     let added = 0
