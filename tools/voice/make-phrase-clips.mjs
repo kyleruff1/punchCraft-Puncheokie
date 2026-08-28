@@ -367,17 +367,16 @@ if (onlyKeys) {
  * the final-bounds window still holds as the promise.
  */
 /**
- * Techniques snap (Kyle, 2026-08-27): the technique names read as pedantic
- * at the numbers side's energy — "the numeric twin" won an A/B at 28%
- * tighter. Baked here so every future techniques render lands at the
- * approved pace; the shipped library was batch-tightened by the same
- * factor with the same rubberband settings.
+ * NO vocabulary-wide tempo multipliers. Tried (Kyle's 28% "techniques
+ * snap" A/B pick, 2026-08-27) and REVERTED the same night: the phrase
+ * tempo is grid-locked — `plan.speed` fits each spoken word to its
+ * strike on the beat grid, so a blanket tighten makes the words finish
+ * ahead of the punches ("timing is wildly off" — Kyle, live) and the
+ * post-limiter stretch also sheds level. Snap must come from render
+ * ENERGY (text/emphasis/exaggeration), never post-fit tempo.
  */
-const TECHNIQUES_SNAP = 1.28
-
 function fitRateForJob(job) {
-  const snap = job.vocabulary === 'techniques' ? TECHNIQUES_SNAP : 1
-  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION * snap * (job.override?.tempo ?? 1)
+  const rate = job.plan.speed * CHATTERBOX_TEMPO_CALIBRATION * (job.override?.tempo ?? 1)
   return Number.isFinite(rate) && rate > 0 ? rate : 1
 }
 
