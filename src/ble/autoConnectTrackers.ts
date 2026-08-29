@@ -258,13 +258,18 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
       results.push({ hand: tracker.hand, address: tracker.address, status: 'already-connected' })
       continue
     }
+    // The scan is how an UNBONDED tracker's address type gets learned
+    // (see the header), but it is not proof of reachability: a bonded
+    // glove commonly advertises DIRECTED at its bonded partner rather
+    // than broadcasting, so it never appears in a general scan while
+    // being instantly connectable — and a glove whose firmware still
+    // believes it is in a session goes quiet the same way. Refusing to
+    // try what the scan missed strands exactly those gloves, so an
+    // unseen known tracker still gets one direct attempt by address.
     const deviceId = seen.get(tracker.address.toUpperCase())
-    if (!deviceId) {
-      results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
-      continue
-    }
+    const sighted = deviceId !== undefined
     try {
-      await coordinator.connectSlot(tracker.hand, deviceId, tracker.displayName)
+      await coordinator.connectSlot(tracker.hand, deviceId ?? tracker.address, tracker.displayName)
       logger.info('autoconnect.connected', 'auto-connected tracker', {
         hand: safe(tracker.hand),
         color: safe(tracker.color),
@@ -273,9 +278,20 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
       results.push({ hand: tracker.hand, address: tracker.address, status: 'connected' })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
+      // A glove the scan never saw, failing to connect, is simply not
+      // reachable — report it as not-found rather than as a fault, so
+      // the UI keeps saying "wake the glove" instead of crying error.
+      if (!sighted) {
+        logger.info('autoconnect.notReachable', 'tracker neither advertising nor connectable', {
+          hand: safe(tracker.hand),
+          errorMessage: safe(message),
+        })
+        results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
+        continue
+      }
       logger.warn('autoconnect.connect.failed', 'auto-connect could not bind slot', {
         hand: safe(tracker.hand),
-        deviceId: deviceSensitive(deviceId),
+        deviceId: deviceSensitive(tracker.address),
         errorMessage: safe(message),
       })
       results.push({

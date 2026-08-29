@@ -275,6 +275,30 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
     }
   }
 
+  /** Wire (or re-wire) the per-device disconnect subscription. */
+  private watchDisconnect(manager: PlxBleManager, deviceId: string): void {
+    const prior = this.disconnectSubs.get(deviceId)
+    if (prior) prior.remove()
+    const sub = manager.onDeviceDisconnected(deviceId, (err, _d) => {
+      // Every drop gets a line with the stack's reason: a tracker
+      // dozing off, a supervision timeout, and our own cancel all
+      // looked identical as silence — which is how a night was lost
+      // to "can't hold both gloves" (2026-08-29).
+      logger.info('ble.device.disconnected', 'device link dropped', {
+        deviceId: deviceSensitive(deviceId),
+        errorMessage: safe(err ? err.message : 'clean disconnect (no error)'),
+      })
+      this.emitStatus({
+        deviceId,
+        state: err ? 'error' : 'dormant',
+        generation: this.currentGeneration(deviceId),
+        errorMessage: err?.message,
+        lastChangeMonotonicMs: nowMonotonicMs(),
+      })
+    })
+    this.disconnectSubs.set(deviceId, sub)
+  }
+
   async connect(deviceId: string, options?: ConnectOptions): Promise<ConnectionStatus> {
     const manager = this.ensure()
     const timeoutMs = options?.timeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS
@@ -316,27 +340,7 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       if (options?.requestMtu) {
         try { await manager.requestMTUForDevice(deviceId, options.requestMtu) } catch { /* ignore MTU negotiation failures */ }
       }
-      // Wire a disconnect subscription per device (replace any previous one).
-      const prior = this.disconnectSubs.get(deviceId)
-      if (prior) prior.remove()
-      const sub = manager.onDeviceDisconnected(deviceId, (err, _d) => {
-        // Every drop gets a line with the stack's reason: a tracker
-        // dozing off, a supervision timeout, and our own cancel all
-        // looked identical as silence — which is how a night was lost
-        // to "can't hold both gloves" (2026-08-29).
-        logger.info('ble.device.disconnected', 'device link dropped', {
-          deviceId: deviceSensitive(deviceId),
-          errorMessage: safe(err ? err.message : 'clean disconnect (no error)'),
-        })
-        this.emitStatus({
-          deviceId,
-          state: err ? 'error' : 'dormant',
-          generation: this.currentGeneration(deviceId),
-          errorMessage: err?.message,
-          lastChangeMonotonicMs: nowMonotonicMs(),
-        })
-      })
-      this.disconnectSubs.set(deviceId, sub)
+      this.watchDisconnect(manager, deviceId)
       const status: ConnectionStatus = {
         deviceId: device.id,
         state: 'ready',
@@ -362,6 +366,27 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
         reason?: string | null
       }
       const durationMs = nowMonotonicMs() - startedAtMs
+      // "Already connected" is not a failure — it is this app's own link
+      // that JS lost track of (a Metro reload keeps native connections
+      // while the store forgets them). Treating it as an error made
+      // every pass cancel a perfectly good connection and rebuild it,
+      // which on 2026-08-29 became an endless connect/cancel loop with
+      // both gloves lit and unusable. Adopt the link instead.
+      if (err?.errorCode === 203) {
+        const generation = this.bumpGeneration(deviceId)
+        this.watchDisconnect(manager, deviceId)
+        const adopted: ConnectionStatus = {
+          deviceId,
+          state: 'ready',
+          generation,
+          lastChangeMonotonicMs: nowMonotonicMs(),
+        }
+        logger.info('ble.connect.adopted', 'adopted an existing link for this device', {
+          deviceId: deviceSensitive(deviceId),
+        })
+        this.emitStatus(adopted)
+        return adopted
+      }
       logger.warn('ble.connect.failed', 'connect attempt failed', {
         deviceId: deviceSensitive(deviceId),
         errorMessage: safe(err?.message ?? String(e)),

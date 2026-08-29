@@ -53,6 +53,9 @@ const liveSlot = (deviceId: string, state: string) => ({ deviceId, state })
 
 const ad = (deviceId: string) => ({ deviceId })
 
+/** A glove that is neither advertising nor answering a direct connect. */
+const unreachable = () => Promise.reject(new Error('Operation was cancelled'))
+
 beforeEach(() => {
   mockScan.mockReset()
   mockConnectSlot.mockReset()
@@ -79,23 +82,39 @@ describe('autoConnectKnownTrackers', () => {
     expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
   })
 
-  it('reports not-found for a tracker that is not advertising', async () => {
+  it('still tries a tracker the scan missed — a bonded glove may advertise directed', async () => {
+    // Directed advertising (and a glove whose firmware thinks it is
+    // still in a session) is invisible to a general scan yet instantly
+    // connectable, so an unseen known tracker gets one direct attempt.
     mockScan.mockResolvedValue([ad(blue.address)])
 
     const result = await autoConnectKnownTrackers()
 
-    expect(result.connectedCount).toBe(1)
-    expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('not-found')
-    expect(mockConnectSlot).toHaveBeenCalledTimes(1)
+    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
+    expect(result.connectedCount).toBe(2)
   })
 
-  it('ignores devices that are not known trackers', async () => {
-    mockScan.mockResolvedValue([ad('00:11:22:33:44:55')])
+  it('reports not-found when an unseen tracker also refuses to connect', async () => {
+    mockScan.mockResolvedValue([ad(blue.address)])
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'right' ? unreachable() : Promise.resolve(),
+    )
 
     const result = await autoConnectKnownTrackers()
 
-    expect(result.connectedCount).toBe(0)
-    expect(mockConnectSlot).not.toHaveBeenCalled()
+    expect(result.connectedCount).toBe(1)
+    // Not 'failed': a glove that was never sighted is simply absent.
+    expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('not-found')
+  })
+
+  it('never connects a device that is not a known tracker', async () => {
+    mockScan.mockResolvedValue([ad('00:11:22:33:44:55')])
+
+    await autoConnectKnownTrackers()
+
+    for (const call of mockConnectSlot.mock.calls) {
+      expect([blue.address, red.address]).toContain(call[1])
+    }
   })
 
   it('leaves a slot alone when it is ready AND the native stack confirms it', async () => {
@@ -328,9 +347,16 @@ describe('persistent auto-retry', () => {
   }
 
   it('retries an incomplete pass every RETRY_DELAY_MS until both hands connect', async () => {
-    // First pass: left not advertising. Later passes: it appears.
+    // First pass: left neither advertising nor connectable. Later
+    // passes: it wakes and binds.
+    let attempts = 0
     mockScan.mockResolvedValueOnce([ad(red.address)])
     mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
+    mockConnectSlot.mockImplementation((hand: string) => {
+      if (hand !== 'left') return Promise.resolve()
+      attempts += 1
+      return attempts === 1 ? unreachable() : Promise.resolve()
+    })
 
     await armAutoRetry()
     expect(getAutoRetryState().retrying).toBe(true)
@@ -345,6 +371,9 @@ describe('persistent auto-retry', () => {
 
   it('goes dormant after the budget is spent, until re-armed', async () => {
     mockScan.mockResolvedValue([ad(red.address)]) // left never shows
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'left' ? unreachable() : Promise.resolve(),
+    )
 
     await armAutoRetry()
     for (let i = 0; i < AUTO_RETRY_BUDGET; i += 1) {
@@ -383,6 +412,9 @@ describe('persistent auto-retry', () => {
 
   it('suspension freezes the chain mid-workout and resume picks it back up', async () => {
     mockScan.mockResolvedValue([ad(red.address)]) // left keeps hiding
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'left' ? unreachable() : Promise.resolve(),
+    )
 
     await armAutoRetry()
     expect(getAutoRetryState().retrying).toBe(true)
