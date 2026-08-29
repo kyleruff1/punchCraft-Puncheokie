@@ -714,6 +714,15 @@ if (!skipWhisperBackfill && !onlyArg && !onlyKeys && !missingOnly) {
         cueId: e.cueId,
         wav: join(OUT_ROOT, e.file),
         tokens: e.tokens,
+        // Per-token expected spoken form so the aligner works for BOTH
+        // vocabularies. Numbers-side "1" -> "One" (heard as "one"),
+        // techniques-side "1" -> "Jab" (heard as "jab"). Without this
+        // the aligner assumed digit-only matching and every techniques
+        // clip failed to bind, leaving them all on the beat grid.
+        spokenTokens: e.tokens.map((t) => spokenFor(t, {
+          vocabulary: e.vocabulary,
+          cadence: e.cadence,
+        })),
       }))
       const raw = execFileSync(
         CHATTERBOX_PYTHON,

@@ -37,21 +37,38 @@ from asr_match import canonical_tokens
 _DIGIT_MAP = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6"}
 
 
-def token_key(token: str) -> str:
-    lower = token.lower()
-    if lower.endswith("b") and lower[:-1].isdigit():
-        return lower[:-1]  # '1b' matches heard 'one' -> '1'
-    if lower.isdigit():
-        return lower
-    return lower
-
-
-def whisper_key(word_text: str) -> str | None:
+def heard_head(word_text: str) -> str | None:
+    """Canonical head word of a Whisper output. Digit words fold to their
+    digit ('one' → '1') so a numbers-vocab token '1' matches a heard 'one'.
+    Everything else stays as-is (technique names like 'jab', 'cross').
+    """
     tokens = canonical_tokens(word_text)
     if not tokens:
         return None
     head = tokens[0]
     return _DIGIT_MAP.get(head, head)
+
+
+def expected_head(spoken: str) -> str:
+    """The head-word key we expect Whisper to produce for a token whose
+    render script says `spoken`. Mirrors `heard_head`'s folding so the
+    two can be compared string-to-string."""
+    tokens = canonical_tokens(spoken)
+    if not tokens:
+        return spoken.lower()
+    head = tokens[0]
+    return _DIGIT_MAP.get(head, head)
+
+
+def token_key_from_digit_fallback(token: str) -> str:
+    """Legacy path when the caller didn't send `spokenTokens` — numbers-
+    vocab only. Keeps make-phrase-clips.mjs's older call shape working."""
+    lower = token.lower()
+    if lower.endswith("b") and lower[:-1].isdigit():
+        return lower[:-1]
+    if lower.isdigit():
+        return lower
+    return lower
 
 
 def process(model, job):
@@ -75,23 +92,31 @@ def process(model, job):
                           "end_ms": float(w["end"]) * 1000.0,
                           "text": w["word"]})
 
+    # Per-token expected head words (from spokenFor). Falls back to the
+    # digit-only path when the caller didn't send `spokenTokens` — that
+    # keeps numbers-side backfill working for older invocations.
+    if "spokenTokens" in job:
+        wants = [expected_head(sp) for sp in job["spokenTokens"]]
+    else:
+        wants = [token_key_from_digit_fallback(t) for t in job["tokens"]]
+
     # Greedy align token order to heard order. A repeat-heavy combo (1-1-2)
     # takes its two "one"s from the first two heard "one"s in order.
     onsets: list[float] = []
     ends: list[float] = []
     cursor = 0
-    for token in job["tokens"]:
-        want = token_key(token)
+    for idx, want in enumerate(wants):
         matched = None
         while cursor < len(heard):
-            key = whisper_key(heard[cursor]["text"])
+            key = heard_head(heard[cursor]["text"])
             cursor += 1
             if key == want:
                 matched = heard[cursor - 1]
                 break
         if matched is None:
             return {"cueId": job["cueId"], "onsets": None, "ends": None,
-                    "ok": False, "reason": f"unmatched token {token} in transcript"}
+                    "ok": False,
+                    "reason": f"unmatched token[{idx}] want={want!r} in transcript"}
         onsets.append(round(matched["start_ms"], 1))
         ends.append(round(matched["end_ms"], 1))
 
