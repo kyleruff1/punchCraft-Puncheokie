@@ -533,10 +533,14 @@ describe('volumes are independent (doc §25)', () => {
 })
 
 describe('a chime-in mutes the shot calling, then it comes back (Kyle)', () => {
-  // Unmeasured clips fall back to 2.5s in `emit`'s mute call.
-  const CHIME_FALLBACK_MS = 2_500
+  // A1 fix: co- ceremony assets use their compiled manifest durations
+  // (CALLOUT_CLIPS[id].durationMs) rather than the fixed fallback.
+  // Everything else (`double-up`, `power-strikes` …) still goes through
+  // the runtime `durations` cache or the fallback.
+  const FALLBACK_MS = 2_500
+  const CLOSER_01_MS = 690 // from calloutManifest.ts
 
-  it('silences a sounding combination phrase and restores its volume', async () => {
+  it('mutes for the co- clip\'s real length, not the 2.5s fallback', async () => {
     const h = harness()
     await h.output.preload()
     h.output.playCombination('1-2', 'steady')
@@ -546,19 +550,47 @@ describe('a chime-in mutes the shot calling, then it comes back (Kyle)', () => {
     h.output.playAsset('co-closer-01')
     expect(phrase.volume).toBe(0)
 
-    h.advance(CHIME_FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    // The manifest length holds the phrase silent until the whole
+    // ceremony has cleared, then the timer restores it.
+    h.advance(CLOSER_01_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(1)
+  })
+
+  it('covers even the longest co- ceremony (A1 regression: co-pressure-03 ~8.4s)', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+
+    h.output.playAsset('co-pressure-03')
+    expect(phrase.volume).toBe(0)
+
+    // Under the old 2500 ms fallback the phrase came back to full
+    // volume while co-pressure-03 was still speaking — the doubled
+    // coach Kyle reported. The manifest holds it silent for the full
+    // clip, so at the fallback window it must still be muted.
+    h.advance(FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(0)
+
+    // The manifest lists co-pressure-03 at 8373 ms; past that + release
+    // the restore fires normally.
+    h.advance(8373 - FALLBACK_MS + 100)
     expect(phrase.volume).toBe(1)
   })
 
   it('births a phrase silent inside the window, restored by the same timer', async () => {
     const h = harness()
     await h.output.preload()
+    // `double-up` is not a `co-` asset — its runtime duration is unknown
+    // in this harness (playerFor's create branch does not measure), so
+    // it falls back to 2500 ms. The invariant under test is the born-
+    // silent + restore behaviour, which is independent of duration.
     h.output.playAsset('double-up')
     h.output.playCombination('1-2', 'steady')
     const phrase = h.created[h.created.length - 1]!
     expect(phrase.volume).toBe(0)
 
-    h.advance(CHIME_FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    h.advance(FALLBACK_MS + CHIME_IN_RELEASE_MS)
     expect(phrase.volume).toBe(1)
   })
 

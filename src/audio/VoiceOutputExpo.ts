@@ -51,6 +51,7 @@ import {
   type VoiceAssetManifest,
 } from './voiceAssets/manifest'
 import { findPhraseAsset } from './voiceAssets/phraseManifest'
+import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -696,7 +697,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       player.seekTo(0)
       player.play()
       if (isChimeInAsset(id)) {
-        this.muteCallsFor(this.durations.get(this.keyFor(id, form)) ?? 2_500)
+        // A1 (fixed): the runtime durations cache is never populated for
+        // `co-` assets (playerFor's create branch reads player.duration
+        // before it is measured), so this used to fall through to a
+        // 2500 ms guess. 41 of 67 ceremony clips exceed that fallback —
+        // the largest is `co-pressure-03` at 8373 ms — and any coach
+        // call launched inside the too-short duck was then restored to
+        // full volume while the ceremony was still speaking, producing
+        // the doubled-voice overlap Kyle heard within 15 s of a round
+        // start. The compiled `CALLOUT_CLIPS` manifest carries the true
+        // measured length; consult it before the cache and the fallback.
+        const key = this.keyFor(id, form)
+        const measured = this.durations.get(key)
+          ?? CALLOUT_CLIPS[id as CalloutClipId]?.durationMs
+        this.muteCallsFor(measured ?? 2_500)
       }
       // Success-path record for the QA loop — see playCombination's note.
       logger.info('puncheokie.voice.play', 'clip playing', {
