@@ -263,17 +263,12 @@ describe('zones', () => {
     expect(tree.root.findAllByProps({ testID: 'round-countdown' })).toHaveLength(0)
   })
 
-  it('shows unlit lamps when no tracker is connected — no SIM words on the bar', () => {
-    // M33-01: the lamps are fed from the selected source, and with no slots
-    // assigned that is still the simulator — which renders as trackers NOT
-    // connected. The SIM tag itself lives under the header lamps.
+  it('keeps tracker lamps OUT of the live tree — the header led zone owns them', () => {
+    // Kyle 2026-08-29: the in-round lamp pair was a duplicate of the
+    // header's; simulation shows on the header lamps (SIM tag) instead.
     const tree = render()
-    expect(
-      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
-    ).toContain('not connected')
-    expect(
-      tree.root.findByProps({ testID: 'tracker-lamp-R' }).props.accessibilityLabel,
-    ).toContain('not connected')
+    expect(tree.root.findAllByProps({ testID: 'tracker-lamp-L' })).toHaveLength(0)
+    expect(tree.root.findAllByProps({ testID: 'tracker-lamp-R' })).toHaveLength(0)
   })
 
   it('surfaces a degraded tracker through the top bar, not a new channel', () => {

@@ -170,27 +170,18 @@ export function GloveChip(props: {
 }
 
 export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
-  // roundIndex / roundCount / roundRemainingMs stay in the props
-  // interface (the header reads the same slice) but this bar no longer
-  // renders them.
-  const { stance, connection, degraded, onReconnectPress } = props
-
-  // No L/R letters or state words on the live screen (Kyle 2026-08-29):
-  // the lamps' hues carry the hands. batteryPct stays in the props
-  // interface for the summary path but is no longer rendered here.
-  const gloves = (
-    <>
-      <TrackerLamp hand="L" state={connection.left} size={18} />
-      <TrackerLamp hand="R" state={connection.right} size={18} />
-    </>
-  )
+  // roundIndex / roundCount / roundRemainingMs / connection stay in the
+  // props interface (the header reads the same slice) but this bar no
+  // longer renders them.
+  const { stance, degraded, onReconnectPress } = props
 
   return (
     <View style={styles.root} testID="round-top-bar">
-      {/* Round + countdown moved to the tabs header's 75% line (Kyle
-          2026-08-28) — this bar keeps stance, gloves and the degraded
-          notice. Props for round/remaining stay in the interface so the
-          header and this bar read the same live slice. */}
+      {/* Round + countdown live in the tabs header's 75% line (Kyle
+          2026-08-28); the tracker lamps live ONLY in the header's led
+          zone, SIM tag included (Kyle 2026-08-29: "the second set of
+          lamps is not necessary"). This bar keeps stance, the idle
+          reconnect affordance and the degraded notice. */}
       <View style={styles.row}>
         <Text style={styles.stance} testID="stance-label">
           {STANCE_LABEL[stance]}
@@ -201,14 +192,12 @@ export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
             accessibilityRole="button"
             accessibilityLabel="Reconnect trackers"
             onPress={onReconnectPress}
-            style={styles.gloves}
+            style={styles.reconnect}
             testID="glove-reconnect"
           >
-            {gloves}
+            <Text style={styles.reconnectText}>reconnect trackers</Text>
           </Pressable>
-        ) : (
-          <View style={styles.gloves}>{gloves}</View>
-        )}
+        ) : null}
       </View>
 
       {degraded ? (
@@ -231,7 +220,19 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     color: colors.textSecondary,
   },
-  gloves: { flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: 'auto' },
+  reconnect: {
+    marginLeft: 'auto',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reconnectText: {
+    fontSize: sizes.label,
+    fontFamily: fonts.label,
+    color: colors.textSecondary,
+  },
   lampHalo: {
     alignItems: 'center',
     justifyContent: 'center',

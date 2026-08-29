@@ -11,7 +11,7 @@ import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'rea
 
 import { CueStage, type CueView } from '../CueStage'
 import { MetricsRail, MAX_OPTIONAL_TILES, OPTIONAL_TILES, type TileId, type VelocityView } from '../MetricsRail'
-import { RoundTopBar, formatCountdown } from '../RoundTopBar'
+import { RoundTopBar, TrackerLamp, formatCountdown } from '../RoundTopBar'
 import { expandTimeline } from '@domain/programs/CueTimeline'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { threeRoundFundamentals } from '@domain/workout/samples'
@@ -202,20 +202,27 @@ describe('RoundTopBar', () => {
     expect(formatCountdown(ms)).toBe(expected)
   })
 
-  it('renders a lamp per glove — no L/R letters, no state words (Kyle 2026-08-29)', () => {
+  it('renders NO lamps — the header led zone is the only tracker display (Kyle 2026-08-29)', () => {
     const tree = render(<RoundTopBar {...base} />)
-    expect(() => tree.root.findByProps({ testID: 'tracker-lamp-L' })).not.toThrow()
-    expect(() => tree.root.findByProps({ testID: 'tracker-lamp-R' })).not.toThrow()
+    expect(nodes(tree, 'tracker-lamp-L')).toHaveLength(0)
+    expect(nodes(tree, 'tracker-lamp-R')).toHaveLength(0)
   })
 
-  it('a simulated source shows unlit lamps and no SIM text — the header owns the tag', () => {
+  it('a simulated source adds no lamps and no SIM text — the header owns both', () => {
     const tree = render(
       <RoundTopBar {...base} connection={{ left: 'simulated', right: 'simulated' }} />,
     )
-    expect(
-      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
-    ).toContain('not connected')
+    expect(nodes(tree, 'tracker-lamp-L')).toHaveLength(0)
     expect(textOf(tree.root)).not.toContain('SIM')
+  })
+
+  it('the idle reconnect affordance is a labelled button, no lamps needed', () => {
+    const onPress = jest.fn()
+    const tree = render(<RoundTopBar {...base} onReconnectPress={onPress} />)
+    const button = tree.root.findByProps({ testID: 'glove-reconnect' })
+    expect(button.props.accessibilityLabel).toBe('Reconnect trackers')
+    button.props.onPress()
+    expect(onPress).toHaveBeenCalled()
   })
 
   it('renders no battery text even when supplied — the lamps-only bar', () => {
@@ -238,15 +245,14 @@ describe('RoundTopBar', () => {
     expect(nodes(tree, 'degraded-warning')).toHaveLength(0)
   })
 
-  it('names each glove state accessibly', () => {
-    const tree = render(
-      <RoundTopBar {...base} connection={{ left: 'streaming', right: 'error' }} />,
-    )
+  it('TrackerLamp (the header led) names each glove state accessibly', () => {
+    const left = render(<TrackerLamp hand="L" state="streaming" />)
+    const right = render(<TrackerLamp hand="R" state="error" />)
     expect(
-      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
+      left.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
     ).toContain('Left tracker connected')
     expect(
-      tree.root.findByProps({ testID: 'tracker-lamp-R' }).props.accessibilityLabel,
+      right.root.findByProps({ testID: 'tracker-lamp-R' }).props.accessibilityLabel,
     ).toContain('Right tracker not connected')
   })
 })
