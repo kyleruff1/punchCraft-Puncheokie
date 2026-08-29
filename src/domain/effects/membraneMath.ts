@@ -322,6 +322,13 @@ export function expiryOf(impulse: MembraneImpulse): number {
 }
 
 /**
+ * The local grain bloom (exp(−age/1.4) in the shader) outlives the
+ * wave — the render cap must cover its tail too, or a lone punch
+ * freezes with a faint deposit still visible (measured 0.19 on glass).
+ */
+export const DEPOSIT_WINDOW_S = 6
+
+/**
  * Push one impulse into the bounded ring. Expired impulses leave
  * first; a full ring then drops its weakest-by-remaining-amplitude
  * member. `spilled` is the dropped remainder, for the caller to fold
@@ -363,8 +370,10 @@ export function lastExpiry(ring: readonly MembraneImpulse[]): number {
   let last = 0
   for (const item of ring) {
     const gelEnd = item.startSec + GEL_WINDOW_S
+    const depositEnd = item.startSec + DEPOSIT_WINDOW_S
     const waveEnd = expiryOf(item)
-    const end = waveEnd > gelEnd ? waveEnd : gelEnd
+    let end = waveEnd > gelEnd ? waveEnd : gelEnd
+    if (depositEnd > end) end = depositEnd
     if (end > last) last = end
   }
   return last
