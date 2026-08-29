@@ -31,12 +31,13 @@ describe('grouping', () => {
 
 describe('spoken form', () => {
   it('reads a body shot as notation in the numbers vocabulary', () => {
-    // Punch-number callouts say the notation itself — "two bee" — not "body
-    // two", which is the technique phrasing. Never "two bee" as two separate
-    // wrong tokens: it is the digit then the letter, spelled to survive
-    // lowercasing.
-    expect(spokenFor('2b')).toBe('Two bee')
-    expect(spokenFor('6b')).toBe('Six bee')
+    // Punch-number callouts say the notation itself hyphenated —
+    // "Two-bee" — not "body two" (the technique phrasing) and not
+    // "Two bee" (space, which rendered as a full pause on some Chatterbox
+    // takes and let the boxer commit a head shot before the "bee"
+    // arrived). Hyphenated per Kyle's A/B/C 2026-08-28.
+    expect(spokenFor('2b')).toBe('Two-bee')
+    expect(spokenFor('6b')).toBe('Six-bee')
   })
 
   it('names the target for a body shot in the techniques vocabulary', () => {

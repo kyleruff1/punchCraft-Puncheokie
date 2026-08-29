@@ -432,14 +432,18 @@ export function fillScoredRound(
     // call, nothing else.
     const lastRound = p >= 1
     addRepeatPhase(base, phaseBudget(PHASE_SHARE.base), phasePunches(0.17))
-    // 2 — first build-up stage: "Let's get ready for the buildup…"
+    // 2 — first build-up stage. Kyle (2026-08-28): removed the
+    // "let's get ready for the buildup" ceremony — announcements around
+    // combo build-ups aren't additive; on short combos they land as a
+    // double-statement right on the first rep. The phase itself
+    // remains — just no coach preamble.
     addRepeatPhase(
       build1,
       phaseBudget(PHASE_SHARE.build1),
       phasePunches(0.17),
       1,
       undefined,
-      calloutFor('co-buildup-start', build1.notation),
+      undefined,
     )
 
     // 3 — timed volume burst on the base pattern, punches from the goal.
@@ -475,9 +479,7 @@ export function fillScoredRound(
       phasePunches(0.17),
       1,
       undefined,
-      build2.notation === build1.notation
-        ? undefined
-        : calloutFor('co-buildup-next', build2.notation),
+      undefined, // Kyle: no more "we're adding a piece" preamble
     )
 
     // 5 — base with an approved body variation (falls back to the base).
@@ -557,11 +559,13 @@ export function fillScoredRound(
       phasePunches(0.22),
       0.7,
       shiftCadence(recipe.cadenceProfile, 1),
-      // "The payoff" grandeur is earned by real chains; a 4-punch
-      // pattern gets the plain variants.
-      calloutFor('co-pressure', completed.notation, {
-        variantCeiling: completed.punchCount >= 6 ? 3 : 2,
-      }),
+      // Kyle (2026-08-28): removed "full pattern now / time to put it
+      // all together / this is the payoff" — the pressure ceremony read
+      // as an over-hyped preamble, especially before short combos where
+      // it landed as a false-summary. The pressure phase still runs at
+      // the tightened cadence — the change is announced by the cadence
+      // itself, not by a voice line.
+      undefined,
     )
   } else {
     // No ladder survives the recipe (narrow enabledPunches, tiny combo cap,

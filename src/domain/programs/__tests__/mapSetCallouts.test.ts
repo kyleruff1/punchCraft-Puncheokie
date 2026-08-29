@@ -52,8 +52,12 @@ describe('set ceremonies on the rhythm map', () => {
     const stamped = scored
       .flatMap((r) => r.cues)
       .filter((c) => c.setupCallout !== undefined)
-    // Near-every-set density (Kyle): several ceremonies per round.
-    expect(stamped.length).toBeGreaterThanOrEqual(scored.length * 3)
+    // Density (Kyle, 2026-08-28): the co-buildup-start, co-buildup-next
+    // and co-pressure ceremonies were ripped out — they weren't
+    // additive. The remaining ceremonies (co-downstairs, co-movement,
+    // co-flurry, etc.) still fire per-round but at a lower rate.
+    // At least one ceremony per round is the current bar.
+    expect(stamped.length).toBeGreaterThanOrEqual(scored.length)
     // First cue of a block only — the ceremony announces the set, not reps.
     for (const cue of stamped) expect(cue.repeatIndex).toBe(0)
   })
