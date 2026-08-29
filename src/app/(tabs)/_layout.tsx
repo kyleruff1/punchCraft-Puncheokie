@@ -300,8 +300,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderColor: punch.silver,
   },
-  // Left edge on the 18% line — clear of the lamps with real air.
-  headerBrandLandscape: { marginLeft: '18%' },
+  // Left edge on the 13% line — clear of the lamps with real air.
+  headerBrandLandscape: { marginLeft: '13%' },
   // Centre on the 30% line: walk to 30%, then back by half the hdr
   // wordmark's width (80 × 3:1 → 240 → -120).
   headerBrandPortrait: { marginLeft: '30%', transform: [{ translateX: -120 }] },
