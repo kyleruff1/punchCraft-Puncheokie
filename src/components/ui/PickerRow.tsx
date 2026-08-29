@@ -116,9 +116,13 @@ export function PickerRow<T>({
 
 const styles = StyleSheet.create({
   wrap: {
+    // Chrome-rim motif: lit top edge, dark bottom — the same bevel
+    // language as the forged button art (Kyle's chrome restyle).
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderTopColor: colors.borderStrong,
+    borderBottomColor: colors.background,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     overflow: 'hidden',
   },

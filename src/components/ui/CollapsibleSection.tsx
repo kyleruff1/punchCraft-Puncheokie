@@ -60,9 +60,12 @@ export function CollapsibleSection({
 
 const styles = StyleSheet.create({
   wrap: {
+    // Chrome-rim motif — see PickerRow.
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderTopColor: colors.borderStrong,
+    borderBottomColor: colors.background,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     overflow: 'hidden',
   },

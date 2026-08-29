@@ -875,10 +875,13 @@ const styles = StyleSheet.create({
   control: {
     minHeight: 52,
     minWidth: 110,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingHorizontal: 18,
+    // Pill + chrome-rim motif, matching the authored button art.
+    borderRadius: 999,
     borderWidth: 1,
     borderColor: colors.borderStrong,
+    borderTopColor: colors.textMuted,
+    borderBottomColor: colors.background,
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',

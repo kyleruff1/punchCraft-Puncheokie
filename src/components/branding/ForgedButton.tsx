@@ -167,7 +167,7 @@ export function ForgedButton({
 const styles = StyleSheet.create({
   root: {
     position: 'relative',
-    borderRadius: 10,
+    borderRadius: 999,
   },
   shadow: {
     position: 'absolute',
@@ -175,12 +175,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: -2,
     height: 4,
-    borderRadius: 10,
+    borderRadius: 999,
     opacity: 0.9,
   },
   shadowPressed: { bottom: 0, height: 2, opacity: 0.5 },
   body: {
-    borderRadius: 10,
+    borderRadius: 999,
     borderTopWidth: 1,
     borderBottomWidth: 2,
     paddingHorizontal: 20,
@@ -196,8 +196,8 @@ const styles = StyleSheet.create({
     right: 8,
     height: 1,
     opacity: 0.7,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
+    borderTopLeftRadius: 999,
+    borderTopRightRadius: 999,
   },
   hidden: { opacity: 0 },
   disabled: { opacity: 0.4 },

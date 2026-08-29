@@ -4,12 +4,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { StyleSheet } from 'react-native'
 import {
-  ChakraPetch_400Regular,
-  ChakraPetch_500Medium,
-  ChakraPetch_600SemiBold,
-  ChakraPetch_700Bold,
+  Kanit_400Regular,
+  Kanit_500Medium,
+  Kanit_600SemiBold_Italic,
+  Kanit_700Bold_Italic,
   useFonts,
-} from '@expo-google-fonts/chakra-petch'
+} from '@expo-google-fonts/kanit'
 
 // Side-effect import: registers the default BleManagerFacade implementation
 // before any screen calls getBleManager(). See src/ble/index.ts.
@@ -29,14 +29,14 @@ const stackScreenOptions = {
 } as const
 
 export default function RootLayout() {
-  // Load the Chakra Petch weights before anything renders text — otherwise
+  // Load the Kanit weights before anything renders text — otherwise
   // the first frame flashes system font and swaps once the fonts land.
   // Returning null while loading keeps the native splash up seamlessly.
   const [fontsLoaded] = useFonts({
-    ChakraPetch_400Regular,
-    ChakraPetch_500Medium,
-    ChakraPetch_600SemiBold,
-    ChakraPetch_700Bold,
+    Kanit_400Regular,
+    Kanit_500Medium,
+    Kanit_600SemiBold_Italic,
+    Kanit_700Bold_Italic,
   })
 
   // Bind the known trackers once per launch (blue -> left, red -> right).

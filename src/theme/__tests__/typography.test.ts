@@ -27,12 +27,12 @@ describe('typography fonts', () => {
       expect((value as string).length).toBeGreaterThan(0)
     }
     // Belt and braces: no undefined values slipped in as a paired-fallback
-    // rewrite — the punchCraft app now uses Chakra Petch everywhere,
+    // rewrite — the punchCraft app now uses Kanit everywhere,
     // including body.
-    expect(fonts.body).toMatch(/^ChakraPetch_/)
-    expect(fonts.heading).toMatch(/^ChakraPetch_/)
-    expect(fonts.display).toMatch(/^ChakraPetch_/)
-    expect(fonts.label).toMatch(/^ChakraPetch_/)
+    expect(fonts.body).toMatch(/^Kanit_/)
+    expect(fonts.heading).toMatch(/^Kanit_/)
+    expect(fonts.display).toMatch(/^Kanit_/)
+    expect(fonts.label).toMatch(/^Kanit_/)
   })
 })
 
@@ -50,7 +50,7 @@ describe('button recipes', () => {
   it('every recipe carries a font, size, and weight', () => {
     for (const key of ['buttonPrimary', 'buttonSecondary', 'buttonSubtle'] as const) {
       const r = recipes[key]
-      expect(r.fontFamily).toMatch(/^ChakraPetch_/)
+      expect(r.fontFamily).toMatch(/^Kanit_/)
       expect(typeof r.fontSize).toBe('number')
       expect(r.fontSize).toBeGreaterThan(0)
       expect(r.fontWeight).toMatch(/^\d{3}$/)

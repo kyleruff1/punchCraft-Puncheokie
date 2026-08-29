@@ -1,29 +1,21 @@
 /**
- * App-wide typography — Chakra Petch throughout.
+ * App-wide typography — Kanit throughout.
  *
  * The wordmark carries the branded name everywhere the app names itself
  * (see `src/components/branding/Wordmark`). This module governs every
  * other rendered string — headings, paragraphs, chip labels, buttons —
- * so the app feels like it belongs to the same chiseled brand family
+ * so the app feels like it belongs to the same chrome brand family
  * top to bottom rather than "wordmarks over a system-font UI."
  *
- * ## Why Chakra Petch
+ * ## Why Kanit
  *
- * Chakra Petch (SIL Open Font License) has angular corners on capitals
- * and geometric weights that echo the wordmark's chiseled shape. It is
- * the closest Google Font to the brand face that is still readable at
- * UI scale — a heavier display face like Rubik Mono One would fight
- * the workout screen's arm's-length read.
- *
- * ## Body on the same family, not a paired font
- *
- * Chakra Petch's 400 Regular is a serviceable body face — a touch more
- * stylised than Inter but readable at 13–15pt and cohesive with the
- * heading weights above it. Kyle's call was to stay inside one family
- * rather than pair Chakra Petch with a neutral sans; the single-family
- * approach is what makes the app feel branded rather than themed on top.
- * Chip labels sit at Medium (500) so they read as controls rather than
- * paragraphs.
+ * The chrome button art letters in an aggressive slanted chiseled-metal
+ * style (Kyle's 2026-08-28 restyle). Kanit (OFL) is the closest Google
+ * Font that survives UI scale: sharp sporty terminals, real italics
+ * for the slant, and 18 styles so one family covers display down to
+ * chip labels. Headings and display run ITALIC — that slant is the
+ * motif tie to the art; body and labels stay upright for long-read
+ * legibility at 13–15pt.
  *
  * ## Sizes and weights
  *
@@ -34,18 +26,18 @@
 
 /**
  * Font families. Values are the family names `expo-font` registers when
- * `useFonts` loads Chakra Petch in the root layout. Every rendered
+ * `useFonts` loads Kanit in the root layout. Every rendered
  * string that wants the brand voice reads one of these.
  */
 export const fonts = {
   /** Hero call-outs — the biggest headings on screen. */
-  display: 'ChakraPetch_700Bold',
+  display: 'Kanit_700Bold_Italic',
   /** Section titles, tile values, banners, button text. */
-  heading: 'ChakraPetch_600SemiBold',
+  heading: 'Kanit_600SemiBold_Italic',
   /** Chip labels, form fields, small controls. */
-  label: 'ChakraPetch_500Medium',
+  label: 'Kanit_500Medium',
   /** Body copy, paragraphs, list rows. */
-  body: 'ChakraPetch_400Regular',
+  body: 'Kanit_400Regular',
   /** Dev-log / raw-frame surfaces only. */
   mono: 'monospace',
 } as const

@@ -117,9 +117,12 @@ const styles = StyleSheet.create({
   },
   primaryActionSpacing: { marginTop: 4 },
   presetCard: {
+    // Chrome-rim motif: lit top edge, dark bottom, pill-adjacent radius.
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 8,
+    borderTopColor: colors.borderStrong,
+    borderBottomColor: colors.background,
+    borderRadius: 14,
     backgroundColor: colors.surface,
     padding: 12,
     gap: 10,
@@ -139,10 +142,12 @@ const styles = StyleSheet.create({
     flexBasis: 260,
     borderWidth: 1,
     borderColor: colors.borderStrong,
-    borderRadius: 8,
+    borderTopColor: colors.textMuted,
+    borderBottomColor: colors.background,
+    borderRadius: 12,
     backgroundColor: colors.surfaceElevated,
     paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     gap: 2,
   },
   presetTileSelected: {

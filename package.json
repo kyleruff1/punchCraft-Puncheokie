@@ -21,7 +21,7 @@
     "guard:velocity-terminology": "node tools/guards/velocity-terminology.mjs"
   },
   "dependencies": {
-    "@expo-google-fonts/chakra-petch": "0.4.1",
+    "@expo-google-fonts/kanit": "0.4.1",
     "@sfourdrinier/react-native-ble-plx": "3.9.3",
     "expo": "57.0.15",
     "expo-audio": "~57.0.4",
