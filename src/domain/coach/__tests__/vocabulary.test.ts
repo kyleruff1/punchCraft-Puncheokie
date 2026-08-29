@@ -84,7 +84,7 @@ describe('the asset set covers the whole token vocabulary', () => {
     // power-mode call-out + 47 Set Ceremony call-outs + the 30-second
     // closer pair (1 + 13 rotating finishers). The gong is retired —
     // rounds start AND end on the ding-ding.
-    expect(VOICE_ASSET_IDS).toHaveLength(95)
+    expect(VOICE_ASSET_IDS).toHaveLength(101)
   })
 })
 

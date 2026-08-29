@@ -666,11 +666,19 @@ export function fillScoredRound(
       const last = laid[runEnd - 1]
       const runMs = last === undefined ? 0 : last.startOffsetMs + last.durationMs - startMs
       if (runMs > MANDATORY_SAME_MOVE_MS && first.setupCallout === undefined) {
-        const allJab = first.notation
-          .toLowerCase()
-          .split('-')
-          .every((t) => t.replace('b', '') === '1')
-        const callout = calloutFor(allJab ? 'co-jab-volume' : 'co-settle-in')
+        const notation = first.notation.toLowerCase()
+        const allJab = notation.split('-').every((t) => t.replace('b', '') === '1')
+        // Kyle (2026-08-28): every prep for a slow section must use the
+        // word "coast" — regular "coast" for cruising stretches, "power
+        // coast" for single-strike or 1-2 sections where the boxer is
+        // meant to deliver slow, heavy, deliberate shots.
+        const isPowerNotation = /^(1b?|2b?|1-2|2-1)$/.test(notation)
+        const patternId = allJab
+          ? 'co-jab-volume'
+          : isPowerNotation
+            ? 'co-power-coast'
+            : 'co-coast'
+        const callout = calloutFor(patternId, first.notation)
         if (callout !== undefined) {
           first.leadInBeats = (first.leadInBeats ?? 0) + msToBeats(callout.reserveMs, bpm)
           first.setupCallout = callout

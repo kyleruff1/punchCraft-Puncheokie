@@ -49,6 +49,12 @@ export type CalloutClipId =
   | 'co-new-pattern-02'
   | 'co-settle-in-01'
   | 'co-settle-in-02'
+  | 'co-coast-01'
+  | 'co-coast-02'
+  | 'co-coast-03'
+  | 'co-power-coast-01'
+  | 'co-power-coast-02'
+  | 'co-power-coast-03'
   | 'co-flurry-01'
   | 'co-flurry-02'
   | 'co-final-round-01'
@@ -113,6 +119,12 @@ export const CALLOUT_CLIPS: Readonly<Record<CalloutClipId, { durationMs: number 
   'co-new-pattern-02': { durationMs: 4323 },
   'co-settle-in-01': { durationMs: 3242 },
   'co-settle-in-02': { durationMs: 3973 },
+  'co-coast-01': { durationMs: 2430 },
+  'co-coast-02': { durationMs: 3041 },
+  'co-coast-03': { durationMs: 2754 },
+  'co-power-coast-01': { durationMs: 4313 },
+  'co-power-coast-02': { durationMs: 3093 },
+  'co-power-coast-03': { durationMs: 8120 },
   'co-flurry-01': { durationMs: 2083 },
   'co-flurry-02': { durationMs: 3813 },
   'co-final-round-01': { durationMs: 2853 },
@@ -177,6 +189,12 @@ export const CALLOUT_REQUIRES_NUMBERS_STANDALONE: Readonly<Record<CalloutClipId,
   'co-new-pattern-02': require('../../../assets/voice/numbers/standalone/co-new-pattern-02.wav'),
   'co-settle-in-01': require('../../../assets/voice/numbers/standalone/co-settle-in-01.wav'),
   'co-settle-in-02': require('../../../assets/voice/numbers/standalone/co-settle-in-02.wav'),
+  'co-coast-01': require('../../../assets/voice/numbers/standalone/co-coast-01.wav'),
+  'co-coast-02': require('../../../assets/voice/numbers/standalone/co-coast-02.wav'),
+  'co-coast-03': require('../../../assets/voice/numbers/standalone/co-coast-03.wav'),
+  'co-power-coast-01': require('../../../assets/voice/numbers/standalone/co-power-coast-01.wav'),
+  'co-power-coast-02': require('../../../assets/voice/numbers/standalone/co-power-coast-02.wav'),
+  'co-power-coast-03': require('../../../assets/voice/numbers/standalone/co-power-coast-03.wav'),
   'co-flurry-01': require('../../../assets/voice/numbers/standalone/co-flurry-01.wav'),
   'co-flurry-02': require('../../../assets/voice/numbers/standalone/co-flurry-02.wav'),
   'co-final-round-01': require('../../../assets/voice/numbers/standalone/co-final-round-01.wav'),
@@ -241,6 +259,12 @@ export const CALLOUT_REQUIRES_NUMBERS_COMBO: Readonly<Record<CalloutClipId, numb
   'co-new-pattern-02': require('../../../assets/voice/numbers/combo/co-new-pattern-02.wav'),
   'co-settle-in-01': require('../../../assets/voice/numbers/combo/co-settle-in-01.wav'),
   'co-settle-in-02': require('../../../assets/voice/numbers/combo/co-settle-in-02.wav'),
+  'co-coast-01': require('../../../assets/voice/numbers/combo/co-coast-01.wav'),
+  'co-coast-02': require('../../../assets/voice/numbers/combo/co-coast-02.wav'),
+  'co-coast-03': require('../../../assets/voice/numbers/combo/co-coast-03.wav'),
+  'co-power-coast-01': require('../../../assets/voice/numbers/combo/co-power-coast-01.wav'),
+  'co-power-coast-02': require('../../../assets/voice/numbers/combo/co-power-coast-02.wav'),
+  'co-power-coast-03': require('../../../assets/voice/numbers/combo/co-power-coast-03.wav'),
   'co-flurry-01': require('../../../assets/voice/numbers/combo/co-flurry-01.wav'),
   'co-flurry-02': require('../../../assets/voice/numbers/combo/co-flurry-02.wav'),
   'co-final-round-01': require('../../../assets/voice/numbers/combo/co-final-round-01.wav'),
@@ -305,6 +329,12 @@ export const CALLOUT_REQUIRES_NAMES_STANDALONE: Readonly<Record<CalloutClipId, n
   'co-new-pattern-02': require('../../../assets/voice/names/standalone/co-new-pattern-02.wav'),
   'co-settle-in-01': require('../../../assets/voice/names/standalone/co-settle-in-01.wav'),
   'co-settle-in-02': require('../../../assets/voice/names/standalone/co-settle-in-02.wav'),
+  'co-coast-01': require('../../../assets/voice/names/standalone/co-coast-01.wav'),
+  'co-coast-02': require('../../../assets/voice/names/standalone/co-coast-02.wav'),
+  'co-coast-03': require('../../../assets/voice/names/standalone/co-coast-03.wav'),
+  'co-power-coast-01': require('../../../assets/voice/names/standalone/co-power-coast-01.wav'),
+  'co-power-coast-02': require('../../../assets/voice/names/standalone/co-power-coast-02.wav'),
+  'co-power-coast-03': require('../../../assets/voice/names/standalone/co-power-coast-03.wav'),
   'co-flurry-01': require('../../../assets/voice/names/standalone/co-flurry-01.wav'),
   'co-flurry-02': require('../../../assets/voice/names/standalone/co-flurry-02.wav'),
   'co-final-round-01': require('../../../assets/voice/names/standalone/co-final-round-01.wav'),
@@ -369,6 +399,12 @@ export const CALLOUT_REQUIRES_NAMES_COMBO: Readonly<Record<CalloutClipId, number
   'co-new-pattern-02': require('../../../assets/voice/names/combo/co-new-pattern-02.wav'),
   'co-settle-in-01': require('../../../assets/voice/names/combo/co-settle-in-01.wav'),
   'co-settle-in-02': require('../../../assets/voice/names/combo/co-settle-in-02.wav'),
+  'co-coast-01': require('../../../assets/voice/names/combo/co-coast-01.wav'),
+  'co-coast-02': require('../../../assets/voice/names/combo/co-coast-02.wav'),
+  'co-coast-03': require('../../../assets/voice/names/combo/co-coast-03.wav'),
+  'co-power-coast-01': require('../../../assets/voice/names/combo/co-power-coast-01.wav'),
+  'co-power-coast-02': require('../../../assets/voice/names/combo/co-power-coast-02.wav'),
+  'co-power-coast-03': require('../../../assets/voice/names/combo/co-power-coast-03.wav'),
   'co-flurry-01': require('../../../assets/voice/names/combo/co-flurry-01.wav'),
   'co-flurry-02': require('../../../assets/voice/names/combo/co-flurry-02.wav'),
   'co-final-round-01': require('../../../assets/voice/names/combo/co-final-round-01.wav'),

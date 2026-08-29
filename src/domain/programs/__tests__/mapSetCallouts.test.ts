@@ -267,3 +267,41 @@ describe('ceremony tone scales with the pattern (Kyle: "the big payoff" for a 4-
     }
   })
 })
+
+describe('coast / power-coast setup ceremonies (Kyle 2026-08-28)', () => {
+  const seeds = ['ceremony-seed', 'tone-a', 'tone-b', 'tone-c', 'tone-d']
+
+  it('never stamps the retired co-settle-in', () => {
+    for (const seed of seeds) {
+      const { workout } = generatedRounds(seed)
+      for (const round of workout.schedule) {
+        for (const block of round.blocks) {
+          expect(block.setupCallout?.asset?.startsWith('co-settle-in')).not.toBe(true)
+        }
+      }
+    }
+  })
+
+  it('power-notation same-move stretches get co-power-coast, others get co-coast', () => {
+    // Same-notation stretches ≥ MANDATORY_SAME_MOVE_MS are the only path
+    // to co-coast / co-power-coast today (mandatory-same-move detector).
+    // For every stamped one, confirm the split matches the notation shape.
+    for (const seed of seeds) {
+      const { workout } = generatedRounds(seed)
+      for (const round of workout.schedule) {
+        for (const block of round.blocks) {
+          const asset = block.setupCallout?.asset
+          if (asset === undefined) continue
+          if (!asset.startsWith('co-coast') && !asset.startsWith('co-power-coast')) continue
+          const notation = formatCombo(block.tokens).toLowerCase()
+          const powerShape = /^(1b?|2b?|1-2|2-1)$/.test(notation)
+          if (asset.startsWith('co-power-coast')) {
+            expect(powerShape).toBe(true)
+          } else {
+            expect(powerShape).toBe(false)
+          }
+        }
+      }
+    }
+  })
+})

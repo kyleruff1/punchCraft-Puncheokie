@@ -139,6 +139,12 @@ export type VoiceAssetId =
   | 'co-new-pattern-02'
   | 'co-settle-in-01'
   | 'co-settle-in-02'
+  | 'co-coast-01'
+  | 'co-coast-02'
+  | 'co-coast-03'
+  | 'co-power-coast-01'
+  | 'co-power-coast-02'
+  | 'co-power-coast-03'
   | 'co-flurry-01'
   | 'co-flurry-02'
   | 'co-final-round-01'
@@ -265,6 +271,12 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   'co-new-pattern-02',
   'co-settle-in-01',
   'co-settle-in-02',
+  'co-coast-01',
+  'co-coast-02',
+  'co-coast-03',
+  'co-power-coast-01',
+  'co-power-coast-02',
+  'co-power-coast-03',
   'co-flurry-01',
   'co-flurry-02',
   'co-final-round-01',

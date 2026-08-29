@@ -44,6 +44,8 @@ export type SetupPatternId =
   | 'co-pressure'
   | 'co-new-pattern'
   | 'co-settle-in'
+  | 'co-coast'
+  | 'co-power-coast'
   | 'co-flurry'
   | 'co-final-round'
   | 'co-breathe-reset'
@@ -73,7 +75,16 @@ export const SETUP_PATTERNS: Readonly<Record<SetupPatternId, PatternDef>> = {
   'co-movement': { variants: 2, recite: false },
   'co-pressure': { variants: 3, recite: true, tail: 'co-okay-go' },
   'co-new-pattern': { variants: 2, recite: true, tail: 'co-okay-go' },
-  'co-settle-in': { variants: 2, recite: false },
+  // Retired (Kyle, 2026-08-28): co-settle-in never used the word "coast".
+  // Replaced by co-coast / co-power-coast below; variants: 0 makes
+  // pickCallout return undefined if anyone still asks for it, without
+  // deleting the shipped asset.
+  'co-settle-in': { variants: 0, recite: false },
+  // Split by pattern shape (Kyle: "every message that prepares the
+  // boxer for a slow section should use the word coast"). See roundFill's
+  // mandatory-same-move detector for the emission rule.
+  'co-coast': { variants: 3, recite: true, tail: 'co-okay-go' },
+  'co-power-coast': { variants: 3, recite: true, tail: 'co-okay-go' },
   'co-flurry': { variants: 2, recite: false },
   'co-final-round': { variants: 2, recite: false },
   'co-breathe-reset': { variants: 2, recite: false },
@@ -125,6 +136,8 @@ export function pickCallout(
   opts: { variantCeiling?: number } = {},
 ): SetupCallout | undefined {
   const def = SETUP_PATTERNS[pattern]
+  // Retired patterns carry variants: 0 — never emit, no rng draw wasted.
+  if (def.variants <= 0) return undefined
   // Always draw, even if we end up skipping — keeps the callout rng
   // stream's draw count stable across clip-availability differences.
   const drawn = 1 + rng.int(def.variants)
