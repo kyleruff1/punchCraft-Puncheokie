@@ -166,5 +166,24 @@
     "tempo": 0.8,
     "attempts": 16
   },
-  "_comment_tempo": "tempo overrides (2026-08-27): the 1.35x fit crushes the bee syllable out of b-family clips and smears slip; these keys ship 20% less compressed. Any future batch re-rendering them inherits this via the override."
+  "_comment_tempo": "tempo overrides (2026-08-27): the 1.35x fit crushes the bee syllable out of b-family clips and smears slip; these keys ship 20% less compressed. Any future batch re-rendering them inherits this via the override.",
+  "1-2-3b-3.technical.numbers.push": {
+    "attempts": 10,
+    "text": "One two three-bee, three!"
+  },
+  "1-2-3b-3.steady.numbers.push": {
+    "attempts": 12,
+    "text": "One two three-bee, three!",
+    "tempo": 0.75
+  },
+  "1-2-3b-3.pressure.numbers.push": {
+    "attempts": 12,
+    "text": "One two three-bee, three!",
+    "tempo": 0.75
+  },
+  "1-2-3b-3.sprint.numbers.push": {
+    "attempts": 12,
+    "text": "One two three-bee, three!",
+    "tempo": 0.75
+  }
 }
