@@ -82,8 +82,7 @@
     "cfgWeight": 0.55,
     "exaggeration": 0.8,
     "attempts": 24,
-    "tempo": 0.65,
-    "text": "One-bee one... Two!"
+    "tempo": 0.65
   },
   "1-1-2-3b-3-2-5-2.sprint.numbers.push": {
     "tempo": 0.8,
@@ -107,18 +106,15 @@
   },
   "1-2b-3.sprint.numbers.push": {
     "tempo": 0.7,
-    "attempts": 20,
-    "text": "One two-bee three!"
+    "attempts": 20
   },
   "1-2b-3.steady.numbers.push": {
     "tempo": 0.7,
-    "attempts": 20,
-    "text": "One two-bee three!"
+    "attempts": 20
   },
   "1-2b-3.technical.numbers.push": {
     "tempo": 0.65,
     "attempts": 24,
-    "text": "One two-bee three!",
     "cfgWeight": 0.55,
     "exaggeration": 0.8
   },
@@ -133,7 +129,6 @@
   "1b-2-3-2.pressure.numbers.push": {
     "tempo": 0.65,
     "attempts": 24,
-    "text": "One-bee two... Three two!",
     "cfgWeight": 0.55,
     "exaggeration": 0.8
   },
@@ -155,18 +150,11 @@
   },
   "1b-2.pressure.numbers.push": {
     "tempo": 0.7,
-    "attempts": 20,
-    "text": "One-bee two!"
-  },
-  "1b-2.steady.numbers.push": {
-    "tempo": 0.7,
-    "attempts": 20,
-    "text": "One-bee two!"
+    "attempts": 20
   },
   "1b-2.technical.numbers.push": {
     "tempo": 0.65,
     "attempts": 24,
-    "text": "One-bee two!",
     "cfgWeight": 0.55,
     "exaggeration": 0.8
   },

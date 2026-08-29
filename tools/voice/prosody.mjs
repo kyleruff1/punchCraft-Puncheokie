@@ -93,12 +93,17 @@ export function spokenFor(token, { vocabulary = 'numbers', cadence = 'steady' } 
   }
 
   const word = NUMBER_WORDS[digit]
-  // Punch-number callouts read the notation itself: 2b is "two bee", the
-  // shorthand a numbers coach actually says — not "body two", which is the
-  // technique phrasing. Spelled "bee" rather than "B" so it survives the
-  // interior-lowercasing in renderBody as /biː/; a lone lowercase "b" risks
-  // being read "buh".
-  return body ? `${word} bee` : word
+  // Punch-number body-shot delivery (Kyle A/B/C, 2026-08-28): "One-bee".
+  // The hyphen gets the emphasis right AND lands the "bee" at the right
+  // time — a barked digit followed by a barked "bee" in a single-breath
+  // two-syllable command, distinguishable but connected. Other patterns
+  // tried and rejected:
+  //   "One bee"   (space)     — full pause, boxer commits head shot in gap
+  //   "Onebee"    (fused)     — eighth-note apart, blends to one blur
+  //   "One, bee"  (comma)     — half-note apart, but emphasis softer
+  //   "One... bee" (ellipsis) — whole-note apart, too spaced
+  // "bee" not "B" survives interior-lowercasing as /biː/ rather than /bʌ/.
+  return body ? `${word}-bee` : word
 }
 
 /* ------------------------------------------------------------------ grouping */
