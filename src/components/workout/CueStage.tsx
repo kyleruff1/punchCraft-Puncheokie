@@ -17,6 +17,7 @@ import { CoachBanner } from './CoachBanner'
 import { ComboFlourish } from './ComboFlourish'
 import { DefenseToken } from './DefenseToken'
 import { FootworkToken } from './FootworkToken'
+import { PunchAvatarCard } from './PunchAvatarCard'
 import { PunchToken } from './PunchToken'
 import type { TokenVisualState } from './tokenVisuals'
 import { colors } from '@/theme/colors'
@@ -224,12 +225,23 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
 
       <View style={styles.currentZone}>
         {current ? (
-          <CueRow
-            view={current}
-            size="stage"
-            reducedMotion={reducedMotion}
-            testID="cue-stage-current"
-          />
+          <>
+            {/* Rendered first so it paints BEHIND the token row — behind the
+                numbered circles, but still far above the backdrop and its
+                effects, which live in an earlier sibling of this whole
+                subtree and cannot reach a view up here. */}
+            <PunchAvatarCard
+              cue={current.cue}
+              activeTokenIndex={current.tokenStates.indexOf('active')}
+              reducedMotion={reducedMotion}
+            />
+            <CueRow
+              view={current}
+              size="stage"
+              reducedMotion={reducedMotion}
+              testID="cue-stage-current"
+            />
+          </>
         ) : (
           <Text style={styles.idle} testID="cue-stage-idle">
             {idleLabel ?? 'Ready'}

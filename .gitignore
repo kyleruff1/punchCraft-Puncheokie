@@ -64,3 +64,8 @@ tools/voice/models/
 tools/analysis/
 tools/voice/__pycache__/
 tools/audition/__pycache__/
+
+# Punch-avatar master art (35 MB). The shipped frames are generated into
+# assets/avatar/punch/ by tools/avatar/make_punch_frames.py.
+assets/branding/Punch Step1s/
+assets/branding/Punch Step2s/

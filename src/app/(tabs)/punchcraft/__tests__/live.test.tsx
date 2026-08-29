@@ -271,6 +271,18 @@ describe('zones', () => {
     expect(tree.root.findAllByProps({ testID: 'tracker-lamp-R' })).toHaveLength(0)
   })
 
+  it('keeps the punch avatar OUT of the backdrop subtree — effects can never reach it', () => {
+    // Kyle 2026-08-29: the avatar is a top layer. The reactive backdrop
+    // darkens inside a fragment shader, so anything ABOVE the canvas is
+    // untouchable by construction — this pins that the card is up there and
+    // not, say, refactored down into the backdrop tree one day.
+    const tree = render()
+    const backdrop = tree.root.findAllByProps({ testID: 'live-backdrop' }, { deep: false })
+    for (const node of backdrop) {
+      expect(node.findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })).toHaveLength(0)
+    }
+  })
+
   it('surfaces a degraded tracker through the top bar, not a new channel', () => {
     const tree = render()
     expect(nodes(tree, 'degraded-warning')).toHaveLength(0)
