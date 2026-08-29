@@ -202,25 +202,25 @@ describe('RoundTopBar', () => {
     expect(formatCountdown(ms)).toBe(expected)
   })
 
-  it('renders a chip per glove', () => {
+  it('renders a lamp per glove — no L/R letters, no state words (Kyle 2026-08-29)', () => {
     const tree = render(<RoundTopBar {...base} />)
-    expect(() => tree.root.findByProps({ testID: 'glove-chip-L' })).not.toThrow()
-    expect(() => tree.root.findByProps({ testID: 'glove-chip-R' })).not.toThrow()
+    expect(() => tree.root.findByProps({ testID: 'tracker-lamp-L' })).not.toThrow()
+    expect(() => tree.root.findByProps({ testID: 'tracker-lamp-R' })).not.toThrow()
   })
 
-  it('marks a simulated source with an explicit SIM chip', () => {
+  it('a simulated source shows unlit lamps and no SIM text — the header owns the tag', () => {
     const tree = render(
       <RoundTopBar {...base} connection={{ left: 'simulated', right: 'simulated' }} />,
     )
-    expect(textOf(tree.root.findByProps({ testID: 'glove-chip-L' }))).toContain('SIM')
+    expect(
+      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
+    ).toContain('not connected')
+    expect(textOf(tree.root)).not.toContain('SIM')
   })
 
-  it('shows battery only when supplied', () => {
-    const without = render(<RoundTopBar {...base} />)
-    expect(nodes(without, 'glove-battery-L')).toHaveLength(0)
-
+  it('renders no battery text even when supplied — the lamps-only bar', () => {
     const with60 = render(<RoundTopBar {...base} batteryPct={{ left: 60.4 }} />)
-    expect(textOf(with60.root.findByProps({ testID: 'glove-battery-L' }))).toBe('60%')
+    expect(nodes(with60, 'glove-battery-L')).toHaveLength(0)
     expect(nodes(with60, 'glove-battery-R')).toHaveLength(0)
   })
 
@@ -240,12 +240,14 @@ describe('RoundTopBar', () => {
 
   it('names each glove state accessibly', () => {
     const tree = render(
-      <RoundTopBar {...base} connection={{ left: 'recovering', right: 'error' }} />,
+      <RoundTopBar {...base} connection={{ left: 'streaming', right: 'error' }} />,
     )
-    expect(tree.root.findByProps({ testID: 'glove-chip-L' }).props.accessibilityLabel).toContain(
-      'Left glove',
-    )
-    expect(textOf(tree.root.findByProps({ testID: 'glove-chip-R' }))).toContain('Error')
+    expect(
+      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
+    ).toContain('Left tracker connected')
+    expect(
+      tree.root.findByProps({ testID: 'tracker-lamp-R' }).props.accessibilityLabel,
+    ).toContain('Right tracker not connected')
   })
 })
 

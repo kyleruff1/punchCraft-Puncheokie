@@ -80,6 +80,52 @@ export function formatCountdown(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
+/**
+ * Tracker lamp (Kyle 2026-08-29): a pure light — no letter, no state
+ * word. The hue mirrors the physical glove (turquoise left, Ferrari red
+ * right); lit means a tracker is genuinely bound, dim-almost-black with
+ * a hint of the hue means not, like an unlit LED. A simulated session
+ * therefore shows dim lamps — the SIM tag lives under the header pair,
+ * not on the lamp. Assistive tech still hears hand + connection state.
+ */
+export function TrackerLamp(props: {
+  hand: 'L' | 'R'
+  state: LiveConnectionState
+  /** Lamp diameter; the glow halo derives from it (size × 2 − 4). */
+  size?: number
+}): React.JSX.Element {
+  const { hand, state, size = 30 } = props
+  const lit = state === 'ready' || state === 'streaming'
+  const lamp =
+    hand === 'L'
+      ? { lit: colors.ledLeftLit, dim: colors.ledLeftDim, halo: colors.ledLeftHalo }
+      : { lit: colors.ledRightLit, dim: colors.ledRightDim, halo: colors.ledRightHalo }
+  const haloSize = size * 2 - 4
+  return (
+    <View
+      accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} tracker ${lit ? 'connected' : 'not connected'}`}
+      style={[
+        styles.lampHalo,
+        { width: haloSize, height: haloSize, borderRadius: haloSize / 2 },
+        lit && { backgroundColor: lamp.halo },
+      ]}
+      testID={`tracker-lamp-${hand}`}
+    >
+      <View
+        style={[
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: lit ? lamp.lit : lamp.dim,
+          },
+          !lit && styles.lampUnlit,
+        ]}
+      />
+    </View>
+  )
+}
+
 export function GloveChip(props: {
   hand: 'L' | 'R'
   state: LiveConnectionState
@@ -115,20 +161,15 @@ export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
   // roundIndex / roundCount / roundRemainingMs stay in the props
   // interface (the header reads the same slice) but this bar no longer
   // renders them.
-  const { stance, connection, batteryPct, degraded, onReconnectPress } = props
+  const { stance, connection, degraded, onReconnectPress } = props
 
+  // No L/R letters or state words on the live screen (Kyle 2026-08-29):
+  // the lamps' hues carry the hands. batteryPct stays in the props
+  // interface for the summary path but is no longer rendered here.
   const gloves = (
     <>
-      <GloveChip
-        hand="L"
-        state={connection.left}
-        {...(batteryPct?.left === undefined ? {} : { batteryPct: batteryPct.left })}
-      />
-      <GloveChip
-        hand="R"
-        state={connection.right}
-        {...(batteryPct?.right === undefined ? {} : { batteryPct: batteryPct.right })}
-      />
+      <TrackerLamp hand="L" state={connection.left} size={18} />
+      <TrackerLamp hand="R" state={connection.right} size={18} />
     </>
   )
 
@@ -178,7 +219,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     color: colors.textSecondary,
   },
-  gloves: { flexDirection: 'row', gap: 8, marginLeft: 'auto' },
+  gloves: { flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: 'auto' },
+  lampHalo: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // The unlit lamp keeps a faint rim so it reads as a lamp that is off,
+  // not a stray dot.
+  lampUnlit: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',

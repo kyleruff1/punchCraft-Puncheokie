@@ -208,12 +208,17 @@ describe('zones', () => {
     expect(tree.root.findAllByProps({ testID: 'round-countdown' })).toHaveLength(0)
   })
 
-  it('marks the source as simulated when no tracker is connected', () => {
-    // M33-01: the chips are fed from the selected source, and with no slots
-    // assigned that is still the simulator.
+  it('shows unlit lamps when no tracker is connected — no SIM words on the bar', () => {
+    // M33-01: the lamps are fed from the selected source, and with no slots
+    // assigned that is still the simulator — which renders as trackers NOT
+    // connected. The SIM tag itself lives under the header lamps.
     const tree = render()
-    expect(textOf(tree.root.findByProps({ testID: 'glove-chip-L' }))).toContain('SIM')
-    expect(textOf(tree.root.findByProps({ testID: 'glove-chip-R' }))).toContain('SIM')
+    expect(
+      tree.root.findByProps({ testID: 'tracker-lamp-L' }).props.accessibilityLabel,
+    ).toContain('not connected')
+    expect(
+      tree.root.findByProps({ testID: 'tracker-lamp-R' }).props.accessibilityLabel,
+    ).toContain('not connected')
   })
 
   it('surfaces a degraded tracker through the top bar, not a new channel', () => {

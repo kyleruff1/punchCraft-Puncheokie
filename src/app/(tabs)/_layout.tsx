@@ -2,12 +2,13 @@ import React from 'react'
 import { Tabs } from 'expo-router'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import type { GestureResponderEvent } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { Wordmark, type WordmarkApp } from '@/components/branding/Wordmark'
 import { ConnectTrackersButton } from '@components/ConnectTrackersButton'
 import { FixTrackerButton } from '@components/FixTrackerButton'
-import { formatCountdown } from '@components/workout/RoundTopBar'
-import { colors } from '@/theme/colors'
+import { formatCountdown, TrackerLamp } from '@components/workout/RoundTopBar'
+import { colors, punch } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { useTrackerStore } from '@/state/useTrackerStore'
 import { useLive } from '@state/useWorkoutStore'
@@ -110,56 +111,45 @@ function HeaderRoundClock(): React.JSX.Element {
   )
 }
 
-/**
- * A tracker LED (Kyle 2026-08-28): a pure light, no letter, no words.
- * The hue IS the hand — turquoise mirrors the physical blue left glove,
- * Ferrari red the right — so a lit lamp means connected and a dim,
- * almost-black lamp with a hint of the hue means not, exactly like an
- * unlit LED. Assistive tech still hears which hand and whether it is
- * connected via the label.
- */
+/** Header lamp: the shared TrackerLamp wired to a tracker slot. */
 function TrackerLed(props: { hand: 'L' | 'R' }): React.JSX.Element {
   const { hand } = props
   const slot = useTrackerStore((s) => (hand === 'L' ? s.slots.left : s.slots.right))
-  const state = slot?.state ?? 'dormant'
-  const lit = state === 'ready' || state === 'streaming'
-  const lamp =
-    hand === 'L'
-      ? { lit: colors.ledLeftLit, dim: colors.ledLeftDim, halo: colors.ledLeftHalo }
-      : { lit: colors.ledRightLit, dim: colors.ledRightDim, halo: colors.ledRightHalo }
-  return (
-    <View
-      accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} tracker ${lit ? 'connected' : 'not connected'}`}
-      style={[styles.ledHalo, lit && { backgroundColor: lamp.halo }]}
-      testID={`tracker-led-${hand}`}
-    >
-      <View
-        style={[
-          styles.led,
-          { backgroundColor: lit ? lamp.lit : lamp.dim },
-          !lit && styles.ledUnlit,
-        ]}
-      />
-    </View>
-  )
+  return <TrackerLamp hand={hand} state={slot?.state ?? 'dormant'} />
 }
 
 /**
- * The LED pair sits at 5% from the left edge, ahead of the wordmark —
+ * The LED pair sits just off the left boundary, ahead of the wordmark —
  * always visible, including mid-workout, so tracker health stays one
- * glance away.
+ * glance away. While a running session is simulator-driven, a small SIM
+ * tag sits under the pair (Kyle 2026-08-29) — the lamps themselves stay
+ * honest about connection and never spell out states.
  */
 function HeaderLedZone(): React.JSX.Element {
+  const live = useLive()
+  const running =
+    live.phase === 'countdown' ||
+    live.phase === 'work' ||
+    live.phase === 'rest' ||
+    live.phase === 'paused'
+  const sim = running && live.sourceKind === 'simulated'
   return (
     <View style={styles.headerLedZone}>
-      <TrackerLed hand="L" />
-      {/* The halo boxes carry invisible padding around each lamp, so the
-          red lamp tucks under it to halve the VISIBLE lamp-to-lamp gap
-          (36 → 18). Lit halos overlap a touch, which reads as adjacent
-          glows, not a collision. */}
-      <View style={styles.ledTuck}>
-        <TrackerLed hand="R" />
+      <View style={styles.headerLedRow}>
+        <TrackerLed hand="L" />
+        {/* The halo boxes carry invisible padding around each lamp, so the
+            red lamp tucks under it to halve the VISIBLE lamp-to-lamp gap
+            (36 → 18). Lit halos overlap a touch, which reads as adjacent
+            glows, not a collision. */}
+        <View style={styles.ledTuck}>
+          <TrackerLed hand="R" />
+        </View>
       </View>
+      {sim ? (
+        <Text style={styles.headerLedSim} testID="header-sim-tag">
+          SIM
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -191,6 +181,17 @@ function HeaderRightZone(): React.JSX.Element {
   )
 }
 
+/**
+ * The header's silver frame — rendered as the header background. Its top
+ * edge starts BELOW the OS status strip (wifi / battery / clock), so the
+ * frame clearly defines where the app begins (Kyle 2026-08-29); the strip
+ * above it stays plain surface.
+ */
+function HeaderFrame(): React.JSX.Element {
+  const insets = useSafeAreaInsets()
+  return <View style={[styles.headerFrame, { marginTop: insets.top }]} />
+}
+
 function headerWordmark(app: WordmarkApp) {
   function HeaderWordmark(): React.JSX.Element {
     // The tabs header centres its title in an intrinsic-width container
@@ -217,6 +218,11 @@ const tabScreenOptions = {
   // now centred — the extra height keeps it clear of the status bar and
   // the Settings link on the right.
   headerStyle: { backgroundColor: colors.surface, height: 120 },
+  // Chrome silver frame around the WHOLE header (Kyle 2026-08-29): the
+  // background layer is the one surface spanning full header bounds —
+  // its top edge runs under the OS clock/battery strip and everything in
+  // the header (lamps, wordmark, buttons) paints over it.
+  headerBackground: HeaderFrame,
   // The title component owns the full header width so the wordmark can
   // sit at 25% and the round/clock block at 75%.
   headerTitleContainerStyle: { left: 0, right: 0, marginHorizontal: 0 },
@@ -281,6 +287,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  headerFrame: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 3,
+    borderColor: punch.silver,
+  },
   headerBrand: {
     // Centre of the mark on the 25% line: walk to 25%, then back by half
     // the hdr wordmark's width (80 × 3:1 → 240 → -120).
@@ -300,36 +312,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLedZone: {
-    // Hugging the left boundary: the VISIBLE turquoise lamp starts on the
-    // 1.5% line (Kyle) — the -13 sheds the halo box's invisible padding so
-    // the lamp face, not the box, lands there.
+    // Near the left boundary: the VISIBLE turquoise lamp starts on the
+    // 2.5% line (Kyle) — the -13 sheds the halo box's invisible padding
+    // so the lamp face, not the box, lands there.
     position: 'absolute',
-    left: '1.5%',
+    left: '2.5%',
     marginLeft: -13,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
-    flexDirection: 'row',
     alignItems: 'center',
+    gap: 2,
   },
+  headerLedRow: { flexDirection: 'row', alignItems: 'center' },
   ledTuck: { marginLeft: -8 },
-  ledHalo: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  led: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-  },
-  // The unlit lamp keeps a faint rim so it reads as a lamp that is off,
-  // not a stray dot.
-  ledUnlit: {
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+  headerLedSim: {
+    fontSize: sizes.label,
+    fontFamily: fonts.label,
+    color: colors.textSecondary,
+    letterSpacing: 2,
   },
   headerTrackers: {
     flexDirection: 'row',
