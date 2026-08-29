@@ -95,6 +95,7 @@ half4 main(float2 xy) {
   float2 accel = lap * 150.0 - elastic * 22.0 + uTrayForce * (0.4 + 0.6 * mobility);
 
   float splatPressure = 0.0;
+  float2 dent = float2(0.0);
   for (int i = 0; i < ${SPLATS_PER_STEP}; i++) {
     float4 s = uSplats[i];
     float4 meta = uSplatMeta[i];
@@ -109,10 +110,13 @@ half4 main(float2 xy) {
     float2 tangent = float2(-away.y, away.x);
     float2 dir = away * 0.55 + float2(meta.x, 0.0) * 0.35 + tangent * spin * 1.5;
     accel += dir * g * 6.5;
+    // Instant dent: part of the hit lands as displacement THIS step, so
+    // the glass answers on impact while the wave carries the rest out.
+    dent += (away * 0.4 + tangent * spin * 0.6) * g * 0.014;
   }
 
   vel = (vel + accel * uDt) * exp(-uDamping * uDt);
-  elastic += vel * uDt;
+  elastic += vel * uDt + dent;
 
   // Yield drain: the slow plastic leak the memory pass banks.
   float yieldGate = smoothstep(0.008, 0.02, length(elastic));
@@ -223,9 +227,10 @@ half4 main(float2 xy) {
   half4 mot = motionCur.eval(g);
   float2 settled = decode2(mem.rg, SETTLED_RANGE);
   float2 elastic = decode2(mot.rg, ELASTIC_RANGE);
-  // The tray contributes a fraction: the whole-pane shake should read
-  // as a shiver in the refraction, never a sliding slab.
-  float2 disp = settled + elastic + uTrayOffset * 0.35;
+  // Tray retired from the display: a uniform whole-pane shift reads as
+  // image wobble, not liquid — deformation must stay local to the hit.
+  // uTrayOffset remains declared (manifest stability) but unused.
+  float2 disp = settled + elastic;
   float fieldMask = maskAt(uv) * uCalm;
 
   half4 base = backdrop.eval(xy + disp * uOut * uTuning.x * fieldMask);
