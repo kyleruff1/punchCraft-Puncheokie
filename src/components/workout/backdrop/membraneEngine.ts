@@ -3,24 +3,17 @@
  * backdrop.
  *
  * All physics is closed form in domain (membraneMath): the only state
- * here is the bounded impulse ring, the churn envelope, and a paused-
- * while-asleep clock. No offscreen surfaces, no simulation passes, no
- * snapshots — the display shader evaluates the ring analytically every
- * frame, and when the last impulse expires the clock freezes, so the
- * recorder redraws a constant, exactly-baseline frame.
- *
- * The clock counts AWAKE seconds (not wall time): while asleep it
- * holds, and a new punch starts its impulse at the held value, so the
- * wave begins the instant the pane wakes.
+ * here is the bounded impulse ring and the reaction envelopes. Time
+ * comes from Skia's own clock (never paused — a custom paused clock
+ * raced its frame callback on fresh mounts and froze frames mid-wave).
+ * Visual rest is a CLAMP instead: the scene caps the time it renders
+ * with at `lastExpirySec`, the instant everything is sub-visible, so
+ * the drawn frame beyond that point is the exact, pristine baseline —
+ * and a new punch simply moves the cap forward.
  */
 import { useMemo } from 'react'
-import { Skia, type SkRuntimeEffect } from '@shopify/react-native-skia'
-import {
-  runOnUI,
-  useFrameCallback,
-  useSharedValue,
-  type SharedValue,
-} from 'react-native-reanimated'
+import { Skia, useClock, type SkRuntimeEffect } from '@shopify/react-native-skia'
+import { runOnUI, useSharedValue, type SharedValue } from 'react-native-reanimated'
 
 import {
   CHURN_TAU_S,
@@ -28,7 +21,6 @@ import {
   DEBRIS_TAU_S,
   DUST_TAU_S,
   IMPACT_TAU_S,
-  SLEEP_GRACE_S,
   VEIL_TAU_S,
   bumpEnv,
   convergenceImpulse,
@@ -70,7 +62,10 @@ export interface MembraneEnv {
 
 export interface MembraneEngine {
   ring: SharedValue<MembraneImpulse[]>
-  clockSec: SharedValue<number>
+  /** Skia's clock, milliseconds — never paused. */
+  clockMs: SharedValue<number>
+  /** The instant (seconds) everything decays sub-visible — the render cap. */
+  lastExpirySec: SharedValue<number>
   env: SharedValue<MembraneEnv>
   /** Enqueue one punch (JS thread; hops to the UI thread itself). */
   enqueue(handCode: number, v01: number, seed: number, feel: MembraneFeel): void
@@ -97,7 +92,7 @@ export function compileMembraneEffect(source: string, label: string): SkRuntimeE
 
 export function useMembraneEngine(): MembraneEngine {
   const ring = useSharedValue<MembraneImpulse[]>([])
-  const clockSec = useSharedValue(0)
+  const clockMs = useClock()
   const lastExpirySec = useSharedValue(0)
   const env = useSharedValue<MembraneEnv>({
     impact: 0,
@@ -115,19 +110,10 @@ export function useMembraneEngine(): MembraneEngine {
     lastStrength: 0,
   })
 
-  useFrameCallback((info) => {
-    'worklet'
-    // Asleep: everything expired — hold the clock so the uniforms (and
-    // the drawn frame) freeze at exact baseline until the next punch.
-    if (clockSec.value > lastExpirySec.value + SLEEP_GRACE_S) return
-    const dtMs = info.timeSincePreviousFrame ?? 16
-    clockSec.value += Math.min(dtMs / 1000, 0.1)
-  })
-
   return useMemo<MembraneEngine>(() => {
     const push = (handCode: number, v01: number, seed: number, feel: MembraneFeel): void => {
       'worklet'
-      const nowSec = clockSec.value
+      const nowSec = clockMs.value / 1000
       const prev = env.value
       const boost = detectConvergence(
         prev.lastHand,
@@ -170,8 +156,8 @@ export function useMembraneEngine(): MembraneEngine {
         DEBRIS_CAP,
       )
       const veilCharge = bumpEnv(prev.veil, prev.veilStamp, nowSec, VEIL_TAU_S, gains.veil)
-      // The wake window covers whichever outlasts the others: the ring
-      // or the veil fades — sleep must never freeze a dimmed frame.
+      // The render cap covers whichever outlasts the others: the ring
+      // or the veil fades — the clamp must never freeze a dimmed frame.
       const ringEnd = lastExpiry(result.ring)
       const veilEnd = nowSec + veilWakeOf(dust, debris, veilCharge)
       lastExpirySec.value = ringEnd > veilEnd ? ringEnd : veilEnd
@@ -200,11 +186,12 @@ export function useMembraneEngine(): MembraneEngine {
 
     return {
       ring,
-      clockSec,
+      clockMs,
+      lastExpirySec,
       env,
       enqueue(handCode, v01, seed, feel) {
         runOnUI(push)(handCode, v01, seed, feel)
       },
     }
-  }, [ring, clockSec, env, lastExpirySec])
+  }, [ring, clockMs, env, lastExpirySec])
 }

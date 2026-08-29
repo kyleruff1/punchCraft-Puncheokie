@@ -109,9 +109,12 @@ export function HydroPulseScene({
     })
   }, [bus, engine, feel])
 
-  const { clockSec, ring, env } = engine
+  const { clockMs, lastExpirySec, ring, env } = engine
   const displayUniforms = useDerivedValue(() => {
-    const nowSec = clockSec.value
+    // Visual rest is a clamp, not a paused clock: past lastExpiry every
+    // effect is sub-visible, so the capped frame IS the exact baseline
+    // and the uniforms go constant. A punch moves the cap forward.
+    const nowSec = Math.min(clockMs.value / 1000, lastExpirySec.value)
     const e = env.value
     return buildMembraneUniforms(
       nowSec,
