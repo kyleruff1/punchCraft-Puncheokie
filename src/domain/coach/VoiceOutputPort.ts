@@ -401,4 +401,21 @@ export interface VoiceOutputPort {
    * combination and then you throw it, rather than being narrated over.
    */
   assetDurationMs?(id: VoiceAssetId): number | undefined
+  /**
+   * The clock instant, in the same `clock()` reference the port uses,
+   * up to which the coach track is expected to still be audible from
+   * a currently sounding clip. `0` (or clock-in-the-past) means the
+   * coach is quiet right now.
+   *
+   * A15 (#256): the ONE piece of state every scheduler needs to reason
+   * about "is the coach already talking?". `flushMetric` uses it to
+   * defer past the next clip's end so a held metric never lands on top
+   * of the very call it was held for; the announcer uses it before
+   * dispatching a `gap-filler` so a fresh filler cannot overwrite a
+   * still-sounding one; the analyzer uses it to distinguish LONG (two
+   * clips overlapped) from a legitimately long single clip.
+   *
+   * Optional so a domain consumer can work without a real backend.
+   */
+  audibleUntilMs?(): number
 }

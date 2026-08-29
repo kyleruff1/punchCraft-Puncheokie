@@ -587,6 +587,34 @@ describe('a metric never interrupts a combination (doc §18)', () => {
     h.announcer.announceMetric('Average velocity six')
     expect(h.port.calls).toEqual([])
   })
+
+  it('A7/A15 (#261/#256): defers a held metric while the coach is audible, then releases', () => {
+    // The rail places the next combination call ~400 ms before its cue
+    // starts, so cue-window-closed lands INSIDE a fresh call. Without
+    // the busy-until defer, flushMetric would land on top of that
+    // sounding call. With it, the metric stays held; the next event
+    // that arrives after the coach falls silent releases it.
+    let audibleUntil = 0
+    const h = harness({ mode: 'full' })
+    Object.assign(h.port, { audibleUntilMs: () => audibleUntil })
+
+    h.announcer.onCueEvent(cueEvent('cue-active'))
+    h.announcer.announceMetric('Average velocity six')
+
+    // The next call started ~400ms ago and is 1500ms long — the coach
+    // is audible for another ~1100ms when cue-window-closed fires.
+    audibleUntil = 100_000
+    h.announcer.onCueEvent(cueEvent('cue-window-closed'))
+    expect(h.port.calls.filter((x) => x.kind === 'speak')).toEqual([])
+
+    // Coach falls silent; the next event of any kind releases the metric.
+    audibleUntil = 0
+    h.port.reset()
+    h.announcer.onCueEvent(cueEvent('cue-window-closed'))
+    expect(h.port.calls.filter((x) => x.kind === 'speak')).toEqual([
+      { kind: 'speak', text: 'Average velocity six', priority: AUDIO_PRIORITY.metric },
+    ])
+  })
 })
 
 describe('a rendered combination is preferred over per-word clips', () => {

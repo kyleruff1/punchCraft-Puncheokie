@@ -219,6 +219,25 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   private scheduledPhrases: Array<{ at: number; run: () => void }> = []
 
+  /**
+   * A15 (#256): "audible until" — the clock instant a coach clip that
+   * is playing right now is expected to fall silent.
+   *
+   * Every call path that starts audible sound (`emit`, `playSequence`,
+   * `playCombination.start`) advances this to `now + measuredMs` when
+   * it knows the length; `markBusy` centralises that so the invariant
+   * is enforced in one place. Schedulers read it through
+   * `audibleUntilMs()` to defer follow-up traffic (metric flushes,
+   * gap-fillers) past the current clip, and the mic-analyzer can use
+   * it to distinguish an overlap from a legitimately long clip.
+   *
+   * NOT a mute — a chime-in is still allowed to start over a
+   * combination (that is the whole point of the duck), and priorities
+   * still decide what gets queued. This is timing information, not a
+   * gate.
+   */
+  private busyUntilMs = 0
+
   constructor(opts: VoiceOutputExpoOptions = {}) {
     this.manifest = opts.manifest ?? voiceAssetManifest
     this.vocabulary = opts.vocabulary ?? 'numbers'
@@ -233,6 +252,27 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   /** False means permanent no-audio mode — the workout runs without a coach. */
   get available(): boolean {
     return !this.failed
+  }
+
+  /**
+   * The instant, on `clock()`, at which the coach track is expected to
+   * fall silent. Never returns a past value — a quiet coach reports 0.
+   * See `busyUntilMs` and A15/#256.
+   */
+  audibleUntilMs(): number {
+    const now = this.clock()
+    return this.busyUntilMs > now ? this.busyUntilMs : 0
+  }
+
+  /**
+   * Advance `busyUntilMs` to cover a clip of `durationMs` starting now.
+   * A shorter clip does NOT shorten the window — if a longer clip is
+   * already sounding, the earlier deadline stands.
+   */
+  private markBusy(durationMs: number | undefined): void {
+    if (!durationMs || durationMs <= 0) return
+    const end = this.clock() + durationMs
+    if (end > this.busyUntilMs) this.busyUntilMs = end
   }
 
   /** Which clip set is playing. Changing it reloads on the next `preload`. */
@@ -442,6 +482,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // restore timer brings this same player back to voice volume.
         player.volume = this.callsMuted() ? 0 : this.volumes.voice
         player.play()
+        // A15: the sidecar already carries the measured length, so the
+        // busy window advances even without a loaded runtime duration.
+        this.markBusy(asset.durationMs)
         // Success-path record: the QA loop aligns mic recordings of a session
         // against these lines (LogRecord carries both clocks), and a silent
         // round with no .play entries means nothing was even attempted.
@@ -580,6 +623,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   private playSequence(steps: SequenceStep[]): void {
     if (steps.length === 0) return
+    // A6 (#260): kill an in-flight sequence before starting a new one.
+    // Without this, `advanceSequence` at :636+ overwrites
+    // `sequenceHandle` while the previous timer is still armed, and
+    // both timers then shift() the same array — clips fire at roughly
+    // double rate, and the leaked handle is unreachable so both
+    // clearSequence() and cancel() can never cancel it.
+    this.clearSequence()
     this.sequence = [...steps]
     this.advanceSequence()
   }
@@ -696,6 +746,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // its own end and produce silence.
       player.seekTo(0)
       player.play()
+      // A15: advance the busy window so schedulers know the coach is
+      // audible for the length of this clip. `assetDurationMs` reads
+      // from the runtime cache; `CALLOUT_CLIPS` fills the co- gap the
+      // same way it does for the duck.
+      this.markBusy(
+        this.assetDurationMs(id, form)
+          ?? CALLOUT_CLIPS[id as CalloutClipId]?.durationMs,
+      )
       if (isChimeInAsset(id)) {
         // A1 (fixed): the runtime durations cache is never populated for
         // `co-` assets (playerFor's create branch reads player.duration

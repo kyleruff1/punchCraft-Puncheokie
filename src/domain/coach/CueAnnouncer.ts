@@ -380,6 +380,16 @@ export class CueAnnouncer {
         // matches the compiler's placement — they only ever schedule
         // between cues.
         if (!shouldSpeak(this.policy, 'gap-filler', false)) return
+        // A15/#256: even though the audited-silence pass placed this
+        // in a quiet window, a previous clip may have run long and
+        // still be audible. Skipping a filler that would collide is
+        // better than doubling coach voices — the next filler in
+        // rotation still fires.
+        if (
+          typeof this.output.audibleUntilMs === 'function' &&
+          this.output.audibleUntilMs() > 0
+        )
+          return
         this.output.playAsset(payload.asset)
         return
       }
@@ -420,6 +430,13 @@ export class CueAnnouncer {
       this.trackCombo(e)
       return
     }
+
+    // A7/A15: retry a metric that was deferred because the coach was
+    // audibly busy the last time we tried. The event bus ticks
+    // frequently in a live session (every token-due, at minimum), so
+    // this releases within ~100 ms of the coach going quiet without
+    // needing an announcer heartbeat of its own.
+    if (this.heldMetric !== null && !this.inCombo) this.flushMetric()
 
     switch (e.type) {
       case 'cue-announcing':
@@ -600,9 +617,25 @@ export class CueAnnouncer {
   private flushMetric(): void {
     const text = this.heldMetric
     if (text === null) return
+    if (!voiceAllowed(this.policy, this.playbackActive)) {
+      this.heldMetric = null
+      return
+    }
+    if (!shouldSpeak(this.policy, 'metric', false)) {
+      this.heldMetric = null
+      return
+    }
+    // A7 (fixed via A15/#256): cue-window-closed fires at the same
+    // instant the NEXT cue's rail-placed call has already started
+    // (rail-word-0-end lands RAIL_K_MS before ring 0). Releasing the
+    // held metric here would land on top of that fresh combination
+    // call. If the coach is audibly busy, hold the metric and let the
+    // next `advance()`/`onCueEvent` tick re-try — the metric stays
+    // held rather than being dropped or overlapped.
+    if (typeof this.output.audibleUntilMs === 'function') {
+      if (this.output.audibleUntilMs() > 0) return
+    }
     this.heldMetric = null
-    if (!voiceAllowed(this.policy, this.playbackActive)) return
-    if (!shouldSpeak(this.policy, 'metric', false)) return
     this.output.speak(text, AUDIO_PRIORITY.metric)
   }
 

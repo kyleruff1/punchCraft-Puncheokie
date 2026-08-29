@@ -532,6 +532,104 @@ describe('volumes are independent (doc §25)', () => {
   })
 })
 
+describe('playSequence timer safety — A6 (#260)', () => {
+  it('overriding a sequence in flight does not leak the previous timer', async () => {
+    // Trace every schedule/cancel call so we can prove the leaked
+    // timer is cleared. The test manifest maps every id to the same
+    // fake source, so we can't tell clips apart by their source —
+    // but the schedule/cancel bookkeeping tells the whole story.
+    const scheduled: number[] = []
+    const cancelled: number[] = []
+    let nextId = 1000
+    const clock = { now: 1_000 }
+    const timers: Array<{ at: number; fn: () => void; id: number }> = []
+    const output = new VoiceOutputExpo({
+      clock: () => clock.now,
+      schedule: (fn, delayMs) => {
+        const id = nextId++
+        scheduled.push(id)
+        timers.push({ at: clock.now + delayMs, fn, id })
+        return id
+      },
+      cancelScheduled: (h) => {
+        cancelled.push(h as number)
+        const i = timers.findIndex((t) => t.id === h)
+        if (i >= 0) timers.splice(i, 1)
+      },
+      createPlayer: () => ({
+        volume: 1,
+        seekTo: () => {},
+        play: () => {},
+        remove: () => {},
+      } as never),
+      speaker: { speak: () => {}, stop: () => {} } as never,
+      setAudioMode: (async () => undefined) as never,
+    })
+    await output.preload()
+    // Start a 3-clip sequence: emits clip 1, arms a chained handle to
+    // continue in ~MIN_CLIP_GAP_MS.
+    output.playPhrase(['1', '2', '3'])
+    const firstChainedTimer = scheduled[scheduled.length - 1]!
+    // Override with a 1-clip sequence. Under the A6 fix, the first
+    // sequence's chained handle MUST be cancelled before the override
+    // runs its own advanceSequence — otherwise the leaked timer would
+    // later fire into the shared sequence array.
+    output.playPhrase(['bell'])
+    expect(cancelled).toContain(firstChainedTimer)
+
+    // Belt and braces: stepping the clock far enough that the leaked
+    // timer would have fired must not schedule any further chained
+    // work (bell is 1 clip; sequence ends immediately).
+    const scheduledBefore = scheduled.length
+    clock.now += FALLBACK_CLIP_MS * 10
+    for (const t of [...timers]) {
+      if (t.at <= clock.now) {
+        timers.splice(timers.indexOf(t), 1)
+        t.fn()
+      }
+    }
+    // No new sequence work was armed by stale timers.
+    expect(scheduled.length).toBe(scheduledBefore)
+  })
+})
+
+describe('audibleUntilMs — A15 (#256) busy-until timing signal', () => {
+  it('reports 0 when nothing has played yet', () => {
+    const h = harness()
+    expect(h.output.audibleUntilMs()).toBe(0)
+  })
+
+  it("advances past a co- ceremony's real length after it starts", async () => {
+    const h = harness()
+    await h.output.preload()
+    // co-pressure-03 = 8373 ms per the manifest.
+    h.output.playAsset('co-pressure-03')
+    const now = h.now()
+    const until = h.output.audibleUntilMs()
+    expect(until).toBeGreaterThan(now + 8000)
+    // A shorter clip that follows must not shrink the window.
+    h.output.playAsset('co-closer-01') // 690 ms
+    expect(h.output.audibleUntilMs()).toBe(until)
+  })
+
+  it('returns 0 again once the busy window has passed', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('co-closer-01')
+    h.advance(2000)
+    expect(h.output.audibleUntilMs()).toBe(0)
+  })
+
+  it("advances for a combination phrase using the sidecar's measured length", async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playCombination('1-2', 'pressure')
+    // 1-2 at pressure ships ~656 ms in numbers, ~800+ ms in names —
+    // either way the window must extend at least half a second.
+    expect(h.output.audibleUntilMs()).toBeGreaterThan(h.now() + 400)
+  })
+})
+
 describe('a chime-in mutes the shot calling, then it comes back (Kyle)', () => {
   // A1 fix: co- ceremony assets use their compiled manifest durations
   // (CALLOUT_CLIPS[id].durationMs) rather than the fixed fallback.
