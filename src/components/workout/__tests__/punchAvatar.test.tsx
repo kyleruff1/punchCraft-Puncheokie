@@ -200,3 +200,45 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
     expect(opacityOf('punch-avatar-step1')).toBe(0)
   })
 })
+
+describe('PunchAvatarCard — the flip repeats', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('keeps flipping while one punch holds the card, beat after beat', () => {
+    // A repeated combo lights the same token every rep; the figure must
+    // keep working rather than freezing after one cycle.
+    const tree = render(<PunchAvatarCard cue={cue([punch(1), punch(2)])} activeTokenIndex={0} />)
+    const stepOpacity = (id: string): number => {
+      const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
+      return [node.props.style]
+        .flat()
+        .reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+    }
+    const seen: string[] = []
+    for (let beat = 0; beat < 4; beat += 1) {
+      act(() => {
+        jest.advanceTimersByTime(120)
+      })
+      seen.push(stepOpacity('punch-avatar-step2') === 1 ? 'step2' : 'step1')
+      act(() => {
+        jest.advanceTimersByTime(400)
+      })
+      seen.push(stepOpacity('punch-avatar-step1') === 1 ? 'step1' : 'step2')
+    }
+    // The strike shows on every beat, not just the first.
+    expect(seen.filter((s) => s === 'step2').length).toBeGreaterThanOrEqual(4)
+    expect(seen.filter((s) => s === 'step1').length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('sizes the card in fixed points, so a layout change cannot resize the figure', () => {
+    const tree = render(<PunchAvatarCard cue={cue([punch(1)])} activeTokenIndex={0} />)
+    const card = tree.root
+      .findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })[0]!
+      .props.children
+    // The inner card carries a numeric height — never a percentage, which
+    // tracked the cue zone and made the avatar jump between two sizes.
+    const style = [card.props.style].flat()[0]
+    expect(typeof style.height).toBe('number')
+  })
+})

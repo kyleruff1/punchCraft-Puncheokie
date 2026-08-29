@@ -38,6 +38,13 @@ import {
 const CARD_OPACITY = 0.28
 /** The source art's 1024x1536. */
 const CARD_ASPECT = 1024 / 1536
+/**
+ * A FIXED height, not a share of the zone. The cue stage's current zone
+ * grows and shrinks as the "Next" preview comes and goes, and a
+ * percentage height made the figure jump between two sizes on every one
+ * of those layout changes.
+ */
+const CARD_HEIGHT = 200
 
 interface Shown {
   key: string
@@ -152,14 +159,29 @@ export function PunchAvatarCard(props: {
     return () => clearTimeout(timer)
   }, [activeTokenIndex, stepCount, requestedWindowMs, demoPos])
 
-  // Flip: wind-up, strike, hold the strike, back to guard for the next beat.
+  // Flip: wind-up, strike, hold the strike, back to guard — then do it
+  // again on the next beat. It has to REPEAT: a punch can hold the card
+  // for many beats (a repeated combo lights the same token every rep),
+  // and a one-shot flip left the figure frozen after its first cycle.
   useEffect(() => {
     if (!shown || reducedMotion) return
-    const timers = [
-      setTimeout(() => setStep('step2'), flipFrameMs(shown.windowMs)),
-      setTimeout(() => setStep('step1'), avatarResetAtMs(shown.windowMs)),
-    ]
-    return () => timers.forEach(clearTimeout)
+    const frame = flipFrameMs(shown.windowMs)
+    const reset = avatarResetAtMs(shown.windowMs)
+    const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs))
+    let cancelled = false
+    const timers: ReturnType<typeof setTimeout>[] = []
+    const cycle = (): void => {
+      if (cancelled) return
+      setStep('step1')
+      timers.push(setTimeout(() => setStep('step2'), frame))
+      timers.push(setTimeout(() => setStep('step1'), reset))
+      timers.push(setTimeout(cycle, beat))
+    }
+    cycle()
+    return () => {
+      cancelled = true
+      timers.forEach(clearTimeout)
+    }
   }, [shown, reducedMotion])
 
   if (!shown) return null
@@ -204,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     opacity: CARD_OPACITY,
   },
-  card: { height: '100%', aspectRatio: CARD_ASPECT },
+  card: { height: CARD_HEIGHT, maxHeight: '100%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
   frameOff: { opacity: 0 },
