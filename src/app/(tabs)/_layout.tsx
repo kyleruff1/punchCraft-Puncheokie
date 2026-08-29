@@ -287,10 +287,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  // Top + bottom rails only (Kyle) — no side borders.
   headerFrame: {
     flex: 1,
     backgroundColor: colors.surface,
-    borderWidth: 3,
+    borderTopWidth: 3,
+    borderBottomWidth: 3,
     borderColor: punch.silver,
   },
   headerBrand: {
