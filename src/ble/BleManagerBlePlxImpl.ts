@@ -278,6 +278,7 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
   async connect(deviceId: string, options?: ConnectOptions): Promise<ConnectionStatus> {
     const manager = this.ensure()
     const timeoutMs = options?.timeoutMs ?? DEFAULT_CONNECT_TIMEOUT_MS
+    const startedAtMs = nowMonotonicMs()
     this.emitStatus({
       deviceId,
       state: 'connecting',
@@ -345,16 +346,48 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       this.emitStatus(status)
       return status
     } catch (e) {
+      // ble-plx puts the real diagnosis in fields we used to discard,
+      // keeping only `.message` — which is a fixed template. That is why
+      // a whole day of "Operation was cancelled" told us nothing: on
+      // Android that string IS a connect timeout expiring (the library's
+      // doFinally fires `cancelled()` before the timeout error can
+      // surface), while "was disconnected" carries the GATT status that
+      // says WHY the stack tore the link down. Log both, with the
+      // duration that distinguishes a timeout from a real cancel.
+      const err = e as {
+        message?: string
+        errorCode?: number
+        attErrorCode?: number | null
+        androidErrorCode?: number | null
+        reason?: string | null
+      }
+      const durationMs = nowMonotonicMs() - startedAtMs
+      logger.warn('ble.connect.failed', 'connect attempt failed', {
+        deviceId: deviceSensitive(deviceId),
+        errorMessage: safe(err?.message ?? String(e)),
+        errorCode: safe(err?.errorCode ?? null),
+        attErrorCode: safe(err?.attErrorCode ?? null),
+        androidErrorCode: safe(err?.androidErrorCode ?? null),
+        reason: safe(err?.reason ?? null),
+        durationMs: safe(Math.round(durationMs)),
+        timeoutMs: safe(options?.autoConnect === true ? null : timeoutMs),
+      })
       // Best-effort cancel of the half-open attempt. Android (this
       // tablet's MediaTek stack in particular) keeps a pending GATT
       // handle after a failed direct connect — "Device was disconnected"
       // mid-handshake — and while that handle exists every later connect
       // to the same device fails too. Cancelling clears it; if there is
       // nothing to cancel this is a no-op.
-      try {
-        await manager.cancelDeviceConnection(deviceId)
-      } catch {
-        /* nothing pending — fine */
+      //
+      // Skipped for an already-cancelled attempt (errorCode 2): the
+      // library disposed that one itself and is mid-`gatt.close()`, so a
+      // second teardown lands right before the next glove's connect.
+      if (err?.errorCode !== 2) {
+        try {
+          await manager.cancelDeviceConnection(deviceId)
+        } catch {
+          /* nothing pending — fine */
+        }
       }
       const status: ConnectionStatus = {
         deviceId,

@@ -31,11 +31,27 @@
  *   ready AND the native stack confirms) is untouchable on every pass —
  *   a working hand is never torn down while the other is chased. The
  *   scheduler is also suspended entirely while a workout runs.
+ *
+ * ## DO NOT remove the scan to "connect by address directly" (2026-08-29)
+ *
+ * It looks redundant — the addresses are permanent, so why look for
+ * them? It was tried, and it broke connecting entirely. Both trackers
+ * advertise **random-static** BLE addresses (`D7:…` = 0b11010111,
+ * `EA:…` = 0b11101010 — the top two bits `0b11` are the random-static
+ * marker), but rxandroidble resolves an address STRING through
+ * `BluetoothAdapter.getRemoteDevice(String)`, which assumes the address
+ * is PUBLIC. With no scan result and no bond to teach the stack the true
+ * address type, connects are aimed at an address type the glove never
+ * matches: direct connects time out, and an `autoConnect` pending
+ * connect parks on the controller accept list forever without binding
+ * (both observed on-device). The scan is not discovery here — it is what
+ * teaches the native stack each glove's real address type. That is also
+ * why the Velocity Lab era, which always scanned, connected reliably.
  */
 
 import { getTrackerCoordinator, type TrackerSlotHand } from '@ble/TrackerCoordinator'
 import { PermissionService } from '@ble/PermissionService'
-import { KNOWN_TRACKERS } from '@ble/knownTrackers'
+import { findKnownTracker, KNOWN_TRACKERS } from '@ble/knownTrackers'
 import { getTrackerSlots } from '@state/useTrackerStore'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 
@@ -114,68 +130,9 @@ async function slotConnectedThisSession(
 let inFlight: Promise<AutoConnectResult> | null = null
 
 /**
- * How long a direct connect waits before the address is handed to the
- * OS as a pending connect. Short on purpose: the fast path only pays
- * off for a glove that is advertising right now, and a long block here
- * is what made the connect button feel dead.
- */
-const FAST_CONNECT_TIMEOUT_MS = 6_000
-
-/**
- * Hands whose address the OS is holding open (pending connect armed).
- *
- * These are NOT idle: Android binds them the instant the glove
- * advertises, which is why passes leave them alone — no eviction (it
- * would cancel the chase) and no retry churn.
- */
-const pendingConnects = new Set<TrackerSlotHand>()
-
-/** True while the OS is chasing at least one address. */
-export function hasPendingConnects(): boolean {
-  return pendingConnects.size > 0
-}
-
-/**
- * Hand one address to the OS to chase. Fire-and-forget by design: the
- * connect resolves whenever the glove wakes (minutes later is normal),
- * and the slot store updates through the coordinator's own listener.
- */
-function armPendingConnect(
-  coordinator: ReturnType<typeof getTrackerCoordinator>,
-  tracker: (typeof KNOWN_TRACKERS)[number],
-): void {
-  if (pendingConnects.has(tracker.hand)) return
-  pendingConnects.add(tracker.hand)
-  logger.info('autoconnect.pending.armed', 'waiting for glove to advertise', {
-    hand: safe(tracker.hand),
-    deviceId: deviceSensitive(tracker.address),
-  })
-  void coordinator
-    .connectSlot(tracker.hand, tracker.address, tracker.displayName, { autoConnect: true })
-    .then(() => {
-      pendingConnects.delete(tracker.hand)
-      logger.info('autoconnect.pending.bound', 'pending connect bound the glove', {
-        hand: safe(tracker.hand),
-      })
-      notifyRetryListeners()
-    })
-    .catch((err: unknown) => {
-      pendingConnects.delete(tracker.hand)
-      logger.info('autoconnect.pending.ended', 'pending connect ended without binding', {
-        hand: safe(tracker.hand),
-        errorMessage: safe(err instanceof Error ? err.message : String(err)),
-      })
-      notifyRetryListeners()
-    })
-}
-
-/**
  * Scan once and connect every known tracker that is advertising.
  *
- * `timeoutMs` is retained for callers but no longer bounds anything —
- * passes connect directly by address (no scan; see the pass body) and
- * the facade's own connect timeout bounds each attempt. Kept so call
- * sites need no churn while the scan-free flow settles. Historical: it
+ * `timeoutMs` bounds the scan (§11.6). Shorter is fine for launch, where the
  * trackers are usually already awake and advertising.
  */
 export interface AutoConnectOptions {
@@ -198,7 +155,7 @@ export function isAutoConnectInFlight(): boolean {
 }
 
 async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectResult> {
-  void options.timeoutMs
+  const timeoutMs = options.timeoutMs ?? 10_000
 
   // Runtime permissions gate every scan. A fresh install (or reinstall —
   // `adb uninstall` wipes prior grants) has no BLE permissions, and a scan
@@ -256,10 +213,6 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
   // Cancelling by address covers both; on a truly dormant device it is a
   // no-op.
   for (const tracker of pending) {
-    // A hand the OS is already chasing (pending connect armed) must not
-    // be evicted — evicting cancels that chase, and the next pass would
-    // just re-arm it, so the glove could wake into a gap forever.
-    if (pendingConnects.has(tracker.hand)) continue
     const slot = getTrackerSlots()[tracker.hand]
     try {
       await coordinator.evictSlot(tracker.hand, slot?.deviceId || tracker.address)
@@ -278,66 +231,59 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
     }
   }
 
-  // Connect DIRECTLY by address — no scan. The addresses are permanent
-  // (knownTrackers); scanning only rediscovered what was already known,
-  // and a 10-second scan window running beside a live glove is radio
-  // pressure this tablet's chip pays for in dropped links. The Velocity
-  // Lab era connected by address, held both gloves through whole
-  // sessions, and had no scanning retry loop — the idle drops arrived
-  // with the scan machinery (Kyle, 2026-08-29). A sleeping glove simply
-  // times the direct connect out, which reports as not-found and keeps
-  // the retry scheduler's semantics intact.
-  //
-  // Serial (H04): a second direct connect landing while the first
-  // handshake is in flight is exactly the observed left-tracker failure
-  // mode on this tablet. Left is index 0 and connects first.
+  let advertisements
+  try {
+    advertisements = await coordinator.scan({ timeoutMs })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    logger.warn('autoconnect.scan.failed', 'auto-connect scan failed', {
+      errorMessage: safe(message),
+    })
+    return { outcomes: [], connectedCount: 0, scanError: message }
+  }
+
+  // Latest advertisement wins per address; a device can advertise many times
+  // inside one scan window.
+  const seen = new Map<string, string>()
+  for (const ad of advertisements) {
+    if (findKnownTracker(ad.deviceId)) seen.set(ad.deviceId.toUpperCase(), ad.deviceId)
+  }
+
+  // Connect SERIALLY (H04): a second direct connect landing while the
+  // first handshake is in flight is exactly the observed left-tracker
+  // failure mode on this tablet. Left is index 0 and connects first.
   const results: AutoConnectOutcome[] = []
   for (const tracker of KNOWN_TRACKERS) {
     if (usable[tracker.hand]) {
       results.push({ hand: tracker.hand, address: tracker.address, status: 'already-connected' })
       continue
     }
-    if (pendingConnects.has(tracker.hand)) {
-      // The OS is already holding this address open; nothing to do but
-      // wait for the glove to advertise.
+    const deviceId = seen.get(tracker.address.toUpperCase())
+    if (!deviceId) {
       results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
       continue
     }
     try {
-      await coordinator.connectSlot(tracker.hand, tracker.address, tracker.displayName, {
-        timeoutMs: FAST_CONNECT_TIMEOUT_MS,
-      })
+      await coordinator.connectSlot(tracker.hand, deviceId, tracker.displayName)
       logger.info('autoconnect.connected', 'auto-connected tracker', {
         hand: safe(tracker.hand),
         color: safe(tracker.color),
-        deviceId: deviceSensitive(tracker.address),
+        deviceId: deviceSensitive(deviceId),
       })
       results.push({ hand: tracker.hand, address: tracker.address, status: 'connected' })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      // A timeout or cancellation is the direct-connect spelling of
-      // "not advertising right now": the glove is asleep. Hand the
-      // address to the OS and let it bind the moment the glove wakes.
-      if (/timed?\s?out|cancell?ed|was disconnected/i.test(message)) {
-        logger.info('autoconnect.notReachable', 'tracker asleep — arming a pending connect', {
-          hand: safe(tracker.hand),
-          errorMessage: safe(message),
-        })
-        armPendingConnect(coordinator, tracker)
-        results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
-      } else {
-        logger.warn('autoconnect.connect.failed', 'auto-connect could not bind slot', {
-          hand: safe(tracker.hand),
-          deviceId: deviceSensitive(tracker.address),
-          errorMessage: safe(message),
-        })
-        results.push({
-          hand: tracker.hand,
-          address: tracker.address,
-          status: 'failed',
-          errorMessage: message,
-        })
-      }
+      logger.warn('autoconnect.connect.failed', 'auto-connect could not bind slot', {
+        hand: safe(tracker.hand),
+        deviceId: deviceSensitive(deviceId),
+        errorMessage: safe(message),
+      })
+      results.push({
+        hand: tracker.hand,
+        address: tracker.address,
+        status: 'failed',
+        errorMessage: message,
+      })
     }
   }
 
@@ -413,11 +359,7 @@ function clearRetryTimer(): void {
 /** A pass is incomplete while any hand is unconnected or the scan failed. */
 function passIncomplete(result: AutoConnectResult): boolean {
   if (result.scanError !== undefined) return true
-  // A hand the OS is chasing is not incomplete — the pending connect IS
-  // the retry, and re-passing would only cancel and re-arm it.
-  return result.outcomes.some(
-    (o) => (o.status === 'failed' || o.status === 'not-found') && !pendingConnects.has(o.hand),
-  )
+  return result.outcomes.some((o) => o.status === 'failed' || o.status === 'not-found')
 }
 
 /**
@@ -528,5 +470,4 @@ export function resetAutoRetryForTest(): void {
   retryResumePending = false
   retryListeners.clear()
   inFlight = null
-  pendingConnects.clear()
 }

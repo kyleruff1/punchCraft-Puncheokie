@@ -19,7 +19,6 @@ import {
   AUTO_RETRY_BUDGET,
   armAutoRetry,
   getAutoRetryState,
-  hasPendingConnects,
   isAutoConnectInFlight,
   subscribeAutoRetry,
 } from '@ble/autoConnectTrackers'
@@ -61,10 +60,9 @@ export function ConnectTrackersButton(): React.ReactElement {
       return
     }
     if (missing.length > 0) {
-      // Asleep gloves are no longer a dead end: their addresses are now
-      // held open by the OS, which binds them the instant they advertise.
-      // So the instruction is "shake it" — not "press me again".
-      setNote(`Waiting for ${missing.map((m) => m.hand).join(' + ')} — shake the glove to wake it.`)
+      // Almost always means the trackers are asleep. Firm tap on the button
+      // wakes them; a second press then picks them up.
+      setNote(`Not advertising: ${missing.map((m) => m.hand).join(' + ')}. Tap the tracker to wake it, then try again.`)
       return
     }
     if (result.connectedCount > 0) {
@@ -81,11 +79,9 @@ export function ConnectTrackersButton(): React.ReactElement {
     ? null
     : retry.retrying
       ? `Retrying automatically — ${AUTO_RETRY_BUDGET - retry.attemptsLeft + 1} of ${AUTO_RETRY_BUDGET}`
-      : hasPendingConnects()
-        ? 'Listening for the gloves — shake one to wake it.'
-        : retry.exhausted
-          ? 'Auto-retry paused. Tap to try again.'
-          : null
+      : retry.exhausted
+        ? 'Auto-retry paused. Tap to try again.'
+        : null
 
   return (
     <View style={styles.wrap}>
