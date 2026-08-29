@@ -192,7 +192,7 @@ describe('conflicts', () => {
 })
 
 describe('start with a sample', () => {
-  it('lists all three M31-05 samples by name in the sample picker', () => {
+  it('lists every designed sample by name in the sample picker', () => {
     const tree = render(<RecipeScreen />)
     // Open the picker so the option rows mount.
     press(tree, 'sample-toggle')

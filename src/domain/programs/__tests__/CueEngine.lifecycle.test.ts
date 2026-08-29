@@ -40,9 +40,15 @@ import {
 import { generateCase, generateTickSchedule } from './helpers/timelineGen'
 import { CADENCE_PROFILES } from '../../workout/cadence'
 import {
+  bodyWork,
   establishTheJab20,
+  heavyHands,
+  pacePusher,
+  progressiveBuildup,
+  speedCombos,
   switchByRound,
   threeRoundFundamentals,
+  uppercutClinic,
 } from '../../workout/samples'
 import type { GeneratedWorkout } from '../../workout/GeneratedWorkout'
 import type { ProgramRound, WorkoutBlock, WorkoutToken } from '../../workout/WorkoutTokens'
@@ -53,6 +59,12 @@ const SAMPLES: ReadonlyArray<readonly [string, GeneratedWorkout]> = [
   ['three-round-fundamentals', threeRoundFundamentals],
   ['establish-the-jab-20', establishTheJab20],
   ['switch-by-round', switchByRound],
+  ['heavy-hands', heavyHands],
+  ['speed-combos', speedCombos],
+  ['uppercut-clinic', uppercutClinic],
+  ['progressive-buildup', progressiveBuildup],
+  ['body-work', bodyWork],
+  ['pace-pusher', pacePusher],
 ]
 
 /** 85 is below two samples' authoring cadence, which is the crowded case. */
@@ -979,7 +991,7 @@ describe('property — a full sample runs end to end with nothing left in flight
         }
       }
     }
-    expect(SAMPLES).toHaveLength(3)
+    expect(SAMPLES).toHaveLength(9)
   })
 })
 

@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { ActionButton } from '@/components/branding/ActionButton'
 import { PickerProvider } from '@/components/ui/PickerContext'
-import { colors } from '@/theme/colors'
+import { colors, punch } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
 import { listSampleWorkouts, type SampleWorkoutKey } from '@domain/workout/samples'
 import { useSelectedSampleKey, useWorkoutStore } from '@state/useWorkoutStore'
@@ -58,8 +58,12 @@ export default function PunchCraftLanding() {
         <View style={styles.presetCard} testID="designed-workouts">
           <Text style={styles.presetLabel}>Designed workouts</Text>
           <View style={styles.presetGrid}>
-            {samples.map((sample) => {
+            {samples.map((sample, index) => {
               const selected = sample.key === selectedSampleKey
+              // Checkered greyscale (Kyle 2026-08-29): three tones cycling
+              // with a per-row offset, so the 3-wide grid reads diagonal,
+              // never striped. Selection's accent fill wins over the shade.
+              const shade = TILE_SHADES[(Math.floor(index / 3) + index) % TILE_SHADES.length]
               return (
                 <Pressable
                   key={sample.key}
@@ -68,13 +72,17 @@ export default function PunchCraftLanding() {
                   onPress={() =>
                     selectSample(selected ? undefined : (sample.key as SampleWorkoutKey))
                   }
-                  style={[styles.presetTile, selected && styles.presetTileSelected]}
+                  style={[
+                    styles.presetTile,
+                    { backgroundColor: shade },
+                    selected && styles.presetTileSelected,
+                  ]}
                   testID={`preset-${sample.key}`}
                 >
                   <Text style={[styles.presetName, selected && styles.presetNameSelected]}>
                     {sample.name}
                   </Text>
-                  <Text style={styles.presetDescription} numberOfLines={2}>
+                  <Text style={styles.presetDescription} numberOfLines={1}>
                     {sample.description}
                   </Text>
                 </Pressable>
@@ -105,6 +113,9 @@ export default function PunchCraftLanding() {
     </PickerProvider>
   )
 }
+
+/** The checker palette — three close greyscale steps off the surface. */
+const TILE_SHADES = [punch.gunmetal, punch.charcoalDeep, punch.steelSelected] as const
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
@@ -138,15 +149,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   presetTile: {
+    // Thinner tiles, three across (Kyle 2026-08-29) — the shade comes
+    // per-tile from TILE_SHADES so the 3×3 reads checkered.
     flexGrow: 1,
-    flexBasis: 260,
+    flexBasis: '31%',
     borderWidth: 1,
     borderColor: colors.borderStrong,
     borderTopColor: colors.textMuted,
     borderBottomColor: colors.background,
     borderRadius: 12,
-    backgroundColor: colors.surfaceElevated,
-    paddingVertical: 8,
+    paddingVertical: 5,
     paddingHorizontal: 14,
     gap: 2,
   },
@@ -163,7 +175,7 @@ const styles = StyleSheet.create({
   presetDescription: {
     fontSize: sizes.label,
     fontFamily: fonts.body,
-    lineHeight: 16,
+    lineHeight: 14,
     color: colors.textSecondary,
   },
   quickStart: { alignSelf: 'center' },

@@ -32,9 +32,15 @@ import {
 import { generateCase } from './helpers/timelineGen'
 import { CADENCE_PROFILES, beatsToMs } from '../../workout/cadence'
 import {
+  bodyWork,
   establishTheJab20,
+  heavyHands,
+  pacePusher,
+  progressiveBuildup,
+  speedCombos,
   switchByRound,
   threeRoundFundamentals,
+  uppercutClinic,
 } from '../../workout/samples'
 import { resolveHand } from '../StanceMapper'
 import type { GeneratedWorkout } from '../../workout/GeneratedWorkout'
@@ -53,6 +59,12 @@ const SAMPLES: ReadonlyArray<readonly [string, GeneratedWorkout]> = [
   ['three-round-fundamentals', threeRoundFundamentals],
   ['establish-the-jab-20', establishTheJab20],
   ['switch-by-round', switchByRound],
+  ['heavy-hands', heavyHands],
+  ['speed-combos', speedCombos],
+  ['uppercut-clinic', uppercutClinic],
+  ['progressive-buildup', progressiveBuildup],
+  ['body-work', bodyWork],
+  ['pace-pusher', pacePusher],
 ]
 
 const STANCES: readonly Stance[] = ['orthodox', 'southpaw']

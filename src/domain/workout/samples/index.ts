@@ -10,15 +10,27 @@
  */
 
 import type { GeneratedWorkout } from '../GeneratedWorkout'
+import { bodyWork } from './bodyWork'
 import { establishTheJab20 } from './establishTheJab20'
+import { heavyHands } from './heavyHands'
+import { pacePusher } from './pacePusher'
+import { progressiveBuildup } from './progressiveBuildup'
+import { speedCombos } from './speedCombos'
 import { switchByRound } from './switchByRound'
 import { threeRoundFundamentals } from './threeRoundFundamentals'
+import { uppercutClinic } from './uppercutClinic'
 
 /** Stable identifiers — binding for M31-06's sample picker. */
 export type SampleWorkoutKey =
   | 'three-round-fundamentals'
   | 'establish-the-jab-20'
   | 'switch-by-round'
+  | 'heavy-hands'
+  | 'speed-combos'
+  | 'uppercut-clinic'
+  | 'progressive-buildup'
+  | 'body-work'
+  | 'pace-pusher'
 
 export interface SampleWorkout {
   key: SampleWorkoutKey
@@ -49,13 +61,60 @@ const SAMPLES: Record<SampleWorkoutKey, SampleWorkout> = {
       'Four rounds alternating between orthodox and southpaw, changing stance only at the bell.',
     workout: switchByRound,
   },
+  'heavy-hands': {
+    key: 'heavy-hands',
+    name: 'Heavy Hands',
+    description:
+      'Hooks and crosses with weight behind them — four rounds of finishing shots at pressure cadence.',
+    workout: heavyHands,
+  },
+  'speed-combos': {
+    key: 'speed-combos',
+    name: 'Speed Combos',
+    description: 'Short straight flurries at sprint cadence — doubles, one-twos, and quick exits.',
+    workout: speedCombos,
+  },
+  'uppercut-clinic': {
+    key: 'uppercut-clinic',
+    name: 'Uppercut Clinic',
+    description:
+      'The five and the six from first touch to full combinations, at teaching cadence.',
+    workout: uppercutClinic,
+  },
+  'progressive-buildup': {
+    key: 'progressive-buildup',
+    name: 'Progressive Buildup',
+    description:
+      'One combination grows each round — two punches at the bell, the full ladder by the finish.',
+    workout: progressiveBuildup,
+  },
+  'body-work': {
+    key: 'body-work',
+    name: 'Body Work',
+    description:
+      'Four rounds downstairs — body jabs, the cross to the ribs, and hooks under the elbow.',
+    workout: bodyWork,
+  },
+  'pace-pusher': {
+    key: 'pace-pusher',
+    name: 'Pace Pusher',
+    description: 'A volume ladder with an open flurry every round, each one longer than the last.',
+    workout: pacePusher,
+  },
 }
 
-/** Presentation order for the "Start with a sample" list. */
+/** Presentation order for the "Start with a sample" list — the 3×3
+ * landing grid reads left-to-right, top-to-bottom in this order. */
 const ORDER: SampleWorkoutKey[] = [
   'three-round-fundamentals',
   'establish-the-jab-20',
   'switch-by-round',
+  'heavy-hands',
+  'speed-combos',
+  'uppercut-clinic',
+  'progressive-buildup',
+  'body-work',
+  'pace-pusher',
 ]
 
 export function listSampleWorkouts(): SampleWorkout[] {
@@ -66,4 +125,14 @@ export function getSampleWorkout(key: SampleWorkoutKey): SampleWorkout {
   return SAMPLES[key]
 }
 
-export { threeRoundFundamentals, establishTheJab20, switchByRound }
+export {
+  threeRoundFundamentals,
+  establishTheJab20,
+  switchByRound,
+  heavyHands,
+  speedCombos,
+  uppercutClinic,
+  progressiveBuildup,
+  bodyWork,
+  pacePusher,
+}
