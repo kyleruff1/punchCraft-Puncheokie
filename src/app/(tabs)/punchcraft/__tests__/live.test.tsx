@@ -55,17 +55,20 @@ jest.mock('@shopify/react-native-skia', () => {
   const Null = () => null
   return {
     Canvas: Null,
-    Group: Null,
-    Circle: Null,
-    Rect: Null,
-    Atlas: Null,
-    RadialGradient: Null,
-    LinearGradient: Null,
-    BlurMask: Null,
+    Fill: Null,
+    Shader: Null,
+    ImageShader: Null,
+    FilterMode: { Nearest: 0, Linear: 1 },
+    MipmapMode: { None: 0 },
+    TileMode: { Clamp: 0 },
+    useImage: () => null,
     useClock: () => ({ value: 0 }),
-    useRectBuffer: () => ({ value: [] }),
-    useRSXformBuffer: () => ({ value: [] }),
-    useTexture: () => ({ value: null }),
+    Skia: {
+      RuntimeEffect: { Make: () => ({}) },
+      Surface: { MakeOffscreen: () => null },
+      Paint: () => ({ setColor: () => {}, setShader: () => {} }),
+      Color: () => 0,
+    },
   }
 })
 

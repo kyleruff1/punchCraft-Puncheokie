@@ -12,7 +12,7 @@
  * window inside it is naturally session-scoped.
  */
 import type { BackdropImpulsePort, BackdropPunchImpulse } from '@domain/effects/BackdropImpulsePort'
-import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/hydroPulse'
+import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/sedimentMath'
 import { createImpulseScaler } from '@domain/effects/impulseScale'
 import { logger, safe } from '@diagnostics/logger'
 

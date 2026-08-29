@@ -1,5 +1,5 @@
 import { createBackdropBus, type BackdropSinkImpulse } from '../backdropBus'
-import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/hydroPulse'
+import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/sedimentMath'
 
 describe('backdropBus', () => {
   function activeBus() {

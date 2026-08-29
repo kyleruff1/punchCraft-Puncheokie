@@ -13,9 +13,12 @@ import {
   MEMORY_SKSL,
   MOTION_MANIFEST,
   MOTION_SKSL,
+  SEED_MANIFEST,
+  SEED_SKSL,
   buildDisplayUniforms,
   buildMemoryUniforms,
   buildMotionUniforms,
+  buildSeedUniforms,
   uniformFloatCount,
   type UniformSpec,
 } from '../effects/sedimentShaders'
@@ -88,6 +91,13 @@ const cases: Array<{
     manifest: DISPLAY_MANIFEST,
     uniforms: built.display,
     children: ['backdrop', 'memoryCur', 'motionCur'],
+  },
+  {
+    label: 'seed',
+    sksl: SEED_SKSL,
+    manifest: SEED_MANIFEST,
+    uniforms: buildSeedUniforms(7),
+    children: [],
   },
 ]
 

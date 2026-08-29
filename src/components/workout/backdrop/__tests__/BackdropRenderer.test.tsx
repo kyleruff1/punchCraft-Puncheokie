@@ -10,6 +10,7 @@ jest.mock('react-native-reanimated', () => ({
   useReducedMotion: () => false,
   useSharedValue: <T,>(init: T) => ({ value: init }),
   useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+  useFrameCallback: () => ({ setActive: () => {} }),
   runOnUI:
     <A extends unknown[]>(fn: (...args: A) => void) =>
     (...args: A) =>
@@ -20,17 +21,20 @@ jest.mock('@shopify/react-native-skia', () => {
   const Null = () => null
   return {
     Canvas: Null,
-    Group: Null,
-    Circle: Null,
-    Rect: Null,
-    Atlas: Null,
-    RadialGradient: Null,
-    LinearGradient: Null,
-    BlurMask: Null,
+    Fill: Null,
+    Shader: Null,
+    ImageShader: Null,
+    FilterMode: { Nearest: 0, Linear: 1 },
+    MipmapMode: { None: 0 },
+    TileMode: { Clamp: 0 },
+    useImage: () => null,
     useClock: () => ({ value: 0 }),
-    useRectBuffer: () => ({ value: [] }),
-    useRSXformBuffer: () => ({ value: [] }),
-    useTexture: () => ({ value: null }),
+    Skia: {
+      RuntimeEffect: { Make: () => ({}) },
+      Surface: { MakeOffscreen: () => null },
+      Paint: () => ({ setColor: () => {}, setShader: () => {} }),
+      Color: () => 0,
+    },
   }
 })
 

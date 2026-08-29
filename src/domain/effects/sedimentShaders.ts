@@ -246,9 +246,38 @@ half4 main(float2 xy) {
 }
 `
 
+/**
+ * SEED pass: paints the virgin memory texture once per session —
+ * neutral settled offsets (0.5 bias) and a seeded uneven density so
+ * the pane starts as material, not emptiness.
+ */
+export const SEED_SKSL = `
+uniform float2 uGrid;
+uniform float uSeed;
+${SNIPPET_COMMON}
+
+half4 main(float2 xy) {
+  float2 uv = xy / uGrid;
+  float coarse = shash(floor(uv * 9.0) + uSeed);
+  float fine = shash(floor(uv * 37.0) + uSeed * 1.7);
+  float density = clamp(0.22 + coarse * 0.3 + fine * 0.18, 0.06, 0.95);
+  return half4(0.5, 0.5, half(density), 0.0);
+}
+`
+
 export interface UniformSpec {
   name: string
   floats: number
+}
+
+export const SEED_MANIFEST: ReadonlyArray<UniformSpec> = [
+  { name: 'uGrid', floats: 2 },
+  { name: 'uSeed', floats: 1 },
+]
+
+export function buildSeedUniforms(seed: number): Record<string, number | number[]> {
+  'worklet'
+  return { uGrid: [GRID_W, GRID_H], uSeed: seed }
 }
 
 export const MOTION_MANIFEST: ReadonlyArray<UniformSpec> = [

@@ -12,6 +12,7 @@ import React from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
+import type { SedimentTuning } from '@domain/effects/sedimentShaders'
 import { HydroPulseScene } from './HydroPulseScene'
 import { StaticGlow } from './StaticGlow'
 import type { BackdropBus } from './backdropBus'
@@ -37,18 +38,25 @@ export function BackdropRenderer({
   quality,
   calm,
   reducedMotion = false,
+  tuning,
 }: {
   bus: BackdropBus
   quality: BackdropQuality
   /** Phase-driven damping target, forwarded to the scene. */
   calm: number
   reducedMotion?: boolean
+  /** Lab knob: sediment tuning overrides, forwarded to the scene. */
+  tuning?: Partial<SedimentTuning>
 }): React.JSX.Element | null {
   const effective = resolveBackdropQuality(quality, reducedMotion)
   if (effective === 'off') return null
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none" testID="live-backdrop">
-      {effective === 'reduced' ? <StaticGlow /> : <HydroPulseScene bus={bus} calm={calm} />}
+      {effective === 'reduced' ? (
+        <StaticGlow />
+      ) : (
+        <HydroPulseScene bus={bus} calm={calm} {...(tuning ? { tuning } : {})} />
+      )}
     </View>
   )
 }
