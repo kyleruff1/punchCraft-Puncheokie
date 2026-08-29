@@ -32,7 +32,10 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
 import { TAB_BAR_STYLE } from '../_layout'
 import { armAutoRetry, setAutoRetrySuspended } from '@ble/autoConnectTrackers'
+import { useReducedMotion } from 'react-native-reanimated'
 import { ActionButton } from '@components/branding/ActionButton'
+import { BackdropRenderer } from '@components/workout/backdrop/BackdropRenderer'
+import { createBackdropBus } from '@components/workout/backdrop/backdropBus'
 import { CueStage } from '@components/workout/CueStage'
 import { MetricsRail } from '@components/workout/MetricsRail'
 import { RestPhases } from '@components/workout/RestPhases'
@@ -45,6 +48,7 @@ import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { getSampleWorkout } from '@domain/workout/samples'
 import { generateWorkout } from '@domain/workout/generateWorkout'
 import { useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
+import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
@@ -115,6 +119,12 @@ export default function LiveScreen(): React.JSX.Element {
   // Felt feedback, built once and gated by the haptics volume — turning it off
   // in settings silences the motor rather than just muting a number.
   const haptics = React.useMemo(() => new HapticOutputExpo(), [])
+  // The reactive backdrop's bus, built once per mount so its rolling
+  // scaling window is naturally session-scoped. Dormant unless a scene
+  // subscribes AND the phase is work.
+  const backdropBus = React.useMemo(() => createBackdropBus(), [])
+  const backdropQuality = useBackdropQuality()
+  const reducedMotion = useReducedMotion()
 
   React.useEffect(() => {
     haptics.setEnabled(volumes.haptics > 0)
@@ -176,6 +186,16 @@ export default function LiveScreen(): React.JSX.Element {
       setAutoRetrySuspended(false)
     }
   }, [])
+
+  // Backdrop impulses only while punches are being thrown; between
+  // phases the water calms rather than cutting — a bell stills it over
+  // a second (the scene eases toward `calm`), pause leaves a near-still
+  // sheen under the overlay.
+  React.useEffect(() => {
+    backdropBus.setActive(live.phase === 'work')
+  }, [backdropBus, live.phase])
+  const backdropCalm =
+    live.phase === 'work' ? 1 : live.phase === 'countdown' || live.phase === 'rest' ? 0.35 : 0.15
 
   // The workout to run: a library pick when the athlete chose one, otherwise a
   // workout generated from the current recipe (M35). The generation is
@@ -253,6 +273,7 @@ export default function LiveScreen(): React.JSX.Element {
     onSessionEnded: setEndOutcome,
     voice,
     haptics,
+    backdrop: backdropBus,
   })
 
   // The walkout announcement: players buffer during the lobby (the first
@@ -481,6 +502,14 @@ export default function LiveScreen(): React.JSX.Element {
           resizeMode="cover"
           accessibilityLabel=""
         />
+        {/* The reactive layer draws OVER the art and UNDER the scrim, so
+            the §31.3 contrast floor caps everything it can ever do. */}
+        <BackdropRenderer
+          bus={backdropBus}
+          quality={backdropQuality}
+          calm={backdropCalm}
+          reducedMotion={reducedMotion}
+        />
         <View style={styles.backdropScrim} />
       </View>
 
@@ -521,12 +550,14 @@ export default function LiveScreen(): React.JSX.Element {
               restElapsedMs={restElapsedMs}
               restDurationMs={restDurationMs}
               onSkipRest={runner.skipRest}
+              reducedMotion={reducedMotion}
             />
           ) : (
             <CueStage
               {...(cues.current ? { current: cues.current } : {})}
               {...(cues.next ? { next: cues.next } : {})}
               {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
+              reducedMotion={reducedMotion}
             />
           )}
 

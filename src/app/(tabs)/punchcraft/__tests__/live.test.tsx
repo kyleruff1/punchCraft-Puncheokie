@@ -30,6 +30,45 @@ jest.mock('expo-audio', () => ({
 }))
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
+// The backdrop pulls in reanimated (whose worklets runtime needs a native
+// proxy) and Skia (native bindings, and outside jest-expo's transform
+// allowlist). Neither must ever load for real here — and reanimated
+// 4.5.1's OFFICIAL mock is unusable too: its mock.ts imports the real
+// index, which initializes the worklets native module. So the mock is
+// hand-rolled to exactly the hooks the live tree touches: derived
+// values evaluate once (the frame math is pure and runs fine under
+// Node), runOnUI executes inline, and Skia becomes inert null
+// components — the scene mounts, draws nothing, and the style walks
+// below see straight through it.
+jest.mock('react-native-reanimated', () => ({
+  useReducedMotion: () => false,
+  useSharedValue: <T,>(init: T) => ({ value: init }),
+  useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+  runOnUI:
+    <A extends unknown[]>(fn: (...args: A) => void) =>
+    (...args: A) =>
+      fn(...args),
+  withTiming: <T,>(value: T) => value,
+  useFrameCallback: () => ({ setActive: () => {} }),
+}))
+jest.mock('@shopify/react-native-skia', () => {
+  const Null = () => null
+  return {
+    Canvas: Null,
+    Group: Null,
+    Circle: Null,
+    Rect: Null,
+    Atlas: Null,
+    RadialGradient: Null,
+    LinearGradient: Null,
+    BlurMask: Null,
+    useClock: () => ({ value: 0 }),
+    useRectBuffer: () => ({ value: [] }),
+    useRSXformBuffer: () => ({ value: [] }),
+    useTexture: () => ({ value: null }),
+  }
+})
+
 jest.mock('expo-router', () => {
   function Stack() {
     return null
@@ -76,6 +115,7 @@ import LiveScreen from '../live'
 import { TAB_BAR_STYLE } from '../../_layout'
 import { colors } from '@/theme/colors'
 import { setLive, useLiveStore, useWorkoutStore } from '@state/useWorkoutStore'
+import { useBackdropSettingsStore } from '@state/useBackdropSettingsStore'
 import type { LiveState } from '@state/useWorkoutStore'
 
 const mounted: ReactTestRenderer[] = []
@@ -191,6 +231,18 @@ describe('zones', () => {
     expect(() => tree.root.findByProps({ testID: 'round-top-bar' })).not.toThrow()
     expect(() => tree.root.findByProps({ testID: 'metrics-rail' })).not.toThrow()
     expect(() => tree.root.findByProps({ testID: 'live-screen' })).not.toThrow()
+  })
+
+  it('mounts the reactive backdrop by default; quality off removes it live', () => {
+    const tree = render()
+    expect(() => tree.root.findByProps({ testID: 'live-backdrop' })).not.toThrow()
+    act(() => {
+      useBackdropSettingsStore.setState({ quality: 'off' })
+    })
+    expect(tree.root.findAllByProps({ testID: 'live-backdrop' }, { deep: false })).toHaveLength(0)
+    act(() => {
+      useBackdropSettingsStore.setState({ quality: 'standard' })
+    })
   })
 
   it('offers a start action before the workout begins', () => {

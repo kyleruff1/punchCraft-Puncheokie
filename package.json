@@ -23,6 +23,7 @@
   "dependencies": {
     "@expo-google-fonts/kanit": "0.4.1",
     "@sfourdrinier/react-native-ble-plx": "3.9.3",
+    "@shopify/react-native-skia": "2.6.2",
     "expo": "57.0.15",
     "expo-audio": "~57.0.4",
     "expo-auth-session": "~57.0.8",
