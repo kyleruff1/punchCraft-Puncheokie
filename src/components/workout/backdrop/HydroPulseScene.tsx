@@ -30,7 +30,12 @@ import {
 } from '@shopify/react-native-skia'
 import { useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 
-import { CHURN_TAU_S, MEMBRANE_PRESETS, decayedEnv } from '@domain/effects/membraneMath'
+import {
+  CHURN_TAU_S,
+  DARKNESS_TAU_S,
+  MEMBRANE_PRESETS,
+  decayedEnv,
+} from '@domain/effects/membraneMath'
 import {
   DEFAULT_TUNING,
   MEMBRANE_SKSL,
@@ -102,6 +107,7 @@ export function HydroPulseScene({
       size.h,
       calmSV.value,
       decayedEnv(e.churn, e.churnStamp, nowSec, CHURN_TAU_S),
+      decayedEnv(e.dark, e.darkStamp, nowSec, DARKNESS_TAU_S),
       ring.value,
       resolvedTuning,
     )

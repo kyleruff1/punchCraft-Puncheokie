@@ -6,6 +6,7 @@
  */
 import {
   CONVERGE_WINDOW_S,
+  DARKNESS_TAU_S,
   GEL_WINDOW_S,
   HAND_LEFT,
   HAND_NEUTRAL,
@@ -15,6 +16,8 @@ import {
   bumpEnv,
   churnGainOf,
   convergenceImpulse,
+  darknessGainOf,
+  darknessWakeOf,
   decayedEnv,
   detectConvergence,
   expiryOf,
@@ -205,6 +208,44 @@ describe('churn envelope', () => {
     let churn = 0
     for (let i = 0; i < 20; i += 1) churn = bumpEnv(churn, 0, 0, 1.8, churnGainOf(1))
     expect(churn).toBe(1)
+  })
+})
+
+describe('blackout darkness', () => {
+  /** Simulate a punch cadence and return the settled envelope value. */
+  function settle(v01: number, perSecond: number, seconds: number): number {
+    let dark = 0
+    let stamp = 0
+    const gap = 1 / perSecond
+    for (let t = gap; t <= seconds; t += gap) {
+      dark = bumpEnv(dark, stamp, t, DARKNESS_TAU_S, darknessGainOf(v01))
+      stamp = t
+    }
+    return dark
+  }
+
+  it('a dead sprint can smother the pane; ordinary work cannot', () => {
+    expect(settle(1, 3, 12)).toBeGreaterThan(0.75)
+    expect(settle(0.6, 2, 12)).toBeLessThan(0.35)
+    expect(settle(0.3, 3, 12)).toBeLessThan(0.1)
+  })
+
+  it('full darkness fades below the visible floor in under 10 s', () => {
+    expect(decayedEnv(1, 0, 10, DARKNESS_TAU_S)).toBeLessThan(0.02)
+  })
+
+  it('the wake window covers the fade and vanishes with the darkness', () => {
+    expect(darknessWakeOf(0)).toBe(0)
+    expect(darknessWakeOf(0.005)).toBe(0)
+    const full = darknessWakeOf(1)
+    expect(full).toBeGreaterThan(8)
+    expect(full).toBeLessThan(12)
+    expect(decayedEnv(1, 0, full, DARKNESS_TAU_S)).toBeLessThanOrEqual(0.011)
+  })
+
+  it('the gain curve is savagely superlinear', () => {
+    expect(darknessGainOf(1)).toBeCloseTo(0.24)
+    expect(darknessGainOf(0.5) / darknessGainOf(1)).toBeLessThan(0.1)
   })
 })
 

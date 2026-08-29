@@ -33,6 +33,7 @@ uniform float uCalm;
 uniform float4 uGel;
 uniform float4 uMask;
 uniform float4 uTuning;
+uniform float uDark;
 uniform float4 uA[${MAX_IMPULSES}];
 uniform float4 uB[${MAX_IMPULSES}];
 uniform float4 uC[${MAX_IMPULSES}];
@@ -103,10 +104,14 @@ half4 main(float2 xy) {
   // Particulate sheet: the immutable grain sampled through the SAME
   // displacement (slightly amplified so it visibly leads the art),
   // darkening only — compression banks the specks into denser bands.
+  // The blackout envelope lets the dark particulates saturate and
+  // smother the whole pane: specks flood first, then the field between
+  // them — total black only under a sustained dead-sprint.
   half g = grain.eval((uv + dispUv * 1.6) * uOut).r;
   float density = 1.0 + clamp(compress * uTuning.z, -0.6, 1.5) * (0.5 + 0.5 * uGel.w);
-  float darken = uTuning.y * (1.0 - float(g)) * density * fieldMask;
-  half3 color = half3(base.rgb) * half(1.0 - clamp(darken, 0.0, 0.6));
+  float smother = pow(clamp(uDark, 0.0, 1.0), 1.3);
+  float darken = (uTuning.y + smother * 2.2) * (1.0 - float(g)) * density + smother * 0.8;
+  half3 color = half3(base.rgb) * half(1.0 - clamp(darken * fieldMask, 0.0, 1.0));
   return half4(color, 1.0);
 }
 `
@@ -123,6 +128,7 @@ export const MEMBRANE_MANIFEST: ReadonlyArray<UniformSpec> = [
   { name: 'uGel', floats: 4 },
   { name: 'uMask', floats: 4 },
   { name: 'uTuning', floats: 4 },
+  { name: 'uDark', floats: 1 },
   { name: 'uA', floats: IMPULSE_FLOATS },
   { name: 'uB', floats: IMPULSE_FLOATS },
   { name: 'uC', floats: IMPULSE_FLOATS },
@@ -156,6 +162,7 @@ export function buildMembraneUniforms(
   outH: number,
   calm: number,
   churn: number,
+  darkness: number,
   ring: readonly MembraneImpulse[],
   tuning: MembraneTuning,
 ): Record<string, number | number[]> {
@@ -172,6 +179,7 @@ export function buildMembraneUniforms(
     // knob for the lab.
     uMask: [0.78, 0.14, 1.0, 1.0],
     uTuning: [tuning.refraction, tuning.grainOpacity, tuning.compressionGain, tuning.gelGain],
+    uDark: Math.max(0, Math.min(1, darkness)),
     uA: packed.a,
     uB: packed.b,
     uC: packed.c,

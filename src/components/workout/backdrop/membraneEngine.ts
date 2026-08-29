@@ -24,10 +24,13 @@ import {
 
 import {
   CHURN_TAU_S,
+  DARKNESS_TAU_S,
   SLEEP_GRACE_S,
   bumpEnv,
   churnGainOf,
   convergenceImpulse,
+  darknessGainOf,
+  darknessWakeOf,
   detectConvergence,
   lastExpiry,
   pushImpulse,
@@ -45,6 +48,9 @@ export interface MembraneFeel {
 export interface MembraneEnv {
   churn: number
   churnStamp: number
+  /** Blackout saturation, 0..1 — see darknessGainOf. */
+  dark: number
+  darkStamp: number
   lastHand: number
   lastTSec: number
   lastStrength: number
@@ -84,6 +90,8 @@ export function useMembraneEngine(): MembraneEngine {
   const env = useSharedValue<MembraneEnv>({
     churn: 0,
     churnStamp: 0,
+    dark: 0,
+    darkStamp: 0,
     lastHand: 2,
     lastTSec: -10,
     lastStrength: 0,
@@ -130,7 +138,18 @@ export function useMembraneEngine(): MembraneEngine {
       }
 
       ring.value = result.ring
-      lastExpirySec.value = lastExpiry(result.ring)
+      const dark = bumpEnv(
+        prev.dark,
+        prev.darkStamp,
+        nowSec,
+        DARKNESS_TAU_S,
+        darknessGainOf(v01) + spilled * 0.03,
+      )
+      // The wake window covers whichever outlasts the other: the ring
+      // or the blackout fade — sleep must never freeze a dimmed frame.
+      const ringEnd = lastExpiry(result.ring)
+      const darkEnd = nowSec + darknessWakeOf(dark)
+      lastExpirySec.value = ringEnd > darkEnd ? ringEnd : darkEnd
       env.value = {
         churn: bumpEnv(
           prev.churn,
@@ -140,6 +159,8 @@ export function useMembraneEngine(): MembraneEngine {
           churnGainOf(v01) + spilled * 0.05,
         ),
         churnStamp: nowSec,
+        dark,
+        darkStamp: nowSec,
         lastHand: handCode,
         lastTSec: nowSec,
         lastStrength: v01,

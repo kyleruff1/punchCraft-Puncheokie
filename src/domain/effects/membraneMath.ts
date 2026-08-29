@@ -46,6 +46,16 @@ export const GEL_TWIST = 0.35
 export const CHURN_TAU_S = 1.8
 export const CONVERGE_WINDOW_S = 0.45
 
+/**
+ * Blackout darkness: sustained high-intensity work lets the dark
+ * particulates saturate the backdrop — a dead sprint can smother it to
+ * black — but the envelope decays fast enough that the pane is back to
+ * neutral in well under 10 s once punches stop or soften.
+ */
+export const DARKNESS_TAU_S = 2.2
+/** Darkness below this is invisible; the wake window targets it. */
+export const DARKNESS_FLOOR = 0.01
+
 /** Sleep: no motion once every impulse has expired for this long. */
 export const SLEEP_GRACE_S = 0.5
 
@@ -138,6 +148,27 @@ export function bumpEnv(
 export function churnGainOf(v01: number): number {
   'worklet'
   return 0.06 + 0.18 * Math.max(0, Math.min(1, v01))
+}
+
+/**
+ * The darkness gain one punch contributes. Deliberately superlinear:
+ * ordinary work barely feeds the blackout, so holding the pane dark
+ * demands a genuine dead-sprint of hard, fast punches.
+ */
+export function darknessGainOf(v01: number): number {
+  'worklet'
+  return 0.24 * Math.pow(Math.max(0, Math.min(1, v01)), 3.5)
+}
+
+/**
+ * How long (seconds) the pane must stay awake for the current
+ * darkness to fade below the visible floor — keeps the sleep gate from
+ * freezing a dimmed frame.
+ */
+export function darknessWakeOf(darkness: number): number {
+  'worklet'
+  if (darkness <= DARKNESS_FLOOR) return 0
+  return DARKNESS_TAU_S * Math.log(darkness / DARKNESS_FLOOR)
 }
 
 /** One temporary wave impulse — everything the shader needs, plain numbers. */
