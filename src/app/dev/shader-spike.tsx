@@ -151,7 +151,7 @@ export default function ShaderSpikeScreen(): React.JSX.Element {
       acc.value = Math.min(0.1, acc.value + dtMs / 1000)
       while (acc.value >= STEP_S) {
         acc.value -= STEP_S
-        const pair = surfaces.value
+        const pair: { a: unknown; b: unknown; flip: boolean } | null = surfaces.value
         if (!pair || !stateImage.value) return
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const dst = (pair.flip ? pair.a : pair.b) as any
