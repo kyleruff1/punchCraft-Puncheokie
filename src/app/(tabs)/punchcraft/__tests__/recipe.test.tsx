@@ -279,25 +279,28 @@ describe('punchCraft landing — the workout home', () => {
     expect(button.props.accessibilityRole).toBe('button')
   })
 
-  it('lists the designed-workout library in the collapsed picker', () => {
-    // The samples now sit behind a collapsed picker on the landing —
-    // opening the picker mounts each sample as an option row.
+  it('shows every preset as an always-visible grid tile', () => {
+    // The presets are a grid now, not a popout — every tile mounted and
+    // named without any interaction.
     const tree = render(<PunchCraftLanding />)
-    press(tree, 'landing-sample-toggle')
     const text = allText(tree)
     for (const sample of listSampleWorkouts()) {
       expect(text).toContain(sample.name)
-      expect(() =>
-        tree.root.findByProps({ testID: `landing-sample-option-${sample.key}` }),
-      ).not.toThrow()
+      expect(() => tree.root.findByProps({ testID: `preset-${sample.key}` })).not.toThrow()
     }
   })
 
-  it('picking a library workout stores it so the run uses it, not the default', () => {
+  it('tile tap selects (and re-tap clears); quick-start arms only with a pick', () => {
     const tree = render(<PunchCraftLanding />)
     expect(store().selectedSampleKey).toBeUndefined()
-    pickOption(tree, 'landing-sample', 'switch-by-round')
+    expect(tree.root.findByProps({ testID: 'quick-start' }).props.disabled).toBe(true)
+
+    press(tree, 'preset-switch-by-round')
     expect(store().selectedSampleKey).toBe('switch-by-round')
+    expect(tree.root.findByProps({ testID: 'quick-start' }).props.disabled).toBe(false)
+
+    press(tree, 'preset-switch-by-round')
+    expect(store().selectedSampleKey).toBeUndefined()
   })
 
   it('Build a workout mints a fresh seed and clears any library pick (M35)', () => {

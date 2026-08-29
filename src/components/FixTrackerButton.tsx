@@ -81,6 +81,7 @@ export function FixTrackerButton(): React.ReactElement | null {
         }}
         disabled={result.phase === 'waiting'}
         height={FIX_BUTTON_HEIGHT}
+        fit="pill"
         accessibilityHint="Opens Bluetooth settings so you can toggle it off and on, then reconnects the trackers"
         testID="fix-tracker-connection"
       />

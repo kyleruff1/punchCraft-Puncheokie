@@ -95,6 +95,7 @@ export function ConnectTrackersButton(): React.ReactElement {
         }}
         disabled={busy}
         height={CONNECT_BUTTON_HEIGHT}
+        fit="pill"
         style={bothLive && styles.buttonQuiet}
         testID="connect-trackers"
       />

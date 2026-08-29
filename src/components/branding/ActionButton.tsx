@@ -50,8 +50,14 @@ const ACCESSIBILITY_LABELS = {
 const TRIM: Partial<
   Record<keyof typeof SOURCES, { left: number; right: number; top: number; bottom: number }>
 > = {
-  connectTrackers: { left: 0.15, right: 0.14, top: 0.29, bottom: 0.31 },
-  fixTrackers: { left: 0.24, right: 0.23, top: 0.27, bottom: 0.3 },
+  // Measured from each asset's SOLID alpha (>220) after Kyle's
+  // 2026-08-28 consistent-restyle exports. fix moved to a 2:1 canvas;
+  // aspect resolves at runtime so only the trims live here.
+  buildAWorkout: { left: 0.019, right: 0.016, top: 0.188, bottom: 0.233 },
+  startWorkout: { left: 0.017, right: 0.015, top: 0.182, bottom: 0.229 },
+  hitIt: { left: 0.016, right: 0.015, top: 0.18, bottom: 0.228 },
+  connectTrackers: { left: 0.149, right: 0.14, top: 0.287, bottom: 0.316 },
+  fixTrackers: { left: 0.047, right: 0.047, top: 0.273, bottom: 0.246 },
 }
 
 /**
@@ -71,6 +77,16 @@ export interface ActionButtonProps {
   onPress?: () => void
   disabled?: boolean
   height?: number
+  /**
+   * How `height` is interpreted. `'canvas'` (default) sizes the full
+   * authored canvas — today's behavior for the hero buttons, glow bleed
+   * included. `'pill'` sizes the VISIBLE pill using the action's TRIM
+   * metadata and collapses the transparent canvas margins from layout —
+   * for compact placements (tracker pair, quick-start) where invisible
+   * canvas would space things apart. Falls back to canvas sizing when
+   * the action has no TRIM measurements.
+   */
+  fit?: 'canvas' | 'pill'
   accessibilityHint?: string
   style?: StyleProp<ViewStyle>
   testID?: string
@@ -81,6 +97,7 @@ export function ActionButton({
   onPress,
   disabled = false,
   height = DEFAULT_HEIGHT,
+  fit = 'canvas',
   accessibilityHint,
   style,
   testID,
@@ -106,12 +123,12 @@ export function ActionButton({
       <Image
         source={source}
         style={(() => {
-          const trim = TRIM[action]
+          const trim = fit === 'pill' ? TRIM[action] : undefined
           if (!trim) return { height, width: height * aspect, maxWidth: '100%' as const }
-          // Trimmed assets size by VISIBLE PILL height, not canvas height:
-          // the arts carry different pill-to-canvas ratios, so equal
-          // canvas heights rendered unequal buttons (the fix pill sat
-          // visibly shorter than connect at the same `height` prop).
+          // Pill fit sizes by VISIBLE PILL height, not canvas height: the
+          // arts carry different pill-to-canvas ratios, so equal canvas
+          // heights rendered unequal buttons (the fix pill sat visibly
+          // shorter than connect at the same `height` prop).
           const pillFraction = 1 - trim.top - trim.bottom
           const imageHeight = height / pillFraction
           const imageWidth = imageHeight * aspect

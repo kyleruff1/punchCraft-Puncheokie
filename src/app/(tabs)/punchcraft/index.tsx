@@ -1,10 +1,9 @@
-import React, { useMemo } from 'react'
+import React from 'react'
 import { Link, Stack } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { ActionButton } from '@/components/branding/ActionButton'
 import { PickerProvider } from '@/components/ui/PickerContext'
-import { PickerRow, type PickerOption } from '@/components/ui/PickerRow'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
@@ -23,18 +22,6 @@ export default function PunchCraftLanding() {
   const selectedSampleKey = useSelectedSampleKey()
   const selectSample = useWorkoutStore((s) => s.selectSample)
   const startNewBuild = useWorkoutStore((s) => s.startNewBuild)
-
-  const sampleOptions: ReadonlyArray<PickerOption<string | 'none'>> = useMemo(
-    () => [
-      { value: 'none' as const, label: 'None — build my own' },
-      ...samples.map((s) => ({
-        value: s.key,
-        label: s.name,
-        description: s.description,
-      })),
-    ],
-    [samples],
-  )
 
   return (
     <PickerProvider>
@@ -66,18 +53,47 @@ export default function PunchCraftLanding() {
           />
         </Link>
 
-        <PickerRow
-          id="landing-sample"
-          testID="landing-sample"
-          label="Designed workouts"
-          // Name the presets while collapsed — a bare "None — build my
-          // own" preview read as "the presets are gone" on the bag.
-          caption={samples.map((s) => s.name).join('  ·  ')}
-          value={selectedSampleKey ?? 'none'}
-          {...(selectedSampleKey ? {} : { valuePreview: `${samples.length} presets` })}
-          options={sampleOptions}
-          onChange={(key) => selectSample(key === 'none' ? undefined : (key as SampleWorkoutKey))}
-        />
+        {/* Designed workouts — the no-build path. An always-visible grid
+            (no popout): tap a preset to select it, and the small chrome
+            start button jumps STRAIGHT to the live screen running it —
+            no recipe detour, no seed minting. */}
+        <View style={styles.presetCard} testID="designed-workouts">
+          <Text style={styles.presetLabel}>Designed workouts</Text>
+          <View style={styles.presetGrid}>
+            {samples.map((sample) => {
+              const selected = sample.key === selectedSampleKey
+              return (
+                <Pressable
+                  key={sample.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() =>
+                    selectSample(selected ? undefined : (sample.key as SampleWorkoutKey))
+                  }
+                  style={[styles.presetTile, selected && styles.presetTileSelected]}
+                  testID={`preset-${sample.key}`}
+                >
+                  <Text style={[styles.presetName, selected && styles.presetNameSelected]}>
+                    {sample.name}
+                  </Text>
+                  <Text style={styles.presetDescription} numberOfLines={2}>
+                    {sample.description}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+          <Link href="/(tabs)/punchcraft/live" asChild>
+            <ActionButton
+              action="startWorkout"
+              fit="pill"
+              height={40}
+              disabled={selectedSampleKey === undefined}
+              testID="quick-start"
+              style={styles.quickStart}
+            />
+          </Link>
+        </View>
 
         {/* Throwaway M32-05 spike entry (#182); removed when the spike closes. */}
         <Link href="/(tabs)/punchcraft/orientation-spike" asChild>
@@ -100,6 +116,52 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   primaryActionSpacing: { marginTop: 4 },
+  presetCard: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    backgroundColor: colors.surface,
+    padding: 12,
+    gap: 10,
+  },
+  presetLabel: {
+    fontSize: sizes.body,
+    fontFamily: fonts.heading,
+    color: colors.textPrimary,
+  },
+  presetGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  presetTile: {
+    flexGrow: 1,
+    flexBasis: 260,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceElevated,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 2,
+  },
+  presetTileSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSurface,
+  },
+  presetName: {
+    fontSize: sizes.body,
+    fontFamily: fonts.heading,
+    color: colors.textPrimary,
+  },
+  presetNameSelected: { color: colors.accent },
+  presetDescription: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    lineHeight: 16,
+    color: colors.textSecondary,
+  },
+  quickStart: { alignSelf: 'center' },
   spikeAction: {
     marginTop: 8,
     paddingVertical: 12,
