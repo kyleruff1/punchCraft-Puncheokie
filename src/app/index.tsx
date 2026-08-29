@@ -30,7 +30,7 @@ const AUTO_ADVANCE_MS = 1_800
 const DESTINATION = '/(tabs)/punchcraft' as const
 /* eslint-disable @typescript-eslint/no-require-imports */
 const HERO_PORTRAIT = require('../../assets/branding/splash-portrait.png') as number
-const HERO_LANDSCAPE = require('../../assets/branding/splash-landscape.png') as number
+const HERO_LANDSCAPE = require('../../assets/branding/splash-landscape-alt2.png') as number
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 export default function SplashScreen(): React.JSX.Element {
