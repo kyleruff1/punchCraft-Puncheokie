@@ -38,6 +38,11 @@ export default function SettingsLanding() {
           <Text style={styles.linkButtonText}>Voice Coach</Text>
         </Pressable>
       </Link>
+      <Link href="/settings/backdrop" asChild>
+        <Pressable style={styles.linkButton} testID="backdrop-settings-link">
+          <Text style={styles.linkButtonText}>Workout backdrop</Text>
+        </Pressable>
+      </Link>
       <Link href="/(tabs)/velocity-lab" asChild>
         <Pressable style={styles.linkButton}>
           <Text style={styles.linkButtonText}>Back to Velocity Lab</Text>

@@ -43,6 +43,7 @@ import { RoundResultFreeze } from '@domain/session/restPhases'
 import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
+import type { BackdropImpulsePort } from '@domain/effects/BackdropImpulsePort'
 import type { Stance } from '@domain/workout/WorkoutTokens'
 import type { CueEvent, SessionPhaseEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
@@ -193,6 +194,12 @@ export interface UseWorkoutRunnerArgs {
    * train, not a degraded one.
    */
   haptics?: HapticOutputPort
+  /**
+   * The reactive backdrop. Omit it and the water simply never stirs.
+   * Best-effort by contract (D17): the port may drop a splash, the
+   * runner never waits on it, and nothing here can touch scoring.
+   */
+  backdrop?: BackdropImpulsePort
 }
 
 /** What the runner reports when a workout ends. */
@@ -227,7 +234,7 @@ interface CueRenderState {
 }
 
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
-  const { workout, source, stance, persistence, onSessionEnded, voice, haptics, countdownMs } =
+  const { workout, source, stance, persistence, onSessionEnded, voice, haptics, backdrop, countdownMs } =
     args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
@@ -347,6 +354,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const matcherRef = useRef<LiveCueMatcher | null>(null)
   const hapticsRef = useRef<HapticOutputPort | undefined>(undefined)
   hapticsRef.current = haptics
+  const backdropRef = useRef<BackdropImpulsePort | undefined>(undefined)
+  backdropRef.current = backdrop
   const pacingRef = useRef<PacingEngine | null>(null)
   const pacingCueRef = useRef<PacingCueText | undefined>(undefined)
   /** Rows accumulated per settled cue, written in one transaction at the end. */
@@ -621,6 +630,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         const oldest = recentEventsRef.current.keys().next()
         if (!oldest.done) recentEventsRef.current.delete(oldest.value)
       }
+
+      // The backdrop's splash rides the same tick as the token flash.
+      // Same posture as haptics: optional, best-effort, fire-and-forget.
+      backdropRef.current?.impulse({
+        hand: event.hand,
+        ...(typeof event.velocityRaw === 'number' ? { velocityRaw: event.velocityRaw } : {}),
+      })
 
       // The matcher decides what this punch answered; the runner only
       // counts. Its callback drives notifyMatch and the in-cue tally.

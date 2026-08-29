@@ -17,6 +17,7 @@ import '@/ble'
 
 import { useAutoConnectOnLaunch } from '@ble/useAutoConnectOnLaunch'
 import { useVoiceSettingsOnLaunch } from '@state/loadVoiceSettings'
+import { useBackdropSettingsOnLaunch } from '@state/loadBackdropSettings'
 import { colors } from '@/theme/colors'
 import { fonts } from '@/theme/typography'
 
@@ -45,6 +46,7 @@ export default function RootLayout() {
   // Voice preferences are read once here, so the live screen never renders
   // against defaults the athlete has already changed.
   useVoiceSettingsOnLaunch()
+  useBackdropSettingsOnLaunch()
 
   if (!fontsLoaded) return null
 
@@ -62,6 +64,10 @@ export default function RootLayout() {
           <Stack.Screen
             name="settings/voice"
             options={{ headerShown: true, title: 'Voice Coach' }}
+          />
+          <Stack.Screen
+            name="settings/backdrop"
+            options={{ headerShown: true, title: 'Workout backdrop' }}
           />
           <Stack.Screen name="+not-found" />
         </Stack>

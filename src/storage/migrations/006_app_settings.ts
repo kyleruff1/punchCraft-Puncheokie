@@ -46,6 +46,7 @@ export const MIGRATION_006: Migration = {
 export const SETTINGS_KEYS = {
   voicePolicy: 'voice.policy',
   voiceVolumes: 'voice.volumes',
+  backdrop: 'backdrop.settings',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]
