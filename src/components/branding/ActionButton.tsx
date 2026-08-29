@@ -24,6 +24,7 @@ import type { StyleProp, ViewStyle } from 'react-native'
 const SOURCES = {
   buildAWorkout: require('../../../assets/branding/builidAworkout_label.png') as number,
   startWorkout: require('../../../assets/branding/start_workout_label.png') as number,
+  quickstartWorkout: require('../../../assets/branding/quickstart_workout_label.png') as number,
   hitIt: require('../../../assets/branding/hit_it.png') as number,
   connectTrackers: require('../../../assets/branding/connect_trackers.png') as number,
   fixTrackers: require('../../../assets/branding/fix_trackers.png') as number,
@@ -33,6 +34,7 @@ const SOURCES = {
 const ACCESSIBILITY_LABELS = {
   buildAWorkout: 'Build a workout',
   startWorkout: 'Start workout',
+  quickstartWorkout: 'Quickstart workout',
   hitIt: 'Hit it!',
   connectTrackers: 'Connect trackers',
   fixTrackers: 'Fix tracker connection',
@@ -55,6 +57,7 @@ const TRIM: Partial<
   // aspect resolves at runtime so only the trims live here.
   buildAWorkout: { left: 0.019, right: 0.016, top: 0.188, bottom: 0.233 },
   startWorkout: { left: 0.017, right: 0.015, top: 0.182, bottom: 0.229 },
+  quickstartWorkout: { left: 0.01, right: 0.01, top: 0.188, bottom: 0.251 },
   hitIt: { left: 0.016, right: 0.015, top: 0.18, bottom: 0.228 },
   connectTrackers: { left: 0.149, right: 0.14, top: 0.287, bottom: 0.316 },
   fixTrackers: { left: 0.047, right: 0.047, top: 0.273, bottom: 0.246 },

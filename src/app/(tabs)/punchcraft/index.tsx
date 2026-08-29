@@ -82,8 +82,10 @@ export default function PunchCraftLanding() {
             })}
           </View>
           <Link href="/(tabs)/punchcraft/live" asChild>
+            {/* The landing's own authored art (Kyle 2026-08-29) — "start
+                workout" stays the recipe screen's button. */}
             <ActionButton
-              action="startWorkout"
+              action="quickstartWorkout"
               fit="pill"
               height={60}
               disabled={selectedSampleKey === undefined}
