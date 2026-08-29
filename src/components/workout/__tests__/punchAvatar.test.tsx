@@ -10,7 +10,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 
 import { PunchAvatarCard } from '../PunchAvatarCard'
 import { findPunchAvatar, punchAvatarFrames } from '../punchAvatarManifest'
-import { punchAvatarKey } from '@domain/workout/punchAvatar'
+import { minHoldMs, punchAvatarKey } from '@domain/workout/punchAvatar'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { PunchNumber, WorkoutToken } from '@domain/workout/WorkoutTokens'
 
@@ -99,8 +99,15 @@ describe('PunchAvatarCard', () => {
     expect(step2.props.source).toBe(findPunchAvatar(6, true)?.step2)
   })
 
-  it('renders nothing before any punch is lit', () => {
+  it('demonstrates the opening punch before the engine lights anything', () => {
+    // A cue previewing, or a gap between reps, still shows the combination.
     const tree = render(<PunchAvatarCard cue={cue([punch(1)])} activeTokenIndex={-1} />)
+    const step2 = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
+    expect(step2.props.source).toBe(findPunchAvatar(1, false)?.step2)
+  })
+
+  it('renders nothing with no cue at all', () => {
+    const tree = render(<PunchAvatarCard activeTokenIndex={-1} />)
     expect(tree.root.findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })).toHaveLength(
       0,
     )
@@ -137,5 +144,59 @@ describe('PunchAvatarCard', () => {
     const layer = tree.root.findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })[0]!
     const flat = [layer.props.style].flat()
     expect(flat.some((s) => s && typeof s.opacity === 'number')).toBe(true)
+  })
+})
+
+describe('PunchAvatarCard — demonstrating the combination', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('walks the combination when the engine lights nothing', () => {
+    // A cue can sit previewing, or between reps, with no token 'active'.
+    // The card keeps demonstrating rather than freezing on a guard pose.
+    const tree = render(
+      <PunchAvatarCard cue={cue([punch(1), punch(2), punch(3)])} activeTokenIndex={-1} />,
+    )
+    const shownKey = (): unknown =>
+      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
+    expect(shownKey()).toBe(findPunchAvatar(1, false)?.step2)
+    act(() => {
+      jest.advanceTimersByTime(1200)
+    })
+    expect(shownKey()).toBe(findPunchAvatar(2, false)?.step2)
+    act(() => {
+      jest.advanceTimersByTime(1200)
+    })
+    expect(shownKey()).toBe(findPunchAvatar(3, false)?.step2)
+  })
+
+  it('snaps to the engine the moment it lights a token', () => {
+    const combo = cue([punch(1), punch(2), punch(5)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={-1} />)
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={2} />)
+    })
+    // The opening punch keeps the card for its full flip first — the hold is
+    // the guarantee that both frames play — then the engine's token lands.
+    act(() => {
+      jest.advanceTimersByTime(minHoldMs(400) + 20)
+    })
+    const step2 = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
+    expect(step2.props.source).toBe(findPunchAvatar(5, false)?.step2)
+  })
+
+  it('flips to the strike after the wind-up, then back to guard', () => {
+    const tree = render(<PunchAvatarCard cue={cue([punch(1), punch(2)])} activeTokenIndex={0} />)
+    const opacityOf = (id: string): number => {
+      const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
+      const flat = [node.props.style].flat()
+      return flat.reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+    }
+    expect(opacityOf('punch-avatar-step1')).toBe(1)
+    act(() => {
+      jest.advanceTimersByTime(120)
+    })
+    expect(opacityOf('punch-avatar-step2')).toBe(1)
+    expect(opacityOf('punch-avatar-step1')).toBe(0)
   })
 })

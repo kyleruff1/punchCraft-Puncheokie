@@ -17,7 +17,7 @@
  * Presentational only — no store, engine or clock imports; identity comes
  * from the same token the punch nodes render.
  */
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, View } from 'react-native'
 
 import { findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
@@ -49,21 +49,17 @@ interface Shown {
 /** The punch the card should be showing, or null for a non-punch token. */
 function requestedFor(
   cue: CueInstance | undefined,
-  activeTokenIndex: number,
+  tokenIndex: number,
 ): { key: string; frames: PunchAvatarFrames; windowMs: number } | null {
-  if (!cue || activeTokenIndex < 0) return null
-  const token = cue.tokens[activeTokenIndex]
+  if (!cue || tokenIndex < 0) return null
+  const token = cue.tokens[tokenIndex]
   if (!token || token.kind !== 'punch') return null
   const frames = findPunchAvatar(token.number, token.body)
   if (!frames) return null
   // The same due times the rings fire on: the clip rail when a phrase drives
   // the cue, the beat grid otherwise.
   const dueTimes = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
-  const windowMs = avatarWindowMs(
-    dueTimes,
-    activeTokenIndex,
-    cue.windowEndMs - cue.scheduledStartMs,
-  )
+  const windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
   return { key: punchAvatarKey(token.number, token.body), frames, windowMs }
 }
 
@@ -74,7 +70,33 @@ export function PunchAvatarCard(props: {
   reducedMotion?: boolean
 }): React.JSX.Element | null {
   const { cue, activeTokenIndex, reducedMotion = false } = props
-  const requested = requestedFor(cue, activeTokenIndex)
+
+  // Every punch in the combination, in order. The card walks these.
+  const punchIndexes = useMemo(
+    () =>
+      (cue?.tokens ?? []).reduce<number[]>((acc, token, index) => {
+        if (token.kind === 'punch') acc.push(index)
+        return acc
+      }, []),
+    [cue],
+  )
+  const cueId = cue?.id
+  // Where the demonstration has walked to. The engine is authoritative
+  // whenever it lights a token; between those moments — a gap between reps,
+  // a cue still previewing — the card keeps demonstrating the combination
+  // rather than freezing on a guard pose.
+  const [demoPos, setDemoPos] = useState(0)
+  useEffect(() => {
+    setDemoPos(0)
+  }, [cueId])
+  useEffect(() => {
+    if (activeTokenIndex < 0) return
+    const pos = punchIndexes.indexOf(activeTokenIndex)
+    if (pos >= 0) setDemoPos(pos)
+  }, [activeTokenIndex, punchIndexes])
+
+  const tokenIndex = activeTokenIndex >= 0 ? activeTokenIndex : (punchIndexes[demoPos] ?? -1)
+  const requested = requestedFor(cue, tokenIndex)
   // The identity the effect actually keys off; the object itself is rebuilt
   // every render, so it travels by ref instead of through the deps array.
   const requestedKey = requested?.key ?? null
@@ -119,6 +141,16 @@ export function PunchAvatarCard(props: {
       promoteRef.current = null
     }
   }, [requestedKey, requestedWindowMs])
+
+  // Walk to the next punch when the engine is quiet, on that punch's own
+  // window so the demonstration keeps the combination's rhythm.
+  const stepCount = punchIndexes.length
+  useEffect(() => {
+    if (activeTokenIndex >= 0 || stepCount === 0 || requestedWindowMs <= 0) return
+    const dwell = Math.max(requestedWindowMs, minHoldMs(requestedWindowMs))
+    const timer = setTimeout(() => setDemoPos((p) => (p + 1) % stepCount), dwell)
+    return () => clearTimeout(timer)
+  }, [activeTokenIndex, stepCount, requestedWindowMs, demoPos])
 
   // Flip: wind-up, strike, hold the strike, back to guard for the next beat.
   useEffect(() => {
