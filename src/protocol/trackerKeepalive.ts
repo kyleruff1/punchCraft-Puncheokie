@@ -82,6 +82,40 @@ export function onKeepaliveBattery(listener: KeepaliveBatteryListener): () => vo
   }
 }
 
+/**
+ * Read one glove's battery and fan it out. Called by the beat for every
+ * connected glove, and immediately on a ready transition — a glove that
+ * only survives seconds (observed on the flat-suspect red) still gets
+ * its level read before it goes.
+ */
+async function readBattery(
+  facade: ReturnType<typeof getBleManager>,
+  tracker: (typeof KNOWN_TRACKERS)[number],
+): Promise<void> {
+  const battery = await facade.readCharacteristic(
+    tracker.address,
+    BATTERY_SERVICE_UUID,
+    BATTERY_LEVEL_UUID,
+  )
+  if (!battery.success || !battery.valueHex) return
+  const pct = Number.parseInt(battery.valueHex.slice(0, 2), 16)
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) return
+  if (lastBatteryPct.get(tracker.address) !== pct) {
+    lastBatteryPct.set(tracker.address, pct)
+    logger.info('keepalive.battery', 'glove battery level', {
+      hand: safe(tracker.hand),
+      pct: safe(pct),
+    })
+  }
+  for (const listener of batteryListeners) {
+    try {
+      listener(tracker.hand, pct)
+    } catch {
+      // Listener errors must not break the beat.
+    }
+  }
+}
+
 async function heartbeatTick(): Promise<void> {
   const facade = getBleManager()
   for (const tracker of KNOWN_TRACKERS) {
@@ -102,30 +136,7 @@ async function heartbeatTick(): Promise<void> {
       }
       // Battery rides the same beat: one 0x2A19 read per glove. Logged
       // only on change — the level moves far slower than the beat.
-      const battery = await facade.readCharacteristic(
-        tracker.address,
-        BATTERY_SERVICE_UUID,
-        BATTERY_LEVEL_UUID,
-      )
-      if (battery.success && battery.valueHex) {
-        const pct = Number.parseInt(battery.valueHex.slice(0, 2), 16)
-        if (Number.isFinite(pct) && pct >= 0 && pct <= 100) {
-          if (lastBatteryPct.get(tracker.address) !== pct) {
-            lastBatteryPct.set(tracker.address, pct)
-            logger.info('keepalive.battery', 'glove battery level', {
-              hand: safe(tracker.hand),
-              pct: safe(pct),
-            })
-          }
-          for (const listener of batteryListeners) {
-            try {
-              listener(tracker.hand, pct)
-            } catch {
-              // Listener errors must not break the beat.
-            }
-          }
-        }
-      }
+      await readBattery(facade, tracker)
     } catch (err) {
       logger.warn('keepalive.heartbeat.error', 'heartbeat tick threw', {
         deviceId: deviceSensitive(tracker.address),
@@ -154,12 +165,24 @@ export function startTrackerKeepalive(): void {
     for (const tracker of KNOWN_TRACKERS) {
       slots[tracker.hand] = { deviceId: tracker.address }
     }
-    const built = new TrackerPunchEventSource({ facade: getBleManager(), adapter, slots })
+    const facade = getBleManager()
+    const built = new TrackerPunchEventSource({ facade, adapter, slots })
     built.start()
     source = built
     heartbeat = setInterval(() => {
       void heartbeatTick()
     }, HEARTBEAT_INTERVAL_MS)
+    // Battery on the ready transition too, not just the beat: a glove
+    // that only survives seconds still gets its level captured.
+    for (const tracker of KNOWN_TRACKERS) {
+      try {
+        facade.onConnectionChange(tracker.address, (status) => {
+          if (status.state === 'ready') void readBattery(facade, tracker)
+        })
+      } catch {
+        // The beat still covers any glove that holds.
+      }
+    }
     logger.info('keepalive.started', 'tracker keepalive armed for known gloves', {
       slots: safe(Object.keys(slots).length),
       heartbeatMs: safe(HEARTBEAT_INTERVAL_MS),
