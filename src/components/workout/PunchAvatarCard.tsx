@@ -32,8 +32,13 @@ import {
 } from '@domain/workout/punchAvatar'
 
 /**
- * Watermark strength. Deliberately a constant: a blackout round must leave
- * the card exactly as bright as a quiet one.
+ * Watermark strength — SETTLED, not a placeholder (Kyle on glass,
+ * 2026-08-29): "not completely opaque but a background spirit". Do not
+ * raise this toward opacity 1 thinking it is unfinished; the figure is
+ * meant to haunt the stage behind the numbers, not compete with them.
+ *
+ * Deliberately a constant, too: a blackout round must leave the card
+ * exactly as bright as a quiet one.
  */
 const CARD_OPACITY = 0.28
 /** The source art's 1024x1536. */
