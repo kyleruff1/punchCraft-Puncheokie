@@ -199,13 +199,15 @@ function headerWordmark(app: WordmarkApp) {
     // 25% placement — an explicit window-width bar restores real
     // percentage geometry.
     const { width, height } = useWindowDimensions()
-    // From the old shared 25% centre (Kyle 2026-08-29): landscape pulls
-    // the mark to 10%, portrait sits at 30% ("40 was a little too far").
-    const brandCentre = width > height ? '10%' : '30%'
+    // Landscape anchors the mark by its LEFT EDGE on the 8% line — as far
+    // left as it can sit without running over the lamp pair (a 10% CENTRE
+    // put its left edge at ~4%, inside the lamps). Portrait centres on
+    // 30% ("40 was a little too far").
+    const landscape = width > height
     return (
       <View style={[styles.headerBar, { width }]}>
         <HeaderLedZone />
-        <View style={[styles.headerBrand, { marginLeft: brandCentre }]}>
+        <View style={landscape ? styles.headerBrandLandscape : styles.headerBrandPortrait}>
           <Wordmark app={app} size="hdr" />
         </View>
         <HeaderRightZone />
@@ -298,12 +300,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 3,
     borderColor: punch.silver,
   },
-  headerBrand: {
-    // The centre line comes from the component (10% landscape / 25%
-    // portrait); the translate walks back by half the hdr wordmark's
-    // width (80 × 3:1 → 240 → -120) so the CENTRE sits on that line.
-    transform: [{ translateX: -120 }],
-  },
+  // Left edge on the 8% line — just clear of the lamp pair.
+  headerBrandLandscape: { marginLeft: '8%' },
+  // Centre on the 30% line: walk to 30%, then back by half the hdr
+  // wordmark's width (80 × 3:1 → 240 → -120).
+  headerBrandPortrait: { marginLeft: '30%', transform: [{ translateX: -120 }] },
   headerRightZone: {
     // Centre of the zone on the 75% line, mirroring the wordmark at 25%.
     position: 'absolute',
