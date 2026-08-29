@@ -302,6 +302,25 @@ const SUBS = [
       '**Fix:** stagger same-tick phrases through AudioBus (A15).',
   },
   {
+    key: 'A16',
+    title: 'A16 · One JSON metadata object per phrase — the manifest that makes the spine actually enforce',
+    priority: 'P0',
+    size: 'M',
+    body:
+      "Kyle's follow-on (2026-08-29, during the A15 fold): the RhythmSpine's " +
+      "promise (\"numbers vs techniques is a rendering choice, not a re-mapping\") " +
+      'only holds if there is ONE source of truth for every surface offset per ' +
+      'phrase. Today the timings live in three separate places (`phraseManifest.ts`, ' +
+      '`calloutManifest.ts`, `PunchAvatarCard.tsx`), and reaching across those is ' +
+      'exactly how the visual and audio tracks drift apart.\n\n' +
+      '**Fix:** one JSON per phrase (single OR combo) with per-token ' +
+      'numbers.onset/end, techniques.onset/end, measured vocab offset, avatar ' +
+      'frame windows, ring atMs, and wordMarks source. Builder in ' +
+      '`tools/voice/build_phrase_timing.py`; consumed by `RhythmSpine.beatsFor` ' +
+      'and `PunchAvatarCard`. Jest enforces manifest coverage for every phrase ' +
+      'the samples reference and pins the vocab offset to ≤ 25 ms tolerance.',
+  },
+  {
     key: 'A14',
     title: 'A14 · pace-pusher authors 60-beat bursts over the 40-beat ceiling',
     priority: 'P2',

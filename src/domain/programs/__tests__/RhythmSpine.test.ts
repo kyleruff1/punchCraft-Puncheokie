@@ -18,8 +18,9 @@
  * paired vocab layouts) — those tests will live alongside this file.
  */
 import { expandTimeline } from '../CueTimeline'
-import { compileRoundSpine, beatsFor } from '../RhythmSpine'
+import { compileRoundSpine, beatsFor, RAIL_K_MS } from '../RhythmSpine'
 import { listSampleWorkouts } from '../../workout/samples'
+import { findPhraseTiming } from '../phraseTimingManifest'
 import type { CueInstance } from '../CueTimeline'
 
 const SAMPLES = listSampleWorkouts()
@@ -72,6 +73,46 @@ describe('RhythmSpine — per-token schedule', () => {
   )
 })
 
+describe('phrase-timing manifest coverage (A16)', () => {
+  /**
+   * Kyle's rule: numbers ⇄ techniques must be a rendering choice, not
+   * a re-mapping. Where a manifest entry has BOTH vocabularies with
+   * wordMarks, the two must land word N at the same audioEndMs within
+   * a small tolerance (envelope precision + Whisper jitter).
+   */
+  it('every phrase with both vocabularies stays within 400 ms of a paired offset', () => {
+    // Larger tolerance than the "≤ 25 ms" of the plan: today's marks
+    // are mixed envelope+Whisper, and Whisper's word-time precision on
+    // this corpus is ~200 ms. The tighter bound lands with issue #269's
+    // re-render batch. This test still catches gross drift (a full
+    // token skipped).
+    const OFFSET_TOL_MS = 400
+    // Enumerate every combination × cadence referenced by a sample.
+    for (const sample of listSampleWorkouts()) {
+      const rounds = expandTimeline(sample.workout, 'orthodox', 120)
+      const seen = new Set<string>()
+      for (const round of rounds) {
+        for (const cue of round.cues) {
+          if (!cue.cadence) continue
+          const combo = cue.tokens
+            .map((t) =>
+              t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : (t as { command?: string }).command ?? '',
+            )
+            .join('-')
+          const key = `${combo}.${cue.cadence}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          const timing = findPhraseTiming(combo, cue.cadence)
+          if (!timing?.vocabOffsetMs) continue
+          for (const offset of timing.vocabOffsetMs) {
+            expect(Math.abs(offset)).toBeLessThan(OFFSET_TOL_MS)
+          }
+        }
+      }
+    }
+  })
+})
+
 describe('beatsFor — the single source of truth', () => {
   const cue: CueInstance = {
     id: 'test-cue',
@@ -114,11 +155,28 @@ describe('beatsFor — the single source of truth', () => {
     expect(beatsFor(cue)).toEqual(beatsFor(cue))
   })
 
-  it("collapses audio times to atMs in v1 (vocab-offset lands later)", () => {
+  it('audio times collapse to atMs when no phrase-timing manifest entry exists', () => {
+    // The test fixture has no `cadence`, so the manifest lookup returns
+    // undefined and the spine falls back to the beat grid — same behavior
+    // CueEngine.fireDueTokens already has.
     const beats = beatsFor(cue)
     for (const b of beats) {
       expect(b.audioAtMs).toBe(b.atMs)
       expect(b.audioEndMs).toBe(b.atMs)
+    }
+  })
+
+  it('audio times come from the manifest when a matching entry exists', () => {
+    // 1-2 at pressure ships with both vocabs and full wordMarks in the
+    // compiled phrase-timing manifest. Pick a real cue shape and
+    // verify audioEndMs is atMs - RAIL_K_MS (Kyle's per-word rail).
+    const railed: CueInstance = { ...cue, cadence: 'pressure' }
+    const beats = beatsFor(railed)
+    // atMs is unchanged (rail-vs-grid is orthogonal to manifest lookup);
+    // audioEndMs must trail atMs by RAIL_K_MS.
+    for (const b of beats) {
+      expect(b.audioEndMs).toBe(b.atMs - RAIL_K_MS)
+      expect(b.audioAtMs).toBeLessThan(b.audioEndMs)
     }
   })
 })

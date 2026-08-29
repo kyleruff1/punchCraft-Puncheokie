@@ -28,6 +28,14 @@
 
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import type { PunchHand, PunchType } from '../punch/PunchEvent'
+import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
+/**
+ * The rail's fixed offset between a word's audible end and the ring
+ * lighting for that token. Kept as one constant so the spine, the
+ * announcer's rail-placement math (`RhythmMap.RAIL_K_MS`) and any
+ * mic-anchored analyzer share it.
+ */
+export const RAIL_K_MS = 120
 
 /**
  * One beat inside a cue — the single reference every consumer reads.
@@ -126,6 +134,7 @@ export function compileRoundSpine(round: RoundTimeline): SpineSchedule {
 export function beatsFor(cue: CueInstance): TokenBeat[] {
   const offsets = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const out: TokenBeat[] = []
+  const timing = timingFor(cue)
   for (let i = 0; i < cue.tokens.length; i += 1) {
     const off = offsets[i]
     if (off === undefined) continue
@@ -133,18 +142,61 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
     const token = cue.tokens[i]
     const expected =
       token?.kind === 'punch' ? cue.expectedPunches.find((p) => p.tokenIndex === i) : undefined
-    // v1 collapses audioAtMs/audioEndMs to atMs. The vocab-offset
-    // table will separate them once the wordMarks join point lands
-    // in v2 — but every consumer can read the fields today without
-    // seeing an undefined.
+    const audio = audioTimesFor(timing, i, atMs)
     out.push({
       tokenIndex: i,
       atMs,
-      audioAtMs: atMs,
-      audioEndMs: atMs,
+      audioAtMs: audio.audioAtMs,
+      audioEndMs: audio.audioEndMs,
       hand: expected?.hand ?? 'unknown',
       ...(expected?.type ? { type: expected.type } : {}),
     })
   }
   return out
+}
+
+/**
+ * The manifest entry for a cue, if the compiled phrase-timing manifest
+ * has one. `undefined` for non-punch cues or missing renderings — the
+ * caller then falls back to the beat grid.
+ */
+function timingFor(cue: CueInstance): PhraseTimingEntry | undefined {
+  const cadence = cue.cadence
+  if (!cadence) return undefined
+  const combination = cue.tokens.map(tokenToNotation).join('-')
+  return findPhraseTiming(combination, cadence)
+}
+
+function tokenToNotation(t: CueInstance['tokens'][number]): string {
+  if (t.kind === 'punch') return `${t.number}${t.body ? 'b' : ''}`
+  if (t.kind === 'defense') return t.command
+  if (t.kind === 'footwork') return t.command
+  if (t.kind === 'coach') return t.command
+  return ''
+}
+
+/**
+ * Derive the word's onset and end for token `i`, in the round clock,
+ * from the phrase-timing manifest. Both vocabularies land word N at
+ * the SAME `audioEndMs` — the manifest's `numbers.endMs` is the
+ * source, and `techniques` follows via the measured `vocabOffsetMs`.
+ *
+ * When the manifest has no wordMarks for either vocab we collapse to
+ * the beat grid: audioAtMs = audioEndMs = ring atMs. That is the same
+ * fallback CueEngine.fireDueTokens uses today, so the spine cannot
+ * drift from the engine.
+ */
+function audioTimesFor(
+  timing: PhraseTimingEntry | undefined,
+  tokenIndex: number,
+  atMs: number,
+): { audioAtMs: number; audioEndMs: number } {
+  const vocab = timing?.numbers ?? timing?.techniques
+  const word = vocab?.words[tokenIndex]
+  if (!word) return { audioAtMs: atMs, audioEndMs: atMs }
+  // atMs is placed so `word.endMs + RAIL_K_MS === ringTime` when the
+  // rail is active. Invert to recover onset/end on the round clock.
+  const audioEndMs = atMs - RAIL_K_MS
+  const audioAtMs = audioEndMs - (word.endMs - word.onsetMs)
+  return { audioAtMs, audioEndMs }
 }
