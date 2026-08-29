@@ -125,11 +125,11 @@ function HeaderTrackerCluster(): React.JSX.Element {
           so the cluster reads as two tight columns, never a wrapping
           row. */}
       <View style={styles.headerTrackerColumn}>
-        <GloveChip hand="L" state={left?.state ?? 'dormant'} />
+        <GloveChip hand="L" state={left?.state ?? 'dormant'} quiet />
         <ConnectTrackersButton />
       </View>
       <View style={styles.headerTrackerColumn}>
-        <GloveChip hand="R" state={right?.state ?? 'dormant'} />
+        <GloveChip hand="R" state={right?.state ?? 'dormant'} quiet />
         <FixTrackerButton />
       </View>
     </View>
@@ -266,12 +266,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 20,
+    // Nearly touching (Kyle) — the pair reads as one 2x2 block.
+    gap: 4,
     flexWrap: 'nowrap',
   },
   headerTrackerColumn: {
     alignItems: 'center',
     gap: 4,
+    // Equal columns so the chips land symmetric over unequal buttons.
+    width: 168,
   },
   headerRound: {
     fontSize: sizes.body,

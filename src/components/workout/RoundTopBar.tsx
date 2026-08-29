@@ -84,14 +84,17 @@ export function GloveChip(props: {
   hand: 'L' | 'R'
   state: LiveConnectionState
   batteryPct?: number
+  /** Header variant: transparent fill so the chrome buttons stay the
+   * loudest thing in the cluster. */
+  quiet?: boolean
 }): React.JSX.Element {
-  const { hand, state, batteryPct } = props
+  const { hand, state, batteryPct, quiet = false } = props
   const tint = hand === 'L' ? colors.trackerLeft : colors.trackerRight
 
   return (
     <View
       accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} glove ${CONNECTION_LABEL[state]}`}
-      style={styles.chip}
+      style={[styles.chip, quiet && styles.chipQuiet]}
       testID={`glove-chip-${hand}`}
     >
       {/* Letter first: the tracker tint matches the physical glove, but the
@@ -187,6 +190,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
+  chipQuiet: { backgroundColor: 'transparent', borderColor: colors.border },
   chipHand: { fontSize: sizes.body, fontFamily: fonts.display },
   dot: { width: 8, height: 8, borderRadius: 4 },
   chipState: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
