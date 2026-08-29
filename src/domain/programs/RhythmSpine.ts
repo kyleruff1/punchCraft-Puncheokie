@@ -115,9 +115,9 @@ export function compileRoundSpine(round: RoundTimeline): SpineSchedule {
   const audio: Record<string, AudioLayout | null> = {}
   for (const cue of round.cues) {
     beats[cue.id] = beatsFor(cue)
-    // A2/A11 land pulses + audio in follow-up work — the slots exist so
-    // consumers can hard-code the read shape now.
-    pulses[cue.id] = []
+    pulses[cue.id] = pulsesFor(cue)
+    // A11 lands the paired vocab layout in follow-up work — slot is
+    // stable so consumers can hard-code the read shape now.
     audio[cue.id] = null
   }
   return { roundIndex: round.roundIndex, beats, pulses, audio }
@@ -153,6 +153,86 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
     })
   }
   return out
+}
+
+/**
+ * The pulse schedule for a count-scored cue — one `TokenBeat` per
+ * planned punch across the window.
+ *
+ * Sequence cues return `[]`: their per-token schedule is `beatsFor`.
+ * Count-scored cues (volume-burst, open-pressure, coast) have
+ * `expectedPunches: []` and `CueEngine.fireDueTokens` deliberately
+ * suppresses per-token events for them (D4 — nothing can be missed).
+ * That is what leaves rings dark for 20–30 s per burst.
+ *
+ * The pulse fills that gap for the visual track only: the motif's
+ * offsets are repeated across the window at the cue's own cadence
+ * (`targetPunches` sets the count; `windowMs / cycles` sets the
+ * stride). Scoring is unchanged — pulses feed the ring row, not the
+ * matcher.
+ */
+export function pulsesFor(cue: CueInstance): TokenBeat[] {
+  if (cue.scoring !== 'count') return []
+  const tokens = cue.tokens
+  if (tokens.length === 0) return []
+  const target = cue.countScored?.targetPunches ?? 0
+  const cycles = Math.max(1, Math.round(target / tokens.length))
+  const windowMs = cue.scheduledEndMs - cue.scheduledStartMs
+  if (!(windowMs > 0)) return []
+  const strideMs = windowMs / cycles
+  const firstCycle = cue.tokenOffsetsMs
+  // Every planned punch in the window: cycle c places the motif at
+  // scheduledStartMs + c*stride, with the same relative offsets the
+  // first cycle stamped.
+  const out: TokenBeat[] = []
+  for (let c = 0; c < cycles; c += 1) {
+    const base = cue.scheduledStartMs + c * strideMs
+    for (let i = 0; i < tokens.length; i += 1) {
+      const off = firstCycle[i]
+      if (off === undefined) continue
+      const atMs = base + off
+      if (atMs > cue.windowEndMs) break
+      const token = tokens[i]
+      out.push({
+        tokenIndex: i,
+        atMs,
+        audioAtMs: atMs,
+        audioEndMs: atMs,
+        hand:
+          token?.kind === 'punch'
+            ? token.number % 2 === 1
+              ? 'left'
+              : 'right'
+            : 'unknown',
+      })
+    }
+  }
+  return out
+}
+
+/**
+ * The pulse token that should be lit right now for `cue`, or `-1` if
+ * none. Callers pass the current `workElapsedMs`; the result is a
+ * `tokenIndex` in `cue.tokens`. The most recent pulse whose `atMs`
+ * has passed wins — so the ring row walks the motif in real time.
+ *
+ * `spine` is the compiled schedule for the round. When the cue has no
+ * pulses (i.e. it isn't count-scored) this returns `-1`, and callers
+ * fall back to their existing beat-cursor logic.
+ */
+export function pulseCursorAt(
+  spine: SpineSchedule,
+  cue: CueInstance,
+  workElapsedMs: number,
+): number {
+  const pulses = spine.pulses[cue.id]
+  if (!pulses || pulses.length === 0) return -1
+  let lit = -1
+  for (const beat of pulses) {
+    if (beat.atMs > workElapsedMs) break
+    lit = beat.tokenIndex
+  }
+  return lit
 }
 
 /**

@@ -18,7 +18,14 @@
  * paired vocab layouts) — those tests will live alongside this file.
  */
 import { expandTimeline } from '../CueTimeline'
-import { compileRoundSpine, beatsFor, RAIL_K_MS } from '../RhythmSpine'
+import {
+  compileRoundSpine,
+  beatsFor,
+  pulseCursorAt,
+  pulsesFor,
+  RAIL_K_MS,
+} from '../RhythmSpine'
+import { pacePusher } from '../../workout/samples/pacePusher'
 import { listSampleWorkouts } from '../../workout/samples'
 import { findPhraseTiming } from '../phraseTimingManifest'
 import type { CueInstance } from '../CueTimeline'
@@ -71,6 +78,77 @@ describe('RhythmSpine — per-token schedule', () => {
       }
     },
   )
+})
+
+describe('pulses for count-scored windows (A2 / issue #257)', () => {
+  it('a volume-burst window produces a pulse per planned punch', () => {
+    // Real pace-pusher volume-burst: 55 beats at 120bpm = 27.5s,
+    // target 60 punches, 2-token motif.
+    const rounds = expandTimeline(pacePusher, 'orthodox', 120)
+    const bursts = rounds
+      .flatMap((r: { cues: CueInstance[] }) => r.cues)
+      .filter((c: CueInstance) => c.scoring === 'count')
+    expect(bursts.length).toBeGreaterThan(0)
+    for (const cue of bursts) {
+      const pulses = pulsesFor(cue)
+      const target = cue.countScored?.targetPunches ?? 0
+      // ±one motif of tolerance (integer cycles + trailing prune).
+      expect(pulses.length).toBeGreaterThanOrEqual(target - cue.tokens.length)
+      expect(pulses.length).toBeLessThanOrEqual(target + cue.tokens.length)
+      // Monotone and inside the window.
+      let prev = -Infinity
+      for (const b of pulses) {
+        expect(b.atMs).toBeGreaterThanOrEqual(prev)
+        prev = b.atMs
+        expect(b.atMs).toBeGreaterThanOrEqual(cue.scheduledStartMs - 1)
+        expect(b.atMs).toBeLessThanOrEqual(cue.windowEndMs + 1)
+      }
+    }
+  })
+
+  it('sequence cues produce no pulses (rings drive from beats)', () => {
+    const cue: CueInstance = {
+      id: 'seq', blockId: 'b', repeatIndex: 0, scoring: 'sequence',
+      tokens: [{ kind: 'punch', number: 1, body: false, beatOffset: 0 }],
+      tokenOffsetsMs: [0], expectedPunches: [{ tokenIndex: 0, hand: 'left' }],
+      displayOnlyTokenIndexes: [], previewAt: 0, announceAt: 0,
+      scheduledStartMs: 0, scheduledEndMs: 500,
+      windowStartMs: 0, windowEndMs: 1000,
+    }
+    expect(pulsesFor(cue)).toEqual([])
+  })
+
+  it('pulseCursorAt walks the motif in real time', () => {
+    // A tiny synthetic burst: 4 tokens, target 8, window 4000 ms.
+    // Stride = 4000 / 2 = 2000 ms; motif offsets [0, 200, 400, 600].
+    // So pulses land at 0, 200, 400, 600, 2000, 2200, 2400, 2600.
+    const cue: CueInstance = {
+      id: 'burst', blockId: 'b', repeatIndex: 0, scoring: 'count',
+      countScored: { targetPunches: 8, countdownMs: 3000 },
+      tokens: [
+        { kind: 'punch', number: 1, body: false, beatOffset: 0 },
+        { kind: 'punch', number: 2, body: false, beatOffset: 0.4 },
+        { kind: 'punch', number: 1, body: false, beatOffset: 0.8 },
+        { kind: 'punch', number: 2, body: false, beatOffset: 1.2 },
+      ],
+      tokenOffsetsMs: [0, 200, 400, 600], expectedPunches: [],
+      displayOnlyTokenIndexes: [0, 1, 2, 3],
+      previewAt: 0, announceAt: 0,
+      scheduledStartMs: 0, scheduledEndMs: 4000,
+      windowStartMs: 0, windowEndMs: 4000,
+    }
+    const spine = { roundIndex: 0, beats: {}, pulses: { burst: pulsesFor(cue) }, audio: {} }
+    // Before any pulse.
+    expect(pulseCursorAt(spine, cue, -1)).toBe(-1)
+    // Just after pulse 0.
+    expect(pulseCursorAt(spine, cue, 50)).toBe(0)
+    // At pulse 2 (400 ms).
+    expect(pulseCursorAt(spine, cue, 450)).toBe(2)
+    // Mid-cycle 2 (2200 ms → token 1).
+    expect(pulseCursorAt(spine, cue, 2200)).toBe(1)
+    // Past the window.
+    expect(pulseCursorAt(spine, cue, 5000)).toBe(3)
+  })
 })
 
 describe('phrase-timing manifest coverage (A16)', () => {

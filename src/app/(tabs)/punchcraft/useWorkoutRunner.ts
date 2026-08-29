@@ -35,6 +35,11 @@ import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/pr
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
+import {
+  compileRoundSpine,
+  pulseCursorAt,
+  type SpineSchedule,
+} from '@domain/programs/RhythmSpine'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
@@ -243,6 +248,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     () => expandTimeline(workout, stance, bpm),
     [workout, stance, bpm],
   )
+
+  /**
+   * The compiled per-token spine, one per round (A2 / issue #257).
+   * `pulses[cueId]` fills the count-scored windows the cue engine
+   * deliberately leaves dark — the ring row walks the motif in real
+   * time without the matcher scoring anything (D4 holds).
+   */
+  const spines = useMemo<SpineSchedule[]>(
+    () => timeline.map((round) => compileRoundSpine(round)),
+    [timeline],
+  )
+  const spinesRef = useRef(spines)
+  spinesRef.current = spines
+  /** Latest work-elapsed sample, mutated on every tick; read by the ring cursor. */
+  const workElapsedMsRef = useRef(0)
 
   /**
    * The compiled rhythm maps, one per round (M2): every call, refire and
@@ -504,6 +524,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // the next hit instead of waiting on a punch the tracker may have dropped.
     const states = (cue: CueInstance | undefined, active: boolean): TokenVisualState[] => {
       if (!cue) return []
+      // A2 (#257): count-scored windows (volume-burst, open-pressure,
+      // coast) have `expectedPunches: []` and no per-token engine
+      // events — the ring row was dark for 20-30s per burst. Walk the
+      // spine's pulses instead so the motif's active token lights on
+      // the beat; scoring stays untouched (D4).
+      if (cue.scoring === 'count') {
+        const round = sessionRef.current?.snapshot()?.roundIndex ?? -1
+        const spine = round >= 0 ? spinesRef.current[round] : undefined
+        const lit = spine ? pulseCursorAt(spine, cue, workElapsedMsRef.current) : -1
+        return cue.tokens.map((token, index) => {
+          if (token.kind !== 'punch') return active ? 'active' : 'upcoming'
+          return index === lit && active ? 'active' : 'upcoming'
+        })
+      }
       const credited = countsRef.current.inCue
       const cursor = Math.max(credited, beatCursorRef.current)
       return cue.tokens.map((token, index) => {
@@ -1038,6 +1072,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // Doc §25's final warning fires off the round clock, so the announcer
       // needs the same sample the store gets.
       if (snapshot.phase === 'work') announcer?.onRoundClock(snapshot.phaseRemainingMs)
+      // Latest work-elapsed sample for the pulse cursor to read from
+      // syncFromEngine — same clock every other consumer reads.
+      workElapsedMsRef.current = snapshot.workElapsedMs
       engine.tick(snapshot.workElapsedMs)
       // The conductor's beat (M2): dispatch due rhythm-map events, then
       // fire any due scheduled audio — presentation and audio read one
