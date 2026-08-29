@@ -40,16 +40,20 @@ import { TrackerPunchEventSource, type TrackerSlotBinding } from './TrackerPunch
 const FIGHTCAMP_V1_ID = 'fightcamp-v1'
 
 /**
- * Heartbeat cadence. An armed stream alone was not enough: on-device
- * the right glove still hung up cleanly a couple of minutes after
- * connect+init while lying still — the firmware's idle timer counts
- * traffic, and a still glove sends none. Punches defer it during a
- * workout; between workouts this periodic READ of the device-info
- * characteristic (a read the init plan already performs; no write, so
- * rule 4 is untouched) is the app's pulse. 20s gives several beats per
+ * Heartbeat cadence and payload. An armed stream alone was not enough
+ * (the glove hung up ~2min after connect+init while still), and
+ * neither were periodic device-info READS (it outlived the bare
+ * timeout but still hung up ~3-5min in) — the firmware's idle timer
+ * evidently wants inbound WRITES, the traffic a session actually
+ * produces. So the pulse is a re-assertion of mode-normal: the same
+ * single 0x01 byte to COMMAND1 the init plan sends, idempotent, with
+ * no timestamp semantics (unlike a clock re-sync, which would skew
+ * the stream's epoch mid-workout). A known characteristic our init
+ * already writes — rule 4 intact. 20s gives several beats per
  * observed timeout window.
  */
 const HEARTBEAT_INTERVAL_MS = 20_000
+const MODE_NORMAL_BASE64 = 'AQ=='
 
 let source: TrackerPunchEventSource | null = null
 let heartbeat: ReturnType<typeof setInterval> | null = null
@@ -59,13 +63,15 @@ async function heartbeatTick(): Promise<void> {
   for (const tracker of KNOWN_TRACKERS) {
     try {
       if (!(await facade.isConnected(tracker.address))) continue
-      const result = await facade.readCharacteristic(
+      const result = await facade.writeCharacteristic(
         tracker.address,
         FIGHTCAMP_SERVICE_UUID,
-        CHAR.DEVICE_INFO_READ,
+        CHAR.COMMAND1,
+        { base64: MODE_NORMAL_BASE64 },
+        true,
       )
       if (!result.success) {
-        logger.warn('keepalive.heartbeat.readFailed', 'heartbeat read reported failure', {
+        logger.warn('keepalive.heartbeat.writeFailed', 'heartbeat write reported failure', {
           deviceId: deviceSensitive(tracker.address),
           errorMessage: safe(result.errorMessage ?? 'unknown'),
         })
