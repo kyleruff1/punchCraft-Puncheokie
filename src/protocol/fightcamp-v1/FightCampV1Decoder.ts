@@ -147,7 +147,15 @@ export function decodeFrame(
       velocityCalibrated: decoded.velocityCalibrated,
       // §4.3: never claim a physical unit for a raw decoder value.
       velocityUnit: 'tracker-unit',
-      recovered: false,
+      // A tracker BUFFERS punches thrown while it was disconnected and
+      // drains them on the next mode-normal write, each record carrying
+      // the absolute timestamp the device stamped at the time (proven
+      // on-wire 2026-08-29: records arriving 22-66s after they were
+      // thrown). Those are history, not live punches, and scoring them
+      // against the cue that happens to be on screen would be wrong —
+      // so they are marked `recovered`, which LiveCueMatcher already
+      // excludes from live matching while persistence still keeps them.
+      recovered: isBackfilled(decoded.trackerTimestampMs, frame.wallTimeIso),
       decoderId: DECODER_ID,
       decoderVersion: DECODER_VERSION,
       qualityFlags,
@@ -156,6 +164,25 @@ export function decodeFrame(
   }
 
   return { events, malformed: false, unknown: false }
+}
+
+/**
+ * How far behind arrival a device timestamp may sit and still count as
+ * a live punch. Generous next to the air latency of a single connection
+ * interval (tens of ms) and the 3.9 ms timestamp quantization, but far
+ * below the buffer drains we have measured (tens of seconds).
+ *
+ * Undecidable cases stay LIVE: a record with no device timestamp, or a
+ * frame with no parseable arrival time, keeps today's behaviour rather
+ * than silently dropping a real punch out of scoring.
+ */
+export const BACKFILL_THRESHOLD_MS = 3_000
+
+function isBackfilled(trackerTimestampMs: number | undefined, wallTimeIso: string): boolean {
+  if (typeof trackerTimestampMs !== 'number' || !Number.isFinite(trackerTimestampMs)) return false
+  const arrivalMs = Date.parse(wallTimeIso)
+  if (!Number.isFinite(arrivalMs)) return false
+  return arrivalMs - trackerTimestampMs > BACKFILL_THRESHOLD_MS
 }
 
 // ---------------------------------------------------------------------------

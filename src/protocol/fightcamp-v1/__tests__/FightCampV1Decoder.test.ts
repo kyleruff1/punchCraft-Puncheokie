@@ -23,6 +23,7 @@ interface BuildFrameOpts {
   serviceUuid?: string
   characteristicUuid?: string
   monotonicTimeMs?: number
+  wallTimeIso?: string
 }
 
 const buildFrame = (opts: BuildFrameOpts): RawBleFrame => ({
@@ -31,7 +32,7 @@ const buildFrame = (opts: BuildFrameOpts): RawBleFrame => ({
   deviceId: 'EA:69:2D:9C:FD:53',
   handAtCapture: 'unknown',
   monotonicTimeMs: opts.monotonicTimeMs ?? 1000,
-  wallTimeIso: '2026-08-22T21:50:00.000Z',
+  wallTimeIso: opts.wallTimeIso ?? '2026-08-22T21:50:00.000Z',
   direction: 'notification',
   serviceUuid: opts.serviceUuid ?? PUNCH_SERVICE,
   characteristicUuid: opts.characteristicUuid ?? PUNCH_CHAR,
@@ -69,6 +70,46 @@ describe('FightCampV1Decoder', () => {
     expect(event.decoderId).toBe('fightcamp-v1')
     expect(event.decoderVersion).toBe('1.0.0')
     expect(Array.isArray(event.qualityFlags)).toBe(true)
+  })
+
+  describe('buffer drains are marked recovered, not live (2026-08-29)', () => {
+    // The golden sample's device timestamp is 2026-08-23T01:49:20.324Z;
+    // each case below varies only the frame's ARRIVAL time around it.
+    const at = (iso: string) =>
+      decodeFrame(buildFrame({ hex: '011001a0518a6a530a', wallTimeIso: iso }), v4State())
+        .events[0]!
+
+    it('a punch that arrives promptly is live', () => {
+      // Air latency and the 3.9ms timestamp quantization live in here.
+      expect(at('2026-08-23T01:49:20.500Z').recovered).toBe(false)
+      expect(at('2026-08-23T01:49:22.000Z').recovered).toBe(false)
+    })
+
+    it('a punch drained from the tracker seconds later is recovered', () => {
+      // The measured case: records surfacing 22-66s after they were
+      // thrown, when a reconnect writes mode-normal.
+      expect(at('2026-08-23T01:49:42.324Z').recovered).toBe(true)
+      expect(at('2026-08-23T01:50:26.324Z').recovered).toBe(true)
+    })
+
+    it('leaves a punch live when the call cannot be made', () => {
+      // Undecidable inputs must not silently drop a real punch out of
+      // scoring: an unparseable arrival time stays live...
+      expect(at('not-a-timestamp').recovered).toBe(false)
+      // ...as does a device clock running AHEAD of the host's.
+      expect(at('2026-08-23T01:49:00.000Z').recovered).toBe(false)
+    })
+
+    it('marks every record of a multi-record drain', () => {
+      const result = decodeFrame(
+        buildFrame({
+          hex: '05bd006f518a6a86040570006f518a6abc04',
+          wallTimeIso: '2026-08-23T02:30:00.000Z',
+        }),
+        v4State(),
+      )
+      expect(result.events.map((e) => e.recovered)).toEqual([true, true])
+    })
   })
 
   it('splits 18-byte payload into two 9-byte records', () => {
