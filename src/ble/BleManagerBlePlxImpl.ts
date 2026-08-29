@@ -311,6 +311,14 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       const prior = this.disconnectSubs.get(deviceId)
       if (prior) prior.remove()
       const sub = manager.onDeviceDisconnected(deviceId, (err, _d) => {
+        // Every drop gets a line with the stack's reason: a tracker
+        // dozing off, a supervision timeout, and our own cancel all
+        // looked identical as silence — which is how a night was lost
+        // to "can't hold both gloves" (2026-08-29).
+        logger.info('ble.device.disconnected', 'device link dropped', {
+          deviceId: deviceSensitive(deviceId),
+          errorMessage: safe(err ? err.message : 'clean disconnect (no error)'),
+        })
         this.emitStatus({
           deviceId,
           state: err ? 'error' : 'dormant',
