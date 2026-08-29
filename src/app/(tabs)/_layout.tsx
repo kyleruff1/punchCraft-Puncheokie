@@ -300,9 +300,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerLedZone: {
-    // Left edge on the 5% line, ahead of the wordmark (Kyle).
+    // Hugging the left boundary: the VISIBLE turquoise lamp starts on the
+    // 1.5% line (Kyle) — the -13 sheds the halo box's invisible padding so
+    // the lamp face, not the box, lands there.
     position: 'absolute',
-    left: '5%',
+    left: '1.5%',
+    marginLeft: -13,
     top: 0,
     bottom: 0,
     justifyContent: 'center',
