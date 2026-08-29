@@ -194,7 +194,9 @@ export interface MembraneTuning {
 }
 
 export const DEFAULT_TUNING: MembraneTuning = {
-  refraction: 0.9,
+  // Measured on-glass: 0.9 x the 0.7 parallax left single-punch warps
+  // near-invisible on the dark art — 1.7 doubles the visible bend.
+  refraction: 1.7,
   grainOpacity: 1,
   compressionGain: 1,
   gelGain: 1,

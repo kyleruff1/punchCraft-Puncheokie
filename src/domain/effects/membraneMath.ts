@@ -273,7 +273,9 @@ export function spawnImpulse(
     lifetimeSec: shape.lifetimeSec,
     waveSpeed: shape.waveSpeed,
     spin: (hash01(eventId, 3) - 0.5) * 2,
-    phase: hash01(eventId, 5) * Math.PI * 2,
+    // Phase starts near the crest so the glass dents THE INSTANT the
+    // wave arrives — a random phase can open a punch at zero.
+    phase: Math.PI / 2 + (hash01(eventId, 5) - 0.5) * 0.9,
   }
 }
 
@@ -297,7 +299,7 @@ export function convergenceImpulse(
     lifetimeSec: shape.lifetimeSec,
     waveSpeed: shape.waveSpeed,
     spin: (hash01(eventId, 3) - 0.5) * 2,
-    phase: hash01(eventId, 5) * Math.PI * 2,
+    phase: Math.PI / 2 + (hash01(eventId, 5) - 0.5) * 0.9,
   }
 }
 
@@ -443,7 +445,7 @@ export interface MembranePreset {
 }
 
 export const MEMBRANE_PRESETS: Record<'controlled' | 'reactive' | 'gelatin', MembranePreset> = {
-  controlled: { surgeMul: 0.7, lifeMul: 0.65, gelMul: 0.5, refraction: 0.7 },
-  reactive: { surgeMul: 1, lifeMul: 1, gelMul: 1, refraction: 0.9 },
-  gelatin: { surgeMul: 1.25, lifeMul: 1.45, gelMul: 1.6, refraction: 1.1 },
+  controlled: { surgeMul: 0.7, lifeMul: 0.65, gelMul: 0.5, refraction: 1.3 },
+  reactive: { surgeMul: 1, lifeMul: 1, gelMul: 1, refraction: 1.7 },
+  gelatin: { surgeMul: 1.25, lifeMul: 1.45, gelMul: 1.6, refraction: 2.1 },
 }
