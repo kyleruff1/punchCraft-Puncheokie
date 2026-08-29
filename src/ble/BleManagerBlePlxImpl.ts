@@ -287,19 +287,22 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
     try {
       const device: PlxDevice = await manager.connectToDevice(deviceId, { timeout: timeoutMs })
       const generation = this.bumpGeneration(deviceId)
-      // High priority (short connection interval) for every tracker link:
-      // the tablet often streams A2DP audio at the same time, and at the
-      // default balanced interval the weaker of two glove links loses the
-      // radio-time contest — observed 2026-08-29 as init writes dying on
-      // whichever glove came up second. Link-layer parameter request only;
-      // no GATT write (rule 4). Best-effort, same posture as MTU.
+      // BALANCED priority, deliberately (2026-08-29, "the second glove
+      // always dies"): requesting ConnectionPriority.High on BOTH glove
+      // links asks this chip's LE scheduler for two 11-15ms intervals it
+      // cannot service, and it sheds the newer link — the second glove
+      // to connect died within seconds all day while the first held.
+      // The Velocity Lab era ran balanced and held both gloves through
+      // whole sessions. If A2DP congestion resurfaces (slow writes), the
+      // revisit is High DURING one glove's init only, released to
+      // balanced after — never High held on two links at once.
       try {
-        await manager.requestConnectionPriorityForDevice(deviceId, ConnectionPriority.High)
-        logger.info('ble.connect.priority.ok', 'high connection priority requested', {
+        await manager.requestConnectionPriorityForDevice(deviceId, ConnectionPriority.Balanced)
+        logger.info('ble.connect.priority.ok', 'balanced connection priority requested', {
           deviceId: deviceSensitive(deviceId),
         })
       } catch (err) {
-        logger.warn('ble.connect.priority.failed', 'high connection priority refused', {
+        logger.warn('ble.connect.priority.failed', 'connection priority request refused', {
           deviceId: deviceSensitive(deviceId),
           errorMessage: safe(err instanceof Error ? err.message : String(err)),
         })

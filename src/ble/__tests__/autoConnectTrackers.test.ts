@@ -1,12 +1,15 @@
 /**
- * autoConnectTrackers — scan-once, bind-both behaviour.
+ * autoConnectTrackers — direct-by-address, bind-both behaviour.
  *
- * The properties worth pinning: it never throws on a failed scan, it does not
- * disturb slots that are already live, it binds each address to its permanent
- * hand, it connects SERIALLY (overlapping connects wedge the tablet's BLE
- * stack — H04, observed as the left tracker failing mid-handshake), and
- * concurrent callers share one scan. Plus the persistent auto-retry
- * scheduler: up to five automatic attempts, then dormant until re-armed.
+ * The properties worth pinning: it connects each permanent address
+ * DIRECTLY (no scan — scanning beside a live glove was the idle-drop
+ * radio pressure, 2026-08-29), it does not disturb slots that are
+ * already live, it binds each address to its permanent hand, it
+ * connects SERIALLY (overlapping connects wedge the tablet's BLE
+ * stack — H04), a connect timeout reads as not-found (asleep glove),
+ * and concurrent callers share one pass. Plus the persistent
+ * auto-retry scheduler: up to five automatic attempts, then dormant
+ * until re-armed.
  */
 
 import {
@@ -51,7 +54,8 @@ jest.mock('@state/useTrackerStore', () => ({
  * which is the whole point of the precise rule. */
 const liveSlot = (deviceId: string, state: string) => ({ deviceId, state })
 
-const ad = (deviceId: string) => ({ deviceId })
+/** The direct-connect spelling of "asleep / not in range". */
+const asleep = () => Promise.reject(new Error('Operation timed out'))
 
 beforeEach(() => {
   mockScan.mockReset()
@@ -69,33 +73,25 @@ beforeEach(() => {
 })
 
 describe('autoConnectKnownTrackers', () => {
-  it('binds each advertising tracker to its permanent hand', async () => {
-    mockScan.mockResolvedValue([ad(red.address), ad(blue.address)])
-
+  it('binds each reachable tracker to its permanent hand, by address, no scan', async () => {
     const result = await autoConnectKnownTrackers()
 
     expect(result.connectedCount).toBe(2)
+    expect(mockScan).not.toHaveBeenCalled()
+    expect(mockConnectSlot).toHaveBeenCalledTimes(2)
     expect(mockConnectSlot).toHaveBeenCalledWith('left', blue.address, blue.displayName)
     expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
   })
 
-  it('reports not-found for a tracker that is not advertising', async () => {
-    mockScan.mockResolvedValue([ad(blue.address)])
+  it('reports not-found for a tracker whose direct connect times out (asleep)', async () => {
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'right' ? asleep() : Promise.resolve(),
+    )
 
     const result = await autoConnectKnownTrackers()
 
     expect(result.connectedCount).toBe(1)
     expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('not-found')
-    expect(mockConnectSlot).toHaveBeenCalledTimes(1)
-  })
-
-  it('ignores devices that are not known trackers', async () => {
-    mockScan.mockResolvedValue([ad('00:11:22:33:44:55')])
-
-    const result = await autoConnectKnownTrackers()
-
-    expect(result.connectedCount).toBe(0)
-    expect(mockConnectSlot).not.toHaveBeenCalled()
   })
 
   it('leaves a slot alone when it is ready AND the native stack confirms it', async () => {
@@ -103,7 +99,6 @@ describe('autoConnectKnownTrackers', () => {
     // link. The native probe is what proves the connection is live.
     mockIsDeviceConnected.mockResolvedValue(true)
     mockSlots = { left: liveSlot(blue.address, 'streaming'), right: null }
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
 
     const result = await autoConnectKnownTrackers()
 
@@ -156,36 +151,22 @@ describe('autoConnectKnownTrackers', () => {
       left: { deviceId: blue.address, state: 'ready' },
       right: null,
     }
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
 
     const result = await autoConnectKnownTrackers()
 
     expect(mockEvictSlot).toHaveBeenCalledWith('left', blue.address)
-    expect(mockScan).toHaveBeenCalled()
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('connected')
   })
 
   it('treats a slot bound to a DIFFERENT device as needing reconnection', async () => {
     mockSlots = { left: { deviceId: '00:11:22:33:44:55', state: 'ready' }, right: null }
-    mockScan.mockResolvedValue([ad(blue.address)])
 
     const result = await autoConnectKnownTrackers()
 
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('connected')
   })
 
-  it('returns a scanError instead of throwing when the scan fails', async () => {
-    mockScan.mockRejectedValue(new Error('bluetooth off'))
-
-    const result = await autoConnectKnownTrackers()
-
-    expect(result.scanError).toBe('bluetooth off')
-    expect(result.connectedCount).toBe(0)
-    expect(mockConnectSlot).not.toHaveBeenCalled()
-  })
-
   it('reports a failed connect without failing the whole pass', async () => {
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
     mockConnectSlot.mockImplementation((hand: string) =>
       hand === 'left' ? Promise.reject(new Error('gatt 133')) : Promise.resolve(),
     )
@@ -199,24 +180,26 @@ describe('autoConnectKnownTrackers', () => {
     expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('connected')
   })
 
-  it('coalesces concurrent calls into a single scan', async () => {
-    let release: (v: unknown[]) => void = () => {}
-    mockScan.mockReturnValue(new Promise((r) => { release = r }))
+  it('coalesces concurrent calls into a single pass', async () => {
+    let release: () => void = () => {}
+    const gate = new Promise<void>((r) => {
+      release = () => r()
+    })
+    mockConnectSlot.mockReturnValue(gate)
 
     const a = autoConnectKnownTrackers()
     const b = autoConnectKnownTrackers()
 
-    release([ad(blue.address), ad(red.address)])
+    release()
     const [ra, rb] = await Promise.all([a, b])
 
-    expect(mockScan).toHaveBeenCalledTimes(1)
+    expect(mockConnectSlot).toHaveBeenCalledTimes(2) // one pass, two hands
     expect(ra).toBe(rb) // same in-flight promise, not a duplicate pass
   })
 
   it('connects SERIALLY — the second connect waits for the first (H04)', async () => {
     // Overlapping direct connects are the observed left-tracker killer on
     // the tablet: the handshake in flight loses when the second lands.
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
     let leftInFlight = false
     let overlapped = false
     let releaseLeft: () => void = () => {}
@@ -250,7 +233,6 @@ describe('autoConnectKnownTrackers', () => {
   })
 
   it('a failed first connect still lets the second proceed', async () => {
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
     mockConnectSlot.mockImplementation((hand: string) =>
       hand === 'left' ? Promise.reject(new Error('was disconnected')) : Promise.resolve(),
     )
@@ -268,7 +250,6 @@ describe('autoConnectKnownTrackers', () => {
       left: { deviceId: blue.address, state: 'error' },
       right: null,
     }
-    mockScan.mockResolvedValue([ad(blue.address)])
 
     const result = await autoConnectKnownTrackers()
 
@@ -287,7 +268,6 @@ describe('autoConnectKnownTrackers', () => {
       right: { deviceId: red.address, state: 'ready' },
       left: null,
     }
-    mockScan.mockResolvedValue([ad(blue.address)])
 
     const result = await autoConnectKnownTrackers()
 
@@ -299,15 +279,15 @@ describe('autoConnectKnownTrackers', () => {
 
   it('reclaims a reload orphan — store empty, native still connected', async () => {
     // After a JS reload the store forgets the slots while the NATIVE
-    // connections survive. A natively-connected tracker does not advertise,
-    // so without the by-address eviction every scan comes back empty and
-    // the retry budget burns on a device that was attached all along.
+    // connections survive. A natively-connected tracker is not
+    // connectable again until the stale link is severed, so without the
+    // by-address eviction the retry budget burns on a device that was
+    // attached all along.
     mockSlots = { left: null, right: null }
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
 
     const result = await autoConnectKnownTrackers()
 
-    // Both hands evicted by their permanent addresses before the scan.
+    // Both hands evicted by their permanent addresses before connecting.
     expect(mockEvictSlot).toHaveBeenCalledWith('left', blue.address)
     expect(mockEvictSlot).toHaveBeenCalledWith('right', red.address)
     expect(result.connectedCount).toBe(2)
@@ -327,10 +307,19 @@ describe('persistent auto-retry', () => {
     for (let i = 0; i < 10; i += 1) await Promise.resolve()
   }
 
+  /** Passes are counted by attempts on the left hand — one per pass
+   * while left stays pending, since scan-counting died with the scan. */
+  const leftAttempts = (): number =>
+    mockConnectSlot.mock.calls.filter((c) => c[0] === 'left').length
+
   it('retries an incomplete pass every RETRY_DELAY_MS until both hands connect', async () => {
-    // First pass: left not advertising. Later passes: it appears.
-    mockScan.mockResolvedValueOnce([ad(red.address)])
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
+    // First pass: left asleep (connect times out). Later passes: it wakes.
+    let attempts = 0
+    mockConnectSlot.mockImplementation((hand: string) => {
+      if (hand !== 'left') return Promise.resolve()
+      attempts += 1
+      return attempts === 1 ? asleep() : Promise.resolve()
+    })
 
     await armAutoRetry()
     expect(getAutoRetryState().retrying).toBe(true)
@@ -338,13 +327,15 @@ describe('persistent auto-retry', () => {
     jest.advanceTimersByTime(RETRY_DELAY_MS)
     await flush()
 
-    expect(mockScan).toHaveBeenCalledTimes(2)
+    expect(attempts).toBe(2)
     expect(getAutoRetryState().retrying).toBe(false)
     expect(getAutoRetryState().exhausted).toBe(false)
   })
 
   it('goes dormant after the budget is spent, until re-armed', async () => {
-    mockScan.mockResolvedValue([ad(red.address)]) // left never shows
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'left' ? asleep() : Promise.resolve(),
+    )
 
     await armAutoRetry()
     for (let i = 0; i < AUTO_RETRY_BUDGET; i += 1) {
@@ -356,13 +347,13 @@ describe('persistent auto-retry', () => {
     }
 
     // 1 manual + AUTO_RETRY_BUDGET automatic passes, then silence.
-    expect(mockScan).toHaveBeenCalledTimes(1 + AUTO_RETRY_BUDGET)
+    expect(leftAttempts()).toBe(1 + AUTO_RETRY_BUDGET)
     expect(getAutoRetryState().exhausted).toBe(true)
     expect(getAutoRetryState().retrying).toBe(false)
 
     jest.advanceTimersByTime(RETRY_DELAY_MS * 3)
     await flush()
-    expect(mockScan).toHaveBeenCalledTimes(1 + AUTO_RETRY_BUDGET)
+    expect(leftAttempts()).toBe(1 + AUTO_RETRY_BUDGET)
 
     // Manual press re-arms the budget and passes resume.
     await armAutoRetry()
@@ -371,31 +362,32 @@ describe('persistent auto-retry', () => {
   })
 
   it('a complete pass stops the chain immediately', async () => {
-    mockScan.mockResolvedValue([ad(blue.address), ad(red.address)])
-
     await armAutoRetry()
 
     expect(getAutoRetryState().retrying).toBe(false)
     jest.advanceTimersByTime(RETRY_DELAY_MS * 3)
     await flush()
-    expect(mockScan).toHaveBeenCalledTimes(1)
+    expect(leftAttempts()).toBe(1)
   })
 
   it('suspension freezes the chain mid-workout and resume picks it back up', async () => {
-    mockScan.mockResolvedValue([ad(red.address)]) // left keeps hiding
+    mockConnectSlot.mockImplementation((hand: string) =>
+      hand === 'left' ? asleep() : Promise.resolve(),
+    )
 
     await armAutoRetry()
     expect(getAutoRetryState().retrying).toBe(true)
 
-    // The workout starts: no retry may scan or evict while punches stream.
+    // The workout starts: no retry may connect or evict while punches
+    // stream.
     setAutoRetrySuspended(true)
     jest.advanceTimersByTime(RETRY_DELAY_MS * 4)
     await flush()
-    expect(mockScan).toHaveBeenCalledTimes(1) // only the arming pass ran
+    expect(leftAttempts()).toBe(1) // only the arming pass ran
 
     // Workout over: the interrupted chase resumes immediately.
     setAutoRetrySuspended(false)
     await flush()
-    expect(mockScan).toHaveBeenCalledTimes(2)
+    expect(leftAttempts()).toBe(2)
   })
 })

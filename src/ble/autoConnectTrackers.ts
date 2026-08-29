@@ -35,7 +35,7 @@
 
 import { getTrackerCoordinator, type TrackerSlotHand } from '@ble/TrackerCoordinator'
 import { PermissionService } from '@ble/PermissionService'
-import { findKnownTracker, KNOWN_TRACKERS } from '@ble/knownTrackers'
+import { KNOWN_TRACKERS } from '@ble/knownTrackers'
 import { getTrackerSlots } from '@state/useTrackerStore'
 import { deviceSensitive, logger, safe } from '@/diagnostics/logger'
 
@@ -116,7 +116,10 @@ let inFlight: Promise<AutoConnectResult> | null = null
 /**
  * Scan once and connect every known tracker that is advertising.
  *
- * `timeoutMs` bounds the scan (§11.6). Shorter is fine for launch, where the
+ * `timeoutMs` is retained for callers but no longer bounds anything —
+ * passes connect directly by address (no scan; see the pass body) and
+ * the facade's own connect timeout bounds each attempt. Kept so call
+ * sites need no churn while the scan-free flow settles. Historical: it
  * trackers are usually already awake and advertising.
  */
 export interface AutoConnectOptions {
@@ -139,7 +142,7 @@ export function isAutoConnectInFlight(): boolean {
 }
 
 async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectResult> {
-  const timeoutMs = options.timeoutMs ?? 10_000
+  void options.timeoutMs
 
   // Runtime permissions gate every scan. A fresh install (or reinstall —
   // `adb uninstall` wipes prior grants) has no BLE permissions, and a scan
@@ -215,59 +218,56 @@ async function runAutoConnect(options: AutoConnectOptions): Promise<AutoConnectR
     }
   }
 
-  let advertisements
-  try {
-    advertisements = await coordinator.scan({ timeoutMs })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    logger.warn('autoconnect.scan.failed', 'auto-connect scan failed', {
-      errorMessage: safe(message),
-    })
-    return { outcomes: [], connectedCount: 0, scanError: message }
-  }
-
-  // Latest advertisement wins per address; a device can advertise many times
-  // inside one scan window.
-  const seen = new Map<string, string>()
-  for (const ad of advertisements) {
-    if (findKnownTracker(ad.deviceId)) seen.set(ad.deviceId.toUpperCase(), ad.deviceId)
-  }
-
-  // Connect SERIALLY (H04): a second direct connect landing while the
-  // first handshake is in flight is exactly the observed left-tracker
-  // failure mode on this tablet. Left is index 0 and connects first.
+  // Connect DIRECTLY by address — no scan. The addresses are permanent
+  // (knownTrackers); scanning only rediscovered what was already known,
+  // and a 10-second scan window running beside a live glove is radio
+  // pressure this tablet's chip pays for in dropped links. The Velocity
+  // Lab era connected by address, held both gloves through whole
+  // sessions, and had no scanning retry loop — the idle drops arrived
+  // with the scan machinery (Kyle, 2026-08-29). A sleeping glove simply
+  // times the direct connect out, which reports as not-found and keeps
+  // the retry scheduler's semantics intact.
+  //
+  // Serial (H04): a second direct connect landing while the first
+  // handshake is in flight is exactly the observed left-tracker failure
+  // mode on this tablet. Left is index 0 and connects first.
   const results: AutoConnectOutcome[] = []
   for (const tracker of KNOWN_TRACKERS) {
     if (usable[tracker.hand]) {
       results.push({ hand: tracker.hand, address: tracker.address, status: 'already-connected' })
       continue
     }
-    const deviceId = seen.get(tracker.address.toUpperCase())
-    if (!deviceId) {
-      results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
-      continue
-    }
     try {
-      await coordinator.connectSlot(tracker.hand, deviceId, tracker.displayName)
+      await coordinator.connectSlot(tracker.hand, tracker.address, tracker.displayName)
       logger.info('autoconnect.connected', 'auto-connected tracker', {
         hand: safe(tracker.hand),
         color: safe(tracker.color),
-        deviceId: deviceSensitive(deviceId),
+        deviceId: deviceSensitive(tracker.address),
       })
       results.push({ hand: tracker.hand, address: tracker.address, status: 'connected' })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      logger.warn('autoconnect.connect.failed', 'auto-connect could not bind slot', {
-        hand: safe(tracker.hand),
-        deviceId: deviceSensitive(deviceId),
-        errorMessage: safe(message),
-      })
-      results.push({
-        hand: tracker.hand,
-        address: tracker.address,
-        status: 'failed',
-        errorMessage: message,
-      })
+      // A timeout or cancellation is the direct-connect spelling of
+      // "not advertising": the glove is asleep or out of range.
+      if (/timed?\s?out|cancell?ed/i.test(message)) {
+        logger.info('autoconnect.notReachable', 'tracker not reachable — likely asleep', {
+          hand: safe(tracker.hand),
+          errorMessage: safe(message),
+        })
+        results.push({ hand: tracker.hand, address: tracker.address, status: 'not-found' })
+      } else {
+        logger.warn('autoconnect.connect.failed', 'auto-connect could not bind slot', {
+          hand: safe(tracker.hand),
+          deviceId: deviceSensitive(tracker.address),
+          errorMessage: safe(message),
+        })
+        results.push({
+          hand: tracker.hand,
+          address: tracker.address,
+          status: 'failed',
+          errorMessage: message,
+        })
+      }
     }
   }
 
