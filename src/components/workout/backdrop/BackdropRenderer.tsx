@@ -12,6 +12,7 @@ import React from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
+import type { PummelSensitivity } from '@domain/effects/membraneMath'
 import type { MembraneTuning } from '@domain/effects/membraneShader'
 import { HydroPulseScene, type MembranePresetName } from './HydroPulseScene'
 import { StaticGlow } from './StaticGlow'
@@ -40,6 +41,7 @@ export function BackdropRenderer({
   reducedMotion = false,
   tuning,
   preset,
+  sensitivity,
 }: {
   bus: BackdropBus
   quality: BackdropQuality
@@ -50,6 +52,8 @@ export function BackdropRenderer({
   tuning?: Partial<MembraneTuning>
   /** Lab knob: behavior preset, forwarded to the scene. */
   preset?: MembranePresetName
+  /** Pummel Sensitivity, forwarded to the scene. */
+  sensitivity?: PummelSensitivity
 }): React.JSX.Element | null {
   const effective = resolveBackdropQuality(quality, reducedMotion)
   if (effective === 'off') return null
@@ -63,6 +67,7 @@ export function BackdropRenderer({
           calm={calm}
           {...(tuning ? { tuning } : {})}
           {...(preset ? { preset } : {})}
+          {...(sensitivity ? { sensitivity } : {})}
         />
       )}
     </View>

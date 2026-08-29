@@ -24,9 +24,13 @@ export const MAX_IMPULSES = 16
 /** Floats per packed float4 lane. */
 export const IMPULSE_FLOATS = MAX_IMPULSES * 4
 
-/** Local wave feel: ~3 Hz wobble, decaying over the impulse lifetime. */
+/**
+ * Local wave feel: ~3 Hz wobble, decaying over the impulse lifetime.
+ * Damp 1.3 keeps motion readable to ~1.5 s with counter-motion beyond
+ * (2.2 measured on-glass as invisible past half a second).
+ */
 export const WAVE_OMEGA = 2 * Math.PI * 3
-export const WAVE_DAMP = 2.2
+export const WAVE_DAMP = 1.3
 
 /**
  * Gel sheet spring (underdamped, damping ratio ~0.55 at ~2.5 Hz). The
@@ -43,18 +47,28 @@ export const GEL_KICK = 0.55
 export const GEL_TWIST = 0.35
 
 /** Churn envelope: activity memory that decays in ~2 s, never displaces. */
-export const CHURN_TAU_S = 1.8
+export const CHURN_TAU_S = 1.65
 export const CONVERGE_WINDOW_S = 0.45
 
+/** Impact energy: the sharp per-hit snap that boosts refraction. */
+export const IMPACT_TAU_S = 0.45
+
 /**
- * Blackout darkness: sustained high-intensity work lets the dark
- * particulates saturate the backdrop — a dead sprint can smother it to
- * black — but the envelope decays fast enough that the pane is back to
- * neutral in well under 10 s once punches stop or soften.
+ * The Pummel Veil's three particulate scales, each with its own decay
+ * clock so a stopped flurry clears in stages: dust first, debris next,
+ * the broad blackout veil last — and the original backdrop returns
+ * exactly.
  */
-export const DARKNESS_TAU_S = 2.2
-/** Darkness below this is invisible; the wake window targets it. */
-export const DARKNESS_FLOOR = 0.01
+export const DUST_TAU_S = 1.5
+export const DEBRIS_TAU_S = 3.2
+export const VEIL_TAU_S = 4.2
+/** Debris (the brief's blackoutCharge) may overshoot to 1.15. */
+export const DEBRIS_CAP = 1.15
+/** Coverage below this is invisible; the wake window targets it. */
+export const VEIL_FLOOR = 0.01
+
+/** Punch-rate window for the flurry response (trailing seconds). */
+export const RATE_WINDOW_S = 1.5
 
 /** Sleep: no motion once every impulse has expired for this long. */
 export const SLEEP_GRACE_S = 0.5
@@ -139,37 +153,85 @@ export function bumpEnv(
   nowSec: number,
   tauS: number,
   gain: number,
+  cap = 1,
 ): number {
   'worklet'
-  return Math.min(1, decayedEnv(value, stampSec, nowSec, tauS) + gain)
+  return Math.min(cap, decayedEnv(value, stampSec, nowSec, tauS) + gain)
 }
 
-/** The churn gain one punch contributes (brief: 0.06 + 0.18·v). */
-export function churnGainOf(v01: number): number {
+/** Hermite smoothstep over an arbitrary edge pair. */
+export function smoothstepOf(edge0: number, edge1: number, value: number): number {
   'worklet'
-  return 0.06 + 0.18 * Math.max(0, Math.min(1, v01))
-}
-
-/**
- * The darkness gain one punch contributes. Deliberately superlinear:
- * ordinary work barely feeds the blackout, so holding the pane dark
- * demands a genuine dead-sprint of hard, fast punches.
- */
-export function darknessGainOf(v01: number): number {
-  'worklet'
-  return 0.24 * Math.pow(Math.max(0, Math.min(1, v01)), 3.5)
+  const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)))
+  return t * t * (3 - 2 * t)
 }
 
 /**
- * How long (seconds) the pane must stay awake for the current
- * darkness to fade below the visible floor — keeps the sleep gate from
- * freezing a dimmed frame.
+ * Punches per second over the trailing rate window, read straight from
+ * the impulse ring's start stamps (convergence center impulses are
+ * hand-neutral and excluded).
  */
-export function darknessWakeOf(darkness: number): number {
+export function rateOf(ring: readonly MembraneImpulse[], nowSec: number): number {
   'worklet'
-  if (darkness <= DARKNESS_FLOOR) return 0
-  return DARKNESS_TAU_S * Math.log(darkness / DARKNESS_FLOOR)
+  let count = 0
+  for (const item of ring) {
+    if (item.handCode !== HAND_NEUTRAL && nowSec - item.startSec <= RATE_WINDOW_S) count += 1
+  }
+  return count / RATE_WINDOW_S
 }
+
+export interface PunchGains {
+  impact: number
+  churn: number
+  dust: number
+  debris: number
+  veil: number
+}
+
+/**
+ * One punch's contribution to every reaction envelope. Velocity and
+ * rate stay distinct on purpose: a hard single deforms plenty but
+ * deposits little; only a sustained high-speed flurry feeds the broad
+ * veil that can close the pane to black. `sensitivity` scales the veil
+ * gains only (the Pummel Sensitivity setting).
+ */
+export function registerPunchGains(v01: number, rate: number, sensitivity: number): PunchGains {
+  'worklet'
+  const strength = Math.pow(Math.max(0, Math.min(1, v01)), 1.55)
+  const flurry = smoothstepOf(3, 9, rate)
+  return {
+    impact: 0.2 + 0.8 * strength,
+    churn: 0.05 + 0.2 * strength,
+    dust: (0.03 + 0.06 * strength + 0.02 * flurry) * sensitivity,
+    debris: (0.008 + 0.025 * strength + 0.012 * flurry) * sensitivity,
+    veil: flurry * (0.01 + 0.02 * strength) * sensitivity,
+  }
+}
+
+/** Perceptual coverage: recovery reads different from the raw charge. */
+export function visualCoverage(charge: number): number {
+  'worklet'
+  return Math.pow(Math.max(0, charge), 1.25)
+}
+
+/**
+ * How long (seconds) the pane must stay awake for every veil charge to
+ * fade below the visible floor — keeps the sleep gate from freezing a
+ * dimmed frame.
+ */
+export function veilWakeOf(dust: number, debris: number, veil: number): number {
+  'worklet'
+  const wakeFor = (charge: number, tauS: number): number =>
+    charge <= VEIL_FLOOR ? 0 : tauS * Math.log(charge / VEIL_FLOOR)
+  const a = wakeFor(dust, DUST_TAU_S)
+  const b = wakeFor(debris, DEBRIS_TAU_S)
+  const c = wakeFor(veil, VEIL_TAU_S)
+  return Math.max(a, b, c)
+}
+
+/** Pummel Sensitivity: how hard a full blackout is to reach. */
+export const SENSITIVITY_MULS = { low: 0.6, standard: 1, high: 1.8 } as const
+export type PummelSensitivity = keyof typeof SENSITIVITY_MULS
 
 /** One temporary wave impulse — everything the shader needs, plain numbers. */
 export interface MembraneImpulse {

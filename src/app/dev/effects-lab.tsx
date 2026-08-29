@@ -21,6 +21,7 @@ import { BackdropRenderer } from '@components/workout/backdrop/BackdropRenderer'
 import type { MembranePresetName } from '@components/workout/backdrop/HydroPulseScene'
 import { createBackdropBus } from '@components/workout/backdrop/backdropBus'
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
+import type { PummelSensitivity } from '@domain/effects/membraneMath'
 import type { PunchHand } from '@domain/punch/PunchEvent'
 
 const QUALITIES: BackdropQuality[] = ['off', 'reduced', 'standard']
@@ -32,9 +33,10 @@ const CALMS = [
 const PRESETS: MembranePresetName[] = ['controlled', 'reactive', 'gelatin']
 const GRAINS = [
   { label: 'grain off', opacity: 0 },
-  { label: 'grain subtle', opacity: 0.18 },
-  { label: 'grain strong', opacity: 0.4 },
+  { label: 'grain subtle', opacity: 0.7 },
+  { label: 'grain strong', opacity: 1 },
 ]
+const SENSITIVITIES: PummelSensitivity[] = ['low', 'standard', 'high']
 
 export default function EffectsLabScreen(): React.JSX.Element {
   const bus = useMemo(() => {
@@ -45,7 +47,8 @@ export default function EffectsLabScreen(): React.JSX.Element {
   const [quality, setQuality] = useState<BackdropQuality>('standard')
   const [calm, setCalm] = useState(1)
   const [preset, setPreset] = useState<MembranePresetName>('reactive')
-  const [grainOpacity, setGrainOpacity] = useState(0.18)
+  const [grainOpacity, setGrainOpacity] = useState(1)
+  const [sensitivity, setSensitivity] = useState<PummelSensitivity>('standard')
 
   const hit = (hand: PunchHand, velocityRaw: number): void => {
     bus.impulse({ hand, velocityRaw })
@@ -64,6 +67,7 @@ export default function EffectsLabScreen(): React.JSX.Element {
         quality={quality}
         calm={calm}
         preset={preset}
+        sensitivity={sensitivity}
         tuning={{ grainOpacity }}
       />
 
@@ -105,6 +109,15 @@ export default function EffectsLabScreen(): React.JSX.Element {
               style={[styles.chip, grainOpacity === g.opacity && styles.chipActive]}
             >
               <Text style={styles.chipText}>{g.label}</Text>
+            </Pressable>
+          ))}
+          {SENSITIVITIES.map((s) => (
+            <Pressable
+              key={s}
+              onPress={() => setSensitivity(s)}
+              style={[styles.chip, sensitivity === s && styles.chipActive]}
+            >
+              <Text style={styles.chipText}>{`pummel ${s}`}</Text>
             </Pressable>
           ))}
         </View>

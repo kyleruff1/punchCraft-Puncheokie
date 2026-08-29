@@ -41,7 +41,8 @@ function childShaders(sksl: string): string[] {
 }
 
 const ring = [spawnImpulse(HAND_LEFT, 0.6, 1, 10), spawnImpulse(HAND_RIGHT, 1, 2, 10.2)]
-const built = buildMembraneUniforms(10.4, 1600, 900, 1, 0.5, 0.3, ring, DEFAULT_TUNING)
+const VEIL = { dust: 0.4, debris: 0.3, veil: 0.1, impact: 0.6 }
+const built = buildMembraneUniforms(10.4, 1600, 900, 1, 0.5, VEIL, ring, DEFAULT_TUNING)
 
 describe('membrane shader contract', () => {
   it('declares exactly the manifest uniforms, in order, with matching float counts', () => {
@@ -77,15 +78,24 @@ describe('membrane shader contract', () => {
   })
 
   it('is pure — same inputs, deep-equal outputs', () => {
-    expect(buildMembraneUniforms(10.4, 1600, 900, 1, 0.5, 0.3, ring, DEFAULT_TUNING)).toEqual(
+    expect(buildMembraneUniforms(10.4, 1600, 900, 1, 0.5, VEIL, ring, DEFAULT_TUNING)).toEqual(
       built,
     )
   })
 
-  it('an empty ring builds an exactly-neutral gel, zero darkness, zero amplitudes', () => {
-    const idle = buildMembraneUniforms(99, 1600, 900, 1, 0, 0, [], DEFAULT_TUNING)
+  it('an empty ring builds an exactly-neutral gel, veil and amplitudes', () => {
+    const idle = buildMembraneUniforms(
+      99,
+      1600,
+      900,
+      1,
+      0,
+      { dust: 0, debris: 0, veil: 0, impact: 0 },
+      [],
+      DEFAULT_TUNING,
+    )
     expect(idle.uGel).toEqual([0, 0, 0, 0])
-    expect(idle.uDark).toBe(0)
+    expect(idle.uVeil).toEqual([0, 0, 0, 0])
     const a = idle.uA as number[]
     for (let i = 0; i < a.length; i += 4) expect(a[i + 3]).toBe(0)
   })

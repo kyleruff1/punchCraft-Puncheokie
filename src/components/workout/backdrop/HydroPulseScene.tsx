@@ -32,9 +32,14 @@ import { useDerivedValue, useSharedValue, withTiming } from 'react-native-reanim
 
 import {
   CHURN_TAU_S,
-  DARKNESS_TAU_S,
+  DEBRIS_TAU_S,
+  DUST_TAU_S,
+  IMPACT_TAU_S,
   MEMBRANE_PRESETS,
+  SENSITIVITY_MULS,
+  VEIL_TAU_S,
   decayedEnv,
+  type PummelSensitivity,
 } from '@domain/effects/membraneMath'
 import {
   DEFAULT_TUNING,
@@ -57,12 +62,15 @@ export function HydroPulseScene({
   calm,
   tuning,
   preset = 'reactive',
+  sensitivity = 'standard',
 }: {
   bus: BackdropBus
   /** Phase-driven damping target: work 1, rest ~0.35, idle ~0.15. */
   calm: number
   tuning?: Partial<MembraneTuning>
   preset?: MembranePresetName
+  /** Pummel Sensitivity: how hard a full blackout is to reach. */
+  sensitivity?: PummelSensitivity
 }): React.JSX.Element {
   const image = useImage(BACKDROP)
   const grain = useImage(GRAIN)
@@ -82,8 +90,12 @@ export function HydroPulseScene({
     [presetDef, tuning],
   )
   const feel = useMemo<MembraneFeel>(
-    () => ({ surgeMul: presetDef.surgeMul, lifeMul: presetDef.lifeMul }),
-    [presetDef],
+    () => ({
+      surgeMul: presetDef.surgeMul,
+      lifeMul: presetDef.lifeMul,
+      sensitivityMul: SENSITIVITY_MULS[sensitivity],
+    }),
+    [presetDef, sensitivity],
   )
 
   useEffect(() => {
@@ -107,7 +119,12 @@ export function HydroPulseScene({
       size.h,
       calmSV.value,
       decayedEnv(e.churn, e.churnStamp, nowSec, CHURN_TAU_S),
-      decayedEnv(e.dark, e.darkStamp, nowSec, DARKNESS_TAU_S),
+      {
+        dust: decayedEnv(e.dust, e.dustStamp, nowSec, DUST_TAU_S),
+        debris: decayedEnv(e.debris, e.debrisStamp, nowSec, DEBRIS_TAU_S),
+        veil: decayedEnv(e.veil, e.veilStamp, nowSec, VEIL_TAU_S),
+        impact: decayedEnv(e.impact, e.impactStamp, nowSec, IMPACT_TAU_S),
+      },
       ring.value,
       resolvedTuning,
     )

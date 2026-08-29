@@ -6,18 +6,18 @@
  */
 import {
   CONVERGE_WINDOW_S,
-  DARKNESS_TAU_S,
+  DEBRIS_CAP,
+  DEBRIS_TAU_S,
+  DUST_TAU_S,
   GEL_WINDOW_S,
+  VEIL_TAU_S,
   HAND_LEFT,
   HAND_NEUTRAL,
   HAND_RIGHT,
   MAX_IMPULSES,
   MEMBRANE_PRESETS,
   bumpEnv,
-  churnGainOf,
   convergenceImpulse,
-  darknessGainOf,
-  darknessWakeOf,
   decayedEnv,
   detectConvergence,
   expiryOf,
@@ -30,7 +30,11 @@ import {
   mapVelocityToEffect,
   packImpulses,
   pushImpulse,
+  rateOf,
+  registerPunchGains,
   spawnImpulse,
+  veilWakeOf,
+  visualCoverage,
 } from '../effects/membraneMath'
 
 describe('mapVelocityToEffect', () => {
@@ -201,51 +205,124 @@ describe('exact restoration', () => {
   })
 })
 
-describe('churn envelope', () => {
-  it('bumps per punch with the brief curve and caps at 1', () => {
-    expect(churnGainOf(0)).toBeCloseTo(0.06)
-    expect(churnGainOf(1)).toBeCloseTo(0.24)
+describe('churn and impact envelopes', () => {
+  it('bump per punch with the brief curves and cap at 1', () => {
+    const soft = registerPunchGains(0, 1, 1)
+    const hard = registerPunchGains(1, 1, 1)
+    expect(soft.churn).toBeCloseTo(0.05)
+    expect(hard.churn).toBeCloseTo(0.25)
+    expect(soft.impact).toBeCloseTo(0.2)
+    expect(hard.impact).toBeCloseTo(1)
     let churn = 0
-    for (let i = 0; i < 20; i += 1) churn = bumpEnv(churn, 0, 0, 1.8, churnGainOf(1))
+    for (let i = 0; i < 20; i += 1) churn = bumpEnv(churn, 0, 0, 1.65, hard.churn)
     expect(churn).toBe(1)
+  })
+
+  it('rateOf reads the trailing window and skips the convergence center', () => {
+    const ring = [
+      spawnImpulse(HAND_LEFT, 0.5, 1, 9.0),
+      spawnImpulse(HAND_RIGHT, 0.5, 2, 9.5),
+      spawnImpulse(HAND_LEFT, 0.5, 3, 10.0),
+      convergenceImpulse(0.5, 4, 10.0),
+      spawnImpulse(HAND_LEFT, 0.5, 5, 3.0),
+    ]
+    expect(rateOf(ring, 10.2)).toBeCloseTo(3 / 1.5)
   })
 })
 
-describe('blackout darkness', () => {
-  /** Simulate a punch cadence and return the settled envelope value. */
-  function settle(v01: number, perSecond: number, seconds: number): number {
-    let dark = 0
+describe('pummel veil', () => {
+  /**
+   * Simulate a punch cadence (each punch also enters the ring, so the
+   * rate the gains read is the real trailing rate) and return the
+   * three settled charges.
+   */
+  function pummel(
+    v01: number,
+    perSecond: number,
+    seconds: number,
+  ): { dust: number; debris: number; veil: number } {
+    let ring: ReturnType<typeof spawnImpulse>[] = []
+    let dust = 0
+    let debris = 0
+    let veil = 0
     let stamp = 0
+    let id = 0
     const gap = 1 / perSecond
     for (let t = gap; t <= seconds; t += gap) {
-      dark = bumpEnv(dark, stamp, t, DARKNESS_TAU_S, darknessGainOf(v01))
+      id += 1
+      ring = pushImpulse(ring, spawnImpulse(id % 2, v01, id, t), t).ring
+      const gains = registerPunchGains(v01, rateOf(ring, t), 1)
+      dust = bumpEnv(dust, stamp, t, DUST_TAU_S, gains.dust)
+      debris = bumpEnv(debris, stamp, t, DEBRIS_TAU_S, gains.debris, DEBRIS_CAP)
+      veil = bumpEnv(veil, stamp, t, VEIL_TAU_S, gains.veil)
       stamp = t
     }
-    return dark
+    return { dust, debris, veil }
   }
 
-  it('a dead sprint can smother the pane; ordinary work cannot', () => {
-    expect(settle(1, 3, 12)).toBeGreaterThan(0.75)
-    expect(settle(0.6, 2, 12)).toBeLessThan(0.35)
-    expect(settle(0.3, 3, 12)).toBeLessThan(0.1)
+  it('matches the target profile: singles fleck, moderate work dims, a sprint closes', () => {
+    // One light punch: essentially nothing.
+    const single = registerPunchGains(0.3, 1, 1)
+    expect(single.debris).toBeLessThan(0.02)
+    expect(single.veil).toBe(0)
+    // Steady moderate work: clearly dimmed, never blacked out.
+    const moderate = pummel(0.6, 3.5, 15)
+    expect(visualCoverage(moderate.debris)).toBeGreaterThan(0.1)
+    expect(visualCoverage(moderate.debris)).toBeLessThan(0.5)
+    expect(moderate.veil).toBeLessThan(0.15)
+    // A sustained high-velocity sprint feeds the veil toward closure.
+    const sprint = pummel(1, 8, 12)
+    expect(sprint.debris).toBeGreaterThan(0.8)
+    expect(sprint.veil).toBeGreaterThan(0.5)
+    expect(sprint.veil).toBeGreaterThan(moderate.veil * 3)
   })
 
-  it('full darkness fades below the visible floor in under 10 s', () => {
-    expect(decayedEnv(1, 0, 10, DARKNESS_TAU_S)).toBeLessThan(0.02)
+  it('velocity and rate stay distinct: a lone haymaker deposits little', () => {
+    const haymaker = registerPunchGains(1, 1, 1)
+    const flurryHit = registerPunchGains(1, 9, 1)
+    expect(haymaker.impact).toBeCloseTo(1)
+    expect(haymaker.veil).toBe(0)
+    expect(flurryHit.veil).toBeGreaterThan(0.02)
+    expect(flurryHit.debris).toBeGreaterThan(haymaker.debris)
   })
 
-  it('the wake window covers the fade and vanishes with the darkness', () => {
-    expect(darknessWakeOf(0)).toBe(0)
-    expect(darknessWakeOf(0.005)).toBe(0)
-    const full = darknessWakeOf(1)
-    expect(full).toBeGreaterThan(8)
-    expect(full).toBeLessThan(12)
-    expect(decayedEnv(1, 0, full, DARKNESS_TAU_S)).toBeLessThanOrEqual(0.011)
+  it('clears in stages: dust first, debris next, the veil last', () => {
+    const charged = { dust: 0.8, debris: 0.8, veil: 0.8 }
+    const at = (t: number): number[] => [
+      decayedEnv(charged.dust, 0, t, DUST_TAU_S),
+      decayedEnv(charged.debris, 0, t, DEBRIS_TAU_S),
+      decayedEnv(charged.veil, 0, t, VEIL_TAU_S),
+    ]
+    const [dust2, debris2, veil2] = at(2)
+    expect(dust2).toBeLessThan(debris2!)
+    expect(debris2).toBeLessThan(veil2!)
+    // And everything is essentially neutral inside ~10 s from typical charges.
+    const [dust10, debris10] = at(10)
+    expect(dust10).toBeLessThan(0.01)
+    expect(debris10).toBeLessThan(0.04)
   })
 
-  it('the gain curve is savagely superlinear', () => {
-    expect(darknessGainOf(1)).toBeCloseTo(0.24)
-    expect(darknessGainOf(0.5) / darknessGainOf(1)).toBeLessThan(0.1)
+  it('the wake window covers the slowest fade and vanishes when clear', () => {
+    expect(veilWakeOf(0, 0, 0)).toBe(0)
+    expect(veilWakeOf(0.005, 0.005, 0.005)).toBe(0)
+    const window = veilWakeOf(1, 1, 1)
+    expect(window).toBeGreaterThan(15)
+    expect(decayedEnv(1, 0, window, VEIL_TAU_S)).toBeLessThanOrEqual(0.011)
+  })
+
+  it('sensitivity scales the veil charges only', () => {
+    const standard = registerPunchGains(0.8, 6, 1)
+    const high = registerPunchGains(0.8, 6, 1.8)
+    expect(high.dust).toBeCloseTo(standard.dust * 1.8)
+    expect(high.debris).toBeCloseTo(standard.debris * 1.8)
+    expect(high.impact).toBe(standard.impact)
+    expect(high.churn).toBe(standard.churn)
+  })
+
+  it('perceptual coverage bends recovery without moving the endpoints', () => {
+    expect(visualCoverage(0)).toBe(0)
+    expect(visualCoverage(1)).toBe(1)
+    expect(visualCoverage(0.5)).toBeLessThan(0.5)
   })
 })
 

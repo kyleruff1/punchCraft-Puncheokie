@@ -24,17 +24,21 @@ import {
 
 import {
   CHURN_TAU_S,
-  DARKNESS_TAU_S,
+  DEBRIS_CAP,
+  DEBRIS_TAU_S,
+  DUST_TAU_S,
+  IMPACT_TAU_S,
   SLEEP_GRACE_S,
+  VEIL_TAU_S,
   bumpEnv,
-  churnGainOf,
   convergenceImpulse,
-  darknessGainOf,
-  darknessWakeOf,
   detectConvergence,
   lastExpiry,
   pushImpulse,
+  rateOf,
+  registerPunchGains,
   spawnImpulse,
+  veilWakeOf,
   type MembraneImpulse,
 } from '@domain/effects/membraneMath'
 import { logger, safe } from '@diagnostics/logger'
@@ -43,14 +47,22 @@ import { logger, safe } from '@diagnostics/logger'
 export interface MembraneFeel {
   surgeMul: number
   lifeMul: number
+  /** Pummel Sensitivity: scales the veil charges only. */
+  sensitivityMul: number
 }
 
 export interface MembraneEnv {
+  impact: number
+  impactStamp: number
   churn: number
   churnStamp: number
-  /** Blackout saturation, 0..1 — see darknessGainOf. */
-  dark: number
-  darkStamp: number
+  /** The Pummel Veil's staged charges — see registerPunchGains. */
+  dust: number
+  dustStamp: number
+  debris: number
+  debrisStamp: number
+  veil: number
+  veilStamp: number
   lastHand: number
   lastTSec: number
   lastStrength: number
@@ -88,10 +100,16 @@ export function useMembraneEngine(): MembraneEngine {
   const clockSec = useSharedValue(0)
   const lastExpirySec = useSharedValue(0)
   const env = useSharedValue<MembraneEnv>({
+    impact: 0,
+    impactStamp: 0,
     churn: 0,
     churnStamp: 0,
-    dark: 0,
-    darkStamp: 0,
+    dust: 0,
+    dustStamp: 0,
+    debris: 0,
+    debrisStamp: 0,
+    veil: 0,
+    veilStamp: 0,
     lastHand: 2,
     lastTSec: -10,
     lastStrength: 0,
@@ -138,29 +156,42 @@ export function useMembraneEngine(): MembraneEngine {
       }
 
       ring.value = result.ring
-      const dark = bumpEnv(
-        prev.dark,
-        prev.darkStamp,
+      // Velocity and rate stay distinct: gains read the ring's actual
+      // trailing punch rate, so a flurry — not one haymaker — is what
+      // feeds the veil.
+      const gains = registerPunchGains(v01, rateOf(result.ring, nowSec), feel.sensitivityMul)
+      const dust = bumpEnv(prev.dust, prev.dustStamp, nowSec, DUST_TAU_S, gains.dust)
+      const debris = bumpEnv(
+        prev.debris,
+        prev.debrisStamp,
         nowSec,
-        DARKNESS_TAU_S,
-        darknessGainOf(v01) + spilled * 0.03,
+        DEBRIS_TAU_S,
+        gains.debris + spilled * 0.02,
+        DEBRIS_CAP,
       )
-      // The wake window covers whichever outlasts the other: the ring
-      // or the blackout fade — sleep must never freeze a dimmed frame.
+      const veilCharge = bumpEnv(prev.veil, prev.veilStamp, nowSec, VEIL_TAU_S, gains.veil)
+      // The wake window covers whichever outlasts the others: the ring
+      // or the veil fades — sleep must never freeze a dimmed frame.
       const ringEnd = lastExpiry(result.ring)
-      const darkEnd = nowSec + darknessWakeOf(dark)
-      lastExpirySec.value = ringEnd > darkEnd ? ringEnd : darkEnd
+      const veilEnd = nowSec + veilWakeOf(dust, debris, veilCharge)
+      lastExpirySec.value = ringEnd > veilEnd ? ringEnd : veilEnd
       env.value = {
+        impact: bumpEnv(prev.impact, prev.impactStamp, nowSec, IMPACT_TAU_S, gains.impact),
+        impactStamp: nowSec,
         churn: bumpEnv(
           prev.churn,
           prev.churnStamp,
           nowSec,
           CHURN_TAU_S,
-          churnGainOf(v01) + spilled * 0.05,
+          gains.churn + spilled * 0.05,
         ),
         churnStamp: nowSec,
-        dark,
-        darkStamp: nowSec,
+        dust,
+        dustStamp: nowSec,
+        debris,
+        debrisStamp: nowSec,
+        veil: veilCharge,
+        veilStamp: nowSec,
         lastHand: handCode,
         lastTSec: nowSec,
         lastStrength: v01,
