@@ -105,19 +105,26 @@ export function ActionButton({
     >
       <Image
         source={source}
-        style={{
-          height,
-          width: height * aspect,
-          maxWidth: '100%',
-          ...(TRIM[action]
-            ? {
-                marginLeft: -height * aspect * TRIM[action].left,
-                marginRight: -height * aspect * TRIM[action].right,
-                marginTop: -height * TRIM[action].top,
-                marginBottom: -height * TRIM[action].bottom,
-              }
-            : {}),
-        }}
+        style={(() => {
+          const trim = TRIM[action]
+          if (!trim) return { height, width: height * aspect, maxWidth: '100%' as const }
+          // Trimmed assets size by VISIBLE PILL height, not canvas height:
+          // the arts carry different pill-to-canvas ratios, so equal
+          // canvas heights rendered unequal buttons (the fix pill sat
+          // visibly shorter than connect at the same `height` prop).
+          const pillFraction = 1 - trim.top - trim.bottom
+          const imageHeight = height / pillFraction
+          const imageWidth = imageHeight * aspect
+          return {
+            height: imageHeight,
+            width: imageWidth,
+            maxWidth: '100%' as const,
+            marginLeft: -imageWidth * trim.left,
+            marginRight: -imageWidth * trim.right,
+            marginTop: -imageHeight * trim.top,
+            marginBottom: -imageHeight * trim.bottom,
+          }
+        })()}
         resizeMode="contain"
       />
     </Pressable>

@@ -119,7 +119,7 @@ export function ConnectTrackersButton(): React.ReactElement {
 
 /** Compact art height for the badges row — the pill reads at a glance
  * without competing with the page's hero button. */
-const CONNECT_BUTTON_HEIGHT = 76
+const CONNECT_BUTTON_HEIGHT = 30
 
 const styles = StyleSheet.create({
   wrap: { gap: 6 },

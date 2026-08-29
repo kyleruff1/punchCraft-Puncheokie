@@ -100,7 +100,7 @@ export function FixTrackerButton(): React.ReactElement | null {
 
 /** Matches ConnectTrackersButton's compact art height so the pair reads
  * as siblings in the badges row. */
-const FIX_BUTTON_HEIGHT = 76
+const FIX_BUTTON_HEIGHT = 30
 
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
