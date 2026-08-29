@@ -40,10 +40,10 @@ import {
 describe('mapVelocityToEffect', () => {
   it('pins the curve endpoints', () => {
     const soft = mapVelocityToEffect(0)
-    expect(soft.amplitude).toBeCloseTo(0.004 + 0.15 * 0.028, 6)
+    expect(soft.amplitude).toBeCloseTo(0.005 + 0.15 * 0.036, 6)
     expect(soft.lifetimeSec).toBeCloseTo(1.1 + 0.15 * 2.0, 6)
     const hard = mapVelocityToEffect(1)
-    expect(hard.amplitude).toBeCloseTo(0.032, 6)
+    expect(hard.amplitude).toBeCloseTo(0.041, 6)
     expect(hard.radius).toBeCloseTo(0.16, 6)
     expect(hard.lifetimeSec).toBeCloseTo(3.1, 6)
     expect(hard.waveSpeed).toBeCloseTo(1.25, 6)

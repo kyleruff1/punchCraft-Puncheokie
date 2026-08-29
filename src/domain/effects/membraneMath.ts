@@ -99,7 +99,10 @@ export function mapVelocityToEffect(v01: number): ImpulseShape {
   const v = Math.max(0, Math.min(1, v01))
   const strength = 0.15 + 0.85 * Math.pow(v, 1.4)
   return {
-    amplitude: 0.004 + strength * 0.028,
+    // Measured on-glass: the dark art eats subtle warps — a single
+    // punch must read plainly, so the crest peaks near the brief's
+    // upper offset bound and the oscillation tames it from there.
+    amplitude: 0.005 + strength * 0.036,
     radius: 0.05 + strength * 0.11,
     lifetimeSec: 1.1 + strength * 2.0,
     waveSpeed: 0.7 + strength * 0.55,

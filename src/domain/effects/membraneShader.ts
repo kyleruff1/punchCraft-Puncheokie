@@ -110,7 +110,7 @@ half4 main(float2 xy) {
     float depositAge = uNow - uA[i].z;
     float depositGate = step(1e-6, amp) * step(0.0, depositAge);
     localDeposit +=
-      exp(-(d * d) / (r * r)) * (amp * 31.0) * exp(-depositAge / 1.4) * depositGate;
+      exp(-(d * d) / (r * r)) * (amp * 24.0) * exp(-depositAge / 1.4) * depositGate;
   }
 
   // Whole-sheet gel: offset plus a small twist about center.
