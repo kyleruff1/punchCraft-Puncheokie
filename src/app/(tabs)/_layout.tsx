@@ -273,9 +273,8 @@ const styles = StyleSheet.create({
   },
   headerTrackerColumn: {
     alignItems: 'center',
-    gap: 4,
-    // Equal columns so the chips land symmetric over unequal buttons.
-    width: 168,
+    // Chip snug under its button — the four items read as one block.
+    gap: 2,
   },
   headerRound: {
     fontSize: sizes.body,

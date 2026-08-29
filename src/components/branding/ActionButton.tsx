@@ -132,10 +132,15 @@ export function ActionButton({
           const pillFraction = 1 - trim.top - trim.bottom
           const imageHeight = height / pillFraction
           const imageWidth = imageHeight * aspect
+          // No maxWidth clamp here: inside a bounded parent the clamp
+          // letterboxes the contained art, shrinking the drawn pill below
+          // the requested height while the negative margins still assume
+          // the full size — buttons render unequal and float in phantom
+          // air. Pill fit promises an exact pill height, so it must own
+          // its width.
           return {
             height: imageHeight,
             width: imageWidth,
-            maxWidth: '100%' as const,
             marginLeft: -imageWidth * trim.left,
             marginRight: -imageWidth * trim.right,
             marginTop: -imageHeight * trim.top,
