@@ -10,6 +10,7 @@
  */
 import {
   BleManager as PlxBleManager,
+  ConnectionPriority,
   type Characteristic as PlxCharacteristic,
   type Device as PlxDevice,
   type State as PlxState,
@@ -286,6 +287,15 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
     try {
       const device: PlxDevice = await manager.connectToDevice(deviceId, { timeout: timeoutMs })
       const generation = this.bumpGeneration(deviceId)
+      // High priority (short connection interval) for every tracker link:
+      // the tablet often streams A2DP audio at the same time, and at the
+      // default balanced interval the weaker of two glove links loses the
+      // radio-time contest — observed 2026-08-29 as init writes dying on
+      // whichever glove came up second. Link-layer parameter request only;
+      // no GATT write (rule 4). Best-effort, same posture as MTU.
+      try {
+        await manager.requestConnectionPriorityForDevice(deviceId, ConnectionPriority.High)
+      } catch { /* ignore priority negotiation failures */ }
       if (options?.requestMtu) {
         try { await manager.requestMTUForDevice(deviceId, options.requestMtu) } catch { /* ignore MTU negotiation failures */ }
       }
