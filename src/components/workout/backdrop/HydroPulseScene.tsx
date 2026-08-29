@@ -18,7 +18,7 @@
  * solely on punch impulses.
  */
 import React, { useEffect } from 'react'
-import { StyleSheet } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import type { LayoutChangeEvent } from 'react-native'
 import {
   Atlas,
@@ -225,8 +225,16 @@ export function HydroPulseScene({
   const meetEnd = useDerivedValue(() => ({ x: size.value.w * 0.64, y: 0 }))
 
   return (
-    <Canvas style={StyleSheet.absoluteFill} onLayout={onLayout} testID="hydro-pulse-canvas">
-      {AMBIENT_BLOBS.map((i) => (
+    // Layout is measured on a plain View: Fabric's Skia Canvas does not
+    // support onLayout (it warned so on-device, 2026-08-29).
+    <View
+      style={StyleSheet.absoluteFill}
+      onLayout={onLayout}
+      pointerEvents="none"
+      testID="hydro-pulse-canvas"
+    >
+      <Canvas style={StyleSheet.absoluteFill}>
+        {AMBIENT_BLOBS.map((i) => (
         <AmbientBlob key={`blob-${i}`} index={i} shared={shared} sway={sway} />
       ))}
       <Rect x={meetX} y={0} width={meetWidth} height={meetHeight} opacity={meetOpacity}>
@@ -239,9 +247,10 @@ export function HydroPulseScene({
       {RIPPLE_INDICES.map((i) => (
         <Ripple key={`ripple-${i}`} index={i} shared={shared} />
       ))}
-      <BubbleAtlas batchHand={HAND_LEFT} tint={LEFT_TINT} shared={shared} />
-      <BubbleAtlas batchHand={HAND_RIGHT} tint={RIGHT_TINT} shared={shared} />
-      <BubbleAtlas batchHand={HAND_NEUTRAL} tint={NEUTRAL_TINT} shared={shared} />
-    </Canvas>
+        <BubbleAtlas batchHand={HAND_LEFT} tint={LEFT_TINT} shared={shared} />
+        <BubbleAtlas batchHand={HAND_RIGHT} tint={RIGHT_TINT} shared={shared} />
+        <BubbleAtlas batchHand={HAND_NEUTRAL} tint={NEUTRAL_TINT} shared={shared} />
+      </Canvas>
+    </View>
   )
 }

@@ -127,6 +127,25 @@ describe('autoConnectKnownTrackers', () => {
     expect(result.outcomes.every((o) => o.status === 'already-connected')).toBe(true)
   })
 
+  it('leaves a slot alone mid-bring-up when the native stack confirms it', async () => {
+    // The live screen arms a fresh pass on mount; if it lands while the
+    // landing's pass is still INITIALIZING a glove, evicting that slot
+    // cancels a healthy connection mid-handshake — observed 2026-08-29
+    // as the right glove dying on its init writes whenever both gloves
+    // came up together.
+    mockIsDeviceConnected.mockResolvedValue(true)
+    mockSlots = {
+      left: liveSlot(blue.address, 'initializing'),
+      right: liveSlot(red.address, 'connecting'),
+    }
+
+    const result = await autoConnectKnownTrackers()
+
+    expect(mockScan).not.toHaveBeenCalled()
+    expect(mockEvictSlot).not.toHaveBeenCalled()
+    expect(result.outcomes.every((o) => o.status === 'already-connected')).toBe(true)
+  })
+
   it('evicts a phantom ready slot — the very bug that stranded the athlete', async () => {
     // The store says `'ready'` but the native stack says the device is not
     // connected: the phantom-connection case. Without the reclaim path,

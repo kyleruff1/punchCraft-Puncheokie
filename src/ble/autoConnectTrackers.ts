@@ -54,7 +54,29 @@ export interface AutoConnectResult {
   scanError?: string
 }
 
-const READY_STATES = new Set(['ready', 'streaming'])
+/**
+ * States that mean THIS SESSION owns the link right now — settled
+ * (ready/streaming) or actively bringing it up. Bring-up states matter:
+ * the live screen arms a fresh pass on mount, and if that pass lands
+ * while the landing's pass is still initializing a glove (clock sync,
+ * mode write), treating 'initializing' as evictable cancels a healthy
+ * connection mid-handshake — observed 2026-08-29 as the right glove
+ * dying with "not connected" on its init writes whenever both gloves
+ * tried to come up together. Native confirmation below still guards
+ * against a phantom store state.
+ */
+const THIS_SESSION_STATES = new Set([
+  'connecting',
+  'bonding',
+  'discovering',
+  'initializing',
+  'ready',
+  'streaming',
+  // The stream's own self-heal; evicting under it is the same bug.
+  // If a recovery truly wedges while the radio stays attached, the Fix
+  // button's Bluetooth bounce remains the escape hatch.
+  'recovering',
+])
 
 /**
  * True when this hand is connected TO THE CURRENT SESSION — the precise
@@ -81,7 +103,7 @@ async function slotConnectedThisSession(
   const slot = getTrackerSlots()[hand]
   if (!slot) return false
   if (slot.deviceId.toUpperCase() !== address.toUpperCase()) return false
-  if (!READY_STATES.has(slot.state)) return false
+  if (!THIS_SESSION_STATES.has(slot.state)) return false
   try {
     return await coordinator.isDeviceConnected(slot.deviceId)
   } catch {

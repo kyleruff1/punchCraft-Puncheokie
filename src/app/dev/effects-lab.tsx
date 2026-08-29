@@ -129,6 +129,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFill,
     justifyContent: 'flex-end',
     padding: 16,
+    // Clear of the tablet's floating OS taskbar, which overlays the
+    // window's bottom edge (same clipping the live control strip hit).
+    paddingBottom: 100,
     gap: 10,
   },
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
