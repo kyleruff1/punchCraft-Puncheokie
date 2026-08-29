@@ -128,7 +128,11 @@ export async function startPunchStream(
     if (stopped) {
       return buildController()
     }
-    plan = adapter.buildInitializationPlan({ deviceId, snapshot })
+    plan = adapter.buildInitializationPlan({
+      deviceId,
+      snapshot,
+      ...(hand === 'left' || hand === 'right' ? { hand } : {}),
+    })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     initErrors.push(`discover: ${message}`)

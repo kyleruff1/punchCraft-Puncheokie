@@ -36,6 +36,7 @@ import {
   CHAR,
   FIGHTCAMP_SERVICE_UUID,
   MODE_COMMAND_1_BYTES,
+  MODE_COMMAND_2_BYTES,
   NORDIC_LEGACY_DFU_SERVICE_UUID,
   buildClockSyncBytes,
   bytesToHex,
@@ -109,13 +110,18 @@ export class FightCampV1Adapter implements TrackerProtocolAdapter {
     }
   }
 
-  buildInitializationPlan(_ctx: InitializationContext): GattOperation[] {
+  buildInitializationPlan(ctx: InitializationContext): GattOperation[] {
     // Order matches Hykso's start-session sequence
     // (`sources/j1/e.java` :g()): clock sync FIRST, then notifications,
-    // device-info read, mode-normal. Without the clock-sync write the
-    // tracker stays connected but idle and never emits punch frames
-    // (observed 2026-08-22: subscribe count 2, init errors 0, zero
-    // notify traffic for the full session).
+    // device-info read, mode-normal, hand assignment, command 17.
+    // Without the clock-sync write the tracker stays connected but idle
+    // and never emits punch frames (observed 2026-08-22: subscribe
+    // count 2, init errors 0, zero notify traffic for the full
+    // session). Without the LAST TWO writes the tracker hangs up
+    // cleanly on a still glove within minutes, however much other
+    // traffic flows (observed 2026-08-29: reads every 20s did not hold
+    // it, mode-normal rewrites every 20s did not hold it) — Hykso sends
+    // both every session, and its trackers hold indefinitely.
     return [
       {
         kind: 'write',
@@ -159,6 +165,35 @@ export class FightCampV1Adapter implements TrackerProtocolAdapter {
         hex: byteToHex(MODE_COMMAND_1_BYTES.normal),
         withResponse: true,
         label: 'init-mode-normal-ca281071',
+      },
+      // Hand assignment (`j1/e.java` :g() → C0477c.b(position)):
+      // position 1 = right → byte 1, position 2 = left → byte 2. Sent
+      // every session by Hykso, right after mode-normal.
+      ...(ctx.hand
+        ? [
+            {
+              kind: 'write' as const,
+              serviceUuid: FIGHTCAMP_SERVICE_UUID,
+              characteristicUuid: CHAR.COMMAND2,
+              hex: byteToHex(
+                ctx.hand === 'right' ? MODE_COMMAND_2_BYTES.one : MODE_COMMAND_2_BYTES.two,
+              ),
+              withResponse: true,
+              label: `init-handAssign-${ctx.hand}-ca281072`,
+            },
+          ]
+        : []),
+      // Command 17 (`this.f.a(17, …)`): unnamed even in Hykso's own
+      // debug map, but sent every session immediately after the hand
+      // byte — and their trackers hold a still connection indefinitely
+      // where ours dropped in minutes.
+      {
+        kind: 'write',
+        serviceUuid: FIGHTCAMP_SERVICE_UUID,
+        characteristicUuid: CHAR.COMMAND1,
+        hex: byteToHex(MODE_COMMAND_1_BYTES.unnamed17),
+        withResponse: true,
+        label: 'init-command17-ca281071',
       },
     ]
   }

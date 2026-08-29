@@ -27,6 +27,13 @@ export interface ProtocolInspection {
 export interface InitializationContext {
   deviceId: string
   snapshot: GattSnapshot
+  /**
+   * The slot this device is bound to. Hykso's start-session assigns the
+   * hand to the tracker (COMMAND2: right=1, left=2) and the plan needs
+   * it to reproduce that step; absent (older callers, probe tooling)
+   * the hand-assignment op is simply omitted.
+   */
+  hand?: 'left' | 'right'
 }
 
 export interface SessionCommandContext {
