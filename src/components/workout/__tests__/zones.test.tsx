@@ -182,11 +182,14 @@ describe('RoundTopBar', () => {
     connection: { left: 'streaming' as const, right: 'streaming' as const },
   }
 
-  it('renders round n/N, countdown and stance', () => {
+  it('renders stance; round + countdown live in the tabs header now', () => {
+    // Kyle 2026-08-28: round/clock moved to the header's 75% line
+    // (HeaderRoundClock in (tabs)/_layout) — this bar keeps stance,
+    // gloves and the degraded notice only.
     const tree = render(<RoundTopBar {...base} />)
-    expect(textOf(tree.root.findByProps({ testID: 'round-counter' }))).toBe('Round 1/3')
-    expect(textOf(tree.root.findByProps({ testID: 'round-countdown' }))).toBe('2:05')
     expect(textOf(tree.root.findByProps({ testID: 'stance-label' }))).toBe('Orthodox')
+    expect(tree.root.findAllByProps({ testID: 'round-counter' })).toHaveLength(0)
+    expect(tree.root.findAllByProps({ testID: 'round-countdown' })).toHaveLength(0)
   })
 
   it.each([

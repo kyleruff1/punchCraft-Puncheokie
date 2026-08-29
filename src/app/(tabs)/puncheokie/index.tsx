@@ -1,7 +1,6 @@
 import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
-import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
 
@@ -27,7 +26,6 @@ export default function PuncheokieLanding() {
           ),
         }}
       />
-      <TrackerBadgesRow />
       <Text style={styles.paragraph}>Punch-along mode — follow the called combinations.</Text>
       <View style={styles.placeholder} testID="coming-soon">
         <Text style={styles.placeholderText}>Coming soon.</Text>

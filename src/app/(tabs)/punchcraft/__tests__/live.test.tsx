@@ -198,11 +198,14 @@ describe('zones', () => {
     expect(() => tree.root.findByProps({ testID: 'start-workout' })).not.toThrow()
   })
 
-  it('shows the round counter and countdown', () => {
+  it('keeps round counter and countdown OUT of the live tree (they live in the header)', () => {
+    // Kyle 2026-08-28: the tabs-navigator header renders Round n/N and
+    // the clock at its 75% line, outside this screen's tree — the live
+    // screen must not duplicate them.
     const tree = render()
     drive({ phase: 'work', roundIndex: 1, roundCount: 3, roundRemainingMs: 95_000 })
-    expect(textOf(tree.root.findByProps({ testID: 'round-counter' }))).toBe('Round 2/3')
-    expect(textOf(tree.root.findByProps({ testID: 'round-countdown' }))).toBe('1:35')
+    expect(tree.root.findAllByProps({ testID: 'round-counter' })).toHaveLength(0)
+    expect(tree.root.findAllByProps({ testID: 'round-countdown' })).toHaveLength(0)
   })
 
   it('marks the source as simulated when no tracker is connected', () => {

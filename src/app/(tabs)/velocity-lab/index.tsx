@@ -2,7 +2,6 @@ import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { ForgedButton } from '@/components/branding/ForgedButton'
-import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
 
@@ -37,7 +36,6 @@ export default function VelocityLabLanding() {
         }}
       />
 
-      <TrackerBadgesRow />
 
       <Text style={styles.paragraph}>
         Raw tracker frames, timestamps, and velocity — no workout, no scoring.

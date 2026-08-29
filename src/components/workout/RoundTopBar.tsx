@@ -15,6 +15,7 @@ import React from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { colors, stateColors } from '@/theme/colors'
+import { fonts, sizes } from '@/theme/typography'
 import type { ConnectionState } from '@ble/bleTypes'
 import type { Stance } from '@domain/workout/WorkoutTokens'
 
@@ -108,16 +109,10 @@ function GloveChip(props: {
 }
 
 export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
-  const {
-    roundIndex,
-    roundCount,
-    roundRemainingMs,
-    stance,
-    connection,
-    batteryPct,
-    degraded,
-    onReconnectPress,
-  } = props
+  // roundIndex / roundCount / roundRemainingMs stay in the props
+  // interface (the header reads the same slice) but this bar no longer
+  // renders them.
+  const { stance, connection, batteryPct, degraded, onReconnectPress } = props
 
   const gloves = (
     <>
@@ -136,15 +131,11 @@ export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
 
   return (
     <View style={styles.root} testID="round-top-bar">
+      {/* Round + countdown moved to the tabs header's 75% line (Kyle
+          2026-08-28) — this bar keeps stance, gloves and the degraded
+          notice. Props for round/remaining stay in the interface so the
+          header and this bar read the same live slice. */}
       <View style={styles.row}>
-        <Text style={styles.round} testID="round-counter">
-          {`Round ${roundIndex + 1}/${roundCount}`}
-        </Text>
-
-        <Text style={styles.countdown} testID="round-countdown">
-          {formatCountdown(roundRemainingMs)}
-        </Text>
-
         <Text style={styles.stance} testID="stance-label">
           {STANCE_LABEL[stance]}
         </Text>
@@ -179,14 +170,11 @@ export function RoundTopBar(props: RoundTopBarProps): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { gap: 6, paddingHorizontal: 12, paddingVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 16 },
-  round: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  countdown: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.textPrimary,
-    fontVariant: ['tabular-nums'],
+  stance: {
+    fontSize: sizes.body,
+    fontFamily: fonts.heading,
+    color: colors.textSecondary,
   },
-  stance: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   gloves: { flexDirection: 'row', gap: 8, marginLeft: 'auto' },
   chip: {
     flexDirection: 'row',
@@ -199,10 +187,10 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     backgroundColor: colors.surface,
   },
-  chipHand: { fontSize: 14, fontWeight: '800' },
+  chipHand: { fontSize: sizes.body, fontFamily: fonts.display },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  chipState: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
-  chipBattery: { fontSize: 12, color: colors.textMuted },
+  chipState: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
+  chipBattery: { fontSize: sizes.label, fontFamily: fonts.body, color: colors.textMuted },
   degraded: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -223,6 +211,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  degradedIconText: { fontSize: 11, fontWeight: '800', color: colors.warning, lineHeight: 13 },
-  degradedText: { fontSize: 13, color: colors.textPrimary, flex: 1 },
+  degradedIconText: {
+    fontSize: sizes.micro,
+    fontFamily: fonts.display,
+    color: colors.warning,
+    lineHeight: 13,
+  },
+  degradedText: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textPrimary,
+    flex: 1,
+  },
 })

@@ -4,7 +4,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { ActionButton } from '@/components/branding/ActionButton'
 import { PickerProvider } from '@/components/ui/PickerContext'
-import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
 import { listSampleWorkouts, type SampleWorkoutKey } from '@domain/workout/samples'
@@ -38,7 +37,6 @@ export default function PunchCraftLanding() {
             ),
           }}
         />
-        <TrackerBadgesRow />
 
         <Link href="/(tabs)/punchcraft/recipe" asChild>
           {/* The authored art IS the button — pill, icon, chevron and neon
@@ -87,7 +85,7 @@ export default function PunchCraftLanding() {
             <ActionButton
               action="startWorkout"
               fit="pill"
-              height={40}
+              height={60}
               disabled={selectedSampleKey === undefined}
               testID="quick-start"
               style={styles.quickStart}

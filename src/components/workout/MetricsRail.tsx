@@ -25,6 +25,7 @@ import React from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
+import { fonts, sizes } from '@/theme/typography'
 import { sequenceScoreLabel, type CapabilityTier } from '@domain/workout/capabilityTier'
 
 export interface VelocityView {
@@ -235,20 +236,20 @@ const styles = StyleSheet.create({
   content: { gap: 10, padding: 12, paddingBottom: 28 },
   metric: { gap: 1 },
   metricLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: sizes.micro,
+    fontFamily: fonts.label,
     letterSpacing: 0.8,
     color: colors.textMuted,
     textTransform: 'uppercase',
   },
   metricValue: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: fonts.heading,
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
   },
-  metricValueEmphasis: { fontSize: 28, fontWeight: '800', color: colors.accent },
-  metricCaption: { fontSize: 10, color: colors.textMuted },
+  metricValueEmphasis: { fontSize: sizes.hero, fontFamily: fonts.display, color: colors.accent },
+  metricCaption: { fontSize: 10, fontFamily: fonts.body, color: colors.textMuted },
   tiles: { gap: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
 })
 

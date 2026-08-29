@@ -63,7 +63,6 @@ import {
 } from '@audio/introPlan'
 import { HapticOutputExpo } from '@audio/HapticOutputExpo'
 import {
-  PLAYBACK_DETECTION_UNAVAILABLE_NOTICE,
   createPlaybackDetector,
 } from '@audio/ThirdPartyPlaybackDetector'
 import { useVoiceSettingsStore } from '@state/useVoiceSettingsStore'
@@ -509,15 +508,6 @@ export default function LiveScreen(): React.JSX.Element {
         />
       </View>
 
-      {/* Why the coach is silent, said once and quietly. Either the athlete
-          turned it off, or this build cannot tell whether their music is
-          playing — and the second is the app's limitation, not theirs. */}
-      {policy.mode === 'off' ? null : detector.available ? null : (
-        <Text style={styles.gateNotice} testID="voice-gate-notice">
-          {PLAYBACK_DETECTION_UNAVAILABLE_NOTICE}
-        </Text>
-      )}
-
       <View style={styles.body}>
         <View style={styles.stage}>
           {live.phase === 'idle' ? (
@@ -805,13 +795,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     opacity: 0.92,
   },
-  gateNotice: {
-    paddingHorizontal: 16,
-    paddingBottom: 4,
-    fontSize: 11,
-    color: colors.textMuted,
+  saveNote: {
+    marginTop: 6,
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textSecondary,
   },
-  saveNote: { marginTop: 6, fontSize: 13, color: colors.textSecondary },
   pausedText: {
     fontSize: sizes.display,
     fontFamily: fonts.display,
