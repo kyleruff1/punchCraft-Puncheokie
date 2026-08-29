@@ -242,3 +242,26 @@ describe('PunchAvatarCard — the flip repeats', () => {
     expect(typeof style.height).toBe('number')
   })
 })
+
+describe('PunchAvatarCard — only punches steer it', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('keeps demonstrating when the lit token is a coach or defense command', () => {
+    // The runner marks EVERY non-punch token 'active' for the whole cue, so
+    // an index pointing at one must not park the figure in guard.
+    const tokens: WorkoutToken[] = [
+      { kind: 'coach', command: 'hands-up', beatOffset: 0 },
+      punch(1),
+      punch(4),
+    ]
+    const tree = render(<PunchAvatarCard cue={cue(tokens)} activeTokenIndex={0} />)
+    const source = (): unknown =>
+      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
+    expect(source()).toBe(findPunchAvatar(1, false)?.step2)
+    act(() => {
+      jest.advanceTimersByTime(1200)
+    })
+    expect(source()).toBe(findPunchAvatar(4, false)?.step2)
+  })
+})

@@ -97,12 +97,15 @@ export function PunchAvatarCard(props: {
     setDemoPos(0)
   }, [cueId])
   useEffect(() => {
-    if (activeTokenIndex < 0) return
     const pos = punchIndexes.indexOf(activeTokenIndex)
     if (pos >= 0) setDemoPos(pos)
   }, [activeTokenIndex, punchIndexes])
 
-  const tokenIndex = activeTokenIndex >= 0 ? activeTokenIndex : (punchIndexes[demoPos] ?? -1)
+  // Only a PUNCH the engine has lit can steer the card. Defense, footwork
+  // and coach tokens are marked active for the whole cue, so trusting any
+  // active index parked the figure in guard for the entire block.
+  const engineLit = activeTokenIndex >= 0 && punchIndexes.includes(activeTokenIndex)
+  const tokenIndex = engineLit ? activeTokenIndex : (punchIndexes[demoPos] ?? -1)
   const requested = requestedFor(cue, tokenIndex)
   // The identity the effect actually keys off; the object itself is rebuilt
   // every render, so it travels by ref instead of through the deps array.
@@ -153,11 +156,11 @@ export function PunchAvatarCard(props: {
   // window so the demonstration keeps the combination's rhythm.
   const stepCount = punchIndexes.length
   useEffect(() => {
-    if (activeTokenIndex >= 0 || stepCount === 0 || requestedWindowMs <= 0) return
+    if (engineLit || stepCount === 0 || requestedWindowMs <= 0) return
     const dwell = Math.max(requestedWindowMs, minHoldMs(requestedWindowMs))
     const timer = setTimeout(() => setDemoPos((p) => (p + 1) % stepCount), dwell)
     return () => clearTimeout(timer)
-  }, [activeTokenIndex, stepCount, requestedWindowMs, demoPos])
+  }, [engineLit, stepCount, requestedWindowMs, demoPos])
 
   // Flip: wind-up, strike, hold the strike, back to guard — then do it
   // again on the next beat. It has to REPEAT: a punch can hold the card

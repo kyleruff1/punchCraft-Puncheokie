@@ -232,7 +232,9 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
                 subtree and cannot reach a view up here. */}
             <PunchAvatarCard
               cue={current.cue}
-              activeTokenIndex={current.tokenStates.indexOf('active')}
+              activeTokenIndex={current.tokenStates.findIndex(
+                (state, i) => state === 'active' && current.cue.tokens[i]?.kind === 'punch',
+              )}
               reducedMotion={reducedMotion}
             />
             <CueRow
