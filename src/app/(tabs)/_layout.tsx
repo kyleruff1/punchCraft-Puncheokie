@@ -124,13 +124,14 @@ function HeaderTrackerCluster(): React.JSX.Element {
           over the button that serves it — L over connect, R over fix —
           so the cluster reads as two tight columns, never a wrapping
           row. */}
+      {/* Buttons on the TOP row, their glove chips underneath (Kyle). */}
       <View style={styles.headerTrackerColumn}>
-        <GloveChip hand="L" state={left?.state ?? 'dormant'} quiet />
         <ConnectTrackersButton />
+        <GloveChip hand="L" state={left?.state ?? 'dormant'} quiet />
       </View>
       <View style={styles.headerTrackerColumn}>
-        <GloveChip hand="R" state={right?.state ?? 'dormant'} quiet />
         <FixTrackerButton />
+        <GloveChip hand="R" state={right?.state ?? 'dormant'} quiet />
       </View>
     </View>
   )
