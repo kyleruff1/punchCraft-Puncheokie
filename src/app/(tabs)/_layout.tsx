@@ -153,7 +153,13 @@ function HeaderLedZone(): React.JSX.Element {
   return (
     <View style={styles.headerLedZone}>
       <TrackerLed hand="L" />
-      <TrackerLed hand="R" />
+      {/* The halo boxes carry invisible padding around each lamp, so the
+          red lamp tucks under it to halve the VISIBLE lamp-to-lamp gap
+          (36 → 18). Lit halos overlap a touch, which reads as adjacent
+          glows, not a collision. */}
+      <View style={styles.ledTuck}>
+        <TrackerLed hand="R" />
+      </View>
     </View>
   )
 }
@@ -302,8 +308,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
   },
+  ledTuck: { marginLeft: -8 },
   ledHalo: {
     width: 56,
     height: 56,
