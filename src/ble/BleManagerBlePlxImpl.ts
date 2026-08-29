@@ -295,7 +295,15 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       // no GATT write (rule 4). Best-effort, same posture as MTU.
       try {
         await manager.requestConnectionPriorityForDevice(deviceId, ConnectionPriority.High)
-      } catch { /* ignore priority negotiation failures */ }
+        logger.info('ble.connect.priority.ok', 'high connection priority requested', {
+          deviceId: deviceSensitive(deviceId),
+        })
+      } catch (err) {
+        logger.warn('ble.connect.priority.failed', 'high connection priority refused', {
+          deviceId: deviceSensitive(deviceId),
+          errorMessage: safe(err instanceof Error ? err.message : String(err)),
+        })
+      }
       if (options?.requestMtu) {
         try { await manager.requestMTUForDevice(deviceId, options.requestMtu) } catch { /* ignore MTU negotiation failures */ }
       }

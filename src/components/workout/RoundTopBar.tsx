@@ -98,8 +98,11 @@ export function TrackerLamp(props: {
   const lit = state === 'ready' || state === 'streaming'
   const lamp =
     hand === 'L'
-      ? { lit: colors.ledLeftLit, dim: colors.ledLeftDim, halo: colors.ledLeftHalo }
-      : { lit: colors.ledRightLit, dim: colors.ledRightDim, halo: colors.ledRightHalo }
+      ? { lit: colors.ledLeftLit, dim: colors.ledLeftDim }
+      : { lit: colors.ledRightLit, dim: colors.ledRightDim }
+  // The box is still halo-SIZED — the header's tuck math leans on this
+  // invisible padding — but it never paints: the bright inner fill is
+  // the whole indicator (Kyle 2026-08-29, "no outer ring casting light").
   const haloSize = size * 2 - 4
   return (
     <View
@@ -107,7 +110,6 @@ export function TrackerLamp(props: {
       style={[
         styles.lampHalo,
         { width: haloSize, height: haloSize, borderRadius: haloSize / 2 },
-        lit && { backgroundColor: lamp.halo },
       ]}
       testID={`tracker-lamp-${hand}`}
     >
