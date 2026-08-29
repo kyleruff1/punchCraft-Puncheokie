@@ -55,8 +55,32 @@ const FIGHTCAMP_V1_ID = 'fightcamp-v1'
 const HEARTBEAT_INTERVAL_MS = 20_000
 const MODE_NORMAL_BASE64 = 'AQ=='
 
+/**
+ * Standard BLE Battery Service, which the trackers expose — Hykso's
+ * session reads and subscribes it for its battery display
+ * (`j1/g.java`: 0x180F / 0x2A19, one byte = percent).
+ */
+const BATTERY_SERVICE_UUID = '0000180f-0000-1000-8000-00805f9b34fb'
+const BATTERY_LEVEL_UUID = '00002a19-0000-1000-8000-00805f9b34fb'
+
+export type KeepaliveBatteryListener = (hand: 'left' | 'right', batteryPct: number) => void
+
 let source: TrackerPunchEventSource | null = null
 let heartbeat: ReturnType<typeof setInterval> | null = null
+const batteryListeners = new Set<KeepaliveBatteryListener>()
+const lastBatteryPct = new Map<string, number>()
+
+/**
+ * Hear battery levels as the heartbeat reads them. App-side wiring
+ * (the tracker store) subscribes here rather than this module writing
+ * state directly — protocol stays below the app tier.
+ */
+export function onKeepaliveBattery(listener: KeepaliveBatteryListener): () => void {
+  batteryListeners.add(listener)
+  return () => {
+    batteryListeners.delete(listener)
+  }
+}
 
 async function heartbeatTick(): Promise<void> {
   const facade = getBleManager()
@@ -75,6 +99,32 @@ async function heartbeatTick(): Promise<void> {
           deviceId: deviceSensitive(tracker.address),
           errorMessage: safe(result.errorMessage ?? 'unknown'),
         })
+      }
+      // Battery rides the same beat: one 0x2A19 read per glove. Logged
+      // only on change — the level moves far slower than the beat.
+      const battery = await facade.readCharacteristic(
+        tracker.address,
+        BATTERY_SERVICE_UUID,
+        BATTERY_LEVEL_UUID,
+      )
+      if (battery.success && battery.valueHex) {
+        const pct = Number.parseInt(battery.valueHex.slice(0, 2), 16)
+        if (Number.isFinite(pct) && pct >= 0 && pct <= 100) {
+          if (lastBatteryPct.get(tracker.address) !== pct) {
+            lastBatteryPct.set(tracker.address, pct)
+            logger.info('keepalive.battery', 'glove battery level', {
+              hand: safe(tracker.hand),
+              pct: safe(pct),
+            })
+          }
+          for (const listener of batteryListeners) {
+            try {
+              listener(tracker.hand, pct)
+            } catch {
+              // Listener errors must not break the beat.
+            }
+          }
+        }
       }
     } catch (err) {
       logger.warn('keepalive.heartbeat.error', 'heartbeat tick threw', {
@@ -132,6 +182,8 @@ export function __resetTrackerKeepaliveForTests(): void {
     clearInterval(heartbeat)
     heartbeat = null
   }
+  batteryListeners.clear()
+  lastBatteryPct.clear()
   source?.stop()
   source = null
 }

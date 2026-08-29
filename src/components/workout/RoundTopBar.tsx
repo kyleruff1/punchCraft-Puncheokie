@@ -93,8 +93,11 @@ export function TrackerLamp(props: {
   state: LiveConnectionState
   /** Lamp diameter; the glow halo derives from it (size × 2 − 4). */
   size?: number
+  /** When present, the percent renders in block figures under the lamp
+   * (Kyle 2026-08-29) — fed by the keepalive's battery heartbeat. */
+  batteryPct?: number
 }): React.JSX.Element {
-  const { hand, state, size = 30 } = props
+  const { hand, state, size = 30, batteryPct } = props
   const lit = state === 'ready' || state === 'streaming'
   const lamp =
     hand === 'L'
@@ -106,10 +109,12 @@ export function TrackerLamp(props: {
   const haloSize = size * 2 - 4
   return (
     <View
-      accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} tracker ${lit ? 'connected' : 'not connected'}`}
+      accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} tracker ${
+        lit ? 'connected' : 'not connected'
+      }${batteryPct === undefined ? '' : `, battery ${Math.round(batteryPct)} percent`}`}
       style={[
         styles.lampHalo,
-        { width: haloSize, height: haloSize, borderRadius: haloSize / 2 },
+        { width: haloSize, borderRadius: haloSize / 2 },
       ]}
       testID={`tracker-lamp-${hand}`}
     >
@@ -124,6 +129,11 @@ export function TrackerLamp(props: {
           !lit && styles.lampUnlit,
         ]}
       />
+      {batteryPct === undefined ? null : (
+        <Text style={styles.lampBattery} testID={`tracker-battery-${hand}`}>
+          {`${Math.round(batteryPct)}%`}
+        </Text>
+      )}
     </View>
   )
 }
@@ -231,6 +241,15 @@ const styles = StyleSheet.create({
   lampUnlit: {
     borderWidth: 1,
     borderColor: colors.borderStrong,
+  },
+  // Block figures under the lamp — the display face, tabular so 9% and
+  // 99% hold the same width.
+  lampBattery: {
+    marginTop: 2,
+    fontSize: sizes.label,
+    fontFamily: fonts.display,
+    color: colors.textSecondary,
+    fontVariant: ['tabular-nums'],
   },
   chip: {
     flexDirection: 'row',

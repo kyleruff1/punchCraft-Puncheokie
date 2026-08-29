@@ -18,7 +18,8 @@ import '@/ble'
 import { useEffect } from 'react'
 
 import { useAutoConnectOnLaunch } from '@ble/useAutoConnectOnLaunch'
-import { startTrackerKeepalive } from '@protocol/trackerKeepalive'
+import { onKeepaliveBattery, startTrackerKeepalive } from '@protocol/trackerKeepalive'
+import { noteSlotBattery } from '@state/useTrackerStore'
 import { useVoiceSettingsOnLaunch } from '@state/loadVoiceSettings'
 import { useBackdropSettingsOnLaunch } from '@state/loadBackdropSettings'
 import { colors } from '@/theme/colors'
@@ -48,6 +49,9 @@ export default function RootLayout() {
   // FightCamp tracker hangs up on a silent central (2026-08-29).
   useEffect(() => {
     startTrackerKeepalive()
+    // Battery levels flow from the keepalive's heartbeat into the slot
+    // store, where the header lamps read them.
+    return onKeepaliveBattery(noteSlotBattery)
   }, [])
   // Bind the known trackers once per launch (blue -> left, red -> right).
   // Non-blocking and non-throwing; Velocity Lab offers a manual retry.

@@ -115,7 +115,13 @@ function HeaderRoundClock(): React.JSX.Element {
 function TrackerLed(props: { hand: 'L' | 'R' }): React.JSX.Element {
   const { hand } = props
   const slot = useTrackerStore((s) => (hand === 'L' ? s.slots.left : s.slots.right))
-  return <TrackerLamp hand={hand} state={slot?.state ?? 'dormant'} />
+  return (
+    <TrackerLamp
+      hand={hand}
+      state={slot?.state ?? 'dormant'}
+      {...(slot?.batteryPct === undefined ? {} : { batteryPct: slot.batteryPct })}
+    />
+  )
 }
 
 /**

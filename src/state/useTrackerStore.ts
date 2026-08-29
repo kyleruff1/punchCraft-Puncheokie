@@ -41,6 +41,8 @@ export interface SlotState {
    * value alone, which stranded the athlete with no way back onto the bag.
    */
   lastEventAtMs?: number
+  /** Last battery percent read by the keepalive's heartbeat (0x2A19). */
+  batteryPct?: number
 }
 
 interface Slots {
@@ -55,6 +57,8 @@ export interface TrackerStoreState {
   setState: (hand: SlotHand, state: ConnectionState, errorMessage?: string) => void
   /** Stamp the slot with the time a frame arrived — evidence of liveness. */
   noteEvent: (hand: SlotHand, atMonotonicMs: number) => void
+  /** Stamp the slot with the latest battery percent (0x2A19 read). */
+  noteBattery: (hand: SlotHand, batteryPct: number) => void
 }
 
 export const useTrackerStore = create<TrackerStoreState>((set) => ({
@@ -91,6 +95,15 @@ export const useTrackerStore = create<TrackerStoreState>((set) => ({
       if (!existing) return prev
       return {
         slots: { ...prev.slots, [hand]: { ...existing, lastEventAtMs: atMonotonicMs } },
+      }
+    })
+  },
+  noteBattery: (hand, batteryPct) => {
+    set((prev) => {
+      const existing = prev.slots[hand]
+      if (!existing) return prev
+      return {
+        slots: { ...prev.slots, [hand]: { ...existing, batteryPct } },
       }
     })
   },
@@ -132,6 +145,11 @@ export function setSlotState(hand: SlotHand, state: ConnectionState, errorMessag
 /** Non-React entry point for whoever holds the punch subscription. */
 export function noteSlotEvent(hand: SlotHand, atMonotonicMs: number): void {
   useTrackerStore.getState().noteEvent(hand, atMonotonicMs)
+}
+
+/** Non-React entry point for the keepalive's battery heartbeat. */
+export function noteSlotBattery(hand: SlotHand, batteryPct: number): void {
+  useTrackerStore.getState().noteBattery(hand, batteryPct)
 }
 
 /**
