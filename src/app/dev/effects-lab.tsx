@@ -18,6 +18,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { BackdropRenderer } from '@components/workout/backdrop/BackdropRenderer'
+import type { MembranePresetName } from '@components/workout/backdrop/HydroPulseScene'
 import { createBackdropBus } from '@components/workout/backdrop/backdropBus'
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
 import type { PunchHand } from '@domain/punch/PunchEvent'
@@ -28,6 +29,12 @@ const CALMS = [
   { label: 'Rest', value: 0.35 },
   { label: 'Idle', value: 0.15 },
 ]
+const PRESETS: MembranePresetName[] = ['controlled', 'reactive', 'gelatin']
+const GRAINS = [
+  { label: 'grain off', opacity: 0 },
+  { label: 'grain subtle', opacity: 0.18 },
+  { label: 'grain strong', opacity: 0.4 },
+]
 
 export default function EffectsLabScreen(): React.JSX.Element {
   const bus = useMemo(() => {
@@ -37,6 +44,8 @@ export default function EffectsLabScreen(): React.JSX.Element {
   }, [])
   const [quality, setQuality] = useState<BackdropQuality>('standard')
   const [calm, setCalm] = useState(1)
+  const [preset, setPreset] = useState<MembranePresetName>('reactive')
+  const [grainOpacity, setGrainOpacity] = useState(0.18)
 
   const hit = (hand: PunchHand, velocityRaw: number): void => {
     bus.impulse({ hand, velocityRaw })
@@ -50,7 +59,13 @@ export default function EffectsLabScreen(): React.JSX.Element {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ title: 'Effects lab' }} />
-      <BackdropRenderer bus={bus} quality={quality} calm={calm} />
+      <BackdropRenderer
+        bus={bus}
+        quality={quality}
+        calm={calm}
+        preset={preset}
+        tuning={{ grainOpacity }}
+      />
 
       <View style={styles.controls} pointerEvents="box-none">
         <View style={styles.row}>
@@ -70,6 +85,26 @@ export default function EffectsLabScreen(): React.JSX.Element {
               style={[styles.chip, calm === c.value && styles.chipActive]}
             >
               <Text style={styles.chipText}>{c.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.row}>
+          {PRESETS.map((p) => (
+            <Pressable
+              key={p}
+              onPress={() => setPreset(p)}
+              style={[styles.chip, preset === p && styles.chipActive]}
+            >
+              <Text style={styles.chipText}>{p}</Text>
+            </Pressable>
+          ))}
+          {GRAINS.map((g) => (
+            <Pressable
+              key={g.label}
+              onPress={() => setGrainOpacity(g.opacity)}
+              style={[styles.chip, grainOpacity === g.opacity && styles.chipActive]}
+            >
+              <Text style={styles.chipText}>{g.label}</Text>
             </Pressable>
           ))}
         </View>

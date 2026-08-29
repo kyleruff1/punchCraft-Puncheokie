@@ -12,8 +12,8 @@ import React from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
-import type { SedimentTuning } from '@domain/effects/sedimentShaders'
-import { HydroPulseScene } from './HydroPulseScene'
+import type { MembraneTuning } from '@domain/effects/membraneShader'
+import { HydroPulseScene, type MembranePresetName } from './HydroPulseScene'
 import { StaticGlow } from './StaticGlow'
 import type { BackdropBus } from './backdropBus'
 
@@ -39,14 +39,17 @@ export function BackdropRenderer({
   calm,
   reducedMotion = false,
   tuning,
+  preset,
 }: {
   bus: BackdropBus
   quality: BackdropQuality
   /** Phase-driven damping target, forwarded to the scene. */
   calm: number
   reducedMotion?: boolean
-  /** Lab knob: sediment tuning overrides, forwarded to the scene. */
-  tuning?: Partial<SedimentTuning>
+  /** Lab knob: membrane tuning overrides, forwarded to the scene. */
+  tuning?: Partial<MembraneTuning>
+  /** Lab knob: behavior preset, forwarded to the scene. */
+  preset?: MembranePresetName
 }): React.JSX.Element | null {
   const effective = resolveBackdropQuality(quality, reducedMotion)
   if (effective === 'off') return null
@@ -55,7 +58,12 @@ export function BackdropRenderer({
       {effective === 'reduced' ? (
         <StaticGlow />
       ) : (
-        <HydroPulseScene bus={bus} calm={calm} {...(tuning ? { tuning } : {})} />
+        <HydroPulseScene
+          bus={bus}
+          calm={calm}
+          {...(tuning ? { tuning } : {})}
+          {...(preset ? { preset } : {})}
+        />
       )}
     </View>
   )

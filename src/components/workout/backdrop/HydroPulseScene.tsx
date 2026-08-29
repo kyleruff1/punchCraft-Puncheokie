@@ -1,19 +1,18 @@
 /**
- * The Standard-tier scene: Kinetic Sediment Glass.
+ * The Standard-tier scene: the reversible viscoelastic membrane.
  *
- * A persistent elastoplastic sediment pane over the backdrop art. The
- * engine (sedimentEngine.ts) runs the ping-pong simulation on the UI
- * thread; this component wires the bus into it and hosts the display
- * pass — one full-screen RuntimeEffect that refracts the backdrop
- * through the settled+elastic displacement, draws deposits and
- * displacement-warped grain (granules genuinely hold position when
- * settled), tints crests by hand pressure, and masks the KPI zones.
+ * An elastic sheet over two immutable textures (the backdrop art and
+ * the particulate grain). Punches spawn temporary impulses; the single
+ * display shader evaluates them analytically — traveling waves with
+ * real arrival delay, an underdamped whole-sheet gel, compression
+ * banding in the grain — and every contribution decays to exactly
+ * zero, so the composition always restores its original arrangement.
  *
- * React renders this once per mount and on layout/calm changes;
+ * React renders this once per mount and on layout/calm/preset changes;
  * punches and frames never reach it. The RN <Image> in live.tsx keeps
- * covering the pane while the backdrop image or shaders are not ready.
+ * covering the pane while the backdrop image or shader is not ready.
  *
- * (The name and testID predate the sediment model; they are pinned by
+ * (The name and testID predate the membrane model; they are pinned by
  * the renderer and the tier tests, and still describe a punch-driven
  * pane.)
  */
@@ -31,45 +30,55 @@ import {
 } from '@shopify/react-native-skia'
 import { useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 
-import {
-  CHURN_TAU_S,
-  PRESSURE_LR_TAU_S,
-  decayedEnv,
-} from '@domain/effects/sedimentMath'
+import { CHURN_TAU_S, MEMBRANE_PRESETS, decayedEnv } from '@domain/effects/membraneMath'
 import {
   DEFAULT_TUNING,
-  DISPLAY_SKSL,
-  buildDisplayUniforms,
-  type SedimentTuning,
-} from '@domain/effects/sedimentShaders'
-import { compileSedimentEffect, useSedimentEngine } from './sedimentEngine'
+  MEMBRANE_SKSL,
+  buildMembraneUniforms,
+  type MembraneTuning,
+} from '@domain/effects/membraneShader'
+import { compileMembraneEffect, useMembraneEngine, type MembraneFeel } from './membraneEngine'
 import type { BackdropBus } from './backdropBus'
 
-/* eslint-disable-next-line @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-require-imports */
 const BACKDROP = require('../../../../assets/branding/backdrop-landscape.png') as number
+const GRAIN = require('../../../../assets/effects/grain.png') as number
+/* eslint-enable @typescript-eslint/no-require-imports */
 
-let paneSeedCounter = 7
+export type MembranePresetName = keyof typeof MEMBRANE_PRESETS
 
 export function HydroPulseScene({
   bus,
   calm,
   tuning,
+  preset = 'reactive',
 }: {
   bus: BackdropBus
   /** Phase-driven damping target: work 1, rest ~0.35, idle ~0.15. */
   calm: number
-  tuning?: Partial<SedimentTuning>
+  tuning?: Partial<MembraneTuning>
+  preset?: MembranePresetName
 }): React.JSX.Element {
   const image = useImage(BACKDROP)
-  const displayEffect = useMemo(() => compileSedimentEffect(DISPLAY_SKSL, 'display'), [])
-  const sessionSeed = useMemo(() => (paneSeedCounter += 1), [])
-  const engine = useSedimentEngine(sessionSeed)
+  const grain = useImage(GRAIN)
+  const displayEffect = useMemo(() => compileMembraneEffect(MEMBRANE_SKSL, 'membrane'), [])
+  const engine = useMembraneEngine()
 
   const [size, setSize] = useState({ w: 0, h: 0 })
   const calmSV = useSharedValue(calm)
-  const resolvedTuning = useMemo<SedimentTuning>(
-    () => ({ ...DEFAULT_TUNING, ...tuning }),
-    [tuning],
+  const presetDef = MEMBRANE_PRESETS[preset]
+  const resolvedTuning = useMemo<MembraneTuning>(
+    () => ({
+      ...DEFAULT_TUNING,
+      refraction: presetDef.refraction,
+      gelGain: presetDef.gelMul,
+      ...tuning,
+    }),
+    [presetDef, tuning],
+  )
+  const feel = useMemo<MembraneFeel>(
+    () => ({ surgeMul: presetDef.surgeMul, lifeMul: presetDef.lifeMul }),
+    [presetDef],
   )
 
   useEffect(() => {
@@ -79,30 +88,21 @@ export function HydroPulseScene({
 
   useEffect(() => {
     return bus.subscribe((impulse) => {
-      engine.enqueue(impulse.handCode, impulse.v01, impulse.seed)
+      engine.enqueue(impulse.handCode, impulse.v01, impulse.seed, feel)
     })
-  }, [bus, engine])
+  }, [bus, engine, feel])
 
-  const { clockSec, tray, envelopes } = engine
+  const { clockSec, ring, env } = engine
   const displayUniforms = useDerivedValue(() => {
-    const env = envelopes.value
     const nowSec = clockSec.value
-    // The pane calms with the phase AND with settling: fully quiet
-    // sediment shows the art nearly undisturbed.
-    const churn = decayedEnv(env.churn, env.churnStamp, nowSec, CHURN_TAU_S)
-    const calmNow = calmSV.value * (0.55 + 0.45 * Math.min(1, churn * 2 + 0.6))
-    return buildDisplayUniforms(
+    const e = env.value
+    return buildMembraneUniforms(
       nowSec,
       size.w,
       size.h,
-      calmNow,
-      tray.value,
-      {
-        leftV: decayedEnv(env.left, env.leftStamp, nowSec, PRESSURE_LR_TAU_S),
-        leftStamp: nowSec,
-        rightV: decayedEnv(env.right, env.rightStamp, nowSec, PRESSURE_LR_TAU_S),
-        rightStamp: nowSec,
-      },
+      calmSV.value,
+      decayedEnv(e.churn, e.churnStamp, nowSec, CHURN_TAU_S),
+      ring.value,
       resolvedTuning,
     )
   }, [size.w, size.h, resolvedTuning])
@@ -112,7 +112,7 @@ export function HydroPulseScene({
     setSize({ w: Math.max(0, width), h: Math.max(0, height) })
   }
 
-  const ready = image !== null && displayEffect !== null && size.w > 0 && size.h > 0
+  const ready = image !== null && grain !== null && displayEffect !== null && size.w > 0 && size.h > 0
 
   return (
     // Layout measured on a plain View: Fabric's Skia Canvas does not
@@ -136,17 +136,10 @@ export function HydroPulseScene({
                 ty="clamp"
               />
               <ImageShader
-                image={engine.memoryImage}
+                image={grain}
                 fit="none"
-                tx="clamp"
-                ty="clamp"
-                sampling={{ filter: FilterMode.Linear, mipmap: MipmapMode.None }}
-              />
-              <ImageShader
-                image={engine.motionImage}
-                fit="none"
-                tx="clamp"
-                ty="clamp"
+                tx="repeat"
+                ty="repeat"
                 sampling={{ filter: FilterMode.Linear, mipmap: MipmapMode.None }}
               />
             </Shader>
