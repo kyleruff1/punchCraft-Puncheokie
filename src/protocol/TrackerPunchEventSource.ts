@@ -180,7 +180,7 @@ export class TrackerPunchEventSource implements PunchEventSource {
 
     for (const runtime of this.runtimes) {
       this.watchConnection(runtime)
-      this.arm(runtime)
+      this.armIfConnected(runtime)
     }
 
     logger.info('puncheokie.tracker-source.start', 'tracker punch source armed', {
@@ -221,6 +221,29 @@ export class TrackerPunchEventSource implements PunchEventSource {
   }
 
   // -------------------------------------------------------------------------
+
+  /**
+   * Arm only when the radio actually holds the link. Arming a
+   * disconnected device runs the init plan against nothing: the writes
+   * fail, and a runtime that believes it is armed then SKIPS the re-arm
+   * when the device really connects — a stream that never speaks. On a
+   * disconnected slot this leaves arming to `watchConnection`, which
+   * fires on the ready transition. Used by the app-wide keepalive,
+   * whose slots may be asleep at start; the live screen's slots are
+   * live by construction, so it arms exactly as before (one microtask
+   * later).
+   */
+  private armIfConnected(runtime: SlotRuntime): void {
+    void this.facade
+      .isConnected(runtime.deviceId)
+      .then((connected) => {
+        if (!this.started || !connected || runtime.armed) return
+        this.arm(runtime)
+      })
+      .catch(() => {
+        // The transition watch arms it when the device comes live.
+      })
+  }
 
   private arm(runtime: SlotRuntime): void {
     if (!this.started || runtime.armed) return

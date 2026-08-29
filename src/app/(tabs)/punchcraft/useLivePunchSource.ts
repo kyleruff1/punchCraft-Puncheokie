@@ -35,6 +35,7 @@ import { getProtocolRegistry } from '@protocol/ProtocolRegistry'
 // registry (§16). Must run before the registry is queried below.
 import '@protocol/fightcamp-v1'
 import { TrackerPunchEventSource } from '@protocol/TrackerPunchEventSource'
+import { getTrackerKeepaliveSource } from '@protocol/trackerKeepalive'
 import { SimulatedPunchSource } from '@simulation/SimulatedPunchSource'
 import { noteSlotEvent, useLeftSlot, useRightSlot, type SlotState } from '@state/useTrackerStore'
 import { setLive } from '@state/useWorkoutStore'
@@ -102,12 +103,45 @@ function simulated(clock: MonotonicClock): ChosenSource {
  * unregistered adapter or an unavailable facade is a wiring problem, and
  * crashing the live screen would hide it behind a blank screen.
  */
+/**
+ * A non-owning view of the app-wide keepalive source. The runner calls
+ * `start()`/`stop()` around a workout, but the keepalive's streams
+ * belong to the whole app: a workout ending must not silence the
+ * central, or the trackers hang up on the way to the summary screen
+ * (2026-08-29). Subscriptions still detach normally — only the stream
+ * lifecycle is withheld.
+ */
+function attachedToKeepalive(shared: TrackerPunchEventSource): PunchEventSource {
+  return {
+    id: shared.id,
+    capability: shared.capability,
+    subscribe: (listener) => shared.subscribe(listener),
+    start: () => {
+      shared.start()
+    },
+    stop: () => {
+      // Deliberate no-op — the keepalive owns the streams.
+    },
+  }
+}
+
 function chooseSource(
   clock: MonotonicClock,
   left: SlotState | null,
   right: SlotState | null,
 ): ChosenSource {
   if (!(left && right && isLive(left) && isLive(right))) return simulated(clock)
+
+  // The one stream per device rule: when the app-wide keepalive is
+  // running (it is, from the root layout), the live screen ATTACHES to
+  // its streams. Building a second TrackerPunchEventSource here would
+  // put two monitors on each punch characteristic — double-delivered
+  // frames into the persistence sink and a mid-session re-run of the
+  // init plan.
+  const keepalive = getTrackerKeepaliveSource()
+  if (keepalive) {
+    return { kind: 'tracker', source: attachedToKeepalive(keepalive), sim: null }
+  }
 
   const adapter = getProtocolRegistry()
     .list()

@@ -126,6 +126,10 @@ function createHarness(opts: { manual?: boolean } = {}): Harness {
   }
 
   const facade = {
+    // The source arms a slot at start() only when the radio holds the
+    // link; the harness's devices are "connected" unless a test says
+    // otherwise.
+    isConnected: () => Promise.resolve(true),
     onConnectionChange: (deviceId: string, cb: (status: ConnectionStatus) => void) => {
       const set = watchers.get(deviceId) ?? new Set()
       set.add(cb)
@@ -231,9 +235,12 @@ describe('capability honesty (D12, doc §3)', () => {
 })
 
 describe('start()', () => {
-  it('opens one stream per assigned slot, with the hand from the slot', () => {
+  // Arming waits one microtask for the connectivity probe, so every
+  // assertion after start() flushes first.
+  it('opens one stream per assigned slot, with the hand from the slot', async () => {
     const h = createHarness()
     bothSlots(h).start()
+    await flush()
 
     expect(h.streams).toHaveLength(2)
     expect(h.streams.map((s) => [s.options.hand, s.options.deviceId])).toEqual([
@@ -242,7 +249,7 @@ describe('start()', () => {
     ])
   })
 
-  it('streams only the slots that are assigned', () => {
+  it('streams only the slots that are assigned', async () => {
     const h = createHarness()
     new TrackerPunchEventSource({
       facade: h.facade,
@@ -250,17 +257,38 @@ describe('start()', () => {
       slots: { right: { deviceId: RIGHT_DEVICE } },
       startStream: h.startStream,
     }).start()
+    await flush()
 
     expect(h.streams).toHaveLength(1)
     expect(h.streams[0]?.options.hand).toBe('right')
   })
 
-  it('is idempotent', () => {
+  it('is idempotent', async () => {
     const h = createHarness()
     const source = bothSlots(h)
     source.start()
     source.start()
     source.start()
+    await flush()
+    expect(h.streams).toHaveLength(2)
+  })
+
+  it('does not arm a slot whose device is not connected — the transition watch arms it later', async () => {
+    const h = createHarness()
+    // The right glove is asleep at start(): its init plan must not run
+    // against nothing, or the armed flag blocks the real arm later.
+    ;(h.facade as unknown as { isConnected: (id: string) => Promise<boolean> }).isConnected = (
+      id: string,
+    ) => Promise.resolve(id !== RIGHT_DEVICE)
+    bothSlots(h).start()
+    await flush()
+
+    expect(h.streams).toHaveLength(1)
+    expect(h.streams[0]?.options.hand).toBe('left')
+
+    // The glove wakes and connects: the ready transition arms it.
+    h.setConnection(RIGHT_DEVICE, 'ready')
+    await flush()
     expect(h.streams).toHaveLength(2)
   })
 })
