@@ -199,10 +199,9 @@ function headerWordmark(app: WordmarkApp) {
     // 25% placement — an explicit window-width bar restores real
     // percentage geometry.
     const { width, height } = useWindowDimensions()
-    // From the old 25% centre (Kyle 2026-08-29): landscape pulls the mark
-    // 15 points toward the left boundary, portrait pushes it 15 points
-    // the other way.
-    const brandCentre = width > height ? '10%' : '40%'
+    // From the old shared 25% centre (Kyle 2026-08-29): landscape pulls
+    // the mark to 10%, portrait sits at 30% ("40 was a little too far").
+    const brandCentre = width > height ? '10%' : '30%'
     return (
       <View style={[styles.headerBar, { width }]}>
         <HeaderLedZone />
