@@ -23,9 +23,8 @@ import { Image, StyleSheet, View } from 'react-native'
 import { findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import {
-  avatarResetAtMs,
+  avatarFrameAt,
   avatarWindowMs,
-  flipFrameMs,
   minHoldMs,
   punchAvatarKey,
   type AvatarStep,
@@ -50,6 +49,12 @@ const CARD_ASPECT = 1024 / 1536
  * of those layout changes.
  */
 const CARD_HEIGHT = 400
+/**
+ * How often the flip clock is sampled. Well under the shortest frame
+ * (MIN_FRAME_MS 90) so a strike can never be skipped, and cheap: it
+ * re-renders one small component, not the stage.
+ */
+const FLIP_TICK_MS = 30
 
 interface Shown {
   key: string
@@ -167,29 +172,22 @@ export function PunchAvatarCard(props: {
     return () => clearTimeout(timer)
   }, [engineLit, stepCount, requestedWindowMs, demoPos])
 
-  // Flip: wind-up, strike, hold the strike, back to guard — then do it
-  // again on the next beat. It has to REPEAT: a punch can hold the card
-  // for many beats (a repeated combo lights the same token every rep),
-  // and a one-shot flip left the figure frozen after its first cycle.
+  // Flip: wind-up, strike, hold the strike, back to guard, repeat on the
+  // beat. LEVEL-TRIGGERED on purpose — the frame is recomputed from elapsed
+  // time on every tick rather than scheduled as a chain of transitions. A
+  // scheduled chain can be cancelled by the screen's re-render churn and
+  // wedge the figure on one frame (it did); this cannot, because the worst
+  // a lost tick costs is one frame of lag before the clock corrects it.
   useEffect(() => {
     if (!shown || reducedMotion) return
-    const frame = flipFrameMs(shown.windowMs)
-    const reset = avatarResetAtMs(shown.windowMs)
     const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs))
-    let cancelled = false
-    const timers: ReturnType<typeof setTimeout>[] = []
-    const cycle = (): void => {
-      if (cancelled) return
-      setStep('step1')
-      timers.push(setTimeout(() => setStep('step2'), frame))
-      timers.push(setTimeout(() => setStep('step1'), reset))
-      timers.push(setTimeout(cycle, beat))
+    const tick = (): void => {
+      const elapsed = (Date.now() - shown.startedAt) % beat
+      setStep(avatarFrameAt(elapsed, shown.windowMs))
     }
-    cycle()
-    return () => {
-      cancelled = true
-      timers.forEach(clearTimeout)
-    }
+    tick()
+    const id = setInterval(tick, FLIP_TICK_MS)
+    return () => clearInterval(id)
   }, [shown, reducedMotion])
 
   if (!shown) return null
