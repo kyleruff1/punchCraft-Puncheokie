@@ -265,3 +265,34 @@ describe('PunchAvatarCard — only punches steer it', () => {
     expect(source()).toBe(findPunchAvatar(4, false)?.step2)
   })
 })
+
+describe('PunchAvatarCard — under the live re-render cadence', () => {
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  it('still reaches the strike while the screen re-renders around it', () => {
+    // The live screen pushes the store ~4Hz and immediately on every
+    // token-due, handing CueStage a NEW cue view object each time. The flip
+    // must survive that churn.
+    const combo = cue([punch(1), punch(2)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
+    const isStrike = (): boolean => {
+      const node = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
+      return [node.props.style]
+        .flat()
+        .some((s) => s && s.opacity === 1)
+    }
+    let sawStrike = false
+    for (let tick = 0; tick < 40; tick += 1) {
+      act(() => {
+        jest.advanceTimersByTime(25)
+      })
+      if (isStrike()) sawStrike = true
+      // A fresh cue object every tick, exactly like renderStateFor produces.
+      act(() => {
+        tree.update(<PunchAvatarCard cue={{ ...combo }} activeTokenIndex={0} />)
+      })
+    }
+    expect(sawStrike).toBe(true)
+  })
+})
