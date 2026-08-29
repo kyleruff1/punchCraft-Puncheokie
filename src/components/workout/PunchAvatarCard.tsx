@@ -44,7 +44,7 @@ const CARD_ASPECT = 1024 / 1536
  * percentage height made the figure jump between two sizes on every one
  * of those layout changes.
  */
-const CARD_HEIGHT = 200
+const CARD_HEIGHT = 400
 
 interface Shown {
   key: string
@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     opacity: CARD_OPACITY,
   },
-  card: { height: CARD_HEIGHT, maxHeight: '100%', aspectRatio: CARD_ASPECT },
+  card: { height: CARD_HEIGHT, aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
   frameOff: { opacity: 0 },
