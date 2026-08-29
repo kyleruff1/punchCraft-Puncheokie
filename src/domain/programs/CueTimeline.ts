@@ -169,16 +169,21 @@ const SEQUENCE_KINDS = new Set<WorkoutBlock['kind']>([
   'repeated-combo',
   'defense-counter',
   'footwork-exit',
-  'active-recovery',
 ])
 
 /** Block kinds judged on tracker count rather than a named sequence (doc §14). */
 // `coast` joins these (D23): it asks for output over a stated time rather
 // than naming punches, so it expands to one cue with no expectations.
+// `active-recovery` joins these (A12 / issue #266): it reserved 10.5-12 s of
+// window under the sequence path but emitted a single cue (repeat defaulted
+// to 1), leaving rings dark for the remainder. Under the count path it now
+// carries its motif and A2's pulses walk the ring row across the full window;
+// D4 still holds because expectedPunches stays [].
 const COUNT_SCORED_KINDS = new Set<WorkoutBlock['kind']>([
   'volume-burst',
   'open-pressure',
   'coast',
+  'active-recovery',
 ])
 
 /**

@@ -123,10 +123,11 @@ describe('structure over the real samples', () => {
     expect(expectedPunchCount(timelines)).toBeGreaterThan(0)
   })
 
-  it('expands volume-burst and open-pressure blocks as count-scored cues (#192)', () => {
+  it('expands volume-burst, open-pressure and active-recovery blocks as count-scored cues (#192, A12/#266)', () => {
     // These kinds run for a fixed window and are measured by tracker count
-    // rather than by prescribing every punch (doc §14). They used to be
-    // deferred, which left rounds silent through them.
+    // rather than by prescribing every punch (doc §14). `active-recovery`
+    // joined the count-scored set in A12 (issue #266) so its motif pulses
+    // across the whole reserved window instead of firing one dead cue.
     const countScored = allCues(timelines).filter((c) => c.scoring === 'count')
     expect(countScored.length).toBeGreaterThan(0)
 
@@ -134,7 +135,9 @@ describe('structure over the real samples', () => {
       .flatMap((r) => r.blocks)
       .filter((b) => countScored.some((c) => c.blockId === b.id))
       .map((b) => b.kind)
-    expect(new Set(kinds)).toEqual(new Set(['volume-burst', 'open-pressure']))
+    expect(new Set(kinds)).toEqual(
+      new Set(['volume-burst', 'open-pressure', 'active-recovery']),
+    )
   })
 
   it('leaves nothing deferred in the shipped samples', () => {
