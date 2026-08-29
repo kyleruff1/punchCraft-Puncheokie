@@ -80,7 +80,7 @@ export function formatCountdown(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-function GloveChip(props: {
+export function GloveChip(props: {
   hand: 'L' | 'R'
   state: LiveConnectionState
   batteryPct?: number

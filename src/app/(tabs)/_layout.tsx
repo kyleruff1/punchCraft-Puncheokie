@@ -4,10 +4,9 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import type { GestureResponderEvent } from 'react-native'
 
 import { Wordmark, type WordmarkApp } from '@/components/branding/Wordmark'
-import { ConnectionBadge } from '@components/ConnectionBadge'
 import { ConnectTrackersButton } from '@components/ConnectTrackersButton'
 import { FixTrackerButton } from '@components/FixTrackerButton'
-import { formatCountdown } from '@components/workout/RoundTopBar'
+import { formatCountdown, GloveChip } from '@components/workout/RoundTopBar'
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { useTrackerStore } from '@/state/useTrackerStore'
@@ -121,10 +120,18 @@ function HeaderTrackerCluster(): React.JSX.Element {
   const right = useTrackerStore((s) => s.slots.right)
   return (
     <View style={styles.headerTrackers}>
-      <ConnectionBadge hand="left" slot={left} />
-      <ConnectionBadge hand="right" slot={right} />
-      <ConnectTrackersButton />
-      <FixTrackerButton />
+      {/* 2×2 (Kyle): each glove's compact chip ("L ● Off") sits directly
+          over the button that serves it — L over connect, R over fix —
+          so the cluster reads as two tight columns, never a wrapping
+          row. */}
+      <View style={styles.headerTrackerColumn}>
+        <GloveChip hand="L" state={left?.state ?? 'dormant'} />
+        <ConnectTrackersButton />
+      </View>
+      <View style={styles.headerTrackerColumn}>
+        <GloveChip hand="R" state={right?.state ?? 'dormant'} />
+        <FixTrackerButton />
+      </View>
     </View>
   )
 }
@@ -245,12 +252,10 @@ const styles = StyleSheet.create({
   },
   headerRightZone: {
     // Centre of the zone on the 75% line, mirroring the wordmark at 25%.
-    // Wide enough for badges + connect + fix on ONE row (the cluster was
-    // wrapping fix onto a second line at 520).
     position: 'absolute',
     left: '75%',
-    transform: [{ translateX: -380 }],
-    width: 760,
+    transform: [{ translateX: -270 }],
+    width: 540,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -259,10 +264,14 @@ const styles = StyleSheet.create({
   },
   headerTrackers: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 20,
+    flexWrap: 'nowrap',
+  },
+  headerTrackerColumn: {
+    alignItems: 'center',
+    gap: 4,
   },
   headerRound: {
     fontSize: sizes.body,
