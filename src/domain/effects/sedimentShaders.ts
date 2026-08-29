@@ -102,10 +102,12 @@ half4 main(float2 xy) {
     float g = s.z * exp(-(d * d) / (s.w * s.w));
     splatPressure += g;
     float2 away = (d > 0.001) ? (uv - s.xy) / d : float2(0.0);
-    // Directional push plus a radial shove and a hashed swirl.
-    float swirl = (meta.z - 0.5) * 1.2;
-    float2 dir = normalize(float2(meta.x + away.x + swirl * -away.y,
-                                  away.y * 0.6 + swirl * away.x) + float2(1e-4));
+    // Spiral engagement: the tangential term spins the field around the
+    // splat center, and the seeded sign picks clockwise or counter-
+    // clockwise per punch — no two engagements swirl alike.
+    float spin = (meta.z - 0.5) * 2.0;
+    float2 tangent = float2(-away.y, away.x);
+    float2 dir = away * 0.55 + float2(meta.x, 0.0) * 0.35 + tangent * spin * 1.5;
     accel += dir * g * 6.5;
   }
 
@@ -186,11 +188,11 @@ half4 main(float2 xy) {
 
 /**
  * DISPLAY pass (full resolution). Children: backdrop, memoryCur,
- * motionCur. Refracts the art through settled+elastic displacement
- * (plus the tray shake), draws the sediment as dark deposits + sharp
- * silver grain warped by the SAME displacement (grains genuinely hold
- * position when settled — no time term), tints crests by hand
- * pressure, and applies the readability mask.
+ * motionCur. Pure liquid drift: the art refracted through the
+ * settled+elastic displacement (plus the tray shiver) — no additive
+ * layers at all, so the readability mask gates only displacement and
+ * its edge can never read as a color line. uPressureLR/uTimeSec and
+ * uTuning.yzw are declared for manifest stability but inert here.
  */
 export const DISPLAY_SKSL = `
 uniform shader backdrop;
@@ -224,38 +226,10 @@ half4 main(float2 xy) {
   // The tray contributes a fraction: the whole-pane shake should read
   // as a shiver in the refraction, never a sliding slab.
   float2 disp = settled + elastic + uTrayOffset * 0.35;
-  float density = float(mem.b);
-  float mobility = float(mem.a);
   float fieldMask = maskAt(uv) * uCalm;
 
   half4 base = backdrop.eval(xy + disp * uOut * uTuning.x * fieldMask);
-
-  // Sharp silver fragments: fine grain sampled through the
-  // displacement — settled grains stay put, moving grains ride along.
-  // Soft-edged and sparse; density shifts WHERE they appear, never
-  // hard-gates whole cells into white blocks.
-  float2 grainUv = (uv + (settled + elastic) * 2.6) * uTuning.z;
-  float grain = shash(floor(grainUv * float2(2.6, 1.5)));
-  float fragments = smoothstep(0.9, 0.99, grain * (0.45 + 0.55 * density)) * 0.55;
-
-  // Dark glass deposits where material has accumulated.
-  float deposits = smoothstep(0.45, 0.9, density) * uTuning.y * 0.6;
-
-  // Hand tint lives on CRESTS and DECAYS with the pressure envelopes —
-  // the settled arrangement keeps its shape but never keeps a color
-  // wash (displacement is permanent; the glow is not).
-  float crest = smoothstep(0.005, 0.03, length(elastic) + length(settled) * 0.3);
-  float leftGlow = uPressureLR.x * exp(-max(0.0, uTimeSec - uPressureLR.y) / 2.0);
-  float rightGlow = uPressureLR.z * exp(-max(0.0, uTimeSec - uPressureLR.w) / 2.0);
-  half3 tint = (half3(0.12, 0.73, 0.77) * half(min(leftGlow, 1.0)) +
-                half3(0.89, 0.46, 0.11) * half(min(rightGlow, 1.0))) *
-               half(crest * 0.55);
-
-  half3 color = half3(base.rgb);
-  color = mix(color, half3(0.03, 0.04, 0.05), half(deposits * fieldMask));
-  color += half3(0.86, 0.9, 0.92) * half(fragments * fieldMask * (0.3 + 0.7 * mobility));
-  color += tint * half(fieldMask);
-  return half4(color, 1.0);
+  return half4(base.rgb, 1.0);
 }
 `
 
@@ -325,9 +299,9 @@ export const DISPLAY_MANIFEST: ReadonlyArray<UniformSpec> = [
 export interface SedimentTuning {
   /** Backdrop refraction strength (fraction of pane per unit offset). */
   refraction: number
-  /** Deposit darkness gain. */
+  /** Inert since the pure-drift display (was deposit darkness). */
   densityGain: number
-  /** Grain scale (fragments per pane). */
+  /** Inert since the pure-drift display (was grain scale). */
   grainScale: number
   /** Reserved. */
   spare: number
@@ -395,7 +369,11 @@ export function buildDisplayUniforms(
     uTrayOffset: [tray.offsetX, tray.offsetY],
     uPressureLR: [pressureLR.leftV, pressureLR.leftStamp, pressureLR.rightV, pressureLR.rightStamp],
     uTimeSec: nowSec,
-    uMask: [0.78, 0.14, 0.1, 0.1],
+    // Full-bleed since the pure-drift display: floors at 1.0 make
+    // maskAt a no-op — refraction bends the art BEHIND the KPI text
+    // (which is UI above the canvas), so no readability carve-out and
+    // no visible zone boundary. Kept as a knob for the lab.
+    uMask: [0.78, 0.14, 1.0, 1.0],
     uTuning: [tuning.refraction, tuning.densityGain, tuning.grainScale, tuning.spare],
   }
 }
