@@ -245,10 +245,12 @@ const styles = StyleSheet.create({
   },
   headerRightZone: {
     // Centre of the zone on the 75% line, mirroring the wordmark at 25%.
+    // Wide enough for badges + connect + fix on ONE row (the cluster was
+    // wrapping fix onto a second line at 520).
     position: 'absolute',
     left: '75%',
-    transform: [{ translateX: -260 }],
-    width: 520,
+    transform: [{ translateX: -380 }],
+    width: 760,
     alignItems: 'center',
     justifyContent: 'center',
   },
