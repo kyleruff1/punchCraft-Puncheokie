@@ -1,6 +1,6 @@
 import React from 'react'
 import { Tabs } from 'expo-router'
-import { Pressable, StyleSheet } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import type { GestureResponderEvent } from 'react-native'
 
 import { Wordmark, type WordmarkApp } from '@/components/branding/Wordmark'
@@ -77,10 +77,29 @@ function wordmarkTabButton(app: WordmarkApp) {
   return WordmarkTabButton
 }
 
+/**
+ * Header wordmark, its CENTRE sitting at 25% of the header's width
+ * (Kyle: "if 50% is the middle", the mark lives at 25%). The wrapper
+ * walks left by half the hdr wordmark's width (80pt tall × 3:1 aspect
+ * → 240 wide → -120) from the 25% line.
+ */
+function headerWordmark(app: WordmarkApp) {
+  function HeaderWordmark(): React.JSX.Element {
+    return (
+      <View style={styles.headerBrand}>
+        <Wordmark app={app} size="hdr" />
+      </View>
+    )
+  }
+  return HeaderWordmark
+}
+
 const tabScreenOptions = {
   headerShown: true,
-  // Tall enough for the hdr (80pt) wordmark, the page's one brand mark.
-  headerStyle: { backgroundColor: colors.surface, height: 104 },
+  // Tall enough for the hdr (80pt) wordmark, the page's one brand mark,
+  // now centred — the extra height keeps it clear of the status bar and
+  // the Settings link on the right.
+  headerStyle: { backgroundColor: colors.surface, height: 120 },
   headerTintColor: colors.textPrimary,
   headerTitleStyle: { color: colors.textPrimary },
   sceneStyle: { backgroundColor: colors.background },
@@ -95,7 +114,7 @@ export default function TabsLayout() {
         options={{
           title: 'Velocity Lab',
           tabBarButton: wordmarkTabButton('velocityLab'),
-          headerTitle: () => <Wordmark app="velocityLab" size="hdr" />,
+          headerTitle: headerWordmark('velocityLab'),
         }}
       />
       <Tabs.Screen
@@ -108,7 +127,7 @@ export default function TabsLayout() {
           tabBarButton: wordmarkTabButton('punchCraft'),
           // The page's ONE wordmark: big, top-left in the header. The
           // landings render no duplicate H1 (Kyle 2026-08-28).
-          headerTitle: () => <Wordmark app="punchCraft" size="hdr" />,
+          headerTitle: headerWordmark('punchCraft'),
         }}
       />
       <Tabs.Screen
@@ -116,7 +135,7 @@ export default function TabsLayout() {
         options={{
           title: 'Puncheokie',
           tabBarButton: wordmarkTabButton('puncheokie'),
-          headerTitle: () => <Wordmark app="puncheokie" size="hdr" />,
+          headerTitle: headerWordmark('puncheokie'),
         }}
       />
     </Tabs>
@@ -136,4 +155,10 @@ const styles = StyleSheet.create({
   // The inactive wordmarks dim rather than tint — the art is an image, so
   // opacity is the "inactive" signal where a text label would grey out.
   tabButtonInactive: { opacity: 0.45 },
+  headerBrand: {
+    // Centre of the mark on the 25% line: walk to 25%, then back by half
+    // the hdr wordmark's width (80 × 3:1 → 240 → -120).
+    marginLeft: '25%',
+    transform: [{ translateX: -120 }],
+  },
 })

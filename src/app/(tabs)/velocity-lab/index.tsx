@@ -2,7 +2,6 @@ import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { ForgedButton } from '@/components/branding/ForgedButton'
-import { Wordmark } from '@/components/branding/Wordmark'
 import { TrackerBadgesRow } from '@/components/TrackerBadgesRow'
 import { colors } from '@/theme/colors'
 import { fonts, recipes, sizes } from '@/theme/typography'
@@ -28,7 +27,6 @@ export default function VelocityLabLanding() {
       <Stack.Screen
         options={{
           title: 'Velocity Lab',
-          headerTitle: () => <Wordmark app="velocityLab" size="hdr" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>

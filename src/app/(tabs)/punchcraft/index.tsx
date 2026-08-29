@@ -3,7 +3,6 @@ import { Link, Stack } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
 
 import { ActionButton } from '@/components/branding/ActionButton'
-import { Wordmark } from '@/components/branding/Wordmark'
 import { PickerProvider } from '@/components/ui/PickerContext'
 import { PickerRow, type PickerOption } from '@/components/ui/PickerRow'
 import { TrackerBadgesRow } from '../../../components/TrackerBadgesRow'
@@ -43,7 +42,6 @@ export default function PunchCraftLanding() {
         <Stack.Screen
           options={{
             title: 'punchCraft',
-            headerTitle: () => <Wordmark app="punchCraft" size="hdr" />,
             headerRight: () => (
               <Link href="/settings" asChild>
                 <Pressable style={styles.headerLink}>
