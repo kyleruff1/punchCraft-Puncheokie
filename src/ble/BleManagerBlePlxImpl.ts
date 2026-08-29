@@ -285,7 +285,12 @@ export class BleManagerBlePlxImpl implements BleManagerFacade {
       lastChangeMonotonicMs: nowMonotonicMs(),
     })
     try {
-      const device: PlxDevice = await manager.connectToDevice(deviceId, { timeout: timeoutMs })
+      // A pending (autoConnect) request must not carry a timeout — the
+      // whole point is that the OS waits for the glove to advertise.
+      const device: PlxDevice = await manager.connectToDevice(
+        deviceId,
+        options?.autoConnect === true ? { autoConnect: true } : { timeout: timeoutMs },
+      )
       const generation = this.bumpGeneration(deviceId)
       // BALANCED priority, deliberately (2026-08-29, "the second glove
       // always dies"): requesting ConnectionPriority.High on BOTH glove

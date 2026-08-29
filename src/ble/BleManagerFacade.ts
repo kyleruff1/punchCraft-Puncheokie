@@ -59,6 +59,18 @@ export interface ConnectOptions {
   timeoutMs?: number
   /** Request the maximum negotiable MTU after connect. */
   requestMtu?: number
+  /**
+   * Hand the address to the OS as a PENDING connection instead of
+   * connecting now: Android holds the request and binds the moment that
+   * device advertises. This is the scan-free answer to "connect these
+   * known trackers" — a direct connect only lands if the glove happens
+   * to be advertising in that instant, which is why the connect button
+   * felt dead against sleeping gloves (2026-08-29).
+   *
+   * A pending connect has NO timeout — it waits until it binds or until
+   * something cancels it (`disconnect(deviceId)` does).
+   */
+  autoConnect?: boolean
 }
 
 export interface BleManagerFacade {

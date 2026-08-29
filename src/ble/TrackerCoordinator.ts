@@ -9,7 +9,12 @@
  * Terminology note (§0): if this coordinator ever surfaces a per-punch value
  * it is a "tracker-reported velocity" — never force / power / energy.
  */
-import { getBleManager, type BleManagerFacade, type UnsubscribeFn } from './BleManagerFacade'
+import {
+  getBleManager,
+  type BleManagerFacade,
+  type ConnectOptions,
+  type UnsubscribeFn,
+} from './BleManagerFacade'
 import { TrackerScanner, type TrackerScannerRunOptions } from './TrackerScanner'
 import type { AdvertisementSnapshot, ConnectionStatus, Hand } from './bleTypes'
 import {
@@ -49,7 +54,12 @@ export class TrackerCoordinator {
     return this.facade.isConnected(deviceId)
   }
 
-  async connectSlot(hand: TrackerSlotHand, deviceId: string, name?: string): Promise<void> {
+  async connectSlot(
+    hand: TrackerSlotHand,
+    deviceId: string,
+    name?: string,
+    options?: ConnectOptions,
+  ): Promise<void> {
     // Tear down any previous binding for this slot first — reassigning a
     // slot to a new device must not leak the old change-listener.
     this.tearDownBinding(hand)
@@ -67,7 +77,7 @@ export class TrackerCoordinator {
     this.bindings[hand] = { deviceId, unsubscribe }
 
     try {
-      const status = await this.facade.connect(deviceId)
+      const status = await this.facade.connect(deviceId, options)
       const ready = status.state === 'ready' || status.state === 'streaming'
       setSlotConnected(hand, ready)
       setSlotConnecting(hand, false)

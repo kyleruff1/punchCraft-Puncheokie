@@ -56,6 +56,33 @@ const liveSlot = (deviceId: string, state: string) => ({ deviceId, state })
 
 /** The direct-connect spelling of "asleep / not in range". */
 const asleep = () => Promise.reject(new Error('Operation timed out'))
+/** A real connect failure — never mistaken for a sleeping glove. */
+const hardFail = () => Promise.reject(new Error('gatt 133'))
+/** A pending (autoConnect) request: settles only when the glove wakes. */
+const neverBinds = () => new Promise<void>(() => {})
+
+/** Fast-path attempts only — pending-connect arms are not attempts. */
+const fastAttempts = (hand: string): number =>
+  mockConnectSlot.mock.calls.filter(
+    (c) => c[0] === hand && (c[3] as { autoConnect?: boolean } | undefined)?.autoConnect !== true,
+  ).length
+
+/** Was this hand's address handed to the OS to chase? */
+const armedPending = (hand: string): boolean =>
+  mockConnectSlot.mock.calls.some(
+    (c) => c[0] === hand && (c[3] as { autoConnect?: boolean } | undefined)?.autoConnect === true,
+  )
+
+/**
+ * Wire the mock so pending arms hang (as the real OS request does) and
+ * the fast path behaves as the test dictates.
+ */
+const withFastPath = (fast: (hand: string) => Promise<void>): void => {
+  mockConnectSlot.mockImplementation(
+    (hand: string, _id: string, _name: string, opts?: { autoConnect?: boolean }) =>
+      opts?.autoConnect === true ? neverBinds() : fast(hand),
+  )
+}
 
 beforeEach(() => {
   mockScan.mockReset()
@@ -79,19 +106,45 @@ describe('autoConnectKnownTrackers', () => {
     expect(result.connectedCount).toBe(2)
     expect(mockScan).not.toHaveBeenCalled()
     expect(mockConnectSlot).toHaveBeenCalledTimes(2)
-    expect(mockConnectSlot).toHaveBeenCalledWith('left', blue.address, blue.displayName)
-    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
+    expect(mockConnectSlot).toHaveBeenCalledWith('left', blue.address, blue.displayName, {
+      timeoutMs: expect.any(Number),
+    })
+    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName, {
+      timeoutMs: expect.any(Number),
+    })
   })
 
-  it('reports not-found for a tracker whose direct connect times out (asleep)', async () => {
-    mockConnectSlot.mockImplementation((hand: string) =>
-      hand === 'right' ? asleep() : Promise.resolve(),
-    )
+  it('hands a sleeping glove to the OS as a pending connect, by address', async () => {
+    withFastPath((hand) => (hand === 'right' ? asleep() : Promise.resolve()))
 
     const result = await autoConnectKnownTrackers()
 
     expect(result.connectedCount).toBe(1)
     expect(result.outcomes.find((o) => o.hand === 'right')?.status).toBe('not-found')
+    // The button's real job: keep chasing the known address so the glove
+    // binds whenever it wakes, with no scan and no repeated passes.
+    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName, {
+      autoConnect: true,
+    })
+  })
+
+  it('leaves a chased hand alone on later passes — re-arming would cancel the chase', async () => {
+    withFastPath((hand) => (hand === 'right' ? asleep() : Promise.resolve()))
+
+    await autoConnectKnownTrackers()
+    mockEvictSlot.mockClear()
+    await autoConnectKnownTrackers()
+
+    // Second pass: no eviction of the chased hand, no second fast attempt,
+    // and no duplicate pending request.
+    expect(mockEvictSlot).not.toHaveBeenCalledWith('right', expect.anything())
+    expect(fastAttempts('right')).toBe(1)
+    expect(
+      mockConnectSlot.mock.calls.filter(
+        (c) =>
+          c[0] === 'right' && (c[3] as { autoConnect?: boolean } | undefined)?.autoConnect === true,
+      ),
+    ).toHaveLength(1)
   })
 
   it('leaves a slot alone when it is ready AND the native stack confirms it', async () => {
@@ -104,7 +157,9 @@ describe('autoConnectKnownTrackers', () => {
 
     expect(result.outcomes.find((o) => o.hand === 'left')?.status).toBe('already-connected')
     expect(mockConnectSlot).toHaveBeenCalledTimes(1)
-    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName)
+    expect(mockConnectSlot).toHaveBeenCalledWith('right', red.address, red.displayName, {
+      timeoutMs: expect.any(Number),
+    })
     expect(mockEvictSlot).not.toHaveBeenCalledWith('left', expect.anything())
   })
 
@@ -307,18 +362,31 @@ describe('persistent auto-retry', () => {
     for (let i = 0; i < 10; i += 1) await Promise.resolve()
   }
 
-  /** Passes are counted by attempts on the left hand — one per pass
-   * while left stays pending, since scan-counting died with the scan. */
-  const leftAttempts = (): number =>
-    mockConnectSlot.mock.calls.filter((c) => c[0] === 'left').length
+  /** Passes are counted by fast-path attempts on the left hand. */
+  const leftAttempts = (): number => fastAttempts('left')
 
-  it('retries an incomplete pass every RETRY_DELAY_MS until both hands connect', async () => {
-    // First pass: left asleep (connect times out). Later passes: it wakes.
+  it('does not retry a hand the OS is chasing — the pending connect IS the retry', async () => {
+    withFastPath((hand) => (hand === 'left' ? asleep() : Promise.resolve()))
+
+    await armAutoRetry()
+
+    // Left is asleep, so a pending connect is armed — and that ends the
+    // chain rather than re-passing every RETRY_DELAY_MS.
+    expect(armedPending('left')).toBe(true)
+    expect(getAutoRetryState().retrying).toBe(false)
+    jest.advanceTimersByTime(RETRY_DELAY_MS * 3)
+    await flush()
+    expect(leftAttempts()).toBe(1)
+  })
+
+  it('retries a hard failure every RETRY_DELAY_MS until it connects', async () => {
+    // A gatt error is not a sleeping glove: no pending connect is armed,
+    // so the scheduler keeps its job.
     let attempts = 0
-    mockConnectSlot.mockImplementation((hand: string) => {
+    withFastPath((hand) => {
       if (hand !== 'left') return Promise.resolve()
       attempts += 1
-      return attempts === 1 ? asleep() : Promise.resolve()
+      return attempts === 1 ? hardFail() : Promise.resolve()
     })
 
     await armAutoRetry()
@@ -333,9 +401,7 @@ describe('persistent auto-retry', () => {
   })
 
   it('goes dormant after the budget is spent, until re-armed', async () => {
-    mockConnectSlot.mockImplementation((hand: string) =>
-      hand === 'left' ? asleep() : Promise.resolve(),
-    )
+    withFastPath((hand) => (hand === 'left' ? hardFail() : Promise.resolve()))
 
     await armAutoRetry()
     for (let i = 0; i < AUTO_RETRY_BUDGET; i += 1) {
@@ -371,9 +437,7 @@ describe('persistent auto-retry', () => {
   })
 
   it('suspension freezes the chain mid-workout and resume picks it back up', async () => {
-    mockConnectSlot.mockImplementation((hand: string) =>
-      hand === 'left' ? asleep() : Promise.resolve(),
-    )
+    withFastPath((hand) => (hand === 'left' ? hardFail() : Promise.resolve()))
 
     await armAutoRetry()
     expect(getAutoRetryState().retrying).toBe(true)
