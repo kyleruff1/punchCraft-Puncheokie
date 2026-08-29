@@ -12,7 +12,7 @@ import { HapticOutputExpo } from '../HapticOutputExpo'
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(async () => undefined),
   notificationAsync: jest.fn(async () => undefined),
-  ImpactFeedbackStyle: { Medium: 'medium', Heavy: 'heavy' },
+  ImpactFeedbackStyle: { Soft: 'soft', Light: 'light', Medium: 'medium', Heavy: 'heavy' },
   NotificationFeedbackType: { Success: 'success' },
 }))
 
@@ -60,5 +60,30 @@ describe('HapticOutputExpo', () => {
     h.setEnabled(true)
     h.strike('combo')
     expect(notificationAsync).toHaveBeenCalledWith('success')
+  })
+
+  it('punch buzzes stay silent until enabled', () => {
+    const h = new HapticOutputExpo()
+    h.punch('left', 14)
+    expect(impactAsync).not.toHaveBeenCalled()
+  })
+
+  it('scales the punch buzz with the reading (warm-start references)', () => {
+    // Warm-start references are 5..14, so the extremes are deterministic
+    // before any rolling history accrues.
+    const h = new HapticOutputExpo()
+    h.setEnabled(true)
+    h.punch('left', 14)
+    expect(impactAsync).toHaveBeenLastCalledWith('heavy')
+    h.punch('right', 5)
+    expect(impactAsync).toHaveBeenLastCalledWith('soft')
+  })
+
+  it('a capability-limited reading (undefined) buzzes mid-tier', () => {
+    const h = new HapticOutputExpo()
+    h.setEnabled(true)
+    h.punch('left', undefined)
+    // scale() maps undefined to 0.5 → the light tier's upper half.
+    expect(impactAsync).toHaveBeenLastCalledWith('light')
   })
 })

@@ -637,6 +637,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         hand: event.hand,
         ...(typeof event.velocityRaw === 'number' ? { velocityRaw: event.velocityRaw } : {}),
       })
+      // Touch rides the same tick as the glass: every tracker punch
+      // buzzes, and the buzz tier tracks the reading — so the causal
+      // chain punch → feel → pane is airtight even when the eyes are on
+      // the bag, not the screen.
+      hapticsRef.current?.punch(
+        event.hand,
+        typeof event.velocityRaw === 'number' ? event.velocityRaw : undefined,
+      )
 
       // The matcher decides what this punch answered; the runner only
       // counts. Its callback drives notifyMatch and the in-cue tally.

@@ -131,7 +131,7 @@ function mount(): Harness {
   const source = new FakeSource(clock)
   const ref = React.createRef<WorkoutRunner>()
   const haptics: HapticStrike[] = []
-  const hapticPort: HapticOutputPort = { strike: (kind) => haptics.push(kind) }
+  const hapticPort: HapticOutputPort = { strike: (kind) => haptics.push(kind), punch: () => {} }
 
   function Probe(): React.JSX.Element {
     const runner = useWorkoutRunner({

@@ -112,7 +112,7 @@ half4 main(float2 xy) {
     accel += dir * g * 6.5;
     // Instant dent: part of the hit lands as displacement THIS step, so
     // the glass answers on impact while the wave carries the rest out.
-    dent += (away * 0.4 + tangent * spin * 0.6) * g * 0.014;
+    dent += (away * 0.4 + tangent * spin * 0.6) * g * 0.02;
   }
 
   vel = (vel + accel * uDt) * exp(-uDamping * uDt);

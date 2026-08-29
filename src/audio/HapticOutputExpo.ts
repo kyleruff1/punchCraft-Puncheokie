@@ -8,12 +8,34 @@
  */
 import * as Haptics from 'expo-haptics'
 
-import type { HapticOutputPort, HapticStrike } from '@domain/coach/HapticOutputPort'
+import {
+  punchBuzzOf,
+  type HapticOutputPort,
+  type HapticStrike,
+  type PunchBuzz,
+} from '@domain/coach/HapticOutputPort'
+import { createImpulseScaler } from '@domain/effects/impulseScale'
+import type { PunchHand } from '@domain/punch/PunchEvent'
 import { logger, safe } from '@/diagnostics/logger'
+
+/** Buzz tier → motor style: the athlete literally feels the reading. */
+const PUNCH_STYLE: Record<PunchBuzz, Haptics.ImpactFeedbackStyle> = {
+  soft: Haptics.ImpactFeedbackStyle.Soft,
+  light: Haptics.ImpactFeedbackStyle.Light,
+  medium: Haptics.ImpactFeedbackStyle.Medium,
+  heavy: Haptics.ImpactFeedbackStyle.Heavy,
+}
 
 export class HapticOutputExpo implements HapticOutputPort {
   /** Off until settings say otherwise, so a fresh install does not buzz. */
   private enabled = false
+
+  /**
+   * Session-scoped scaling, the same rolling-window normalization the
+   * backdrop uses — one instance per screen mount, so "hard" means hard
+   * for THIS athlete, THIS session.
+   */
+  private readonly scaler = createImpulseScaler()
 
   /** Wire to the `haptics` volume: any positive value enables the motor. */
   setEnabled(on: boolean): void {
@@ -26,6 +48,17 @@ export class HapticOutputExpo implements HapticOutputPort {
       // A missed buzz is not worth interrupting a workout — log and move on.
       logger.warn('puncheokie.haptic.failed', 'haptic did not fire', {
         kind: safe(kind),
+        error: safe(String(error)),
+      })
+    })
+  }
+
+  punch(hand: PunchHand, velocityRaw?: number): void {
+    if (!this.enabled) return
+    const tier = punchBuzzOf(this.scaler.scale(hand, velocityRaw))
+    void Haptics.impactAsync(PUNCH_STYLE[tier]).catch((error: unknown) => {
+      logger.warn('puncheokie.haptic.failed', 'punch buzz did not fire', {
+        kind: safe(tier),
         error: safe(String(error)),
       })
     })
