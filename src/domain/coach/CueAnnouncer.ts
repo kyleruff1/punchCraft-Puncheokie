@@ -368,12 +368,18 @@ export class CueAnnouncer {
       case 'encouragement': {
         const payload = event.payload as { asset?: VoiceAssetId } | null
         if (!payload?.asset) return
-        // Scheduled encouragement is deliberately NOT held mid-combination:
-        // the compiler placed it inside audited silence (a burst the athlete
-        // is working through), so `inCombo` is exactly where it belongs. The
-        // policy's category switch still applies, and its clip priority is
-        // the lowest — anything real supersedes it in the queue.
-        if (!shouldSpeak(this.policy, 'coaching-reminder', false)) return
+        // A0 (fixed): these are the rotation fillers and power-strike
+        // chime-ins RhythmMap placed in audited silence between cues —
+        // the ONLY lines that keep count-scored windows audible. They
+        // ship under the `gap-filler` category, which `mode:'standard'`
+        // permits (unlike `coaching-reminder`, which was silently
+        // eating every one of them in the shipped configuration —
+        // 6 fillers + 2 power calls per round). The policy still holds
+        // them under `inCombo`, so the "never interrupt a combination"
+        // rule survives; Minimal mode still opts them out. `false` here
+        // matches the compiler's placement — they only ever schedule
+        // between cues.
+        if (!shouldSpeak(this.policy, 'gap-filler', false)) return
         this.output.playAsset(payload.asset)
         return
       }

@@ -26,6 +26,7 @@ const ALL_CATEGORIES: SpokenCategory[] = [
   'final-countdown',
   'metric',
   'coaching-reminder',
+  'gap-filler',
 ]
 
 const policy = (over: Partial<VoiceCoachPolicy> = {}): VoiceCoachPolicy => ({
@@ -118,16 +119,20 @@ describe('mode off silences everything (doc §25)', () => {
 })
 
 describe('a combination is never interrupted (doc §18)', () => {
-  it('holds metric and coaching callouts while one is running', () => {
+  it('holds metric, coaching-reminder AND gap-filler while one is running', () => {
     const p = policy({ mode: 'full' })
     expect(shouldSpeak(p, 'metric', true)).toBe(false)
     expect(shouldSpeak(p, 'coaching-reminder', true)).toBe(false)
+    // A0 (#254): gap-filler must respect the same in-combo hold, even
+    // though the compiler only places these lines in audited silence.
+    expect(shouldSpeak(p, 'gap-filler', true)).toBe(false)
   })
 
   it('still allows them between combinations', () => {
     const p = policy({ mode: 'full' })
     expect(shouldSpeak(p, 'metric', false)).toBe(true)
     expect(shouldSpeak(p, 'coaching-reminder', false)).toBe(true)
+    expect(shouldSpeak(p, 'gap-filler', false)).toBe(true)
   })
 
   it('never suppresses a bell or a punch command mid-combination', () => {
@@ -151,6 +156,9 @@ describe('mode decides how much is said', () => {
     expect(shouldSpeak(p, 'defense', false)).toBe(false)
     expect(shouldSpeak(p, 'footwork', false)).toBe(false)
     expect(shouldSpeak(p, 'coaching-reminder', false)).toBe(false)
+    // Minimal is the athlete's quiet-coach opt-in: the gap-filler
+    // rotation stays out too, same as coaching-reminder.
+    expect(shouldSpeak(p, 'gap-filler', false)).toBe(false)
   })
 
   it('standard says everything but the optional coaching reminder', () => {
@@ -158,6 +166,17 @@ describe('mode decides how much is said', () => {
     expect(shouldSpeak(p, 'coaching-reminder', false)).toBe(false)
     expect(shouldSpeak(p, 'punch-command', false)).toBe(true)
     expect(shouldSpeak(p, 'defense', false)).toBe(true)
+  })
+
+  it('standard PERMITS gap-filler — the fix for A0 (#254)', () => {
+    // Regression: the shipped default was `standard`, but every
+    // scheduled encouragement was dispatched via `coaching-reminder`
+    // and silently vetoed here. 6 rotation fillers + 2 power-strike
+    // calls per round were compiled and thrown away. `gap-filler`
+    // splits those lines off so `standard` keeps them audible while
+    // still holding back the mid-combination reminder.
+    const p = policy({ mode: 'standard' })
+    expect(shouldSpeak(p, 'gap-filler', false)).toBe(true)
   })
 
   it('full adds the coaching reminder', () => {

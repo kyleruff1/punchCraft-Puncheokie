@@ -120,6 +120,16 @@ export type SpokenCategory =
   | 'final-countdown'
   | 'metric'
   | 'coaching-reminder'
+  /**
+   * A short, planned filler line the announcer places in the
+   * audited-silence pass — the rotation encouragements and the
+   * power-strike chime-ins compiled by `RhythmMap`. These are the
+   * lines that keep count-scored windows from going silent, and they
+   * are only ever scheduled between combinations (not during one).
+   * Split from `coaching-reminder` per A0/#254 so `mode:'standard'`
+   * can permit fillers without permitting mid-combination reminders.
+   */
+  | 'gap-filler'
 
 /**
  * The D1 gate (spec §13.5, §14.6).
@@ -163,7 +173,12 @@ export function shouldSpeak(
   if (p.mode === 'off') return false
 
   // Doc §18: never interrupt a combination for something that can wait.
-  if (inCombo && (c === 'metric' || c === 'coaching-reminder')) return false
+  // gap-filler joins metric / coaching-reminder here — the compiler
+  // already places these lines in audited silence between cues, but
+  // this belt-and-braces gate keeps a mistimed one out of the middle
+  // of a combination.
+  if (inCombo && (c === 'metric' || c === 'coaching-reminder' || c === 'gap-filler'))
+    return false
 
   if (c === 'metric' && p.metricAnnouncements === 'off') return false
   if (c === 'final-countdown' && !p.finalTenSecondWarning) return false
@@ -175,6 +190,10 @@ export function shouldSpeak(
 
   // A coaching reminder is the one thing `standard` holds back; `full` adds
   // it (doc §18.2's priority order puts it last for the same reason).
+  // `gap-filler` is NOT held back by standard: these lines are the ones
+  // keeping count-scored windows audible, and holding them back is what
+  // Kyle heard as the silent tail of every burst (A0/#254). Minimal
+  // still opts out via MINIMAL_CATEGORIES.
   if (p.mode === 'standard' && c === 'coaching-reminder') return false
 
   return true
