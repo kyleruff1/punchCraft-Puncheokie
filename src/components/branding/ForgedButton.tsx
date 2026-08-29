@@ -54,45 +54,43 @@ interface VariantVisual {
 }
 
 const VARIANTS: Record<ForgedVariant, VariantVisual> = {
-  // Gradients run inverted — dark at the top, lit at the bottom edge —
-  // so every button reads as under-glowing, matching the neon under-glow
-  // in the authored action-button art.
+  // Chrome metal throughout (Kyle 2026-08-28). Gradients run inverted —
+  // dark at the top, lit at the bottom edge — so every button reads as
+  // under-glowing, matching the authored chrome button art.
   primary: {
-    gradient: [punch.tealDeep, punch.turquoise, punch.aqua],
-    gradientPressed: [punch.tealDeep, punch.turquoiseDeep, punch.turquoise],
-    bevelTop: punch.aqua,
-    bevelBottom: punch.tealBlack,
+    gradient: [punch.gunmetal, punch.steel, punch.chrome],
+    gradientPressed: [punch.black, punch.gunmetal, punch.steelStrong],
+    bevelTop: punch.chromeBright,
+    bevelBottom: punch.black,
     textColor: colors.textOnAccent,
     textRecipe: recipes.buttonPrimary,
   },
   /**
-   * Dark forged body with a cyan bevel. For buttons carrying the
-   * silver-metal ActionLabel art: that art was authored for a dark
-   * ground (like the wordmarks) and drowns on the bright `primary`
-   * fill, so the hero button provides the dark field and lets the
-   * cyan bevel carry the "this is the big action" signal instead.
+   * Dark forged body with a silver bevel — the dark field for anything
+   * carrying bright chrome art or text that must read as the big action
+   * without a bright fill.
    */
   hero: {
-    gradient: [punch.tealBlack, punch.charcoal, punch.gunmetal],
-    gradientPressed: [punch.tealBlack, punch.tealBlack, punch.charcoal],
-    bevelTop: punch.turquoise,
-    bevelBottom: punch.tealDark,
+    gradient: [punch.black, punch.charcoal, punch.gunmetal],
+    gradientPressed: [punch.black, punch.black, punch.charcoal],
+    bevelTop: punch.chrome,
+    bevelBottom: punch.steelStrong,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonPrimary,
   },
   secondary: {
-    gradient: [punch.tealBlack, punch.steel, punch.silver],
-    gradientPressed: [punch.tealBlack, punch.gunmetal, punch.steel],
+    gradient: [punch.black, punch.steel, punch.silver],
+    gradientPressed: [punch.black, punch.gunmetal, punch.steel],
     bevelTop: punch.silver,
-    bevelBottom: punch.tealBlack,
+    bevelBottom: punch.black,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonSecondary,
   },
   subtle: {
-    gradient: [punch.tealBlack, punch.gunmetal, punch.steel],
-    gradientPressed: [punch.tealBlack, punch.charcoal, punch.gunmetal],
+    gradient: [punch.black, punch.gunmetal, punch.steel],
+    gradientPressed: [punch.black, punch.charcoal, punch.gunmetal],
     bevelTop: punch.steel,
-    bevelBottom: punch.tealBlack,
+    bevelBottom: punch.black,
     textColor: colors.textPrimary,
     textRecipe: recipes.buttonSubtle,
   },
