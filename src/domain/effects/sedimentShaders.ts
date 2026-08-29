@@ -92,7 +92,7 @@ half4 main(float2 xy) {
                 offsetAt(xy + float2(0.0, 1.0)) +
                 offsetAt(xy - float2(0.0, 1.0))) * 0.25 - here;
 
-  float2 accel = lap * 90.0 - elastic * 26.0 + uTrayForce * (0.4 + 0.6 * mobility);
+  float2 accel = lap * 150.0 - elastic * 22.0 + uTrayForce * (0.4 + 0.6 * mobility);
 
   float splatPressure = 0.0;
   for (int i = 0; i < ${SPLATS_PER_STEP}; i++) {
@@ -106,7 +106,7 @@ half4 main(float2 xy) {
     float swirl = (meta.z - 0.5) * 1.2;
     float2 dir = normalize(float2(meta.x + away.x + swirl * -away.y,
                                   away.y * 0.6 + swirl * away.x) + float2(1e-4));
-    accel += dir * g * 3.0;
+    accel += dir * g * 6.5;
   }
 
   vel = (vel + accel * uDt) * exp(-uDamping * uDt);
@@ -114,7 +114,7 @@ half4 main(float2 xy) {
 
   // Yield drain: the slow plastic leak the memory pass banks.
   float yieldGate = smoothstep(0.008, 0.02, length(elastic));
-  float drain = yieldGate * (0.06 + 0.10 * uChurn) * uDt;
+  float drain = yieldGate * (0.13 + 0.2 * uChurn) * uDt;
   elastic -= elastic * drain;
 
   // Static friction: asleep cells hold position exactly.
@@ -159,12 +159,12 @@ half4 main(float2 xy) {
 
   // Wake where things move; settle where they do not.
   float kinetic = length(vel) * 2.0 + splatPressure + uChurn * 0.3;
-  float wake = smoothstep(0.02, 0.06, kinetic);
-  mobility = max(wake, mobility * exp(-uDt / 1.6));
+  float wake = smoothstep(0.012, 0.05, kinetic);
+  mobility = max(wake, mobility * exp(-uDt / 2.2));
 
   // Bank the motion pass's yield drain into the permanent shape.
   float yieldGate = smoothstep(0.008, 0.02, length(elastic));
-  float drain = yieldGate * (0.06 + 0.10 * uChurn) * uDt;
+  float drain = yieldGate * (0.13 + 0.2 * uChurn) * uDt;
   settled += elastic * drain;
 
   // Density redistributes only under churn: awake regions trade a
@@ -173,8 +173,8 @@ half4 main(float2 xy) {
              memoryPrev.eval(xy - float2(1.0, 0.0)).b +
              memoryPrev.eval(xy + float2(0.0, 1.0)).b +
              memoryPrev.eval(xy - float2(0.0, 1.0)).b) * 0.25;
-  density = mix(density, float(nb), mobility * 0.15);
-  density = clamp(density + splatPressure * 0.02, 0.06, 0.95);
+  density = mix(density, float(nb), mobility * 0.28);
+  density = clamp(density + splatPressure * 0.045, 0.06, 0.95);
 
   // Optional rest-time relaxation of extremes; zero during rounds.
   settled *= (1.0 - uRelax * uDt);
@@ -234,9 +234,9 @@ half4 main(float2 xy) {
   // displacement — settled grains stay put, moving grains ride along.
   // Soft-edged and sparse; density shifts WHERE they appear, never
   // hard-gates whole cells into white blocks.
-  float2 grainUv = (uv + (settled + elastic) * 1.4) * uTuning.z;
+  float2 grainUv = (uv + (settled + elastic) * 2.6) * uTuning.z;
   float grain = shash(floor(grainUv * float2(2.6, 1.5)));
-  float fragments = smoothstep(0.93, 0.995, grain * (0.45 + 0.55 * density)) * 0.4;
+  float fragments = smoothstep(0.9, 0.99, grain * (0.45 + 0.55 * density)) * 0.55;
 
   // Dark glass deposits where material has accumulated.
   float deposits = smoothstep(0.45, 0.9, density) * uTuning.y * 0.6;
@@ -334,7 +334,7 @@ export interface SedimentTuning {
 }
 
 export const DEFAULT_TUNING: SedimentTuning = {
-  refraction: 0.55,
+  refraction: 0.95,
   densityGain: 0.75,
   grainScale: 340,
   spare: 0,

@@ -208,7 +208,7 @@ export function splatFromPunch(handCode: number, v01: number, seed: number): Sed
     x: origin.x,
     y: origin.y,
     strength,
-    radius: 0.035 + 0.095 * Math.max(0, Math.min(1, v01)),
+    radius: 0.055 + 0.15 * Math.max(0, Math.min(1, v01)),
     dirX: impulseDirection(handCode),
     handTint: handCode === HAND_LEFT ? -1 : handCode === HAND_RIGHT ? 1 : 0,
     seed,

@@ -256,7 +256,7 @@ export function useSedimentEngine(sessionSeed: number): SedimentEngine {
         tray.value = stepTray(tray.value, STEP_S)
         const envNow = envelopes.value
         const churn = decayedEnv(envNow.churn, envNow.churnStamp, nowSec, CHURN_TAU_S)
-        const damping = 6.2 - 4.0 * Math.min(1, churn)
+        const damping = 5.0 - 3.4 * Math.min(1, churn)
         const trayForceX = -tray.value.velX * 2.2
         const trayForceY = -tray.value.velY * 2.2
 
