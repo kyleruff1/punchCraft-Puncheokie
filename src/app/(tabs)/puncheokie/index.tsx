@@ -19,7 +19,7 @@ export default function PuncheokieLanding() {
       <Stack.Screen
         options={{
           title: 'Puncheokie',
-          headerTitle: () => <Wordmark app="puncheokie" size="sm" />,
+          headerTitle: () => <Wordmark app="puncheokie" size="hdr" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -30,7 +30,6 @@ export default function PuncheokieLanding() {
         }}
       />
       <TrackerBadgesRow />
-      <Wordmark app="puncheokie" size="md" style={styles.brand} />
       <Text style={styles.paragraph}>Punch-along mode — follow the called combinations.</Text>
       <View style={styles.placeholder} testID="coming-soon">
         <Text style={styles.placeholderText}>Coming soon.</Text>
@@ -43,7 +42,6 @@ export default function PuncheokieLanding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
-  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: {
     fontSize: sizes.body,
     fontFamily: fonts.body,

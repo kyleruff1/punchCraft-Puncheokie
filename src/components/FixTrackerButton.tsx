@@ -15,10 +15,11 @@
  */
 
 import React, { useCallback, useState } from 'react'
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, Platform, StyleSheet, Text, View } from 'react-native'
 
 import { bounceBluetoothAndReconnect, type BounceStatus } from '@ble/bounceBluetooth'
 import { openBluetoothSettings } from '@ble/openBluetoothSettings'
+import { ActionButton } from '@/components/branding/ActionButton'
 import { colors } from '@/theme/colors'
 
 type Phase = 'idle' | 'waiting' | 'done'
@@ -38,7 +39,6 @@ const HINT_FOR: Record<BounceStatus, string> = {
   unauthorized: 'This app is not permitted to use Bluetooth. Grant the permission in Settings.',
 }
 
-const IDLE_LABEL = 'Fix tracker connection'
 const WAITING_LABEL = 'Waiting for Bluetooth bounce…'
 const RETRY_LABEL = 'Try again'
 
@@ -63,26 +63,32 @@ export function FixTrackerButton(): React.ReactElement | null {
 
   if (Platform.OS !== 'android') return null
 
-  const label =
+  const statusLine =
     result.phase === 'waiting'
       ? WAITING_LABEL
       : result.phase === 'done' && result.status !== 'ok'
         ? RETRY_LABEL
-        : IDLE_LABEL
+        : null
 
   return (
     <View style={styles.wrap}>
-      <Pressable
-        onPress={onPress}
-        style={[styles.button, result.phase === 'waiting' && styles.buttonBusy]}
+      {/* The chrome "fix" art is the button; transient state rides in the
+          words underneath — §19.4 wants the state named, not only shaded. */}
+      <ActionButton
+        action="fixTrackers"
+        onPress={() => {
+          void onPress()
+        }}
         disabled={result.phase === 'waiting'}
-        accessibilityRole="button"
-        accessibilityLabel={label}
+        height={FIX_BUTTON_HEIGHT}
         accessibilityHint="Opens Bluetooth settings so you can toggle it off and on, then reconnects the trackers"
         testID="fix-tracker-connection"
-      >
-        <Text style={styles.buttonText}>{label}</Text>
-      </Pressable>
+      />
+      {statusLine ? (
+        <Text style={styles.hint} testID="fix-tracker-status">
+          {statusLine}
+        </Text>
+      ) : null}
       {result.phase === 'done' && result.status ? (
         <Text style={styles.hint} testID="fix-tracker-hint">
           {HINT_FOR[result.status]}
@@ -92,25 +98,12 @@ export function FixTrackerButton(): React.ReactElement | null {
   )
 }
 
+/** Matches ConnectTrackersButton's compact art height so the pair reads
+ * as siblings in the badges row. */
+const FIX_BUTTON_HEIGHT = 76
+
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderStrong,
-  },
-  buttonBusy: {
-    backgroundColor: colors.surface,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
   hint: {
     fontSize: 12,
     lineHeight: 16,

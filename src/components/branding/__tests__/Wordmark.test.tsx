@@ -49,6 +49,20 @@ describe('Wordmark', () => {
     expect(style.width).toBeGreaterThan(0)
   })
 
+  it('isolated variant swaps the punchCraft source; brand is the default', () => {
+    // Policy (Kyle 2026-08-28): wordmark.png is the app's name everywhere;
+    // the isolated silver version has exactly one job — the tab link.
+    const brand = render(<Wordmark app="punchCraft" />)
+    const isolated = render(<Wordmark app="punchCraft" variant="isolated" />)
+    const src = (tree: ReactTestRenderer): unknown =>
+      tree.root.findByProps({ accessibilityRole: 'image' }).props.source
+    expect(src(brand)).not.toEqual(src(isolated))
+    // Non-punchCraft apps ignore the variant — there is only one asset.
+    const vl = render(<Wordmark app="velocityLab" />)
+    const vlIsolated = render(<Wordmark app="velocityLab" variant="isolated" />)
+    expect(src(vl)).toEqual(src(vlIsolated))
+  })
+
   it('keeps sizes ordered sm < tab < md < lg (so the type scale is meaningful)', () => {
     const heightFor = (size: WordmarkSize): number => {
       const tree = render(<Wordmark app="punchCraft" size={size} />)

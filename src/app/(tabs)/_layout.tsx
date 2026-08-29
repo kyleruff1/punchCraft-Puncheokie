@@ -64,7 +64,13 @@ function wordmarkTabButton(app: WordmarkApp) {
         testID={testID}
         style={[styles.tabButton, !selected && styles.tabButtonInactive]}
       >
-        <Wordmark app={app} size="tab" />
+        {/* The tab link is the isolated silver wordmark's ONE job —
+            everywhere else punchCraft is the color wordmark. */}
+        <Wordmark
+          app={app}
+          size="tab"
+          variant={app === 'punchCraft' ? 'isolated' : 'brand'}
+        />
       </Pressable>
     )
   }
@@ -73,7 +79,8 @@ function wordmarkTabButton(app: WordmarkApp) {
 
 const tabScreenOptions = {
   headerShown: true,
-  headerStyle: { backgroundColor: colors.surface },
+  // Tall enough for the hdr (80pt) wordmark, the page's one brand mark.
+  headerStyle: { backgroundColor: colors.surface, height: 104 },
   headerTintColor: colors.textPrimary,
   headerTitleStyle: { color: colors.textPrimary },
   sceneStyle: { backgroundColor: colors.background },
@@ -88,7 +95,7 @@ export default function TabsLayout() {
         options={{
           title: 'Velocity Lab',
           tabBarButton: wordmarkTabButton('velocityLab'),
-          headerTitle: () => <Wordmark app="velocityLab" size="sm" />,
+          headerTitle: () => <Wordmark app="velocityLab" size="hdr" />,
         }}
       />
       <Tabs.Screen
@@ -99,7 +106,9 @@ export default function TabsLayout() {
           // available.
           title: 'punchCraft',
           tabBarButton: wordmarkTabButton('punchCraft'),
-          headerTitle: () => <Wordmark app="punchCraft" size="sm" />,
+          // The page's ONE wordmark: big, top-left in the header. The
+          // landings render no duplicate H1 (Kyle 2026-08-28).
+          headerTitle: () => <Wordmark app="punchCraft" size="hdr" />,
         }}
       />
       <Tabs.Screen
@@ -107,7 +116,7 @@ export default function TabsLayout() {
         options={{
           title: 'Puncheokie',
           tabBarButton: wordmarkTabButton('puncheokie'),
-          headerTitle: () => <Wordmark app="puncheokie" size="sm" />,
+          headerTitle: () => <Wordmark app="puncheokie" size="hdr" />,
         }}
       />
     </Tabs>

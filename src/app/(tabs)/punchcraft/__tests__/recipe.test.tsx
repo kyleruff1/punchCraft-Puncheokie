@@ -261,11 +261,12 @@ describe('advanced panel (M31-07)', () => {
 })
 
 describe('punchCraft landing — the workout home', () => {
-  it('describes the mode briefly, on its own clock, and never mentions beats (D3)', () => {
+  it('never mentions beats or the retired sequence grade (D3)', () => {
+    // The descriptive tagline is gone (Kyle 2026-08-28 — the wordmark and
+    // the buttons carry the page); the D3 language rules still hold for
+    // whatever copy remains.
     const tree = render(<PunchCraftLanding />)
     const text = allText(tree)
-    expect(text.toLowerCase()).toContain("tablet's own clock")
-    expect(text.toLowerCase()).toContain('punch count')
     expect(text.toLowerCase()).not.toContain('hand-sequence match')
     expect(text.toLowerCase()).not.toContain('beat')
   })

@@ -28,10 +28,17 @@ import type { StyleProp, ViewStyle } from 'react-native'
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 const SOURCES = {
-  punchCraft: require('../../../assets/branding/isolated-wordmark.png') as number,
+  punchCraft: require('../../../assets/branding/wordmark.png') as number,
   velocityLab: require('../../../assets/branding/VelocityLab.png') as number,
   puncheokie: require('../../../assets/branding/PunchEoke.png') as number,
 } as const
+/**
+ * The all-silver punchCraft wordmark. Kyle's policy: the COLOR wordmark
+ * (silver + cyan, with the fist) is the app's name everywhere — the
+ * isolated silver version has exactly one job, the bottom tab link,
+ * where it sits beside the other two silver tab wordmarks.
+ */
+const PUNCHCRAFT_ISOLATED = require('../../../assets/branding/isolated-wordmark.png') as number
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const ACCESSIBILITY_LABELS = {
@@ -47,6 +54,8 @@ const WORDMARK_ASPECT = 2172 / 724
 const SIZE_HEIGHTS = {
   sm: 26,
   tab: 40,
+  /** Header wordmark — 2× the tab step (Kyle 2026-08-28). */
+  hdr: 80,
   md: 64,
   lg: 96,
 } as const
@@ -57,6 +66,12 @@ export type WordmarkSize = keyof typeof SIZE_HEIGHTS
 export interface WordmarkProps {
   app: WordmarkApp
   size?: WordmarkSize
+  /**
+   * `brand` (default) is the authored wordmark — for punchCraft that is
+   * the COLOR art. `isolated` swaps punchCraft to the all-silver
+   * version; the bottom tab bar is its only intended caller.
+   */
+  variant?: 'brand' | 'isolated'
   style?: StyleProp<ViewStyle>
   testID?: string
 }
@@ -64,15 +79,18 @@ export interface WordmarkProps {
 export function Wordmark({
   app,
   size = 'md',
+  variant = 'brand',
   style,
   testID,
 }: WordmarkProps): React.JSX.Element {
   const height = SIZE_HEIGHTS[size]
   const width = height * WORDMARK_ASPECT
+  const source =
+    app === 'punchCraft' && variant === 'isolated' ? PUNCHCRAFT_ISOLATED : SOURCES[app]
   return (
     <View style={[styles.wrap, style]} testID={testID ?? `wordmark-${app}`}>
       <Image
-        source={SOURCES[app]}
+        source={source}
         style={{ height, width }}
         resizeMode="contain"
         accessibilityLabel={ACCESSIBILITY_LABELS[app]}

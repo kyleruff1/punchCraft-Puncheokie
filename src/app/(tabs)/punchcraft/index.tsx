@@ -43,7 +43,7 @@ export default function PunchCraftLanding() {
         <Stack.Screen
           options={{
             title: 'punchCraft',
-            headerTitle: () => <Wordmark app="punchCraft" size="sm" />,
+            headerTitle: () => <Wordmark app="punchCraft" size="hdr" />,
             headerRight: () => (
               <Link href="/settings" asChild>
                 <Pressable style={styles.headerLink}>
@@ -54,10 +54,6 @@ export default function PunchCraftLanding() {
           }}
         />
         <TrackerBadgesRow />
-        <Wordmark app="punchCraft" size="md" style={styles.brand} />
-        <Text style={styles.paragraph}>
-          Build or run cued combinations on the tablet&apos;s own clock, tracked by punch count.
-        </Text>
 
         <Link href="/(tabs)/punchcraft/recipe" asChild>
           {/* The authored art IS the button — pill, icon, chevron and neon
@@ -76,8 +72,11 @@ export default function PunchCraftLanding() {
           id="landing-sample"
           testID="landing-sample"
           label="Designed workouts"
-          caption="Hand-authored starter recipes."
+          // Name the presets while collapsed — a bare "None — build my
+          // own" preview read as "the presets are gone" on the bag.
+          caption={samples.map((s) => s.name).join('  ·  ')}
           value={selectedSampleKey ?? 'none'}
+          {...(selectedSampleKey ? {} : { valuePreview: `${samples.length} presets` })}
           options={sampleOptions}
           onChange={(key) => selectSample(key === 'none' ? undefined : (key as SampleWorkoutKey))}
         />
@@ -96,7 +95,6 @@ export default function PunchCraftLanding() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
   container: { padding: 20, gap: 16 },
-  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: {
     fontSize: sizes.body,
     fontFamily: fonts.body,

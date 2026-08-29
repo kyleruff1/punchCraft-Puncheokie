@@ -13,7 +13,7 @@
  */
 
 import React, { useCallback, useEffect, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 
 import {
   AUTO_RETRY_BUDGET,
@@ -22,12 +22,12 @@ import {
   isAutoConnectInFlight,
   subscribeAutoRetry,
 } from '@ble/autoConnectTrackers'
+import { ActionButton } from '@/components/branding/ActionButton'
 import { useTrackerStore } from '@/state/useTrackerStore'
 import { colors } from '@/theme/colors'
 
 const READY_STATES = new Set(['ready', 'streaming'])
 
-const IDLE_LABEL = 'Connect trackers'
 const BUSY_LABEL = 'Scanning…'
 
 export function ConnectTrackersButton(): React.ReactElement {
@@ -85,22 +85,24 @@ export function ConnectTrackersButton(): React.ReactElement {
 
   return (
     <View style={styles.wrap}>
-      <Pressable
-        onPress={onPress}
-        style={[
-          styles.button,
-          bothLive ? styles.buttonMuted : styles.buttonPrimary,
-          busy && styles.buttonBusy,
-        ]}
+      {/* The authored chrome art IS the button; a busy pass dims it (the
+          ActionButton's disabled treatment) and the note line carries the
+          "Scanning…" state in words per §19.4. */}
+      <ActionButton
+        action="connectTrackers"
+        onPress={() => {
+          void onPress()
+        }}
         disabled={busy}
-        accessibilityRole="button"
-        accessibilityLabel={busy ? BUSY_LABEL : IDLE_LABEL}
+        height={CONNECT_BUTTON_HEIGHT}
+        style={bothLive && styles.buttonQuiet}
         testID="connect-trackers"
-      >
-        <Text style={[styles.buttonText, bothLive ? styles.buttonTextMuted : styles.buttonTextPrimary]}>
-          {busy ? BUSY_LABEL : IDLE_LABEL}
+      />
+      {busy ? (
+        <Text style={styles.note} testID="connect-trackers-busy">
+          {BUSY_LABEL}
         </Text>
-      </Pressable>
+      ) : null}
       {note ? (
         <Text style={styles.note} testID="connect-trackers-note">
           {note}
@@ -115,38 +117,16 @@ export function ConnectTrackersButton(): React.ReactElement {
   )
 }
 
+/** Compact art height for the badges row — the pill reads at a glance
+ * without competing with the page's hero button. */
+const CONNECT_BUTTON_HEIGHT = 76
+
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  // Prominent when there is work to do.
-  buttonPrimary: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
   // Quiet when both trackers are already live — still tappable, since the
   // athlete may want to force a fresh bind, but not shouting for attention.
-  buttonMuted: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.borderStrong,
-  },
-  buttonBusy: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  buttonTextPrimary: {
-    color: colors.textOnAccent,
-  },
-  buttonTextMuted: {
-    color: colors.textPrimary,
+  buttonQuiet: {
+    opacity: 0.55,
   },
   note: {
     fontSize: 12,

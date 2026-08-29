@@ -521,7 +521,9 @@ export default function LiveScreen(): React.JSX.Element {
       <View style={styles.body}>
         <View style={styles.stage}>
           {live.phase === 'idle' ? (
-            <ActionButton action="startWorkout" onPress={handleStart} testID="start-workout" />
+            // "Hit it!" begins the rounds — the recipe screen's
+            // start_workout art is the doorway, this is the bell.
+            <ActionButton action="hitIt" onPress={handleStart} testID="start-workout" />
           ) : live.phase === 'rest' && frozen ? (
             <RestPhases
               frozen={frozen}

@@ -24,13 +24,35 @@ import type { StyleProp, ViewStyle } from 'react-native'
 const SOURCES = {
   buildAWorkout: require('../../../assets/branding/builidAworkout_label.png') as number,
   startWorkout: require('../../../assets/branding/start_workout_label.png') as number,
+  hitIt: require('../../../assets/branding/hit_it.png') as number,
+  connectTrackers: require('../../../assets/branding/connect_trackers.png') as number,
+  fixTrackers: require('../../../assets/branding/fix_trackers.png') as number,
 } as const
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 const ACCESSIBILITY_LABELS = {
   buildAWorkout: 'Build a workout',
   startWorkout: 'Start workout',
+  hitIt: 'Hit it!',
+  connectTrackers: 'Connect trackers',
+  fixTrackers: 'Fix tracker connection',
 } as const
+
+/**
+ * Transparent canvas margins around the visible pill, measured from each
+ * asset's alpha bbox (fractions of canvas width/height). Collapsed into
+ * negative margins so the LAYOUT box hugs the artwork — without this the
+ * compact tracker buttons sat far apart and far from the screen edge,
+ * spaced by invisible canvas. Zero for the hero buttons: their layouts
+ * were tuned against the full canvas and the glow bleed is part of the
+ * look.
+ */
+const TRIM: Partial<
+  Record<keyof typeof SOURCES, { left: number; right: number; top: number; bottom: number }>
+> = {
+  connectTrackers: { left: 0.15, right: 0.14, top: 0.29, bottom: 0.31 },
+  fixTrackers: { left: 0.24, right: 0.23, top: 0.27, bottom: 0.3 },
+}
 
 /**
  * Default rendered height. The art carries its own glow padding, so the
@@ -49,6 +71,7 @@ export interface ActionButtonProps {
   onPress?: () => void
   disabled?: boolean
   height?: number
+  accessibilityHint?: string
   style?: StyleProp<ViewStyle>
   testID?: string
 }
@@ -58,6 +81,7 @@ export function ActionButton({
   onPress,
   disabled = false,
   height = DEFAULT_HEIGHT,
+  accessibilityHint,
   style,
   testID,
 }: ActionButtonProps): React.JSX.Element {
@@ -70,6 +94,7 @@ export function ActionButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={ACCESSIBILITY_LABELS[action]}
+      {...(accessibilityHint === undefined ? {} : { accessibilityHint })}
       testID={testID ?? `action-button-${action}`}
       style={({ pressed }) => [
         styles.root,
@@ -80,7 +105,19 @@ export function ActionButton({
     >
       <Image
         source={source}
-        style={{ height, width: height * aspect, maxWidth: '100%' }}
+        style={{
+          height,
+          width: height * aspect,
+          maxWidth: '100%',
+          ...(TRIM[action]
+            ? {
+                marginLeft: -height * aspect * TRIM[action].left,
+                marginRight: -height * aspect * TRIM[action].right,
+                marginTop: -height * TRIM[action].top,
+                marginBottom: -height * TRIM[action].bottom,
+              }
+            : {}),
+        }}
         resizeMode="contain"
       />
     </Pressable>

@@ -28,7 +28,7 @@ export default function VelocityLabLanding() {
       <Stack.Screen
         options={{
           title: 'Velocity Lab',
-          headerTitle: () => <Wordmark app="velocityLab" size="sm" />,
+          headerTitle: () => <Wordmark app="velocityLab" size="hdr" />,
           headerRight: () => (
             <Link href="/settings" asChild>
               <Pressable style={styles.headerLink}>
@@ -41,7 +41,6 @@ export default function VelocityLabLanding() {
 
       <TrackerBadgesRow />
 
-      <Wordmark app="velocityLab" size="md" style={styles.brand} />
       <Text style={styles.paragraph}>
         Raw tracker frames, timestamps, and velocity — no workout, no scoring.
       </Text>
@@ -69,7 +68,6 @@ export default function VelocityLabLanding() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 16, backgroundColor: colors.background },
-  brand: { alignSelf: 'flex-start', marginVertical: 4 },
   paragraph: {
     fontSize: sizes.body,
     fontFamily: fonts.body,

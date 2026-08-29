@@ -45,11 +45,15 @@ export function TrackerBadgesRow(): React.ReactElement {
 const styles = StyleSheet.create({
   banner: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    // Tight chrome: the action pair sits at the extreme top-right of the
+    // page (Kyle), so the banner carries almost no padding of its own.
+    paddingTop: 2,
+    paddingBottom: 4,
+    paddingLeft: 12,
+    paddingRight: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
     backgroundColor: colors.surface,
@@ -59,11 +63,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    paddingTop: 8,
   },
   actions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'flex-start',
+    gap: 2,
     flexShrink: 1,
+    marginLeft: 'auto',
   },
 })
