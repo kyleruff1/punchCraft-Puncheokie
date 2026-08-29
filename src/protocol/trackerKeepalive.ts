@@ -177,7 +177,22 @@ export function startTrackerKeepalive(): void {
     for (const tracker of KNOWN_TRACKERS) {
       try {
         facade.onConnectionChange(tracker.address, (status) => {
-          if (status.state === 'ready') void readBattery(facade, tracker)
+          if (status.state !== 'ready') return
+          void readBattery(facade, tracker)
+          // Device-info bytes carry the firmware revision — captured per
+          // connect so the two gloves' firmware can be compared (red's
+          // seconds-scale drops vs blue's holds, 2026-08-29).
+          void facade
+            .readCharacteristic(tracker.address, FIGHTCAMP_SERVICE_UUID, CHAR.DEVICE_INFO_READ)
+            .then((info) => {
+              if (info.success && info.valueHex) {
+                logger.info('keepalive.deviceInfo', 'glove device-info bytes', {
+                  hand: safe(tracker.hand),
+                  valueHex: safe(info.valueHex),
+                })
+              }
+            })
+            .catch(() => {})
         })
       } catch {
         // The beat still covers any glove that holds.
