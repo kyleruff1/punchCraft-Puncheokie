@@ -198,11 +198,15 @@ function headerWordmark(app: WordmarkApp) {
     // and ignores headerTitleContainerStyle, which silently broke the
     // 25% placement — an explicit window-width bar restores real
     // percentage geometry.
-    const { width } = useWindowDimensions()
+    const { width, height } = useWindowDimensions()
+    // From the old 25% centre (Kyle 2026-08-29): landscape pulls the mark
+    // 15 points toward the left boundary, portrait pushes it 15 points
+    // the other way.
+    const brandCentre = width > height ? '10%' : '40%'
     return (
       <View style={[styles.headerBar, { width }]}>
         <HeaderLedZone />
-        <View style={styles.headerBrand}>
+        <View style={[styles.headerBrand, { marginLeft: brandCentre }]}>
           <Wordmark app={app} size="hdr" />
         </View>
         <HeaderRightZone />
@@ -296,9 +300,9 @@ const styles = StyleSheet.create({
     borderColor: punch.silver,
   },
   headerBrand: {
-    // Centre of the mark on the 25% line: walk to 25%, then back by half
-    // the hdr wordmark's width (80 × 3:1 → 240 → -120).
-    marginLeft: '25%',
+    // The centre line comes from the component (10% landscape / 25%
+    // portrait); the translate walks back by half the hdr wordmark's
+    // width (80 × 3:1 → 240 → -120) so the CENTRE sits on that line.
     transform: [{ translateX: -120 }],
   },
   headerRightZone: {
