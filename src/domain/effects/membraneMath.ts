@@ -218,6 +218,16 @@ export function visualCoverage(charge: number): number {
 }
 
 /**
+ * Charge → the shader's coverage, with the brief's 0.04 deadband: a
+ * near-zero charge is EXACTLY zero on glass, so the baseline stays
+ * pristine and the sleep gate can never freeze a faint residue.
+ */
+export function coverageOf(charge: number): number {
+  'worklet'
+  return smoothstepOf(0.04, 1, visualCoverage(charge))
+}
+
+/**
  * How long (seconds) the pane must stay awake for every veil charge to
  * fade below the visible floor — keeps the sleep gate from freezing a
  * dimmed frame.

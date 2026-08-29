@@ -19,9 +19,9 @@ import {
   MAX_IMPULSES,
   WAVE_DAMP,
   WAVE_OMEGA,
+  coverageOf,
   gelResponse,
   packImpulses,
-  visualCoverage,
   type MembraneImpulse,
 } from './membraneMath'
 
@@ -142,10 +142,15 @@ half4 main(float2 xy) {
   float broadCloud = vnoise(broadCoords * 4.0) * 0.65 + vnoise(broadCoords * 9.0) * 0.35;
 
   // Per-scale thresholded reveal, each on its own decay clock (dust
-  // clears first, debris next, the broad veil last).
-  float fineMask = smoothstep(0.95 - uVeil.x, 1.01 - uVeil.x, fineGrain);
-  float debrisMask = smoothstep(0.95 - uVeil.y, 1.01 - uVeil.y, mediumGrain);
-  float veilMask = smoothstep(0.95 - uVeil.z, 1.01 - uVeil.z, broadCloud);
+  // clears first, debris next, the broad veil last). The threshold
+  // starts ABOVE the texture's maximum, so zero coverage reveals
+  // exactly nothing — the baseline composition is pristine.
+  float fineThr = 1.09 - uVeil.x * 1.14;
+  float debrisThr = 1.09 - uVeil.y * 1.14;
+  float veilThr = 1.09 - uVeil.z * 1.14;
+  float fineMask = smoothstep(fineThr - 0.06, fineThr + 0.06, fineGrain);
+  float debrisMask = smoothstep(debrisThr - 0.06, debrisThr + 0.06, mediumGrain);
+  float veilMask = smoothstep(veilThr - 0.06, veilThr + 0.06, broadCloud);
   float particleOcclusion = fineMask * 0.45 + debrisMask * 0.35 + veilMask * 0.2;
 
   float effectiveCoverage = clamp(
@@ -237,12 +242,12 @@ export function buildMembraneUniforms(
     // knob for the lab.
     uMask: [0.78, 0.14, 1.0, 1.0],
     uTuning: [tuning.refraction, tuning.grainOpacity, tuning.compressionGain, tuning.gelGain],
-    // Perceptual coverage per scale, so recovery reads staged rather
-    // than tracking the raw exponentials.
+    // Perceptual coverage per scale (with the 0.04 deadband), so
+    // recovery reads staged and near-zero charges are exactly zero.
     uVeil: [
-      Math.min(1, visualCoverage(veil.dust)),
-      Math.min(1, visualCoverage(veil.debris)),
-      Math.min(1, visualCoverage(veil.veil)),
+      Math.min(1, coverageOf(veil.dust)),
+      Math.min(1, coverageOf(veil.debris)),
+      Math.min(1, coverageOf(veil.veil)),
       Math.max(0, Math.min(1, veil.impact)),
     ],
     uA: packed.a,

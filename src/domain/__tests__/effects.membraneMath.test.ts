@@ -18,6 +18,7 @@ import {
   MEMBRANE_PRESETS,
   bumpEnv,
   convergenceImpulse,
+  coverageOf,
   decayedEnv,
   detectConvergence,
   expiryOf,
@@ -323,6 +324,13 @@ describe('pummel veil', () => {
     expect(visualCoverage(0)).toBe(0)
     expect(visualCoverage(1)).toBe(1)
     expect(visualCoverage(0.5)).toBeLessThan(0.5)
+  })
+
+  it('the shader coverage has the 0.04 deadband: near-zero is exactly zero', () => {
+    expect(coverageOf(0)).toBe(0)
+    expect(coverageOf(0.03)).toBe(0)
+    expect(coverageOf(0.1)).toBeGreaterThan(0)
+    expect(coverageOf(1)).toBe(1)
   })
 })
 
