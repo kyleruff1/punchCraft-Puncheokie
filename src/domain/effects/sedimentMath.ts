@@ -184,8 +184,8 @@ export function kickTray(tray: TrayState, handCode: number, strength: number, se
   'worklet'
   return {
     ...tray,
-    velX: tray.velX + impulseDirection(handCode) * TRAY_KICK * strength * 8,
-    velY: tray.velY + (hash01(seed, 11) - 0.5) * TRAY_KICK * strength * 3,
+    velX: tray.velX + impulseDirection(handCode) * TRAY_KICK * strength * 3,
+    velY: tray.velY + (hash01(seed, 11) - 0.5) * TRAY_KICK * strength * 1.5,
   }
 }
 

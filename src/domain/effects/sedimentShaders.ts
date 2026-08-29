@@ -207,8 +207,10 @@ uniform float4 uTuning;
 ${SNIPPET_COMMON}
 
 float maskAt(float2 uv) {
-  float rail = mix(1.0, uMask.z, smoothstep(uMask.x - 0.02, uMask.x, uv.x));
-  float top = mix(uMask.w, 1.0, smoothstep(uMask.y - 0.02, uMask.y, uv.y));
+  // WIDE feathers: a tight mask edge turns the moving field into a
+  // visible sliding rectangle against the still KPI zones.
+  float rail = mix(1.0, uMask.z, smoothstep(uMask.x - 0.16, uMask.x + 0.06, uv.x));
+  float top = mix(uMask.w, 1.0, smoothstep(uMask.y - 0.04, uMask.y + 0.14, uv.y));
   return rail * top;
 }
 
@@ -217,30 +219,41 @@ half4 main(float2 xy) {
   float2 g = uv * uGrid;
   half4 mem = memoryCur.eval(g);
   half4 mot = motionCur.eval(g);
-  float2 disp = decode2(mem.rg, SETTLED_RANGE) + decode2(mot.rg, ELASTIC_RANGE) + uTrayOffset;
+  float2 settled = decode2(mem.rg, SETTLED_RANGE);
+  float2 elastic = decode2(mot.rg, ELASTIC_RANGE);
+  // The tray contributes a fraction: the whole-pane shake should read
+  // as a shiver in the refraction, never a sliding slab.
+  float2 disp = settled + elastic + uTrayOffset * 0.35;
   float density = float(mem.b);
   float mobility = float(mem.a);
   float fieldMask = maskAt(uv) * uCalm;
 
   half4 base = backdrop.eval(xy + disp * uOut * uTuning.x * fieldMask);
 
-  // Sharp silver fragments: high-frequency grain sampled through the
+  // Sharp silver fragments: fine grain sampled through the
   // displacement — settled grains stay put, moving grains ride along.
-  float2 grainUv = (uv + disp * 1.4) * uTuning.z;
-  float grain = shash(floor(grainUv));
-  float fragments = smoothstep(0.985, 0.998, density * (0.55 + grain));
+  // Soft-edged and sparse; density shifts WHERE they appear, never
+  // hard-gates whole cells into white blocks.
+  float2 grainUv = (uv + (settled + elastic) * 1.4) * uTuning.z;
+  float grain = shash(floor(grainUv * float2(2.6, 1.5)));
+  float fragments = smoothstep(0.93, 0.995, grain * (0.45 + 0.55 * density)) * 0.4;
 
   // Dark glass deposits where material has accumulated.
-  float deposits = smoothstep(0.35, 0.9, density) * uTuning.y;
+  float deposits = smoothstep(0.45, 0.9, density) * uTuning.y * 0.6;
 
+  // Hand tint lives on CRESTS and DECAYS with the pressure envelopes —
+  // the settled arrangement keeps its shape but never keeps a color
+  // wash (displacement is permanent; the glow is not).
+  float crest = smoothstep(0.005, 0.03, length(elastic) + length(settled) * 0.3);
   float leftGlow = uPressureLR.x * exp(-max(0.0, uTimeSec - uPressureLR.y) / 2.0);
   float rightGlow = uPressureLR.z * exp(-max(0.0, uTimeSec - uPressureLR.w) / 2.0);
-  half3 tint = half3(0.12, 0.73, 0.77) * half(leftGlow * max(0.0, -disp.x) * 14.0) +
-               half3(0.89, 0.46, 0.11) * half(rightGlow * max(0.0, disp.x) * 14.0);
+  half3 tint = (half3(0.12, 0.73, 0.77) * half(min(leftGlow, 1.0)) +
+                half3(0.89, 0.46, 0.11) * half(min(rightGlow, 1.0))) *
+               half(crest * 0.55);
 
   half3 color = half3(base.rgb);
   color = mix(color, half3(0.03, 0.04, 0.05), half(deposits * fieldMask));
-  color += half3(0.86, 0.9, 0.92) * half(fragments * fieldMask * (0.35 + 0.65 * mobility));
+  color += half3(0.86, 0.9, 0.92) * half(fragments * fieldMask * (0.3 + 0.7 * mobility));
   color += tint * half(fieldMask);
   return half4(color, 1.0);
 }
