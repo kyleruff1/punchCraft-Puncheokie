@@ -6,7 +6,7 @@ import type { GestureResponderEvent } from 'react-native'
 import { Wordmark, type WordmarkApp } from '@/components/branding/Wordmark'
 import { ConnectTrackersButton } from '@components/ConnectTrackersButton'
 import { FixTrackerButton } from '@components/FixTrackerButton'
-import { formatCountdown, GloveChip } from '@components/workout/RoundTopBar'
+import { formatCountdown } from '@components/workout/RoundTopBar'
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { useTrackerStore } from '@/state/useTrackerStore'
@@ -111,36 +111,58 @@ function HeaderRoundClock(): React.JSX.Element {
 }
 
 /**
- * The tracker cluster — L/R status badges plus the connect and fix
- * buttons — lives in the header's 75% zone (Kyle 2026-08-28), replacing
- * the old banner that read as a second header under the real one.
+ * A tracker LED (Kyle 2026-08-28): a pure light, no letter, no words.
+ * The hue IS the hand — turquoise mirrors the physical blue left glove,
+ * Ferrari red the right — so a lit lamp means connected and a dim,
+ * almost-black lamp with a hint of the hue means not, exactly like an
+ * unlit LED. Assistive tech still hears which hand and whether it is
+ * connected via the label.
  */
-function HeaderTrackerCluster(): React.JSX.Element {
-  const left = useTrackerStore((s) => s.slots.left)
-  const right = useTrackerStore((s) => s.slots.right)
+function TrackerLed(props: { hand: 'L' | 'R' }): React.JSX.Element {
+  const { hand } = props
+  const slot = useTrackerStore((s) => (hand === 'L' ? s.slots.left : s.slots.right))
+  const state = slot?.state ?? 'dormant'
+  const lit = state === 'ready' || state === 'streaming'
+  const lamp =
+    hand === 'L'
+      ? { lit: colors.ledLeftLit, dim: colors.ledLeftDim, halo: colors.ledLeftHalo }
+      : { lit: colors.ledRightLit, dim: colors.ledRightDim, halo: colors.ledRightHalo }
   return (
-    <View style={styles.headerTrackers}>
-      {/* 2×2 (Kyle): each glove's compact chip ("L ● Off") sits directly
-          over the button that serves it — L over connect, R over fix —
-          so the cluster reads as two tight columns, never a wrapping
-          row. */}
-      {/* Buttons on the TOP row, their glove chips underneath (Kyle). */}
-      <View style={styles.headerTrackerColumn}>
-        <ConnectTrackersButton />
-        <GloveChip hand="L" state={left?.state ?? 'dormant'} quiet />
-      </View>
-      <View style={styles.headerTrackerColumn}>
-        <FixTrackerButton />
-        <GloveChip hand="R" state={right?.state ?? 'dormant'} quiet />
-      </View>
+    <View
+      accessibilityLabel={`${hand === 'L' ? 'Left' : 'Right'} tracker ${lit ? 'connected' : 'not connected'}`}
+      style={[styles.ledHalo, lit && { backgroundColor: lamp.halo }]}
+      testID={`tracker-led-${hand}`}
+    >
+      <View
+        style={[
+          styles.led,
+          { backgroundColor: lit ? lamp.lit : lamp.dim },
+          !lit && styles.ledUnlit,
+        ]}
+      />
+    </View>
+  )
+}
+
+/**
+ * The LED pair sits at 5% from the left edge, ahead of the wordmark —
+ * always visible, including mid-workout, so tracker health stays one
+ * glance away.
+ */
+function HeaderLedZone(): React.JSX.Element {
+  return (
+    <View style={styles.headerLedZone}>
+      <TrackerLed hand="L" />
+      <TrackerLed hand="R" />
     </View>
   )
 }
 
 /**
  * The header's right zone, centred on the 75% line: round + clock while
- * a session runs, the tracker cluster otherwise. Reads the stores
- * directly because the tabs header lives OUTSIDE the screens' trees.
+ * a session runs, the connect + fix buttons side by side otherwise.
+ * Reads the store directly because the tabs header lives OUTSIDE the
+ * screens' trees.
  */
 function HeaderRightZone(): React.JSX.Element {
   const live = useLive()
@@ -151,7 +173,14 @@ function HeaderRightZone(): React.JSX.Element {
     live.phase === 'paused'
   return (
     <View style={styles.headerRightZone}>
-      {running && live.roundCount > 0 ? <HeaderRoundClock /> : <HeaderTrackerCluster />}
+      {running && live.roundCount > 0 ? (
+        <HeaderRoundClock />
+      ) : (
+        <View style={styles.headerTrackers}>
+          <ConnectTrackersButton />
+          <FixTrackerButton />
+        </View>
+      )}
     </View>
   )
 }
@@ -165,6 +194,7 @@ function headerWordmark(app: WordmarkApp) {
     const { width } = useWindowDimensions()
     return (
       <View style={[styles.headerBar, { width }]}>
+        <HeaderLedZone />
         <View style={styles.headerBrand}>
           <Wordmark app={app} size="hdr" />
         </View>
@@ -263,18 +293,42 @@ const styles = StyleSheet.create({
   headerClockBlock: {
     alignItems: 'center',
   },
+  headerLedZone: {
+    // Left edge on the 5% line, ahead of the wordmark (Kyle).
+    position: 'absolute',
+    left: '5%',
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  ledHalo: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  led: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
+  // The unlit lamp keeps a faint rim so it reads as a lamp that is off,
+  // not a stray dot.
+  ledUnlit: {
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+  },
   headerTrackers: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'center',
-    // Nearly touching (Kyle) — the pair reads as one 2x2 block.
-    gap: 4,
+    // Side by side, nearly touching — same pill height, widths differ.
+    gap: 8,
     flexWrap: 'nowrap',
-  },
-  headerTrackerColumn: {
-    alignItems: 'center',
-    // Chip snug under its button — the four items read as one block.
-    gap: 2,
   },
   headerRound: {
     fontSize: sizes.body,

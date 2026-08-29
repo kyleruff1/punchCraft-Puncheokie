@@ -154,6 +154,21 @@ export const colors = {
    */
   trackerLeft: punch.gloveBlue,
   trackerRight: punch.gloveRedOrange,
+
+  /**
+   * Header tracker LEDs (Kyle 2026-08-28): pure lights, no words. Lit is
+   * near-neon (turquoise left / Ferrari red right); dim is almost black
+   * with a hint of the hue — an unlit LED, not an error message. The
+   * §19.4 text-label rule is deliberately waived here: the lamp mimics
+   * the physical glove's colour-coding, and assistive tech still gets a
+   * spoken label from the component.
+   */
+  ledLeftLit: '#35F0E8',
+  ledLeftDim: '#12383A',
+  ledLeftHalo: 'rgba(53, 240, 232, 0.30)',
+  ledRightLit: '#FF3B30',
+  ledRightDim: '#3B1412',
+  ledRightHalo: 'rgba(255, 59, 48, 0.30)',
 } as const
 
 /**

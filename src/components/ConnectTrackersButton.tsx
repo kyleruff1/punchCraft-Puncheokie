@@ -99,20 +99,27 @@ export function ConnectTrackersButton(): React.ReactElement {
         style={bothLive && styles.buttonQuiet}
         testID="connect-trackers"
       />
-      {busy ? (
-        <Text style={styles.note} testID="connect-trackers-busy">
-          {BUSY_LABEL}
-        </Text>
-      ) : null}
-      {note ? (
-        <Text style={styles.note} testID="connect-trackers-note">
-          {note}
-        </Text>
-      ) : null}
-      {retryNote ? (
-        <Text style={styles.note} testID="connect-trackers-retry-note">
-          {retryNote}
-        </Text>
+      {/* Notes hang in an absolute overlay below the button: they
+          paint over whatever is under the header but take NO layout space,
+          so a long message can never displace the tracker block. */}
+      {busy || note || retryNote ? (
+        <View style={styles.noteOverlay} pointerEvents="none">
+          {busy ? (
+            <Text style={styles.note} testID="connect-trackers-busy">
+              {BUSY_LABEL}
+            </Text>
+          ) : null}
+          {note ? (
+            <Text style={styles.note} testID="connect-trackers-note">
+              {note}
+            </Text>
+          ) : null}
+          {retryNote ? (
+            <Text style={styles.note} testID="connect-trackers-retry-note">
+              {retryNote}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </View>
   )
@@ -123,17 +130,28 @@ export function ConnectTrackersButton(): React.ReactElement {
 const CONNECT_BUTTON_HEIGHT = 30
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: 2, alignItems: 'center' },
   // Quiet when both trackers are already live — still tappable, since the
   // athlete may want to force a fresh bind, but not shouting for attention.
   buttonQuiet: {
     opacity: 0.55,
+  },
+  noteOverlay: {
+    position: 'absolute',
+    top: '100%',
+    left: '50%',
+    width: 320,
+    marginLeft: -160,
+    marginTop: 4,
+    alignItems: 'center',
+    gap: 2,
+    zIndex: 20,
   },
   note: {
     fontSize: 12,
     lineHeight: 16,
     color: colors.textSecondary,
     textAlign: 'center',
-    maxWidth: 260,
+    maxWidth: 300,
   },
 })

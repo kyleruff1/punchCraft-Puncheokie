@@ -85,15 +85,21 @@ export function FixTrackerButton(): React.ReactElement | null {
         accessibilityHint="Opens Bluetooth settings so you can toggle it off and on, then reconnects the trackers"
         testID="fix-tracker-connection"
       />
-      {statusLine ? (
-        <Text style={styles.hint} testID="fix-tracker-status">
-          {statusLine}
-        </Text>
-      ) : null}
-      {result.phase === 'done' && result.status ? (
-        <Text style={styles.hint} testID="fix-tracker-hint">
-          {HINT_FOR[result.status]}
-        </Text>
+      {/* Absolute overlay: hints paint below the button without taking
+          layout space, so they can never displace the tracker cluster. */}
+      {statusLine || (result.phase === 'done' && result.status) ? (
+        <View style={styles.hintOverlay} pointerEvents="none">
+          {statusLine ? (
+            <Text style={styles.hint} testID="fix-tracker-status">
+              {statusLine}
+            </Text>
+          ) : null}
+          {result.phase === 'done' && result.status ? (
+            <Text style={styles.hint} testID="fix-tracker-hint">
+              {HINT_FOR[result.status]}
+            </Text>
+          ) : null}
+        </View>
       ) : null}
     </View>
   )
@@ -104,11 +110,23 @@ export function FixTrackerButton(): React.ReactElement | null {
 const FIX_BUTTON_HEIGHT = 30
 
 const styles = StyleSheet.create({
-  wrap: { gap: 6 },
+  wrap: { gap: 2, alignItems: 'center' },
+  hintOverlay: {
+    position: 'absolute',
+    top: '100%',
+    left: '50%',
+    width: 320,
+    marginLeft: -160,
+    marginTop: 4,
+    alignItems: 'center',
+    gap: 2,
+    zIndex: 20,
+  },
   hint: {
     fontSize: 12,
     lineHeight: 16,
     color: colors.textSecondary,
     textAlign: 'center',
+    maxWidth: 300,
   },
 })
