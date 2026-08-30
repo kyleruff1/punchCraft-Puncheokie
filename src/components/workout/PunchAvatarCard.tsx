@@ -60,6 +60,7 @@ interface Shown {
   key: string
   frames: PunchAvatarFrames
   windowMs: number
+  isLast: boolean
   startedAt: number
 }
 
@@ -67,7 +68,8 @@ interface Shown {
 function requestedFor(
   cue: CueInstance | undefined,
   tokenIndex: number,
-): { key: string; frames: PunchAvatarFrames; windowMs: number } | null {
+  lastPunchIndex: number,
+): { key: string; frames: PunchAvatarFrames; windowMs: number; isLast: boolean } | null {
   if (!cue || tokenIndex < 0) return null
   const token = cue.tokens[tokenIndex]
   if (!token || token.kind !== 'punch') return null
@@ -77,7 +79,8 @@ function requestedFor(
   // the cue, the beat grid otherwise.
   const dueTimes = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
-  return { key: punchAvatarKey(token.number, token.body), frames, windowMs }
+  const isLast = tokenIndex === lastPunchIndex
+  return { key: punchAvatarKey(token.number, token.body), frames, windowMs, isLast }
 }
 
 export function PunchAvatarCard(props: {
@@ -116,11 +119,13 @@ export function PunchAvatarCard(props: {
   // active index parked the figure in guard for the entire block.
   const engineLit = activeTokenIndex >= 0 && punchIndexes.includes(activeTokenIndex)
   const tokenIndex = engineLit ? activeTokenIndex : (punchIndexes[demoPos] ?? -1)
-  const requested = requestedFor(cue, tokenIndex)
+  const lastPunchIndex = punchIndexes.at(-1) ?? -1
+  const requested = requestedFor(cue, tokenIndex, lastPunchIndex)
   // The identity the effect actually keys off; the object itself is rebuilt
   // every render, so it travels by ref instead of through the deps array.
   const requestedKey = requested?.key ?? null
   const requestedWindowMs = requested?.windowMs ?? 0
+  const requestedIsLast = requested?.isLast ?? false
   const requestedRef = useRef(requested)
   requestedRef.current = requested
 
@@ -146,7 +151,7 @@ export function PunchAvatarCard(props: {
       adopt()
       return
     }
-    const hold = minHoldMs(current.windowMs)
+    const hold = minHoldMs(current.windowMs, current.isLast)
     const heldFor = Date.now() - current.startedAt
     if (heldFor >= hold) {
       adopt()
@@ -160,17 +165,17 @@ export function PunchAvatarCard(props: {
       if (promoteRef.current) clearTimeout(promoteRef.current)
       promoteRef.current = null
     }
-  }, [requestedKey, requestedWindowMs])
+  }, [requestedKey, requestedWindowMs, requestedIsLast])
 
   // Walk to the next punch when the engine is quiet, on that punch's own
   // window so the demonstration keeps the combination's rhythm.
   const stepCount = punchIndexes.length
   useEffect(() => {
     if (engineLit || stepCount === 0 || requestedWindowMs <= 0) return
-    const dwell = Math.max(requestedWindowMs, minHoldMs(requestedWindowMs))
+    const dwell = Math.max(requestedWindowMs, minHoldMs(requestedWindowMs, requestedIsLast))
     const timer = setTimeout(() => setDemoPos((p) => (p + 1) % stepCount), dwell)
     return () => clearTimeout(timer)
-  }, [engineLit, stepCount, requestedWindowMs, demoPos])
+  }, [engineLit, stepCount, requestedWindowMs, requestedIsLast, demoPos])
 
   // Flip: wind-up, strike, hold the strike, back to guard, repeat on the
   // beat. LEVEL-TRIGGERED on purpose — the frame is recomputed from elapsed
@@ -180,10 +185,10 @@ export function PunchAvatarCard(props: {
   // a lost tick costs is one frame of lag before the clock corrects it.
   useEffect(() => {
     if (!shown || reducedMotion) return
-    const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs))
+    const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs, shown.isLast))
     const tick = (): void => {
       const elapsed = (Date.now() - shown.startedAt) % beat
-      setStep(avatarFrameAt(elapsed, shown.windowMs))
+      setStep(avatarFrameAt(elapsed, shown.windowMs, shown.isLast))
     }
     tick()
     const id = setInterval(tick, FLIP_TICK_MS)

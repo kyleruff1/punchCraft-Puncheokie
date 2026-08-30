@@ -11,6 +11,14 @@
  * contract, and it is what the constants and `avatarFrameAt` below
  * exist to guarantee.
  *
+ * The LAST punch of a chain gets a sandwich instead of a flip: its
+ * window splits into thirds — STRIKE, RETRACTED, STRIKE — so every
+ * combination ends on the identifying frame. The reader sees the same
+ * frame at the top and tail of the chain and never notices that the
+ * pairing was reversed. Only the last punch does this; every earlier
+ * punch keeps the two-frame flip, and the last punch's thirds do not
+ * shift any earlier punch's timing (Kyle 2026-08-30).
+ *
  * Identity is derived from the token itself (`number` + `body`), never
  * from a parallel table: the punch nodes and the avatar read one mapping,
  * so a renamed asset fails in the generator or a Jest test rather than
@@ -38,14 +46,17 @@ export function punchAvatarKey(number: PunchNumber, body: boolean): string {
 
 /**
  * The full flip is sacred: a punch owns the card for at least this long so
- * step 1 AND step 2 both land, even when the next token is already due.
- * Derived from the window rather than fixed, because a slower window draws
- * a longer frame — a flat floor would let a fast token pre-empt the strike.
- * Tokens arriving inside the hold replace each other, so the card skips
- * ahead rather than falling behind the rings.
+ * every frame lands, even when the next token is already due. Derived from
+ * the window rather than fixed, because a slower window draws a longer
+ * frame — a flat floor would let a fast token pre-empt the strike. Tokens
+ * arriving inside the hold replace each other, so the card skips ahead
+ * rather than falling behind the rings.
+ *
+ * A last-in-chain punch has three frames to protect (strike, retracted,
+ * strike), so its hold is three frame-durations rather than two.
  */
-export function minHoldMs(windowMs: number): number {
-  return flipFrameMs(windowMs) * 2
+export function minHoldMs(windowMs: number, isLast: boolean = false): number {
+  return flipFrameMs(windowMs) * (isLast ? 3 : 2)
 }
 
 /** Frame duration for a window: a quarter of it, fenced by the readability bounds. */
@@ -68,11 +79,25 @@ export function avatarResetAtMs(windowMs: number): number {
  * Which frame is showing `elapsedMs` into a punch whose window is
  * `windowMs`: strike first (unique per punch), retracted-guard second,
  * then hold the guard until just before the next beat where the strike
- * primes again. The card schedules its flips off the same two functions,
- * so the spec under test and the runtime cannot drift.
+ * primes again. Pass `isLast` for the final punch of a chain — that one
+ * uses a strict three-way split of its window (strike / retracted /
+ * strike) so the combination ends on the identifying frame; the last
+ * punch's thirds don't affect any earlier punch. The card schedules its
+ * flips off the same two functions, so the spec under test and the
+ * runtime cannot drift.
  */
-export function avatarFrameAt(elapsedMs: number, windowMs: number): AvatarStep {
+export function avatarFrameAt(
+  elapsedMs: number,
+  windowMs: number,
+  isLast: boolean = false,
+): AvatarStep {
   const t = Math.max(0, elapsedMs)
+  if (isLast) {
+    const third = Math.max(0, windowMs) / 3
+    if (t < third) return 'step1'
+    if (t < 2 * third) return 'step2'
+    return 'step1'
+  }
   if (t < flipFrameMs(windowMs)) return 'step1'
   return t < avatarResetAtMs(windowMs) ? 'step2' : 'step1'
 }

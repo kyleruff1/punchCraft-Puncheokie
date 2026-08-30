@@ -266,6 +266,59 @@ describe('PunchAvatarCard — only punches steer it', () => {
   })
 })
 
+describe('PunchAvatarCard — the last-in-chain sandwich', () => {
+  // Kyle 2026-08-30: the final punch of a chain has to end on the
+  // strike frame. The card gets that by splitting the last punch's
+  // window into thirds — strike, retracted, strike — so the reader
+  // sees the identifying frame at the tail of every combination.
+  beforeEach(() => jest.useFakeTimers())
+  afterEach(() => jest.useRealTimers())
+
+  const opacityOf = (tree: ReactTestRenderer, id: string): number => {
+    const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
+    return [node.props.style]
+      .flat()
+      .reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+  }
+
+  it('ends the chain on the strike, not the retracted', () => {
+    // A three-punch chain, engine lit on the last. The chain's tail
+    // frame under the sandwich is the strike (step1).
+    const combo = cue([punch(1), punch(2), punch(3)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={2} />)
+    // A generous window (400ms per token) so each third of the last
+    // punch is ~133ms, comfortably above one FLIP_TICK_MS (30).
+    act(() => {
+      jest.advanceTimersByTime(380)
+    })
+    // Two-thirds through the last punch's window we should be on the
+    // final strike slot, not the retracted middle.
+    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1)
+    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(0)
+  })
+
+  it('a middle punch keeps the classic two-frame flip', () => {
+    // Middle punch of a three-punch chain: isLast is false, so the
+    // window drives the old strike-then-retracted call, and the last
+    // punch's sandwich cannot reach here.
+    const combo = cue([punch(1), punch(2), punch(3)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
+    act(() => {
+      jest.advanceTimersByTime(120)
+    })
+    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(1)
+    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(0)
+  })
+
+  it('a solo-punch chain sandwiches that one punch', () => {
+    const tree = render(<PunchAvatarCard cue={cue([punch(4)])} activeTokenIndex={0} />)
+    act(() => {
+      jest.advanceTimersByTime(380)
+    })
+    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1)
+  })
+})
+
 describe('PunchAvatarCard — under the live re-render cadence', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())

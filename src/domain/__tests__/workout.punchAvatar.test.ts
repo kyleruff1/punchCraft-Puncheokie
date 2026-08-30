@@ -105,6 +105,70 @@ describe('avatarFrameAt — both frames always play', () => {
   })
 })
 
+describe('avatarFrameAt — the last-in-chain sandwich', () => {
+  // Kyle 2026-08-30: the final punch of every combination splits its
+  // window into thirds — strike, retracted, strike — so the reader
+  // always sees the identifying frame last and never notices the pair
+  // was reversed under the hood.
+  const windows = [180, 300, 450, 600, 900, 1500, 3000]
+
+  it.each(windows)('window %sms starts on the strike', (windowMs) => {
+    expect(avatarFrameAt(0, windowMs, true)).toBe('step1')
+  })
+
+  it.each(windows)('window %sms shows all three slots — strike, retracted, strike', (windowMs) => {
+    const third = windowMs / 3
+    expect(avatarFrameAt(third - 1, windowMs, true)).toBe('step1')
+    expect(avatarFrameAt(third + 1, windowMs, true)).toBe('step2')
+    expect(avatarFrameAt(2 * third - 1, windowMs, true)).toBe('step2')
+    expect(avatarFrameAt(2 * third + 1, windowMs, true)).toBe('step1')
+  })
+
+  it.each(windows)('window %sms ends on the strike, not the retracted', (windowMs) => {
+    // Walking the whole window at fine resolution, the last frame
+    // sampled must be the strike; that is the only rule that makes the
+    // sandwich hide the reversal.
+    let last: string = 'step1'
+    for (let t = 0; t <= windowMs; t += 5) last = avatarFrameAt(t, windowMs, true)
+    expect(last).toBe('step1')
+  })
+
+  it('holds every one of the three frames long enough to see', () => {
+    // At the tightest sensible window the sandwich still gives each
+    // frame at least a MIN_FRAME_MS chunk (windowMs / 3 >= MIN_FRAME_MS
+    // → windowMs >= 3 * MIN_FRAME_MS = 270).
+    const windowMs = MIN_FRAME_MS * 3
+    const seen = new Set<string>()
+    for (let t = 0; t < windowMs; t += 5) seen.add(avatarFrameAt(t, windowMs, true))
+    expect(seen.has('step1')).toBe(true)
+    expect(seen.has('step2')).toBe(true)
+  })
+
+  it('does not affect an earlier punch in the same chain', () => {
+    // Only the caller's isLast flag drives the sandwich; without it,
+    // the flip is the classic two-frame call — no way for the last
+    // punch's thirds to reach an earlier punch's timing.
+    const windowMs = 600
+    expect(avatarFrameAt(flipFrameMs(windowMs), windowMs)).toBe('step2')
+    expect(avatarFrameAt(flipFrameMs(windowMs), windowMs, false)).toBe('step2')
+  })
+
+  it('gives the last punch a longer minimum hold than a middle punch', () => {
+    // The sandwich has three frames to protect, so the card refuses
+    // to be preempted before all three land.
+    const windowMs = 600
+    expect(minHoldMs(windowMs, true)).toBe(flipFrameMs(windowMs) * 3)
+    expect(minHoldMs(windowMs, true)).toBeGreaterThan(minHoldMs(windowMs))
+  })
+
+  it('a solo punch is its own chain — it gets the sandwich', () => {
+    // The card treats a one-punch cue as a chain of length one; that
+    // punch is both first and last, so it plays the three-way split.
+    expect(avatarFrameAt(0, 600, true)).toBe('step1')
+    expect(avatarFrameAt(500, 600, true)).toBe('step1')
+  })
+})
+
 describe('avatarWindowMs', () => {
   const due = [0, 400, 900]
 
