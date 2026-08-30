@@ -213,14 +213,45 @@ export function strikeFor(number: PunchNumber, body: boolean): StrikeDefinition 
 }
 
 /**
- * A stable per-occurrence identifier for a strike inside a cue.
- * Format: `${cueId}:${tokenIndex}`. Scoped to the round via cueId
- * (round-unique per RhythmMap.ts:213-215 convention).
- *
- * For `1-1-2` at cue `sp1-b2#0`: strikeIds are
- * `sp1-b2#0:0`, `sp1-b2#0:1`, `sp1-b2#0:2` — three distinct
- * identities for what today collapses to `tokenIndex` alone.
+ * The default repetition identifier for a cue that hasn't been
+ * expanded through `compileCue` yet (Phase 3). Sequence cues that
+ * currently produce one CueInstance per authored repeat via
+ * `expandBlock` fall under this default — Phase 3's compiler
+ * generates explicit `rep-0`, `rep-1`, … per authored repeat count.
  */
-export function strikeIdFor(cueId: string, tokenIndex: number): string {
-  return `${cueId}:${tokenIndex}`
+export const DEFAULT_REP_ID = 'rep-0' as const
+
+/**
+ * A stable per-occurrence identifier for a strike inside a cue.
+ * Format: `${cueId}:${repId}:${strikeIndex}` (M39-V2 Phase 2'
+ * amendment). Scoped to the round via cueId (round-unique per
+ * RhythmMap.ts:213-215 convention) and to the compiled repetition
+ * via repId.
+ *
+ * For `1-1-2` under a single-execution cue `sp1-b2#0`:
+ *   `sp1-b2#0:rep-0:0`
+ *   `sp1-b2#0:rep-0:1`
+ *   `sp1-b2#0:rep-0:2`
+ *
+ * For `1-1-2 × 3` under a compiled repeated cue (Phase 3):
+ *   `sp1-b2#0:rep-0:0` … `sp1-b2#0:rep-0:2`
+ *   `sp1-b2#0:rep-1:0` … `sp1-b2#0:rep-1:2`
+ *   `sp1-b2#0:rep-2:0` … `sp1-b2#0:rep-2:2`
+ *
+ * Nine unique strike occurrences — the fix Kyle's amendment
+ * blueprint requires so the ring / avatar / matcher / diagnostics
+ * can distinguish every re-fire.
+ *
+ * Sequence cues without an explicit compiled repetition pass
+ * `DEFAULT_REP_ID`. `expandBlock` already mints distinct cueIds
+ * for each authored repeat (`${blockId}#0`, `#1`, …), so the
+ * pre-Phase-3 codepath still produces unique strikeIds via
+ * distinct cueIds + `rep-0`.
+ */
+export function strikeIdFor(
+  cueId: string,
+  repId: string,
+  strikeIndex: number,
+): string {
+  return `${cueId}:${repId}:${strikeIndex}`
 }

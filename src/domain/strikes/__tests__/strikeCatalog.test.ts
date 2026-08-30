@@ -11,6 +11,7 @@
  *    alone at every consumer).
  */
 import {
+  DEFAULT_REP_ID,
   STRIKE_CATALOG,
   STRIKE_TOKENS,
   strikeFor,
@@ -88,16 +89,39 @@ describe('strikeFor', () => {
 })
 
 describe('strikeIdFor — the fix for repeated tokens in a combo', () => {
-  it('produces distinct ids for the three positions in `1-1-2`', () => {
+  it('produces distinct ids for the three positions in `1-1-2` under one rep', () => {
     const cueId = 'sp1-b2#0'
-    const ids = [strikeIdFor(cueId, 0), strikeIdFor(cueId, 1), strikeIdFor(cueId, 2)]
+    const ids = [
+      strikeIdFor(cueId, DEFAULT_REP_ID, 0),
+      strikeIdFor(cueId, DEFAULT_REP_ID, 1),
+      strikeIdFor(cueId, DEFAULT_REP_ID, 2),
+    ]
     expect(new Set(ids).size).toBe(3)
-    expect(ids[0]).toBe('sp1-b2#0:0')
-    expect(ids[1]).toBe('sp1-b2#0:1')
-    expect(ids[2]).toBe('sp1-b2#0:2')
+    expect(ids[0]).toBe('sp1-b2#0:rep-0:0')
+    expect(ids[1]).toBe('sp1-b2#0:rep-0:1')
+    expect(ids[2]).toBe('sp1-b2#0:rep-0:2')
   })
 
   it('the same tokenIndex under different cues produces distinct ids', () => {
-    expect(strikeIdFor('cue-a', 0)).not.toBe(strikeIdFor('cue-b', 0))
+    expect(strikeIdFor('cue-a', DEFAULT_REP_ID, 0)).not.toBe(
+      strikeIdFor('cue-b', DEFAULT_REP_ID, 0),
+    )
+  })
+
+  it('the three-level id keeps `1-1-2 × 3` at nine unique occurrences (Phase 3 preview)', () => {
+    const cueId = 'sp1-b2#0'
+    const strikesPerRep = 3
+    const reps = ['rep-0', 'rep-1', 'rep-2']
+    const ids: string[] = []
+    for (const repId of reps) {
+      for (let i = 0; i < strikesPerRep; i += 1) {
+        ids.push(strikeIdFor(cueId, repId, i))
+      }
+    }
+    expect(ids).toHaveLength(9)
+    expect(new Set(ids).size).toBe(9)
+    // Format exhaustively pinned so downstream consumers can rely on the shape.
+    expect(ids[0]).toBe('sp1-b2#0:rep-0:0')
+    expect(ids[8]).toBe('sp1-b2#0:rep-2:2')
   })
 })

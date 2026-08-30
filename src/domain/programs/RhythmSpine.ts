@@ -28,7 +28,7 @@
 
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import type { PunchHand, PunchType } from '../punch/PunchEvent'
-import { strikeIdFor } from '../strikes/strikeCatalog'
+import { DEFAULT_REP_ID, strikeIdFor } from '../strikes/strikeCatalog'
 import { tokenOffsetFor } from './tokenOffsets'
 import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
 /**
@@ -194,7 +194,7 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
     const audio = audioTimesFor(timing, i, atMs)
     out.push({
       tokenIndex: i,
-      strikeId: strikeIdFor(cue.id, i),
+      strikeId: strikeIdFor(cue.id, DEFAULT_REP_ID, i),
       atMs,
       audioAtMs: audio.audioAtMs,
       audioEndMs: audio.audioEndMs,
@@ -253,11 +253,12 @@ export function pulsesFor(cue: CueInstance): TokenBeat[] {
         // Count-scored pulses generate many events across the burst
         // window; strikeIndex maps to `(cycle × tokens.length) +
         // tokenIndex` so pulse strikeIds are unique per occurrence
-        // just like sequence-cue strikeIds. This lets the ring UI
-        // dedupe "same node lit twice this second" without treating
-        // consecutive cycles as one continuous highlight.
+        // just like sequence-cue strikeIds. Uses DEFAULT_REP_ID
+        // because count-scored cues don't currently expand through
+        // Phase 3's per-rep compiler — the strike-index space is
+        // scoped by cycle rather than by rep.
         tokenIndex: i,
-        strikeId: strikeIdFor(cue.id, c * tokens.length + i),
+        strikeId: strikeIdFor(cue.id, DEFAULT_REP_ID, c * tokens.length + i),
         atMs,
         audioAtMs: atMs,
         audioEndMs: atMs,

@@ -98,10 +98,21 @@ export type CueEvent =
       cue: CueInstance
       tokenIndex: number
       /**
-       * Stable per-occurrence identifier — `${cueId}:${tokenIndex}`
-       * (M39-V2 Phase 2). Distinguishes the two `1`s in `1-1-2`
-       * so consumers can dedupe by unique id instead of collapsing
-       * on tokenIndex.
+       * Compiled repetition identifier for the strike (M39-V2
+       * Phase 2' amendment). Sequence cues that haven't been
+       * expanded through Phase 3's per-rep compiler carry
+       * `DEFAULT_REP_ID` ("rep-0"). A `1-1-2 × 3` cue compiled
+       * with repetition expansion produces `rep-0`, `rep-1`,
+       * `rep-2`.
+       */
+      repId: string
+      /**
+       * Stable per-occurrence identifier —
+       * `${cueId}:${repId}:${tokenIndex}` (M39-V2 Phase 2').
+       * Distinguishes every strike across the cue's repetitions,
+       * so consumers dedupe by unique id — the two `1`s in one
+       * rep AND the three reps of a repeated combo all get their
+       * own ids.
        */
       strikeId: string
       workElapsedMs: number

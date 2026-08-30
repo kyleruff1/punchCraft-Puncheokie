@@ -28,7 +28,7 @@
 import type { MonotonicClock } from '../time/MonotonicClock'
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import { tokenOffsetFor } from './tokenOffsets'
-import { strikeIdFor } from '../strikes/strikeCatalog'
+import { DEFAULT_REP_ID, strikeIdFor } from '../strikes/strikeCatalog'
 import {
   TERMINAL_STATUSES,
   type CueEvent,
@@ -474,7 +474,7 @@ export class CueEngine {
     // the beat grid — this is a DISPLAY concern; the athlete still throws
     // when they hear the coach.
     cue.tokenOffsetsMs.forEach((_offset, tokenIndex) => {
-      const strikeId = strikeIdFor(cue.id, tokenIndex)
+      const strikeId = strikeIdFor(cue.id, DEFAULT_REP_ID, tokenIndex)
       if (runtime.firedTokens.has(strikeId)) return
       const effective = tokenOffsetFor(cue, tokenIndex)
       if (until < cue.scheduledStartMs + effective) return
@@ -483,6 +483,7 @@ export class CueEngine {
         type: 'token-due',
         cue,
         tokenIndex,
+        repId: DEFAULT_REP_ID,
         strikeId,
         workElapsedMs: t,
         nowMs: this.clock.now(),

@@ -283,9 +283,9 @@ describe('beatsFor — the single source of truth', () => {
     const beats = beatsFor(repeated)
     expect(beats).toHaveLength(3)
     expect(beats.map((b) => b.strikeId)).toEqual([
-      'sp1-b2#0:0',
-      'sp1-b2#0:1',
-      'sp1-b2#0:2',
+      'sp1-b2#0:rep-0:0',
+      'sp1-b2#0:rep-0:1',
+      'sp1-b2#0:rep-0:2',
     ])
     expect(new Set(beats.map((b) => b.strikeId)).size).toBe(3)
   })

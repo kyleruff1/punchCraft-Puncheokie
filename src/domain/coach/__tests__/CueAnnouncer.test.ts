@@ -147,7 +147,8 @@ function tokenDue(c: CueInstance, tokenIndex: number): CueEvent {
     type: 'token-due',
     cue: c,
     tokenIndex,
-    strikeId: `${c.id}:${tokenIndex}`,
+    repId: 'rep-0',
+    strikeId: `${c.id}:rep-0:${tokenIndex}`,
     workElapsedMs: c.scheduledStartMs,
     nowMs: c.scheduledStartMs,
   }
