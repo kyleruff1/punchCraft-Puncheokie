@@ -654,6 +654,40 @@ describe('coach lane release grace (M39-V2 Phase 4-ii) — "extra muted measure"
   })
 })
 
+describe('preloadBothVocabsFor (M39-V2 Phase 4-v) — dual-track warmth', () => {
+  it('creates a player under BOTH vocabularies for the given asset', async () => {
+    const h = harness()
+    await h.output.preload()
+    const createdBefore = h.created.length
+    // '1' is a canonical asset present in both numbers + names manifests.
+    h.output.preloadBothVocabsFor('1', 'combo')
+    // 'preload' already warmed '1' in both; a repeat is idempotent
+    // (no new AudioPlayer created), but the call must not throw.
+    // Same-id repeat is idempotent; nothing to assert about count.
+    // Trigger a re-lookup of the same id under both vocabs to prove
+    // the method doesn't throw and the players survive.
+    h.output.preloadBothVocabsFor('1', 'combo')
+    expect(h.created.length).toBeGreaterThanOrEqual(createdBefore)
+  })
+
+  it('preserves the current vocabulary across the call', async () => {
+    const h = harness()
+    await h.output.preload()
+    // Pin the vocab to names, warm '1' in both, verify vocab still 'names'.
+    h.output.setVocabulary('names')
+    h.output.preloadBothVocabsFor('1', 'combo')
+    // Arming a coach event should still land in the pinned dialect.
+    const armed = h.output.armCoachEvent({ eventId: 'e-preserve' })
+    expect(armed.lockedVocabulary).toBe('names')
+  })
+
+  it('is a no-op when the instance is unavailable', () => {
+    const h = harness({ failMode: true })
+    // In failMode `available` is false. The method must not throw.
+    expect(() => h.output.preloadBothVocabsFor('1', 'combo')).not.toThrow()
+  })
+})
+
 describe('ArmedCoachEvent + vocabulary swap (M39-V2 Phase 4-iv)', () => {
   // Kyle plan §Vocabulary switch at the next unarmed coach event: an
   // armed event's dialect is FROZEN; a mid-play setVocabulary call

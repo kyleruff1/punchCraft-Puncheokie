@@ -580,6 +580,34 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   /**
+   * Preload an asset in BOTH vocabularies so the runtime vocab swap
+   * is free (M39-V2 Phase 4-v, Kyle amended blueprint §Preload both
+   * tracks for the currently-armed cue).
+   *
+   * The V1c preload path already warms the opening set in both
+   * dialects (see `preload()` below). This method extends the same
+   * pattern to arbitrary clips: a cue about to arm calls this for
+   * each of its coach events so both dialects are resident when the
+   * arm fires. Idempotent — already-loaded clips are moved to the
+   * MRU position of the resident pool but not re-created.
+   *
+   * The current vocabulary is preserved across the call; a caller
+   * warming clips is not doing a real vocab switch.
+   */
+  preloadBothVocabsFor(id: VoiceAssetId, form: PhraseForm = 'standalone'): void {
+    if (this.failed) return
+    const original = this.vocabulary
+    try {
+      this.vocabulary = 'numbers'
+      this.playerFor(id, form)
+      this.vocabulary = 'names'
+      this.playerFor(id, form)
+    } finally {
+      this.vocabulary = original
+    }
+  }
+
+  /**
    * Load every clip into a player.
    *
    * Called during the countdown. A single clip that fails does not fail the
