@@ -435,9 +435,10 @@ describe('compileRoundSpine — compiled field (M39-V2 Phase 4-vi)', () => {
     for (const cueId of Object.keys(spineA.compiled)) {
       const a = spineA.compiled[cueId]
       const b = spineB.compiled[cueId]
-      if (a === null) {
-        expect(b).toBeNull()
+      if (a === null || a === undefined) {
+        expect(b ?? null).toBeNull()
       } else {
+        expect(b).toBeDefined()
         expect(b!.identity).toEqual(a.identity)
       }
     }

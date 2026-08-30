@@ -20,6 +20,8 @@
  * The implementation lives in `src/audio/VoiceOutputExpo.ts` (M34-04).
  */
 
+import type { VoiceVocabulary } from './VoiceCoachPolicy'
+
 /**
  * Interruption order from doc §18.2, lowest number first.
  *
@@ -471,4 +473,57 @@ export interface VoiceOutputPort {
    * Optional so a domain consumer can work without a real backend.
    */
   audibleUntilMs?(): number
+
+  /**
+   * Arm a compiled coach event on the exclusive coach lane
+   * (M39-V2 Phase 4-iv). Returns an arm record whose `runId` any
+   * later timer/finish-callback must self-check via `isArmedRunId`
+   * before mutating lane state. `lockedVocabulary` is the dialect
+   * the event will play in — mid-play `setVocabulary` calls defer
+   * to the next arm.
+   *
+   * Optional: implementations that predate V2 skip the exclusive-arm
+   * protocol; the runtime falls back to the V1c fire-and-forget
+   * dispatch. The compiled timeline still lands (`compileRoundSpine`
+   * always builds it), just isn't consumed for arm-time checks.
+   */
+  armCoachEvent?(spec: { eventId: string }): {
+    eventId: string
+    runId: string
+    lockedVocabulary: VoiceVocabulary
+  }
+  /**
+   * The currently-armed coach event, or null when no event is armed.
+   * Callers inspect this to reason about the in-flight event's
+   * dialect without racing on it. Optional per the arm protocol.
+   */
+  activeCoachArm?(): {
+    eventId: string
+    runId: string
+    lockedVocabulary: VoiceVocabulary
+  } | null
+  /** Whether the given runId is still the armed owner of the coach lane. */
+  isArmedRunId?(runId: string): boolean
+  /**
+   * Mint a fresh coach-lane arm id without a full `armCoachEvent`
+   * record — used when a subsystem needs a runId for lane guarding
+   * but does not have an eventId. Prefer `armCoachEvent` in the
+   * primary dispatch path.
+   */
+  mintCoachRunId?(): string
+  /** Drop the current coach-lane arm without minting a new one. Idempotent. */
+  clearCoachRunId?(): void
+  /**
+   * The ms at which a coach dispatch should FIRE so its audible
+   * onset lands at `tickTimeMs`, honoring this backend's calibrated
+   * audio-output latency (M39-V2 Phase 4-iii). Optional — a backend
+   * without a calibration is expected to return `tickTimeMs` verbatim.
+   */
+  dispatchAtMsForTickTime?(tickTimeMs: number): number
+  /**
+   * Preload the given asset in BOTH vocabularies so a mid-cue vocab
+   * swap doesn't have to hit disk (M39-V2 Phase 4-v). Optional —
+   * backends without a preload pool no-op. Idempotent.
+   */
+  preloadBothVocabsFor?(id: VoiceAssetId, form?: 'combo' | 'standalone'): void
 }
