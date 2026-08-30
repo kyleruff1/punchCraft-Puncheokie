@@ -21,6 +21,9 @@ import {
   CADENCE_DIVISION,
   DEFAULT_BASE_BPM,
   DEFAULT_SWING,
+  INTERVAL_HARD_MS_FLOOR,
+  INTERVAL_HARD_PCT,
+  INTERVAL_WARN_MS,
   MAX_TOLERANCE,
   PREFERRED_TOLERANCE,
   beatDurationMs,
@@ -29,6 +32,9 @@ import {
   fitPct,
   fitVerdict,
   gridDurationMs,
+  intervalFitAudit,
+  intervalFitVerdict,
+  intervalHardMs,
 } from '../grid_targets.mjs'
 
 describe('beatDurationMs', () => {
@@ -191,5 +197,91 @@ describe('tolerance constants', () => {
   it('are Kyle spec (5% preferred, 10% max)', () => {
     expect(PREFERRED_TOLERANCE).toBe(0.05)
     expect(MAX_TOLERANCE).toBe(0.10)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Per-interval tolerance (M39-V2 Phase 4b, Kyle amended blueprint).
+// Kept separate from the whole-clip band above: this is the check that
+// a phrase's INTERNAL taught strike positions land within tolerance,
+// not that the whole file fits its allotted grid.
+// ---------------------------------------------------------------------------
+
+describe('per-interval tolerance constants', () => {
+  it('are Kyle amended blueprint spec (12 ms warn, max(25 ms, 5%) hard)', () => {
+    expect(INTERVAL_WARN_MS).toBe(12)
+    expect(INTERVAL_HARD_MS_FLOOR).toBe(25)
+    expect(INTERVAL_HARD_PCT).toBe(0.05)
+  })
+})
+
+describe('intervalHardMs', () => {
+  it('is the 25 ms floor for short targets where 5% would be smaller', () => {
+    expect(intervalHardMs(100)).toBe(25)
+    expect(intervalHardMs(400)).toBe(25) // 5% × 400 = 20; floor wins
+  })
+  it('scales to 5% of the target when the target is large enough', () => {
+    expect(intervalHardMs(1000)).toBe(50) // 5% × 1000 = 50; > floor
+    expect(intervalHardMs(2000)).toBe(100) // 5% × 2000 = 100
+  })
+  it('rejects non-positive targets', () => {
+    expect(() => intervalHardMs(0)).toThrow()
+    expect(() => intervalHardMs(-1)).toThrow()
+    expect(() => intervalHardMs(NaN)).toThrow()
+  })
+})
+
+describe('intervalFitVerdict', () => {
+  it('is ok inside the ±12 ms warn tier', () => {
+    expect(intervalFitVerdict(500, 500)).toBe('ok')
+    expect(intervalFitVerdict(511, 500)).toBe('ok')
+    expect(intervalFitVerdict(489, 500)).toBe('ok')
+    expect(intervalFitVerdict(512, 500)).toBe('ok') // exactly 12 ms
+  })
+  it('is warn between the warn tier and hard tier', () => {
+    // Target 500 → hard = max(25, 25) = 25. Warn band = (12, 25].
+    expect(intervalFitVerdict(513, 500)).toBe('warn')
+    expect(intervalFitVerdict(525, 500)).toBe('warn') // exactly 25 ms
+    expect(intervalFitVerdict(475, 500)).toBe('warn')
+  })
+  it('is hard beyond the hard tier', () => {
+    // Target 500 → hard threshold 25 ms.
+    expect(intervalFitVerdict(526, 500)).toBe('hard')
+    expect(intervalFitVerdict(474, 500)).toBe('hard')
+  })
+  it('uses 5% for large-target proportional cap', () => {
+    // Target 1000 → hard = 50. Drift 40 ms → warn; drift 51 → hard.
+    expect(intervalFitVerdict(1040, 1000)).toBe('warn')
+    expect(intervalFitVerdict(1050, 1000)).toBe('warn') // exactly 50
+    expect(intervalFitVerdict(1051, 1000)).toBe('hard')
+  })
+})
+
+describe('intervalFitAudit', () => {
+  it('rolls up per-interval verdicts into a summary', () => {
+    const audit = intervalFitAudit([500, 511, 526], [500, 500, 500])
+    expect(audit.counts.ok).toBe(2)
+    expect(audit.counts.warn).toBe(0)
+    expect(audit.counts.hard).toBe(1)
+    expect(audit.verdict).toBe('hard')
+    expect(audit.worst.index).toBe(2)
+    expect(audit.worst.driftMs).toBe(26)
+  })
+  it('warn if any interval warns but none hard', () => {
+    const audit = intervalFitAudit([500, 513], [500, 500])
+    expect(audit.verdict).toBe('warn')
+    expect(audit.counts.warn).toBe(1)
+  })
+  it('ok when every interval is inside the warn tier', () => {
+    const audit = intervalFitAudit([500, 505, 495], [500, 500, 500])
+    expect(audit.verdict).toBe('ok')
+    expect(audit.counts.ok).toBe(3)
+  })
+  it('rejects length mismatch', () => {
+    expect(() => intervalFitAudit([1, 2], [1])).toThrow(/length mismatch/)
+  })
+  it('rejects non-arrays', () => {
+    expect(() => intervalFitAudit(1, [1])).toThrow()
+    expect(() => intervalFitAudit([1], null)).toThrow()
   })
 })

@@ -161,3 +161,95 @@ export function fitBoundsMs(targetMs) {
     maxMaxMs: Math.round(targetMs * (1 + MAX_TOLERANCE)),
   }
 }
+
+/**
+ * Per-interval fit tolerance (M39-V2 Phase 4b, Kyle amended blueprint
+ * 2026-08-30 §Fit-check: two-tier tolerance).
+ *
+ * Distinct from the whole-clip band above: this checks whether an
+ * INTERNAL taught strike position (from `CoachPhraseAsset.taughtStrikeOffsetsTicks`,
+ * populated in Phase 4) is close enough to its authored target for the
+ * runtime to trust it as a strike map. `speechMarksMs` — the ASR word
+ * onsets — are diagnostics only; the two-tier check runs against the
+ * SEMANTIC strike positions the phrase teaches.
+ *
+ *   warn:      |actual − target| > INTERVAL_WARN_MS
+ *   hard fail: |actual − target| > max(INTERVAL_HARD_MS_FLOOR,
+ *                                       INTERVAL_HARD_PCT × target)
+ *
+ * Rationale: the ±10 ms fit-check tolerance the compiled timeline
+ * uses (`compileCue.ts` DEFAULT_RESPONSE_GAP_TICKS = 60 ticks ≈
+ * 62.5 ms at 60 BPM) plus the ~50 ms cleanup grace the coach lane
+ * needs leaves ~10-15 ms of slop per interval before the athlete
+ * hears drift. Beyond that, the hard cap keeps proportional error
+ * from letting a very short interval slip large in absolute terms
+ * (a 200 ms interval at 5% is 10 ms; the 25 ms floor keeps that
+ * from being tighter than the warn tier).
+ */
+export const INTERVAL_WARN_MS = 12
+export const INTERVAL_HARD_MS_FLOOR = 25
+export const INTERVAL_HARD_PCT = 0.05
+
+/** The hard-fail threshold in milliseconds for a target of `targetMs`. */
+export function intervalHardMs(targetMs) {
+  if (!Number.isFinite(targetMs) || targetMs <= 0) {
+    throw new Error(`intervalHardMs: targetMs must be positive, got ${targetMs}`)
+  }
+  return Math.max(INTERVAL_HARD_MS_FLOOR, targetMs * INTERVAL_HARD_PCT)
+}
+
+/**
+ * Classify one interval's drift.
+ * Returns `'ok' | 'warn' | 'hard'`. `hard` implies re-render (the
+ * clip does not honor its taught strike positions well enough for
+ * the runtime to dispatch strikes from it).
+ */
+export function intervalFitVerdict(actualMs, targetMs) {
+  if (!Number.isFinite(actualMs)) {
+    throw new Error(`intervalFitVerdict: actualMs must be finite, got ${actualMs}`)
+  }
+  if (!Number.isFinite(targetMs) || targetMs <= 0) {
+    throw new Error(`intervalFitVerdict: targetMs must be positive, got ${targetMs}`)
+  }
+  const drift = Math.abs(actualMs - targetMs)
+  if (drift <= INTERVAL_WARN_MS) return 'ok'
+  if (drift <= intervalHardMs(targetMs)) return 'warn'
+  return 'hard'
+}
+
+/**
+ * Audit a full sequence of intervals: pass the arrays and get back a
+ * per-interval verdict list plus a summary that names the worst
+ * offender. Used by --fit-check when a clip carries taught strike
+ * positions (Phase 4 pipeline emits them).
+ *
+ * Both arrays must be the same length; each `actualMs[i]` maps to
+ * `targetMs[i]`.
+ */
+export function intervalFitAudit(actualMs, targetMs) {
+  if (!Array.isArray(actualMs) || !Array.isArray(targetMs)) {
+    throw new Error('intervalFitAudit: expects two numeric arrays')
+  }
+  if (actualMs.length !== targetMs.length) {
+    throw new Error(
+      `intervalFitAudit: length mismatch actual=${actualMs.length} target=${targetMs.length}`,
+    )
+  }
+  const per = actualMs.map((a, i) => {
+    const t = targetMs[i]
+    const verdict = intervalFitVerdict(a, t)
+    return { index: i, actualMs: a, targetMs: t, driftMs: a - t, verdict }
+  })
+  const worst = per.reduce(
+    (acc, row) => (Math.abs(row.driftMs) > Math.abs(acc.driftMs) ? row : acc),
+    per[0] ?? { index: -1, actualMs: 0, targetMs: 0, driftMs: 0, verdict: 'ok' },
+  )
+  const counts = per.reduce(
+    (acc, row) => {
+      acc[row.verdict] += 1
+      return acc
+    },
+    { ok: 0, warn: 0, hard: 0 },
+  )
+  return { per, worst, counts, verdict: counts.hard > 0 ? 'hard' : counts.warn > 0 ? 'warn' : 'ok' }
+}
