@@ -213,8 +213,13 @@ export function useLivePunchSource(
   }, [chosen.kind, left, right])
 
   // Only the tracker path can degrade: the simulator has no radio to lose,
-  // and warning about gloves nobody is using would be noise.
-  const degraded = chosen.kind === 'tracker' ? degradedText(left, right) : undefined
+  // and warning about gloves nobody is using would be noise. Memoized so a
+  // parent re-render that leaves the slot states shallowly-equal does not
+  // reallocate the string and fire the useEffect below on every render.
+  const degraded = useMemo(
+    () => (chosen.kind === 'tracker' ? degradedText(left, right) : undefined),
+    [chosen.kind, left, right],
+  )
 
   useEffect(() => {
     setLive({ degraded })
