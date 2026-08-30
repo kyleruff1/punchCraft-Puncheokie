@@ -256,6 +256,55 @@ describe('beatsFor — the single source of truth', () => {
     expect(beatsFor(cue)).toEqual(beatsFor(cue))
   })
 
+  it("splits Kyle's 4-strike / 800 ms combo into 8 avatar frames of 100 ms each", () => {
+    // Kyle 2026-08-29: for a 4-strike combo that spends 800 ms on
+    // screen, every avatar frame gets 100 ms; strict sequence 1a 1b
+    // 2a 2b 3a 3b 4a 4b. avatarFrameMs is the per-frame ms; there are
+    // always exactly 2 frames per punch token, in order.
+    const combo: CueInstance = {
+      id: 'k', blockId: 'k', repeatIndex: 0, scoring: 'sequence',
+      tokens: [
+        { kind: 'punch', number: 1, body: false, beatOffset: 0 },
+        { kind: 'punch', number: 2, body: false, beatOffset: 0.4 },
+        { kind: 'punch', number: 3, body: false, beatOffset: 0.8 },
+        { kind: 'punch', number: 2, body: false, beatOffset: 1.2 },
+      ],
+      tokenOffsetsMs: [0, 200, 400, 600],
+      expectedPunches: [
+        { tokenIndex: 0, hand: 'left' },
+        { tokenIndex: 1, hand: 'right' },
+        { tokenIndex: 2, hand: 'left' },
+        { tokenIndex: 3, hand: 'right' },
+      ],
+      displayOnlyTokenIndexes: [],
+      previewAt: 0, announceAt: 0,
+      scheduledStartMs: 0, scheduledEndMs: 800,
+      windowStartMs: 0, windowEndMs: 1600,
+    }
+    const beats = beatsFor(combo)
+    expect(beats).toHaveLength(4)
+    for (const b of beats) expect(b.avatarFrameMs).toBe(100)
+  })
+
+  it('non-punch tokens hold the guard frame — avatarFrameMs is 0', () => {
+    const mixed: CueInstance = {
+      ...cue,
+      tokens: [
+        { kind: 'defense', command: 'slip', beatOffset: 0 },
+        { kind: 'punch', number: 1, body: false, beatOffset: 1 },
+      ],
+      tokenOffsetsMs: [0, 500],
+      expectedPunches: [{ tokenIndex: 1, hand: 'left' }],
+      displayOnlyTokenIndexes: [0],
+      scheduledStartMs: 0, scheduledEndMs: 1000,
+      windowStartMs: 0, windowEndMs: 1500,
+    }
+    const beats = beatsFor(mixed)
+    expect(beats[0]?.avatarFrameMs).toBe(0)
+    // The one punch owns the whole on-screen window: 1000 ms / (2×1) = 500 ms/frame.
+    expect(beats[1]?.avatarFrameMs).toBe(500)
+  })
+
   it('audio times collapse to atMs when no phrase-timing manifest entry exists', () => {
     // The test fixture has no `cadence`, so the manifest lookup returns
     // undefined and the spine falls back to the beat grid — same behavior

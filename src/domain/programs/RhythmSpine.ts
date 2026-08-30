@@ -73,6 +73,23 @@ export interface TokenBeat {
   hand: PunchHand
   /** The punch family (cue-implied, not observed — D12), absent for non-punch tokens. */
   type?: PunchType
+  /**
+   * Milliseconds each of the two avatar frames is on screen for THIS
+   * token (Kyle's rule 2026-08-29):
+   *
+   *   frame1 shows for `avatarFrameMs`, then frame2 shows for
+   *   `avatarFrameMs`. Both frames are always shown; the total per
+   *   token = 2 × avatarFrameMs, exactly matching this token's slice
+   *   of the cue's on-screen life.
+   *
+   * On a combo, the cue's whole on-screen time (windowEndMs -
+   * scheduledStartMs) is divided into `n` equal token slices, and
+   * each slice is halved for the two frames. So a 4-strike combo that
+   * spends 800 ms on screen gets 8 avatar images at 100 ms each.
+   *
+   * Non-punch tokens set this to 0 (the card holds the guard frame).
+   */
+  avatarFrameMs: number
 }
 
 /**
@@ -135,6 +152,18 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
   const offsets = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const out: TokenBeat[] = []
   const timing = timingFor(cue)
+  // Kyle's avatar rule (2026-08-29): the cue's on-screen life is
+  // divided evenly among its tokens, and each token's slice is halved
+  // for the two frames — always both frames, always in order. So a
+  // 4-token cue with 800 ms of on-screen life produces 100 ms per
+  // frame (8 images × 100 ms). Windows here are the SCHEDULED window,
+  // not the grace-padded windowStartMs..windowEndMs — the card should
+  // finish flipping when the cue ends, not tail into the next cue's
+  // preview.
+  const onScreenMs = Math.max(0, cue.scheduledEndMs - cue.scheduledStartMs)
+  const punchTokenCount = cue.tokens.filter((t) => t.kind === 'punch').length
+  const avatarFrameMs =
+    punchTokenCount > 0 ? onScreenMs / (2 * punchTokenCount) : 0
   for (let i = 0; i < cue.tokens.length; i += 1) {
     const off = offsets[i]
     if (off === undefined) continue
@@ -150,6 +179,7 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
       audioEndMs: audio.audioEndMs,
       hand: expected?.hand ?? 'unknown',
       ...(expected?.type ? { type: expected.type } : {}),
+      avatarFrameMs: token?.kind === 'punch' ? avatarFrameMs : 0,
     })
   }
   return out
