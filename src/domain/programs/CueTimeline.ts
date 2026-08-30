@@ -423,6 +423,11 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
   // announce-then-work voice policy get visualOffsetsMs stamped from
   // the engine grid. Legacy blocks and non-engine cadences leave the
   // field undefined and rings ride the beat-grid path unchanged.
+  // NOTE: block layout (scheduledEndMs, windowEndMs, cursor stride)
+  // stays on the beat grid — extending it here would push cues past
+  // the next block's start and truncateWindowsAtNextCue clips them.
+  // Instead `CueEngine.fireDueTokens` allows visualOffsetsMs-driven
+  // ring fires to exceed windowEndMs (engine authors know the grid).
   const division = engineDivision(ctx.bpm)
   const visualOffsetsMs =
     division !== undefined && block.voicePolicy === 'announce-then-work'
@@ -489,7 +494,19 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
         ctx.workDurationMs,
         Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
       ),
-      windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
+      // Engine-mode ring times can land past the beat-grid comboSpan;
+      // extend windowEndMs to include the last visualOffset so
+      // fireDueTokens can reach it. truncateWindowsAtNextCue still
+      // caps at next.scheduledStartMs — engine-mode reps typically
+      // fit inside the beat-grid rep stride, so this widening is a
+      // no-op when the stride is generous.
+      windowEndMs: Math.min(
+        ctx.workDurationMs,
+        Math.max(
+          scheduledEndMs + ctx.graceAfterMs,
+          scheduledStartMs + (visualOffsetsMs?.[visualOffsetsMs.length - 1] ?? 0),
+        ),
+      ),
       ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
       ...(block.instruction === undefined ? {} : { instruction: block.instruction }),
       // The ceremony belongs to the set, not the rep: first cue only.
