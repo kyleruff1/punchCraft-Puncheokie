@@ -214,6 +214,11 @@ export function pulsesFor(cue: CueInstance): TokenBeat[] {
   // Every planned punch in the window: cycle c places the motif at
   // scheduledStartMs + c*stride, with the same relative offsets the
   // first cycle stamped.
+  // Kyle's avatar rule for count-scored: each pulse gets one cycle's
+  // worth of on-screen time split across 2 frames. Stride is the full
+  // motif-cycle length, so avatarFrameMs = stride / (2 × punchTokens).
+  const punchTokensInMotif = tokens.filter((t) => t.kind === 'punch').length
+  const avatarFrameMs = punchTokensInMotif > 0 ? strideMs / (2 * punchTokensInMotif) : 0
   const out: TokenBeat[] = []
   for (let c = 0; c < cycles; c += 1) {
     const base = cue.scheduledStartMs + c * strideMs
@@ -234,6 +239,7 @@ export function pulsesFor(cue: CueInstance): TokenBeat[] {
               ? 'left'
               : 'right'
             : 'unknown',
+        avatarFrameMs: token?.kind === 'punch' ? avatarFrameMs : 0,
       })
     }
   }
