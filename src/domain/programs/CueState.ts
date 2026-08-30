@@ -97,6 +97,13 @@ export type CueEvent =
       type: 'token-due'
       cue: CueInstance
       tokenIndex: number
+      /**
+       * Stable per-occurrence identifier — `${cueId}:${tokenIndex}`
+       * (M39-V2 Phase 2). Distinguishes the two `1`s in `1-1-2`
+       * so consumers can dedupe by unique id instead of collapsing
+       * on tokenIndex.
+       */
+      strikeId: string
       workElapsedMs: number
       nowMs: number
     }

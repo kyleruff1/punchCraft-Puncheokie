@@ -28,6 +28,7 @@
 
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import type { PunchHand, PunchType } from '../punch/PunchEvent'
+import { strikeIdFor } from '../strikes/strikeCatalog'
 import { tokenOffsetFor } from './tokenOffsets'
 import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
 /**
@@ -46,6 +47,16 @@ export const RAIL_K_MS = 120
 export interface TokenBeat {
   /** Index into `cue.tokens`. */
   tokenIndex: number
+  /**
+   * Stable per-occurrence identifier — `${cueId}:${tokenIndex}`
+   * (M39-V2 Phase 2, Kyle blueprint §3). Distinguishes the two
+   * `1`s in `1-1-2` so the avatar can re-adopt on each rep, the
+   * ring engine can dedupe fired strikes by unique id, and
+   * subtitles / tracker matching can reference a strike without
+   * collisions. See `strikeIdFor` in
+   * `@domain/strikes/strikeCatalog`.
+   */
+  strikeId: string
   /**
    * When the ring should light and the avatar should advance to
    * frame 1 (guard). Also the beat the athlete throws to.
@@ -183,6 +194,7 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
     const audio = audioTimesFor(timing, i, atMs)
     out.push({
       tokenIndex: i,
+      strikeId: strikeIdFor(cue.id, i),
       atMs,
       audioAtMs: audio.audioAtMs,
       audioEndMs: audio.audioEndMs,
@@ -238,7 +250,14 @@ export function pulsesFor(cue: CueInstance): TokenBeat[] {
       if (atMs > cue.windowEndMs) break
       const token = tokens[i]
       out.push({
+        // Count-scored pulses generate many events across the burst
+        // window; strikeIndex maps to `(cycle × tokens.length) +
+        // tokenIndex` so pulse strikeIds are unique per occurrence
+        // just like sequence-cue strikeIds. This lets the ring UI
+        // dedupe "same node lit twice this second" without treating
+        // consecutive cycles as one continuous highlight.
         tokenIndex: i,
+        strikeId: strikeIdFor(cue.id, c * tokens.length + i),
         atMs,
         audioAtMs: atMs,
         audioEndMs: atMs,

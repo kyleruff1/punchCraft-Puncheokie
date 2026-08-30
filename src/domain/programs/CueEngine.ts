@@ -28,6 +28,7 @@
 import type { MonotonicClock } from '../time/MonotonicClock'
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import { tokenOffsetFor } from './tokenOffsets'
+import { strikeIdFor } from '../strikes/strikeCatalog'
 import {
   TERMINAL_STATUSES,
   type CueEvent,
@@ -91,7 +92,14 @@ interface CueRuntime {
   /** Status to restore when a suspension clears. */
   priorStatus?: CueStatus
   timestamps: CueTimestamps
-  firedTokens: Set<number>
+  /**
+   * StrikeIds already fired (M39-V2 Phase 2). Migrated from
+   * `Set<number>` keyed by tokenIndex to `Set<string>` keyed by
+   * strikeId so the two `1`s in `1-1-2` are distinguishable — the
+   * former had them collapse. Kept "fired" language to match the
+   * event name.
+   */
+  firedTokens: Set<string>
   matched: Set<number>
   windowOpened: boolean
   readyFired: boolean
@@ -466,14 +474,16 @@ export class CueEngine {
     // the beat grid — this is a DISPLAY concern; the athlete still throws
     // when they hear the coach.
     cue.tokenOffsetsMs.forEach((_offset, tokenIndex) => {
-      if (runtime.firedTokens.has(tokenIndex)) return
+      const strikeId = strikeIdFor(cue.id, tokenIndex)
+      if (runtime.firedTokens.has(strikeId)) return
       const effective = tokenOffsetFor(cue, tokenIndex)
       if (until < cue.scheduledStartMs + effective) return
-      runtime.firedTokens.add(tokenIndex)
+      runtime.firedTokens.add(strikeId)
       this.publish({
         type: 'token-due',
         cue,
         tokenIndex,
+        strikeId,
         workElapsedMs: t,
         nowMs: this.clock.now(),
       })

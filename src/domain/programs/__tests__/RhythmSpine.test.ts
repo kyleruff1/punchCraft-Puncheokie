@@ -261,6 +261,35 @@ describe('beatsFor — the single source of truth', () => {
     expect(beats.map((b) => b.atMs)).toEqual([9_900, 10_380])
   })
 
+  it('stamps a per-occurrence strikeId on every TokenBeat (M39-V2 Phase 2)', () => {
+    // Distinct strikeIds fix the `1-1-2` avatar short-circuit — two
+    // repeats of the same punch number now produce distinct
+    // identifiers so consumers can re-adopt on each occurrence.
+    const repeated: CueInstance = {
+      ...cue,
+      id: 'sp1-b2#0',
+      tokens: [
+        { kind: 'punch', number: 1, body: false, beatOffset: 0 },
+        { kind: 'punch', number: 1, body: false, beatOffset: 0.5 },
+        { kind: 'punch', number: 2, body: false, beatOffset: 1 },
+      ],
+      tokenOffsetsMs: [0, 250, 500],
+      expectedPunches: [
+        { tokenIndex: 0, hand: 'left' },
+        { tokenIndex: 1, hand: 'left' },
+        { tokenIndex: 2, hand: 'right' },
+      ],
+    }
+    const beats = beatsFor(repeated)
+    expect(beats).toHaveLength(3)
+    expect(beats.map((b) => b.strikeId)).toEqual([
+      'sp1-b2#0:0',
+      'sp1-b2#0:1',
+      'sp1-b2#0:2',
+    ])
+    expect(new Set(beats.map((b) => b.strikeId)).size).toBe(3)
+  })
+
   it('honors visualOffsetsMs when the engine authored it (wins over rail — M39-V1c)', () => {
     // Kyle 2026-08-30 Pass 5 fix: avatar and rings must walk the SAME
     // authority chain. Engine-authored ring times take priority over
