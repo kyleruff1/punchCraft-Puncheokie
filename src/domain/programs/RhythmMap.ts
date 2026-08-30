@@ -67,6 +67,7 @@ export type RhythmEventKind =
   | 'encouragement'
   | 'movement'
   | 'set-callout'
+  | 'instruction'
 
 export interface CallPayload {
   mode: 'phrase' | 'per-word'
@@ -91,6 +92,32 @@ export interface PhasePayload {
 export type SetCalloutPayload =
   | { asset: string }
   | { recite: string; cadence: 'technical' }
+
+/**
+ * Block-level cornerman instruction (WS4 / A23). Compiled on the FIRST
+ * cue of a block whose `WorkoutBlock.instruction` text has a rendered
+ * clip in the instruction manifest — every subsequent cue of the same
+ * block set inherits the text on `CueInstance.instruction` but does not
+ * re-fire (repeatIndex 0 gate). The audio-bus serialization catches any
+ * remaining collision with a call or refire on the same beat.
+ *
+ * The payload carries the resolved Metro `module` rather than an asset
+ * id string — the audio-manifest lookup happens at COMPILE time (via
+ * `instructionClipFor`), so the domain-side announcer stays free of any
+ * import from `src/audio/**`.
+ */
+export interface InstructionPayload {
+  /** The exact `WorkoutBlock.instruction` text this event speaks. */
+  text: string
+  /** Metro module id from the instruction manifest. */
+  module: number
+  /** Measured clip duration — the announcer uses it to pace the dispatch. */
+  durationMs: number
+}
+/** Instructions fire this many ms after their cue starts — a short pad
+ * so a bell or set-callout on the same beat finishes first, giving the
+ * instruction a clear opening rather than talking over the ceremony. */
+export const INSTRUCTION_START_PAD_MS = 250
 
 /** Ceremony must FINISH this long before the set's first call starts. */
 export const SET_CALLOUT_QUIET_MS = 500
@@ -197,6 +224,7 @@ export interface RhythmEvent {
     | PhasePayload
     | EncouragementPayload
     | SetCalloutPayload
+    | InstructionPayload
     | null
   cancelsWith: 'cue-end' | 'round-end' | 'never'
 }
@@ -268,6 +296,14 @@ export interface CompileOptions {
    * events — compiles stay byte-identical by construction.
    */
   setupCalloutDurationFor?: (asset: string) => number | undefined
+  /**
+   * Block-level cornerman instructions (WS4 / A23): look up the rendered
+   * clip that matches a `WorkoutBlock.instruction` text. Returns the
+   * Metro `module` id and measured duration; absent (or returns
+   * undefined for every text) → zero instruction events emitted and
+   * compiles stay byte-identical.
+   */
+  instructionClipFor?: (text: string) => { module: number; durationMs: number } | undefined
 }
 
 /** Compile one round's audio schedule from its expanded timeline. */
@@ -476,6 +512,40 @@ export function compileRoundRhythmMap(
             at += part.durationMs + SET_CALLOUT_PART_GAP_MS
           })
           break
+        }
+      }
+    }
+
+    // ---- Block-level cornerman instruction (WS4 / A23). Fires once per
+    // block set — the FIRST cue owns it, later reps of the same block
+    // inherit `cue.instruction` but do not re-emit. Skipped when a
+    // set-callout ceremony is already booked for this cue: the ceremony
+    // IS the block's opening line, and stacking the instruction on top
+    // reads as clutter. The audio bus catches any collision with a call
+    // or refire that lands on the same beat.
+    if (
+      cue.repeatIndex === 0 &&
+      cue.instruction !== undefined &&
+      opts.instructionClipFor !== undefined
+    ) {
+      const hasCeremony = events.some(
+        (ev) => ev.cueId === cue.id && ev.kind === 'set-callout',
+      )
+      if (!hasCeremony) {
+        const clip = opts.instructionClipFor(cue.instruction)
+        if (clip !== undefined) {
+          events.push({
+            id: `${cue.id}/instruction`,
+            cueId: cue.id,
+            kind: 'instruction',
+            atMs: cue.scheduledStartMs + INSTRUCTION_START_PAD_MS,
+            payload: {
+              text: cue.instruction,
+              module: clip.module,
+              durationMs: clip.durationMs,
+            },
+            cancelsWith: 'cue-end',
+          })
         }
       }
     }

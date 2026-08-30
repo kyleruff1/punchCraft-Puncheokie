@@ -379,6 +379,37 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
   }
 
+  /**
+   * Play a block-level cornerman instruction (WS4 / A23). Instructions
+   * live outside the vocabulary manifest — the compile pipeline resolves
+   * text → Metro module → `InstructionPayload`, and we play that module
+   * directly. Chimes down like every other coach line via the standard
+   * duck flow: instructions carry the same "call" volume envelope as a
+   * ceremony, but they never mute other calls (they're not chime-ins;
+   * they're standalone asides).
+   */
+  playInstruction(clip: { text: string; module: number; durationMs: number }): void {
+    if (this.failed) return
+    this.requestFocus()
+    try {
+      const player = this.makePlayer(clip.module)
+      player.volume = this.callsMuted() ? 0 : this.volumes.voice
+      player.seekTo(0)
+      player.play()
+      this.markBusy(clip.durationMs)
+      logger.info('puncheokie.voice.play', 'instruction playing', {
+        kind: safe('instruction'),
+        text: safe(clip.text),
+        durationMs: safe(clip.durationMs),
+      })
+    } catch (err) {
+      logger.warn('puncheokie.voice.playFailed', 'instruction did not play', {
+        text: safe(clip.text),
+        error: safe(String(err)),
+      })
+    }
+  }
+
   playAsset(id: VoiceAssetId, atMs?: number): void {
     if (this.failed) return
     const priority = assetPriority(id)

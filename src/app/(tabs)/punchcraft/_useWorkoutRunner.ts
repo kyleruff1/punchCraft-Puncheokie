@@ -33,6 +33,7 @@ import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
@@ -308,6 +309,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // players). Absent clip = no ceremony, never a guessed duration.
         setupCalloutDurationFor: (asset) =>
           (CALLOUT_CLIPS as Record<string, { durationMs: number }>)[asset]?.durationMs,
+        // Block-level cornerman instructions (WS4 / A23). Empty until
+        // the render batch fills instructionManifest — then a match
+        // returns the Metro `module` + measured duration and the compiler
+        // emits an `instruction` event; the announcer's dispatch flows
+        // it to `voice.output.playInstruction`.
+        instructionClipFor: (text) => {
+          const clip = instructionClipFor(text)
+          return clip === undefined
+            ? undefined
+            : { module: clip.module, durationMs: clip.durationMs }
+        },
       }),
     )
   }, [timeline, workout.recipe, voice])

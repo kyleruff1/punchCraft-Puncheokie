@@ -373,6 +373,40 @@ export class CueAnnouncer {
         if (cue) this.dispatchPerWordCall(cue, clockOffsetMs)
         return
       }
+      case 'instruction': {
+        // Block-level cornerman aside (WS4 / A23). The compiler only
+        // emits this on repeatIndex 0 and only when no set-callout is
+        // booked for the same cue, so a block set gets one instruction
+        // and the ceremony/instruction pair never talks over itself.
+        // The bus's `audibleUntilMs` catches a late collision with a
+        // call or refire that landed on the same beat — dropping the
+        // instruction rather than letting two coach voices stack.
+        const insPayload = event.payload as
+          | { text?: string; module?: number; durationMs?: number }
+          | null
+        if (
+          !insPayload ||
+          typeof insPayload.module !== 'number' ||
+          typeof insPayload.durationMs !== 'number' ||
+          typeof insPayload.text !== 'string'
+        )
+          return
+        // Under the same category as the ceremony it stands in for — an
+        // aside is a coach line, not a call. `standard` mode plays them;
+        // `minimal` opts out.
+        if (!this.speakable('punch-command')) return
+        if (
+          typeof this.output.audibleUntilMs === 'function' &&
+          this.output.audibleUntilMs() > 0
+        )
+          return
+        this.output.playInstruction?.({
+          text: insPayload.text,
+          module: insPayload.module,
+          durationMs: insPayload.durationMs,
+        })
+        return
+      }
       case 'encouragement': {
         const payload = event.payload as { asset?: VoiceAssetId } | null
         if (!payload?.asset) return

@@ -46,12 +46,18 @@ type Call =
   | { kind: 'speak'; text: string; priority: number }
   | { kind: 'tone'; tone: ToneKind }
   | { kind: 'cancel'; below: number }
+  | { kind: 'instruction'; text: string; module: number; durationMs: number }
 
 class RecordingPort implements VoiceOutputPort {
   readonly calls: Call[] = []
+  /** Test seam: raise to simulate an ongoing chime-in that blocks new coach lines. */
+  audibleUntilValue = 0
 
   playAsset(id: VoiceAssetId, atMs?: number): void {
     this.calls.push(atMs === undefined ? { kind: 'asset', id } : { kind: 'asset', id, atMs })
+  }
+  playInstruction(clip: { text: string; module: number; durationMs: number }): void {
+    this.calls.push({ kind: 'instruction', ...clip })
   }
   playPhrase(ids: readonly VoiceAssetId[], atMs?: number, tightness = 1): void {
     this.calls.push({ kind: 'phrase', ids: [...ids], tightness, ...(atMs === undefined ? {} : { atMs }) })
@@ -69,6 +75,9 @@ class RecordingPort implements VoiceOutputPort {
     this.calls.push({ kind: 'cancel', below })
   }
   setVolumes(_v: Volumes): void {}
+  audibleUntilMs(): number {
+    return this.audibleUntilValue
+  }
 
   assets(): VoiceAssetId[] {
     return this.calls.flatMap((c) => (c.kind === 'asset' ? [c.id] : []))
@@ -1116,5 +1125,84 @@ describe('a count-scored burst re-anchors the motif periodically', () => {
     scheduled.length = 0
     announcer.onCueEvent(cueEvent('cue-active', c))
     expect(scheduled).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+
+describe('block-level instruction dispatch (WS4 / A23)', () => {
+  const c = cue({ id: 'blk-1/0', blockId: 'blk-1', instruction: 'Breathe. Elbows in.' })
+  const instructionEvent = {
+    id: 'blk-1/0/instruction',
+    cueId: c.id,
+    kind: 'instruction' as const,
+    atMs: c.scheduledStartMs + 250,
+    payload: { text: 'Breathe. Elbows in.', module: 42, durationMs: 1500 },
+    cancelsWith: 'cue-end' as const,
+  }
+  const round = {
+    roundIndex: 0,
+    workDurationMs: 60_000,
+    cues: [c],
+    stanceChanges: [],
+    deferredBlockIds: [],
+  }
+  const map = {
+    roundIndex: 0,
+    workDurationMs: 60_000,
+    voicedEvents: [0],
+    events: [instructionEvent],
+  }
+
+  it('calls output.playInstruction with the payload when the event fires', () => {
+    const h = harness()
+    h.announcer.setRound(round, map)
+    // Tick past the instruction time — same work-elapsed frame the runner uses.
+    h.announcer.onTick(instructionEvent.atMs + 10, instructionEvent.atMs + 10)
+    const insCall = h.port.calls.find((k) => k.kind === 'instruction')
+    expect(insCall).toEqual({
+      kind: 'instruction',
+      text: 'Breathe. Elbows in.',
+      module: 42,
+      durationMs: 1500,
+    })
+  })
+
+  it('drops the instruction when a chime-in is already sounding (audibleUntilMs > 0)', () => {
+    // Late collision with a call/refire on the same beat: rather than
+    // stacking two coach voices, the instruction is dropped and the ring
+    // schedule stays untouched.
+    const h = harness()
+    h.port.audibleUntilValue = instructionEvent.atMs + 2_000
+    h.announcer.setRound(round, map)
+    h.announcer.onTick(instructionEvent.atMs + 10, instructionEvent.atMs + 10)
+    expect(h.port.calls.find((k) => k.kind === 'instruction')).toBeUndefined()
+  })
+
+  it('respects the D1 gate — silent while third-party playback is active', () => {
+    const h = harness()
+    h.announcer.setThirdPartyPlayback(true)
+    h.announcer.setRound(round, map)
+    h.announcer.onTick(instructionEvent.atMs + 10, instructionEvent.atMs + 10)
+    expect(h.port.calls).toEqual([])
+  })
+
+  it('is silent when the port has no playInstruction — safe fallback', () => {
+    // The port declares playInstruction as optional; an implementation
+    // that predates WS4 must not crash the dispatch loop.
+    class PortWithoutPlayInstruction extends RecordingPort {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      override playInstruction = undefined as any
+    }
+    const port = new PortWithoutPlayInstruction()
+    const announcer = new CueAnnouncer({
+      policy: defaultVoiceCoachPolicy(),
+      output: port,
+    })
+    announcer.setRound(round, map)
+    expect(() =>
+      announcer.onTick(instructionEvent.atMs + 10, instructionEvent.atMs + 10),
+    ).not.toThrow()
+    expect(port.calls.find((k) => k.kind === 'instruction')).toBeUndefined()
   })
 })

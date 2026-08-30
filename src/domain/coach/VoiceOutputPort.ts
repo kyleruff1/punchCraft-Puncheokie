@@ -330,6 +330,15 @@ export interface VoiceOutputPort {
    * the athlete is being given.
    */
   playAsset(id: VoiceAssetId, atMs?: number): void
+  /**
+   * Play a block-level cornerman instruction (WS4 / A23). Kept off the
+   * `VoiceAssetId` union because instructions are text-keyed by lookup
+   * at compile time — the Metro `module` id comes through the payload
+   * rather than through the audio-manifest name space. The audio bus
+   * is advanced by `durationMs` so schedulers see the coach as audible.
+   * Optional: implementations that predate WS4 no-op silently.
+   */
+  playInstruction?(clip: { text: string; module: number; durationMs: number }): void
   /** Descriptive text only. Never a punch command (D16). */
   speak(text: string, priority: AudioPriority): void
   tone(kind: ToneKind): void
