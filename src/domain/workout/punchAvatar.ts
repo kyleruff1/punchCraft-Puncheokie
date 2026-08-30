@@ -1,10 +1,15 @@
 /**
  * Punch-avatar timing and identity — the pure half of the stop-motion card.
  *
- * The card shows a two-frame flip per punch: step 1 is the guard/wind-up,
- * step 2 is the strike. Both frames must appear EVERY time a punch is
- * shown, however tight the tempo — that is the whole contract, and it is
- * what the constants and `avatarFrameAt` below exist to guarantee.
+ * The card shows a two-frame flip per punch: step 1 is the STRIKE (the
+ * unique, telegraphing frame), step 2 is the RETRACTED position (the
+ * generic guard, which looks similar across punches). This ordering was
+ * Kyle's call on 2026-08-30: under tight windows the first-shown frame
+ * naturally gets slightly more visible time, so the frame that carries
+ * the punch's identity goes first and the generic one holds the second
+ * half. Both frames must still appear EVERY time — that is the whole
+ * contract, and it is what the constants and `avatarFrameAt` below
+ * exist to guarantee.
  *
  * Identity is derived from the token itself (`number` + `body`), never
  * from a parallel table: the punch nodes and the avatar read one mapping,
@@ -61,9 +66,10 @@ export function avatarResetAtMs(windowMs: number): number {
 
 /**
  * Which frame is showing `elapsedMs` into a punch whose window is
- * `windowMs`: wind-up, strike, hold the strike, then back to guard as the
- * next beat approaches. The card schedules its flips off the same two
- * functions, so the spec under test and the runtime cannot drift.
+ * `windowMs`: strike first (unique per punch), retracted-guard second,
+ * then hold the guard until just before the next beat where the strike
+ * primes again. The card schedules its flips off the same two functions,
+ * so the spec under test and the runtime cannot drift.
  */
 export function avatarFrameAt(elapsedMs: number, windowMs: number): AvatarStep {
   const t = Math.max(0, elapsedMs)

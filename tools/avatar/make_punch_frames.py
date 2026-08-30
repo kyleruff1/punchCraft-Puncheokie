@@ -86,8 +86,11 @@ def main() -> None:
         " * DO NOT EDIT — produced by",
         " * `F:/voice-tools/venv/Scripts/python.exe tools/avatar/make_punch_frames.py`.",
         " *",
-        " * One entry per punch (1..6 x head/body). `step1` is the guard/wind-up,",
-        " * `step2` is the strike. Lookup is by the token's own number + body flag,",
+        " * One entry per punch (1..6 x head/body). `step1` is the STRIKE",
+        " * (the unique frame that gets first-half priority when windows are",
+        " * tight, Kyle 2026-08-30), `step2` is the RETRACTED position (the",
+        " * guard, which looks similar across punches so it works fine as the",
+        " * second half). Lookup is by the token's own number + body flag,",
         " * so the punch nodes and the avatar card share one mapping.",
         " */",
         "import type { PunchNumber } from '@domain/workout/WorkoutTokens'",
@@ -97,9 +100,9 @@ def main() -> None:
         "  key: string",
         "  number: PunchNumber",
         "  body: boolean",
-        "  /** Metro module id for the guard/wind-up frame. */",
+        "  /** Metro module id for the STRIKE frame (shown first, Kyle 2026-08-30). */",
         "  step1: number",
-        "  /** Metro module id for the strike frame. */",
+        "  /** Metro module id for the RETRACTED/guard frame (shown second). */",
         "  step2: number",
         "}",
         "",
@@ -113,8 +116,13 @@ def main() -> None:
             f'    key: "{key}",',
             f"    number: {number},",
             f"    body: {str(body).lower()},",
-            f"    step1: require('{rel}/{key}-s1.png'),",
-            f"    step2: require('{rel}/{key}-s2.png'),",
+            # A19 (2026-08-30): step1 is the STRIKE frame (from the -s2
+            # source), step2 is the RETRACTED position (from the -s1
+            # source). The scheduler shows step1 first, so the unique
+            # strike lands in the first half of the split and the
+            # generic retracted position holds the second half.
+            f"    step1: require('{rel}/{key}-s2.png'),",
+            f"    step2: require('{rel}/{key}-s1.png'),",
             "  },",
         ]
     lines += [
