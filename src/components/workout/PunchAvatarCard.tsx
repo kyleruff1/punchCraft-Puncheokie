@@ -18,7 +18,7 @@
  * from the same token the punch nodes render.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Image, StyleSheet, View } from 'react-native'
+import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
 
 import { findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
 import type { CueInstance } from '@domain/programs/CueTimeline'
@@ -51,6 +51,18 @@ const CARD_ASPECT = 1024 / 1536
  * competing with the token row.
  */
 const CARD_HEIGHT = 480
+/**
+ * Placement offset from the layer's flexbox center (Kyle 2026-08-30
+ * live observation): the token row + metrics rail leave more room on
+ * the right and top of the stage than on the left/bottom, so the
+ * central figure gets pushed off-center to breathe.
+ *
+ * Percentages of the CURRENT stage size (via useWindowDimensions);
+ * portrait/landscape and tablet/phone all offset the same fraction of
+ * the frame, not a fixed pixel count that would drift with viewport.
+ */
+const RIGHT_SHIFT_PCT = 0.15
+const UP_SHIFT_PCT = 0.05
 /**
  * How often the flip clock is sampled. Well under the shortest frame
  * (MIN_FRAME_MS 90) so a strike can never be skipped, and cheap: it
@@ -92,6 +104,7 @@ export function PunchAvatarCard(props: {
   reducedMotion?: boolean
 }): React.JSX.Element | null {
   const { cue, activeTokenIndex, reducedMotion = false } = props
+  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions()
 
   // Every punch in the combination, in order. The card walks these.
   const punchIndexes = useMemo(
@@ -208,7 +221,17 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
-      <View style={styles.card}>
+      <View
+        style={[
+          styles.card,
+          {
+            transform: [
+              { translateX: viewportWidth * RIGHT_SHIFT_PCT },
+              { translateY: -viewportHeight * UP_SHIFT_PCT },
+            ],
+          },
+        ]}
+      >
         {/* Both frames stay mounted and toggle opacity — swapping a single
             source would risk a decode hitch mid-combination. */}
         <Image
