@@ -31,7 +31,9 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 import {
   CHIME_IN_RELEASE_MS,
   COACH_LANE_RELEASE_GRACE_MS,
+  DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
   FALLBACK_CLIP_MS,
+  latencyCompensatedDispatchMs,
   MIN_CLIP_GAP_MS,
   VoiceOutputExpo,
 } from '../VoiceOutputExpo'
@@ -649,6 +651,53 @@ describe('coach lane release grace (M39-V2 Phase 4-ii) — "extra muted measure"
     const now = h.now()
     const until = h.output.audibleUntilMs()
     expect(until).toBe(now + 690 + COACH_LANE_RELEASE_GRACE_MS)
+  })
+})
+
+describe('latency-compensated dispatch (M39-V2 Phase 4-iii)', () => {
+  // Kyle plan §Latency-compensated audio dispatch: the canonical
+  // timeline stays clean; the AUDIO backend subtracts a measured
+  // per-device latency so the audible onset lands on the intended
+  // tick, not the dispatch call.
+  it('exports the conservative default constant', () => {
+    expect(DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS).toBe(40)
+  })
+
+  it('latencyCompensatedDispatchMs subtracts calibration from the tick-time', () => {
+    expect(latencyCompensatedDispatchMs(10_000, 40)).toBe(9960)
+    expect(latencyCompensatedDispatchMs(10_000, 0)).toBe(10_000)
+  })
+
+  it('never returns a negative time (clamps to 0 when calibration exceeds tick-time)', () => {
+    // If tick-time is 20 ms into the future but calibration is 40 ms,
+    // the dispatch should fire NOW rather than at t=-20.
+    expect(latencyCompensatedDispatchMs(20, 40)).toBe(0)
+  })
+
+  it('rejects invalid inputs (guardrails)', () => {
+    expect(() => latencyCompensatedDispatchMs(NaN, 40)).toThrow()
+    expect(() => latencyCompensatedDispatchMs(100, -1)).toThrow()
+    expect(() => latencyCompensatedDispatchMs(100, NaN)).toThrow()
+  })
+
+  it('instance uses the default calibration when the option is omitted', () => {
+    const h = harness()
+    expect(h.output.calibratedAudioOutputLatencyMs).toBe(
+      DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
+    )
+    expect(h.output.dispatchAtMsForTickTime(10_000)).toBe(10_000 - 40)
+  })
+
+  it('respects an explicit override on the instance', () => {
+    const instance = new VoiceOutputExpo({ calibratedAudioOutputLatencyMs: 80 })
+    expect(instance.calibratedAudioOutputLatencyMs).toBe(80)
+    expect(instance.dispatchAtMsForTickTime(10_000)).toBe(9920)
+  })
+
+  it('rejects a negative override at construction', () => {
+    expect(() => new VoiceOutputExpo({ calibratedAudioOutputLatencyMs: -5 })).toThrow(
+      /must be ≥ 0/,
+    )
   })
 })
 

@@ -85,6 +85,50 @@ export const isChimeInAsset = (id: string): boolean =>
 export const CHIME_IN_RELEASE_MS = 250
 
 /**
+ * Conservative default for the calibrated audio-output latency
+ * (M39-V2 Phase 4-iii, Kyle amended blueprint §Latency-compensated
+ * audio dispatch).
+ *
+ * Every Android device inserts a small delay between "audio player
+ * asked to play" and "athlete's ear hears the first sample". The
+ * dispatcher subtracts this from the desired-audible-start tick's
+ * wall time so the OUTPUT lands on the tick, not the DISPATCH:
+ *
+ *   dispatchAtMs = timeAtTick(desiredAudibleStartTick) - calibratedLatencyMs
+ *
+ * Overrides ship per device family (tablet vs phone; hardware output
+ * profile). This default is deliberately conservative — most Android
+ * devices measure 20-60 ms; a pinch of preload compensation on a
+ * device faster than expected is imperceptible, while a late clip
+ * on a device slower than expected is exactly the drift Phase 4
+ * exists to remove.
+ */
+export const DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS = 40
+
+/**
+ * Pure helper: given the wall-clock ms at which a coach event's
+ * desired audible start would land ideally (`tickTimeMs`, derived
+ * from `MetronomeTransport.timeAtTick(event.desiredAudibleStartTick)`),
+ * and a per-device calibration, return the ms at which the dispatch
+ * should FIRE. Never negative; clamped to zero so a mis-calibrated
+ * negative latency can't tell the dispatcher to fire in the past.
+ */
+export function latencyCompensatedDispatchMs(
+  tickTimeMs: number,
+  calibratedLatencyMs: number,
+): number {
+  if (!Number.isFinite(tickTimeMs)) {
+    throw new Error(`latencyCompensatedDispatchMs: tickTimeMs must be finite, got ${tickTimeMs}`)
+  }
+  if (!Number.isFinite(calibratedLatencyMs) || calibratedLatencyMs < 0) {
+    throw new Error(
+      `latencyCompensatedDispatchMs: calibratedLatencyMs must be ≥ 0, got ${calibratedLatencyMs}`,
+    )
+  }
+  return Math.max(0, tickTimeMs - calibratedLatencyMs)
+}
+
+/**
  * Grace after a coach clip's audible end during which the coach lane
  * still reports itself busy (M39-V2 Phase 4-ii, Kyle amended blueprint
  * §Fix release grace).
@@ -122,6 +166,15 @@ export interface VoiceOutputExpoOptions {
   createPlayer?: (source: number) => AudioPlayer
   speaker?: Pick<typeof Speech, 'speak' | 'stop'>
   setAudioMode?: typeof setAudioModeAsync
+  /**
+   * Calibrated audio-output latency in milliseconds — subtracted from
+   * a coach event's desired dispatch time so the audible ONSET lands
+   * on the intended tick, not the dispatch call (M39-V2 Phase 4-iii,
+   * Kyle amended blueprint). Defaults to
+   * `DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS`. Override per device
+   * family. Must be ≥ 0.
+   */
+  calibratedAudioOutputLatencyMs?: number
 }
 
 /**
@@ -274,6 +327,16 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private runIdCounter = 0
 
   /**
+   * Calibrated audio-output latency for THIS device (M39-V2 Phase 4-iii).
+   * Set from `VoiceOutputExpoOptions.calibratedAudioOutputLatencyMs`
+   * at construction; the default is
+   * `DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS`. Read by
+   * `dispatchAtMsForTickTime` when scheduling a coach event so the
+   * audible onset lands on the intended tick.
+   */
+  private readonly calibratedLatencyMs: number
+
+  /**
    * The 3rd audio track — a boxing-flavored one-bar loop that anchors
    * every ring and voice call to the master pulse (M39-V1b / #280).
    * Constructed once per session, shared across every round; the runner
@@ -314,6 +377,33 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.makePlayer = opts.createPlayer ?? ((source) => createAudioPlayer(source))
     this.speaker = opts.speaker ?? Speech
     this.setAudioMode = opts.setAudioMode ?? setAudioModeAsync
+    const latency = opts.calibratedAudioOutputLatencyMs
+    if (latency !== undefined && (!Number.isFinite(latency) || latency < 0)) {
+      throw new Error(
+        `VoiceOutputExpo: calibratedAudioOutputLatencyMs must be ≥ 0, got ${latency}`,
+      )
+    }
+    this.calibratedLatencyMs = latency ?? DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS
+  }
+
+  /**
+   * The calibrated audio-output latency this instance was constructed
+   * with — the number the dispatcher subtracts to align audible onset
+   * with the intended tick. Read-only after construction.
+   */
+  get calibratedAudioOutputLatencyMs(): number {
+    return this.calibratedLatencyMs
+  }
+
+  /**
+   * Compute the ms at which a coach event should FIRE so its audible
+   * onset lands at `tickTimeMs`, honoring this instance's calibrated
+   * latency. Thin wrapper around `latencyCompensatedDispatchMs` — kept
+   * as an instance method so callers pipe the calibration through
+   * without importing the module-level default.
+   */
+  dispatchAtMsForTickTime(tickTimeMs: number): number {
+    return latencyCompensatedDispatchMs(tickTimeMs, this.calibratedLatencyMs)
   }
 
   /** False means permanent no-audio mode — the workout runs without a coach. */
