@@ -37,16 +37,24 @@
  *   One row per session. `cue_results` (keyed on session + workout + block +
  *   repeat + token) unchanged.
  *
- * ## Rebuild instead of ALTER TABLE DROP COLUMN
+ * ## ALTER TABLE DROP COLUMN, not the copy-drop-rename dance
  *
- * `DROP COLUMN` needs SQLite 3.35+ and every supported target ships that,
- * but we already have a precedent for the rebuild-copy-drop-rename pattern
- * in 005 (`cue_result_repeat_index`) so this migration matches its shape.
- * `PRAGMA defer_foreign_keys` is set for the duration of the transaction —
- * `cue_results.generated_workout_id` FKs against `generated_workouts(id)`,
- * and the FK check would otherwise fire the instant we drop the old table.
- * The check runs at COMMIT, by which time the new `generated_workouts`
- * table exists with the same id column and every referenced id is present.
+ * A previous cut of this migration followed 005's pattern: create a new
+ * `generated_workouts_007` shape, copy rows, DROP the old table, RENAME.
+ * That works in-memory but fails on the tablet at
+ * `NativeDatabase.execSync ... FOREIGN KEY constraint failed`, because
+ * `cue_results.generated_workout_id`, `workout_adaptations.generated_workout_id`,
+ * and (the newly created) `workout_runs.generated_workout_id` all FK against
+ * `generated_workouts(id)`. Dropping the referenced table hits those FK
+ * checks the instant it runs — `PRAGMA defer_foreign_keys = ON` looked
+ * like the right escape hatch, but expo-sqlite does not honour deferred
+ * FKs across statements inside `execSync` the way the docs describe.
+ *
+ * `ALTER TABLE DROP COLUMN` avoids the entire dance: the table stays put,
+ * every FK stays valid, and only the two moved columns disappear. It needs
+ * SQLite 3.35+ (which both expo-sqlite and node-sqlite ship well past),
+ * and the only prep the columns need is dropping any index that references
+ * them — SQLite refuses to drop a column that's still indexed.
  *
  * ## Backfill correctness
  *
@@ -80,8 +88,6 @@ export const MIGRATION_007: Migration = {
   name: '007_workout_runs',
   up(db: SQLiteDatabase): void {
     db.execSync(`
-      PRAGMA defer_foreign_keys = ON;
-
       CREATE TABLE workout_runs (
         session_id TEXT PRIMARY KEY
           REFERENCES sessions(id) ON DELETE CASCADE,
@@ -94,34 +100,24 @@ export const MIGRATION_007: Migration = {
       CREATE INDEX IF NOT EXISTS idx_workout_runs_workout
         ON workout_runs(generated_workout_id, created_at DESC);
 
+      -- Backfill: any generated_workouts row that was actually run gets a
+      -- workout_runs row carrying its realized stream. Unrun plans do not
+      -- produce a run row; their realized_tokens_json is not recoverable
+      -- after the DROP COLUMN below, but under the pre-007 semantics that
+      -- column held the planned expansion (D8), which is derivable from
+      -- blocks_json.schedule if any consumer ever needs it.
       INSERT OR IGNORE INTO workout_runs
         (session_id, generated_workout_id, realized_tokens_json, created_at)
       SELECT session_id, id, realized_tokens_json, created_at
       FROM generated_workouts
       WHERE session_id IS NOT NULL;
 
-      CREATE TABLE generated_workouts_007 (
-        id TEXT PRIMARY KEY,
-        recipe_id TEXT NOT NULL REFERENCES workout_recipes(id) ON DELETE RESTRICT,
-        generator_version TEXT NOT NULL,
-        seed TEXT NOT NULL,
-        params_snapshot_json TEXT NOT NULL,
-        blocks_json TEXT NOT NULL,
-        created_at TEXT NOT NULL
-      );
+      -- SQLite refuses to drop a column that is still indexed; the
+      -- session-id index went with the column semantically anyway.
+      DROP INDEX IF EXISTS idx_generated_workouts_session;
 
-      INSERT INTO generated_workouts_007
-        (id, recipe_id, generator_version, seed,
-         params_snapshot_json, blocks_json, created_at)
-      SELECT id, recipe_id, generator_version, seed,
-             params_snapshot_json, blocks_json, created_at
-      FROM generated_workouts;
-
-      DROP TABLE generated_workouts;
-      ALTER TABLE generated_workouts_007 RENAME TO generated_workouts;
-
-      CREATE INDEX IF NOT EXISTS idx_generated_workouts_recipe
-        ON generated_workouts(recipe_id, created_at DESC);
+      ALTER TABLE generated_workouts DROP COLUMN session_id;
+      ALTER TABLE generated_workouts DROP COLUMN realized_tokens_json;
     `)
   },
 }
