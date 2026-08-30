@@ -599,7 +599,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       if (due.length > 0) {
         this.scheduledPhrases = this.scheduledPhrases.filter((p) => p.at > now)
         due.sort((a, b) => a.at - b.at)
-        for (const entry of due) entry.run()
+        // A13 (#267): the same synchronous loop used to fire every due
+        // scheduled phrase back-to-back — each start() removed the
+        // previous phrasePlayer, so of N same-tick phrases only the
+        // last was audible. Now: run the earliest, and once busyUntilMs
+        // has been advanced by its start() the rest re-arm for the next
+        // tick. That gives phrases scheduled within the same 50 ms
+        // window a chance to actually be heard in order, rather than
+        // being silently swallowed.
+        const first = due[0]
+        if (first) {
+          first.run()
+          // Requeue the rest at their original time — advance() runs
+          // every tick, so they'll retry immediately after busyUntilMs
+          // catches up.
+          const later = due.slice(1)
+          if (later.length > 0) this.scheduledPhrases.push(...later)
+        }
       }
     }
     // Pending groups (tones, per-word phrases) ride the tick too: the timer
@@ -688,6 +704,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       } catch {
         // A speech engine that will not stop is not worth failing over.
       }
+    }
+    // A10 (#264): at safety priority (pause/cancel of the session)
+    // cancel() must also silence the sounding combination phrase —
+    // otherwise up to 8.7 s of coach continues over a paused workout.
+    // Anything above safety keeps the previous "chop mid-syllable is
+    // worse than late-and-heard" contract.
+    if (belowPriority <= AUDIO_PRIORITY.safety) {
+      try {
+        this.phrasePlayer?.remove()
+      } catch {
+        // Already gone.
+      }
+      this.phrasePlayer = null
+      this.busyUntilMs = 0
     }
   }
 

@@ -343,7 +343,11 @@ export class CueAnnouncer {
         // Styles that never speak the combination up front keep their tone-
         // only behaviour; in-time delivery speaks per token via onTokenDue.
         if (this.policy.style === 'follow-the-call' || this.policy.style === 'minimal') return
-        if (this.delivery === 'in-time' && event.kind === 'call') return
+        // A9 (#263): a `refire` on the `in-time` path used to still
+        // dispatch the whole phrase on the phrase player while
+        // `onTokenDue` was simultaneously firing per-token word clips
+        // — two coach voices, different tracks, no duck. Exclude both.
+        if (this.delivery === 'in-time' && (event.kind === 'call' || event.kind === 'refire')) return
         if (!this.speakable('punch-command')) return
 
         const cue = this.mapCues.get(event.cueId)

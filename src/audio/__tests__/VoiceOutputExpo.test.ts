@@ -828,6 +828,16 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
   // got its opening call and then silence: the exact mid-round quiet the
   // refires were built to fill (measured on device, 2026-08-25).
   it('plays every future-scheduled combination, not just the last', () => {
+    // A13 (#267): the original single-handle implementation cancelled
+    // each pending call when the next was scheduled — a 30-second
+    // burst got its opening call and then silence. The additive fix
+    // kept every pending call. A13 layered on top: when several
+    // phrases become due on the same tick, the port fires the first
+    // and requeues the rest for the next tick so busyUntilMs can
+    // serialize them (pre-A13 they all called start() back-to-back and
+    // each removed the previous phrasePlayer — one audible outcome).
+    // In runtime the tick cycle is 50 ms, so all three fire within
+    // ~150 ms; the test simulates that by advancing repeatedly.
     const h = harness()
     const t0 = h.now()
     expect(h.output.playCombination('1-2', 'steady', t0 + 6_000)).toBe(true)
@@ -835,7 +845,7 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
     expect(h.output.playCombination('1-2', 'steady', t0 + 18_000)).toBe(true)
 
     h.advance(20_000)
-    h.output.advance()
+    for (let i = 0; i < 3; i += 1) h.output.advance()
     expect(h.plays).toHaveLength(3)
   })
 

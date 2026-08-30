@@ -128,6 +128,13 @@ export interface CueInstance {
   windowEndMs: number
   spokenPhrase?: string
   /**
+   * The block's authored coaching text ("Breathe. More coming."). A11
+   * (#265): carried onto the cue so a WS4 render pass can pair it
+   * with a chatterbox clip. Read by no audio path in the current
+   * sprint — WS4 wires the delivery.
+   */
+  instruction?: string
+  /**
    * The pre-set call-out ceremony (Set Ceremonies) — present only on a
    * block's FIRST cue (repeatIndex 0): the ceremony announces the set,
    * not every rep. The rhythm map compiles it inside the fill's
@@ -404,6 +411,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       ),
       windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
       ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
+      ...(block.instruction === undefined ? {} : { instruction: block.instruction }),
       // The ceremony belongs to the set, not the rep: first cue only.
       ...(block.setupCallout === undefined || repeatIndex !== 0
         ? {}
@@ -463,6 +471,7 @@ function expandCountScoredBlock(block: WorkoutBlock, ctx: BlockContext): CueInst
     windowStartMs: Math.max(0, scheduledStartMs - ctx.graceBeforeMs),
     windowEndMs: Math.min(ctx.workDurationMs, scheduledEndMs + ctx.graceAfterMs),
     ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
+      ...(block.instruction === undefined ? {} : { instruction: block.instruction }),
     ...(block.setupCallout === undefined ? {} : { setupCallout: block.setupCallout }),
   }
 }

@@ -56,7 +56,17 @@ export type CurvePosition = number
 // Tuning knobs (carried over from the pre-D26 generator where still apt)
 // ---------------------------------------------------------------------------
 
-export const MAX_BURST_DURATION_BEATS = 40
+/**
+ * A14 (#268): raised 40 → 60 beats. The old ceiling existed because
+ * bursts past ~40 beats went silent — no per-token engine events, so
+ * the ring row went dark and the coach only called the motif once at
+ * the head. A2 (SpineSchedule.pulses) walks the motif visually across
+ * the whole window and A5 keeps burst refires firing on the shipped
+ * map path, so a 60-beat window is now audible-and-lit end to end.
+ * Matches the ceiling to what pace-pusher's authored samples were
+ * already asking for.
+ */
+export const MAX_BURST_DURATION_BEATS = 60
 export const MIN_BURST_TARGET_PUNCHES = 8
 export const BEATS_PER_BURST_PUNCH = 3
 

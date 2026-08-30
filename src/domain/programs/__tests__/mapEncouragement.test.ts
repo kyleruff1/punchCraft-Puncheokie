@@ -44,7 +44,12 @@ describe('encouragement on the rhythm map', () => {
     const lines = map.events.filter(
       (e) => e.kind === 'encouragement' && !e.id.startsWith('power#'),
     )
-    expect(lines.length).toBeGreaterThan(0)
+    // After A3 (round-fill padder) + A5 (refires on the shipped path),
+    // three-round-fundamentals round 1 has no gap long enough for a
+    // rotation line — the round is voiced end to end. The rule under
+    // test is "if lines DO land, they land in voiced gaps > 2 s".
+    // Zero lines is now a legitimate outcome and preferable to
+    // finding one inside a call.
     expect(lines.length).toBeLessThanOrEqual(MAX_ENCOURAGEMENTS_PER_ROUND)
 
     const calls = map.events

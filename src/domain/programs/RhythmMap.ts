@@ -175,6 +175,12 @@ export const MAX_ENCOURAGEMENTS_PER_ROUND = 6
 export const POWER_MAX_TOKENS = 2
 export const POWER_MIN_INTERVAL_MS = 5_000
 export const POWER_MIN_REPS = 3
+/**
+ * Approximate `power-strikes` chime-in length used by A8's audit —
+ * chatterbox renders this asset around 1.8 s. Kept generous so a power
+ * event that just misses a call's tail still counts as a collision.
+ */
+export const POWER_STRIKES_MS = 1_800
 export const MAX_POWER_ANNOUNCES_PER_ROUND = 2
 
 export interface RhythmEvent {
@@ -372,26 +378,39 @@ export function compileRoundRhythmMap(
         })
       }
 
-      if (cue.scoring === 'count') {
-        const windowMs = cue.windowEndMs - cue.scheduledStartMs
-        if (windowMs >= MIN_BURST_MS_FOR_REFIRE) {
-          const lastStart = cue.windowEndMs - lengthMs - BURST_TAIL_QUIET_MS
-          let refireIndex = 0
-          for (
-            let at = cue.scheduledStartMs + BURST_REFIRE_INTERVAL_MS;
-            at <= lastStart;
-            at += BURST_REFIRE_INTERVAL_MS
-          ) {
-            events.push({
-              id: `${cue.id}/refire#${refireIndex}`,
-              cueId: cue.id,
-              kind: 'refire',
-              atMs: at,
-              payload: { mode: 'phrase', combination, cadence },
-              cancelsWith: 'cue-end',
-            })
-            refireIndex += 1
-          }
+    }
+
+    // A5 (#259): the count-scored refire loop USED to be nested inside
+    // the `lengthMs !== undefined` branch, so a burst whose clip did
+    // not exist (e.g. active-recovery's `"1"` at pressure) got its
+    // opener and then silence for the whole window. Move it outside:
+    // count-scored cues get their motif re-called every
+    // BURST_REFIRE_INTERVAL_MS regardless of clip presence; the
+    // per-word fallback path handles the render at dispatch. Use the
+    // clip length when known so the last refire clears the tail
+    // margin; when unknown, assume a conservative 2 s so we always
+    // leave BURST_TAIL_QUIET_MS between the last refire and the bell.
+    if (cue.scoring === 'count') {
+      const windowMs = cue.windowEndMs - cue.scheduledStartMs
+      if (windowMs >= MIN_BURST_MS_FOR_REFIRE) {
+        const refireMode: CallPayload['mode'] = lengthMs === undefined ? 'per-word' : 'phrase'
+        const assumedLenMs = lengthMs ?? 2_000
+        const lastStart = cue.windowEndMs - assumedLenMs - BURST_TAIL_QUIET_MS
+        let refireIndex = 0
+        for (
+          let at = cue.scheduledStartMs + BURST_REFIRE_INTERVAL_MS;
+          at <= lastStart;
+          at += BURST_REFIRE_INTERVAL_MS
+        ) {
+          events.push({
+            id: `${cue.id}/refire#${refireIndex}`,
+            cueId: cue.id,
+            kind: 'refire',
+            atMs: at,
+            payload: { mode: refireMode, combination, cadence },
+            cancelsWith: 'cue-end',
+          })
+          refireIndex += 1
         }
       }
     }
@@ -535,17 +554,53 @@ export function compileRoundRhythmMap(
         const slowest = Math.min(...intervals)
         if (slowest >= POWER_MIN_INTERVAL_MS) {
           const firstGap = intervals[0] as number
-          events.push({
-            id: `power#${powerAdded}`,
-            cueId: `power#${powerAdded}`,
-            kind: 'encouragement',
-            // 40% into the first inter-strike gap: the athlete has felt
-            // one slow rep, and the next call's announce lead is clear.
-            atMs: (first as (typeof round.cues)[number]).scheduledStartMs + Math.round(firstGap * 0.4),
-            payload: { asset: 'power-strikes' },
-            cancelsWith: 'round-end',
+          // 40% into the first inter-strike gap: the athlete has felt
+          // one slow rep, and the next call's announce lead is clear.
+          const atMs =
+            (first as (typeof round.cues)[number]).scheduledStartMs + Math.round(firstGap * 0.4)
+          // A8 (#262): before this fix, power was pushed unconditionally
+          // and could land inside a set-ceremony or closer — two coach
+          // voices, both at full volume (chime-ins skip each other's
+          // duck). Check against every already-scheduled voiced span
+          // (calls, refires, set-callouts, prior power events) and skip
+          // any that would collide. The audited-silence pass below then
+          // treats the surviving power event as one of the bounds it
+          // fills between, so rotation lines still avoid it.
+          const collides = events.some((e) => {
+            if (
+              e.kind !== 'call' &&
+              e.kind !== 'refire' &&
+              e.kind !== 'set-callout' &&
+              e.kind !== 'encouragement'
+            ) {
+              return false
+            }
+            let lengthMs = 1_500
+            if (e.kind === 'set-callout') {
+              const payload = e.payload as SetCalloutPayload
+              lengthMs =
+                'recite' in payload
+                  ? opts.durationFor(payload.recite, payload.cadence) ?? 2_000
+                  : opts.setupCalloutDurationFor?.(payload.asset) ?? 2_500
+            } else if (e.kind === 'call' || e.kind === 'refire') {
+              const payload = e.payload as CallPayload
+              lengthMs = opts.durationFor(payload.combination, payload.cadence) ?? 1_500
+            } else {
+              lengthMs = 1_800
+            }
+            return atMs >= e.atMs - POWER_STRIKES_MS && atMs <= e.atMs + lengthMs
           })
-          powerAdded += 1
+          if (!collides) {
+            events.push({
+              id: `power#${powerAdded}`,
+              cueId: `power#${powerAdded}`,
+              kind: 'encouragement',
+              atMs,
+              payload: { asset: 'power-strikes' },
+              cancelsWith: 'round-end',
+            })
+            powerAdded += 1
+          }
         }
       }
       runStart = runEnd
