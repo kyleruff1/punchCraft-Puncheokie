@@ -343,11 +343,15 @@ export class CueAnnouncer {
         // Styles that never speak the combination up front keep their tone-
         // only behaviour; in-time delivery speaks per token via onTokenDue.
         if (this.policy.style === 'follow-the-call' || this.policy.style === 'minimal') return
-        // A9 (#263): a `refire` on the `in-time` path used to still
-        // dispatch the whole phrase on the phrase player while
-        // `onTokenDue` was simultaneously firing per-token word clips
-        // — two coach voices, different tracks, no duck. Exclude both.
-        if (this.delivery === 'in-time' && (event.kind === 'call' || event.kind === 'refire')) return
+        if (this.delivery === 'in-time' && event.kind === 'call') return
+        // NOTE: `refire` intentionally NOT excluded — under `in-time`
+        // (technical cadence) the burst window has expectedPunches=[]
+        // and never fires per-token events, so the refire IS the only
+        // voice inside the burst. A9's original attempt to exclude
+        // refire here silenced the entire burst on technical cadence
+        // (uppercut-clinic, measured 2026-08-30). The refire/per-token
+        // double-voice concern only appears when both actually fire —
+        // sequence cues under technical, addressed separately.
         if (!this.speakable('punch-command')) return
 
         const cue = this.mapCues.get(event.cueId)
@@ -886,9 +890,12 @@ export class CueAnnouncer {
 
   private onTokenDue(cue: CueInstance, tokenIndex: number): void {
     // Two ways a token is spoken as it lands: the `follow-the-call` style, and
-    // `in-time` delivery on the first rep of a block. On later reps the combo
-    // is tone-marked, not re-called, so per-token speech is suppressed there.
-    const inTime = this.delivery === 'in-time' && cue.repeatIndex === 0
+    // `in-time` delivery. Previously the second was gated to rep 0 because
+    // later reps were "tone-marked" — but Kyle's no-beeps sound design
+    // (2026-08-25) removed the tone, and rep 1..N of an 8-rep block then went
+    // silent for the whole window. Speak every rep instead: the coach calling
+    // a repeated combo eight times in a row is what a coach actually does.
+    const inTime = this.delivery === 'in-time'
     if (this.policy.style !== 'follow-the-call' && !inTime) return
     const token = cue.tokens[tokenIndex]
     if (!token) return
