@@ -16,7 +16,7 @@ import {
   useWorkoutRunner,
   TICK_INTERVAL_MS,
   type WorkoutRunner,
-} from '../useWorkoutRunner'
+} from '../_useWorkoutRunner'
 import { DEFAULT_COUNTDOWN_MS } from '@domain/session/WorkoutSessionClock'
 import { createFakeClock, type FakeClock } from '@testing/fakeClock'
 import { defaultRecipe } from '@domain/workout/WorkoutRecipe'

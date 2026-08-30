@@ -20,7 +20,7 @@ import { createFakeClock } from '@testing/fakeClock'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { useTrackerStore, type SlotState } from '@state/useTrackerStore'
 import { getLive, useLiveStore } from '@state/useWorkoutStore'
-import { degradedText, useLivePunchSource, type LivePunchSource } from '../useLivePunchSource'
+import { degradedText, useLivePunchSource, type LivePunchSource } from '../_useLivePunchSource'
 
 const LEFT_DEVICE = 'D7:34:B4:27:D5:84'
 const RIGHT_DEVICE = 'EA:69:2D:9C:FD:53'
