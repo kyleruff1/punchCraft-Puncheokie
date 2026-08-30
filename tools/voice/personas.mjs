@@ -39,7 +39,7 @@ export const PERSONAS = {
   cornerman: {
     id: 'cornerman',
     label: 'Old-School Cornerman',
-    version: 'cornerman-4',
+    version: 'cornerman-5',
     engine: 'chatterbox',
     reference: 'tools/voice/reference/cornerman-reference.wav',
     /**
