@@ -14,6 +14,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import type { CalloutVocabulary } from '@domain/coach/VoiceOutputPort'
+import type { SpeechMark } from './phraseManifest'
 
 export interface ComboAnnounceClip {
   id: string
@@ -25,6 +26,23 @@ export interface ComboAnnounceClip {
   module: number
   /** Measured duration of the rendered clip, in milliseconds. */
   durationMs: number
+  /**
+   * V2 word onsets in the recording — diagnostic use only (subtitles /
+   * ASR / transcript). Optional; present when the render pipeline emits
+   * it (M39-V2 Phase 4). Not a strike map.
+   */
+  speechMarksMs?: readonly SpeechMark[]
+  /**
+   * V2 strike map: semantic strike positions the announce phrase teaches,
+   * in transport ticks (960 PPQN). Consumed by the compiled-timeline
+   * fit-check + the ring-cadence rail (M39-V2 Phase 4). Optional.
+   */
+  taughtStrikeOffsetsTicks?: readonly number[]
+  /**
+   * V2 mirror of `durationMs` in transport ticks (960 PPQN) — lets the
+   * compiled timeline compose without unit conversion. Optional.
+   */
+  mappedDurationTicks?: number
 }
 
 export const COMBO_ANNOUNCE_CLIPS: readonly ComboAnnounceClip[] = [

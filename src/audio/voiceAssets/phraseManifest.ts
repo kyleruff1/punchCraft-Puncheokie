@@ -32,6 +32,34 @@ export interface PhraseWordMark {
  * shipped without wordMarks — the rail falls back to the beat grid.*/
 export type WordMarksSource = 'envelope' | 'envelope-relaxed' | 'whisper' | 'none'
 
+/**
+ * The V2 shape of a phrase's teaching content (M39-V2 Phase 4). The
+ * V1c `wordMarks[]` conflated two things: the ASR / envelope word
+ * onsets in the recording (used for subtitles + diagnostics) and the
+ * semantic strike positions the phrase teaches (used for the ring
+ * cadence rail and the fit-check). Phase 4 splits them:
+ *   - `speechMarksMs[]` — every word onset the recording carries.
+ *     Diagnostic use only. Same shape as `wordMarks[]` — same data
+ *     source, renamed to reflect what the field actually is.
+ *   - `taughtStrikeOffsetsTicks[]` — one per strike the phrase teaches,
+ *     in TRANSPORT ticks (960 PPQN). Populated when the render
+ *     pipeline can extract them (typically from the same envelope pass
+ *     that populates speechMarksMs, aligned to the strike grid).
+ *   - `mappedDurationTicks` — the clip's duration in transport ticks
+ *     (mirror of durationMs; ticks so it composes with the compiled
+ *     timeline without unit conversion).
+ * All three are OPTIONAL — a clip without them still plays through the
+ * V1c rail. The compiler prefers the V2 fields when present.
+ */
+export interface SpeechMark {
+  /** Onset in milliseconds from the start of the clip. */
+  offsetMs: number
+  /** End of the audible envelope for this mark, in ms. Optional. */
+  endOffsetMs?: number
+  /** Label — the word / syllable this mark corresponds to. Optional. */
+  label?: string
+}
+
 export interface PhraseAsset {
   cueId: string
   /** Which voice this clip is spoken in. See tools/voice/personas.mjs. */
@@ -45,6 +73,24 @@ export interface PhraseAsset {
   wordMarks: PhraseWordMark[]
   /** How the wordMarks were sourced — see WordMarksSource. */
   wordMarksSource?: WordMarksSource
+  /**
+   * V2 semantic-rename of `wordMarks`: word onsets in the recording,
+   * diagnostic use only (subtitles / ASR / transcript). Present when
+   * the render pipeline emits it (M39-V2 Phase 4). Not a strike map.
+   */
+  speechMarksMs?: readonly SpeechMark[]
+  /**
+   * V2 strike map: semantic strike positions the phrase teaches, in
+   * transport ticks (960 PPQN). One entry per strike; length matches
+   * the combination's token count. Consumed by the compiled-timeline
+   * fit-check + the ring-cadence rail (M39-V2 Phase 4).
+   */
+  taughtStrikeOffsetsTicks?: readonly number[]
+  /**
+   * V2 mirror of `durationMs` in transport ticks (960 PPQN) — lets the
+   * compiled timeline compose without unit conversion (M39-V2 Phase 4).
+   */
+  mappedDurationTicks?: number
   /**
    * Cadence-lab per-clip placement shift (ms). Positive = start the clip
    * EARLIER (fixes a clip whose spoken token landed after its ring);
@@ -3207,9 +3253,9 @@ export const phraseAssets: readonly PhraseAsset[] = [
     vocabulary: "numbers",
     performance: "push",
     tokens: ["1","2","3b","3"],
-    durationMs: 2648,
-    wordMarks: [],
-    wordMarksSource: "none",
+    durationMs: 1696,
+    wordMarks: [{"tokenIndex":0,"token":"1","offsetMs":30,"endOffsetMs":210},{"tokenIndex":1,"token":"2","offsetMs":410,"endOffsetMs":580},{"tokenIndex":2,"token":"3b","offsetMs":740,"endOffsetMs":1100},{"tokenIndex":3,"token":"3","offsetMs":1280,"endOffsetMs":1570}],
+    wordMarksSource: "envelope",
     module: require('../../../assets/voice/phrases/cornerman/1-2-3b-3.technical.numbers.push.wav'),
     renderer: "chatterbox-cornerman-theatrical-broadcast",
   },
@@ -3235,9 +3281,9 @@ export const phraseAssets: readonly PhraseAsset[] = [
     vocabulary: "numbers",
     performance: "push",
     tokens: ["1","2","3b","3"],
-    durationMs: 1522,
-    wordMarks: [],
-    wordMarksSource: "none",
+    durationMs: 3031,
+    wordMarks: [{"tokenIndex":0,"token":"1","offsetMs":60,"endOffsetMs":410},{"tokenIndex":1,"token":"2","offsetMs":750,"endOffsetMs":1160},{"tokenIndex":2,"token":"3b","offsetMs":1470,"endOffsetMs":2120},{"tokenIndex":3,"token":"3","offsetMs":2370,"endOffsetMs":2860}],
+    wordMarksSource: "envelope",
     module: require('../../../assets/voice/phrases/cornerman/1-2-3b-3.steady.numbers.push.wav'),
     renderer: "chatterbox-cornerman-theatrical-broadcast",
   },
@@ -3263,9 +3309,9 @@ export const phraseAssets: readonly PhraseAsset[] = [
     vocabulary: "numbers",
     performance: "push",
     tokens: ["1","2","3b","3"],
-    durationMs: 2111,
-    wordMarks: [{"tokenIndex":0,"token":"1","offsetMs":30,"endOffsetMs":340},{"tokenIndex":1,"token":"2","offsetMs":560,"endOffsetMs":770},{"tokenIndex":2,"token":"3b","offsetMs":1180,"endOffsetMs":1370},{"tokenIndex":3,"token":"3","offsetMs":1780,"endOffsetMs":1980}],
-    wordMarksSource: "envelope",
+    durationMs: 1358,
+    wordMarks: [],
+    wordMarksSource: "none",
     module: require('../../../assets/voice/phrases/cornerman/1-2-3b-3.pressure.numbers.push.wav'),
     renderer: "chatterbox-cornerman-theatrical-broadcast",
   },
@@ -3291,7 +3337,7 @@ export const phraseAssets: readonly PhraseAsset[] = [
     vocabulary: "numbers",
     performance: "push",
     tokens: ["1","2","3b","3"],
-    durationMs: 1129,
+    durationMs: 2075,
     wordMarks: [],
     wordMarksSource: "none",
     module: require('../../../assets/voice/phrases/cornerman/1-2-3b-3.sprint.numbers.push.wav'),
