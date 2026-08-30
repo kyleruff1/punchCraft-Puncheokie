@@ -26,7 +26,6 @@ import {
   avatarFrameAt,
   avatarWindowMs,
   minHoldMs,
-  punchAvatarKey,
   type AvatarStep,
 } from '@domain/workout/punchAvatar'
 
@@ -78,8 +77,13 @@ interface Shown {
   startedAt: number
 }
 
-/** The punch the card should be showing, or null for a non-punch token. */
-function requestedFor(
+/**
+ * The punch the card should be showing, or null for a non-punch token.
+ * Exported so the anti-collapse `key` contract can be pinned in a unit
+ * test (M39-V2 Phase 3c) without needing to reason about
+ * `useEffect` timing.
+ */
+export function requestedFor(
   cue: CueInstance | undefined,
   tokenIndex: number,
   lastPunchIndex: number,
@@ -94,7 +98,13 @@ function requestedFor(
   const dueTimes = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
   const isLast = tokenIndex === lastPunchIndex
-  return { key: punchAvatarKey(token.number, token.body), frames, windowMs, isLast }
+  // Per-occurrence identity — the two `1`s in `1-1-2` produce the same
+  // `punchAvatarKey('1', false)` and would short-circuit each other at
+  // the adoption guard below (`current.key === req.key`), leaving the
+  // second `1`'s ring lit against a stale card. Keying on the cue's
+  // strike-occurrence id (M39-V2 Phase 2 shape) distinguishes them.
+  const key = `${cue.id}:${tokenIndex}`
+  return { key, frames, windowMs, isLast }
 }
 
 export function PunchAvatarCard(props: {

@@ -8,7 +8,7 @@
 import React from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 
-import { PunchAvatarCard } from '../PunchAvatarCard'
+import { PunchAvatarCard, requestedFor } from '../PunchAvatarCard'
 import { findPunchAvatar, punchAvatarFrames } from '../punchAvatarManifest'
 import { minHoldMs, punchAvatarKey } from '@domain/workout/punchAvatar'
 import type { CueInstance } from '@domain/programs/CueTimeline'
@@ -240,6 +240,53 @@ describe('PunchAvatarCard — the flip repeats', () => {
     // tracked the cue zone and made the avatar jump between two sizes.
     const style = [card.props.style].flat()[0]
     expect(typeof style.height).toBe('number')
+  })
+})
+
+describe('requestedFor — per-occurrence key (M39-V2 Phase 3c anti-collapse)', () => {
+  // The bug the plan calls out: `1-1-2` uses `punchAvatarKey('1', false)`
+  // for BOTH `1`s, which collapses to `'1'`. The adoption guard at
+  // `current.key === req.key` then short-circuits the second `1`, and the
+  // ring lights against a stale card.
+  //
+  // The fix keys the request on the strike occurrence — cueId + tokenIndex
+  // — which matches the Phase 2' `strikeIdFor(cueId, DEFAULT_REP_ID,
+  // strikeIndex)` shape. This test pins the contract at the requestedFor
+  // level so it survives future refactors of the effect timing.
+  it('produces DIFFERENT keys for the two `1`s in `1-1-2`', () => {
+    const combo = cue([punch(1), punch(1), punch(2)])
+    const first = requestedFor(combo, 0, 2)
+    const second = requestedFor(combo, 1, 2)
+    expect(first?.key).toBeDefined()
+    expect(second?.key).toBeDefined()
+    expect(first!.key).not.toBe(second!.key)
+  })
+
+  it('produces DIFFERENT keys across cues even when the punch identity matches', () => {
+    // Two `1`s in different cues (say, rep 0 and rep 1 of the same combo
+    // after `expandBlock` mints per-repeat cue ids). Under the bug, both
+    // hash to `'1'` and the adoption guard short-circuits the second rep.
+    const a = cue([punch(1)], { id: 'cue-A' })
+    const b = cue([punch(1)], { id: 'cue-B' })
+    expect(requestedFor(a, 0, 0)?.key).not.toBe(requestedFor(b, 0, 0)?.key)
+  })
+
+  it('keeps the same key across renders for the SAME occurrence (stable identity)', () => {
+    // The key is per-occurrence, not per-render — no accidental identity
+    // churn on `useEffect`'s dep list.
+    const combo = cue([punch(1), punch(2)])
+    expect(requestedFor(combo, 0, 1)?.key).toBe(requestedFor(combo, 0, 1)?.key)
+  })
+
+  it('returns null for a non-punch token', () => {
+    const tokens: WorkoutToken[] = [{ kind: 'coach', command: 'hands-up', beatOffset: 0 }]
+    expect(requestedFor(cue(tokens), 0, -1)).toBeNull()
+  })
+
+  it('returns null for an undefined cue or out-of-range index', () => {
+    expect(requestedFor(undefined, 0, -1)).toBeNull()
+    expect(requestedFor(cue([punch(1)]), -1, 0)).toBeNull()
+    expect(requestedFor(cue([punch(1)]), 99, 0)).toBeNull()
   })
 })
 
