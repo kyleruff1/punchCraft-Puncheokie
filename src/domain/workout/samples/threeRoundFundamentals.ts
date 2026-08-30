@@ -22,7 +22,7 @@ import type { GeneratedWorkout } from '../GeneratedWorkout'
 import type { ProgramRound } from '../WorkoutTokens'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.steady.nominalBpm
 const WORK_MS = 240_000
@@ -235,7 +235,7 @@ function buildRound(
   specs: BlockSpec[],
   isLast: boolean,
 ): ProgramRound {
-  const blocks = layBlocks(specs, BPM)
+  const blocks = padBlocksToRound(layBlocks(specs, BPM), BPM, WORK_MS)
   return {
     id,
     order,

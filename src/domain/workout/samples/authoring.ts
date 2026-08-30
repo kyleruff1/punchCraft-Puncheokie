@@ -68,7 +68,7 @@ export interface BlockSpec {
 }
 
 /** Apply authored musical offsets over the parser's placeholder sequence. */
-function withOffsets(tokens: WorkoutToken[], offsets?: number[]): WorkoutToken[] {
+function withOffsets(tokens: WorkoutToken[], offsets?: readonly number[]): WorkoutToken[] {
   if (!offsets) return tokens
   if (offsets.length !== tokens.length) {
     throw new Error(
@@ -148,6 +148,112 @@ export function blocksSpanMs(blocks: readonly WorkoutBlock[]): number {
   if (blocks.length === 0) return 0
   const last = blocks[blocks.length - 1] as WorkoutBlock
   return last.startOffsetMs + last.durationMs
+}
+
+/**
+ * A3 (#258): after laying a sample's blocks, top the round off with a
+ * count-scored pressure repetition of `padMotif` so the coach never
+ * runs out of work before the bell.
+ *
+ * Room-mic evidence from pace-pusher: hand-authored blocks cover only
+ * 42-48% of a 240 s round; the rest fell into the free-work fallback
+ * with no rings and no coach. Rather than rewrite every sample by
+ * hand, this helper appends ONE `volume-burst` block whose window is
+ * exactly the gap between the blocks-so-far and
+ * `workDurationMs - marginMs`. `targetPunches` is derived from the
+ * chosen `padMotif`'s spacing so the added block reads as continuous
+ * pressure on the same rhythm the round already established.
+ *
+ * If the blocks already fill the round (or the gap is smaller than a
+ * minimum burst), the input is returned unchanged.
+ *
+ * `padMotif`'s `gapBeats` sets the perceived rate — the sample chooses
+ * a tighter value for late rounds and a roomier one for early. The
+ * padder never touches earlier blocks; it only ever appends.
+ */
+export interface PadMotifSpec {
+  id: string
+  notation: string
+  offsets?: readonly number[]
+  gapBeats: number
+  spokenPhrase?: string
+  cadence?: string
+  instruction?: string
+}
+
+/** Minimum burst window the padder is willing to emit; below this it drops the tail. */
+export const PAD_MIN_BURST_MS = 4_000
+/** Trailing quiet before the bell — one breath, not a hole. */
+export const PAD_BELL_MARGIN_MS = 2_000
+
+export function padBlocksToRound(
+  blocks: WorkoutBlock[],
+  bpm: number,
+  workDurationMs: number,
+  padMotif?: PadMotifSpec,
+): WorkoutBlock[] {
+  const span = blocksSpanMs(blocks)
+  const gap = workDurationMs - PAD_BELL_MARGIN_MS - span
+  if (gap < PAD_MIN_BURST_MS) return blocks
+
+  // When no explicit padMotif is given, re-use the round's LAST block:
+  // its tokens, gap and cadence are what the athlete was just working,
+  // so the tail reads as continuous pressure rather than a genre-shift.
+  // The last block's own id is namespaced with #pad so consumers can
+  // tell the two apart in the timeline.
+  const last = blocks[blocks.length - 1]
+  const motif: PadMotifSpec =
+    padMotif ??
+    (last
+      ? {
+          id: last.id,
+          notation: last.tokens
+            .filter((t): t is Extract<WorkoutToken, { kind: 'punch' }> => t.kind === 'punch')
+            .map((t) => `${t.number}${t.body ? 'b' : ''}`)
+            .join('-'),
+          offsets: last.tokens
+            .filter((t) => t.kind === 'punch')
+            .map((t) => t.beatOffset ?? 0),
+          gapBeats: last.gapBeats,
+          ...(last.cadence !== undefined ? { cadence: last.cadence } : {}),
+          ...(last.spokenPhrase !== undefined ? { spokenPhrase: last.spokenPhrase } : {}),
+        }
+      : { id: 'pad', notation: '1', gapBeats: 1.5 })
+
+  const tokens = withOffsets(parseCombo(motif.notation), motif.offsets)
+  // Quantise the pad block's duration to a clean beat subdivision so
+  // the "derives every duration from beats" sample test still passes.
+  const SUBDIVISION_BEATS = 0.05
+  const rawBeats = gap / beatsToMs(1, bpm)
+  const durationBeats = Math.floor(rawBeats / SUBDIVISION_BEATS) * SUBDIVISION_BEATS
+  // Don't Math.round — the "duration derives from beats" sample test
+  // reverses this exact conversion at 1e-6 tolerance, and a rounded
+  // ms figure fails at 85 BPM (0.05-beat subdivision = 35.29 ms).
+  const durationMs = beatsToMs(durationBeats, bpm)
+  const motifBeats =
+    tokens[tokens.length - 1]?.beatOffset !== undefined
+      ? (tokens[tokens.length - 1]!.beatOffset as number) + motif.gapBeats
+      : motif.gapBeats
+  const punchTokens = tokens.filter((t) => t.kind === 'punch').length
+  const cycles = Math.max(1, Math.floor(durationBeats / Math.max(motifBeats, 0.25)))
+  const targetPunches = cycles * punchTokens
+
+  const block: WorkoutBlock = {
+    id: `${motif.id}#pad`,
+    kind: 'volume-burst',
+    startOffsetMs: span,
+    durationMs,
+    // Inherit the last block's stance so switch-by-round's "every
+    // block in a round shares a stance" invariant still holds.
+    stance: last?.stance ?? 'inherit',
+    tokens,
+    gapBeats: motif.gapBeats,
+    targetPunches,
+  }
+  if (motif.spokenPhrase !== undefined) block.spokenPhrase = motif.spokenPhrase
+  if (motif.cadence !== undefined) block.cadence = motif.cadence
+  if (motif.instruction !== undefined) block.instruction = motif.instruction
+  return [...blocks, block]
 }
 
 /** Convenience re-export so samples never import cadence directly. */

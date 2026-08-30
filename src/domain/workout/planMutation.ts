@@ -124,7 +124,15 @@ export function applyMutation(
  * M32-09 suite caught in the engine.
  */
 function relayout(blocks: readonly WorkoutBlock[]): WorkoutBlock[] {
-  const ordered = [...blocks].sort((a, b) => a.startOffsetMs - b.startOffsetMs)
+  // A3 (#258): drop tail-pad blocks before re-laying. Samples now pad
+  // their rounds up to the bell with a synthetic volume-burst carrying
+  // a `#pad` id suffix; a mutation that inserts more work into an
+  // already-full round would otherwise overrun. Dropping the pad here
+  // is acceptable: mutation is an adjust action that expects the round
+  // to reshape itself, and the free-work fallback still handles any
+  // remaining tail.
+  const withoutPad = blocks.filter((b) => !b.id.endsWith('#pad'))
+  const ordered = [...withoutPad].sort((a, b) => a.startOffsetMs - b.startOffsetMs)
   let cursor = 0
   return ordered.map((block) => {
     const laid = { ...block, startOffsetMs: cursor }

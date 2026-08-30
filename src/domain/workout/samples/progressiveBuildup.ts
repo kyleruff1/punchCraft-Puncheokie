@@ -5,7 +5,7 @@ import { buildRoundSchedule } from '../roundSchedule'
 import { suggestGoal } from '../punchGoals'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.steady.nominalBpm
 const schedule = buildRoundSchedule(20)
@@ -64,7 +64,7 @@ const ROUND_SPECS: Array<{ theme: string; specs: BlockSpec[] }> = [
 ]
 
 const rounds: ProgramRound[] = ROUND_SPECS.map((spec, index) => {
-  const blocks = layBlocks(spec.specs, BPM)
+  const blocks = padBlocksToRound(layBlocks(spec.specs, BPM), BPM, 240_000)
   const isLast = index === ROUND_SPECS.length - 1
   return {
     id: `pb-r${index + 1}`,

@@ -5,7 +5,7 @@ import { buildRoundSchedule } from '../roundSchedule'
 import { suggestGoal } from '../punchGoals'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.pressure.nominalBpm
 const schedule = buildRoundSchedule(20)
@@ -61,8 +61,25 @@ const ROUND_SPECS: Array<{ theme: string; specs: BlockSpec[] }> = [
   },
 ]
 
+// A3 (#258): the hand-authored blocks only fill ~100 s of a 240 s round —
+// measured on tape as 124-139 s of free-work tail per round with dead
+// rings and no coach. Each round now tops itself off with a count-scored
+// pressure repetition of a natural closing motif for that round, so the
+// coach and the ring row keep working to the bell.
+const PAD_MOTIFS = [
+  { id: 'pp1-pad', notation: '1-2', offsets: [0, 0.55], gapBeats: 1.15,
+    spokenPhrase: 'One-twos.', instruction: 'Keep the pace to the bell.' },
+  { id: 'pp2-pad', notation: '1-2-3', offsets: [0, 0.55, 1.15], gapBeats: 1.15,
+    spokenPhrase: 'One-two-threes.', instruction: 'Hold it there.' },
+  { id: 'pp3-pad', notation: '1-2-3-2', offsets: [0, 0.55, 1.15, 1.75], gapBeats: 1.1,
+    spokenPhrase: 'One, two, three, two.', instruction: 'Push past comfortable.' },
+  { id: 'pp4-pad', notation: '1-2', offsets: [0, 0.5], gapBeats: 0.85,
+    spokenPhrase: 'One-twos.', instruction: 'Empty the tank.' },
+] as const
+
 const rounds: ProgramRound[] = ROUND_SPECS.map((spec, index) => {
-  const blocks = layBlocks(spec.specs, BPM)
+  const laid = layBlocks(spec.specs, BPM)
+  const blocks = padBlocksToRound(laid, BPM, 240_000, PAD_MOTIFS[index]!)
   const isLast = index === ROUND_SPECS.length - 1
   return {
     id: `pp-r${index + 1}`,

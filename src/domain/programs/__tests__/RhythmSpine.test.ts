@@ -80,6 +80,29 @@ describe('RhythmSpine — per-token schedule', () => {
   )
 })
 
+describe('round-fill coverage (A3 / issue #258)', () => {
+  /**
+   * The free-work tail was 124-139 s per round on pace-pusher — dead
+   * rings and no coach for over half the round. Every sample now goes
+   * through padBlocksToRound, so the blocks must cover the round to
+   * within PAD_BELL_MARGIN_MS + one beat-subdivision (the padder floors
+   * to 0.05 beats to keep the sample "duration derives from beats"
+   * test happy). One breath's worth of tail, never a hole.
+   */
+  const MARGIN_MS = 2_100
+  it.each(listSampleWorkouts().map((s) => [s.key, s]))(
+    'sample %s: every round is covered to within 2 s of the bell',
+    (_key, sample) => {
+      for (const round of sample.workout.schedule) {
+        if (!round.blocks.length) continue
+        const last = round.blocks[round.blocks.length - 1]!
+        const span = last.startOffsetMs + last.durationMs
+        expect(span).toBeGreaterThanOrEqual(round.workDurationMs - MARGIN_MS)
+      }
+    },
+  )
+})
+
 describe('pulses for count-scored windows (A2 / issue #257)', () => {
   it('a volume-burst window produces a pulse per planned punch', () => {
     // Real pace-pusher volume-burst: 55 beats at 120bpm = 27.5s,

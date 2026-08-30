@@ -21,7 +21,7 @@ import type { GeneratedWorkout } from '../GeneratedWorkout'
 import type { BlockStance, ProgramRound } from '../WorkoutTokens'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.technical.nominalBpm
 
@@ -95,7 +95,7 @@ const ROUND_PLAN: Array<{ theme: string; stance: BlockStance }> = [
 ]
 
 const rounds: ProgramRound[] = ROUND_PLAN.map((plan, index) => {
-  const blocks = layBlocks(roundSpecs(`sw-r${index + 1}`, plan.stance), BPM)
+  const blocks = padBlocksToRound(layBlocks(roundSpecs(`sw-r${index + 1}`, plan.stance), BPM), BPM, 240_000)
   const isLast = index === ROUND_PLAN.length - 1
   return {
     id: `sw-r${index + 1}`,

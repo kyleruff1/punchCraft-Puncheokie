@@ -160,15 +160,19 @@ describe('behind adds volume, never speed (doc §17, §22)', () => {
 
   it('does not raise the cadence of anything', () => {
     // A catch-up block carries its own gap; it never rewrites the pace of
-    // the blocks around it.
-    const before = WORKOUT.schedule[2]!.blocks.map((b) => b.gapBeats)
+    // the blocks around it. Synthetic `#pad` tail-fill blocks (A3/#258)
+    // are stripped by relayout — filter them from both sides so the
+    // comparison is over authored blocks only.
+    const before = WORKOUT.schedule[2]!.blocks
+      .filter((b) => !b.id.endsWith('#pad'))
+      .map((b) => b.gapBeats)
     const result = applyMutation(
       WORKOUT,
       { insertBlocks: [{ roundIndex: 2, block: catchUp() }] },
       { fromRoundIndex: 2 },
     )
     const after = result.schedule[2]!.blocks
-      .filter((b) => !b.id.startsWith('catch-'))
+      .filter((b) => !b.id.startsWith('catch-') && !b.id.endsWith('#pad'))
       .map((b) => b.gapBeats)
     expect(after).toEqual(before)
   })
