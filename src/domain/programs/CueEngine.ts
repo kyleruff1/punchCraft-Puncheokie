@@ -27,6 +27,7 @@
 
 import type { MonotonicClock } from '../time/MonotonicClock'
 import type { CueInstance, RoundTimeline } from './CueTimeline'
+import { tokenOffsetFor } from './tokenOffsets'
 import {
   TERMINAL_STATUSES,
   type CueEvent,
@@ -464,11 +465,9 @@ export class CueEngine {
     // The physical throw window (`windowEndMs`) and cue scoring stay on
     // the beat grid — this is a DISPLAY concern; the athlete still throws
     // when they hear the coach.
-    cue.tokenOffsetsMs.forEach((offset, tokenIndex) => {
+    cue.tokenOffsetsMs.forEach((_offset, tokenIndex) => {
       if (runtime.firedTokens.has(tokenIndex)) return
-      const engineOffset = cue.visualOffsetsMs?.[tokenIndex]
-      const railOffset = cue.phraseTokenTimesMs?.[tokenIndex]
-      const effective = engineOffset ?? railOffset ?? offset
+      const effective = tokenOffsetFor(cue, tokenIndex)
       if (until < cue.scheduledStartMs + effective) return
       runtime.firedTokens.add(tokenIndex)
       this.publish({

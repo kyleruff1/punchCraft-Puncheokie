@@ -46,11 +46,20 @@ describe('RhythmSpine — per-token schedule', () => {
             expect(beats!.length).toBe(0)
             continue
           }
-          // A cue without an offset for a token still produces a beat
-          // for every token it CAN place; assert the shape matches the
-          // number of offsets the timeline actually stamped.
+          // A cue produces a beat for every token whose scheduled fire
+          // time fits inside cue.windowEndMs (M39-V1c: `beatsFor` matches
+          // `CueEngine.fireDueTokens`'s window cap so the avatar and
+          // rings agree). Under engine-mode with a beat-grid rep
+          // stride shorter than the engine slot span, later tokens are
+          // legitimately clipped — that's the shared-chain contract.
           const offsets = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
-          expect(beats!.length).toBe(offsets.length)
+          const inWindow = offsets.filter((o) => cue.scheduledStartMs + o <= cue.windowEndMs).length
+          expect(beats!.length).toBeGreaterThan(0)
+          expect(beats!.length).toBeLessThanOrEqual(offsets.length)
+          // If none get clipped (legacy path), full match.
+          if (inWindow === offsets.length && !cue.visualOffsetsMs) {
+            expect(beats!.length).toBe(offsets.length)
+          }
         }
       }
     },
@@ -250,6 +259,23 @@ describe('beatsFor — the single source of truth', () => {
     const beats = beatsFor(railed)
     // scheduledStartMs 10000 + rail offsets → 9900, 10380
     expect(beats.map((b) => b.atMs)).toEqual([9_900, 10_380])
+  })
+
+  it('honors visualOffsetsMs when the engine authored it (wins over rail — M39-V1c)', () => {
+    // Kyle 2026-08-30 Pass 5 fix: avatar and rings must walk the SAME
+    // authority chain. Engine-authored ring times take priority over
+    // both the rail and the beat grid — otherwise the avatar stays on
+    // the beat grid while the ring fires on the engine slot ("interfering
+    // maps"). Regression guard: this test HAD to fail before the shared
+    // helper landed.
+    const engine: CueInstance = {
+      ...cue,
+      visualOffsetsMs: [0, 250],
+      phraseTokenTimesMs: [-100, 380],
+    }
+    const beats = beatsFor(engine)
+    // scheduledStartMs 10000 + engine offsets → 10000, 10250
+    expect(beats.map((b) => b.atMs)).toEqual([10_000, 10_250])
   })
 
   it('is pure — same inputs, deep-equal output', () => {

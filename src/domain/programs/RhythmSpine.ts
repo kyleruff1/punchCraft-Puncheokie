@@ -28,6 +28,7 @@
 
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import type { PunchHand, PunchType } from '../punch/PunchEvent'
+import { tokenOffsetFor } from './tokenOffsets'
 import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
 /**
  * The rail's fixed offset between a word's audible end and the ring
@@ -143,13 +144,15 @@ export function compileRoundSpine(round: RoundTimeline): SpineSchedule {
 /**
  * The per-token beat list for one cue.
  *
- * Reads `phraseTokenTimesMs` when present (the rail's per-word times),
- * `tokenOffsetsMs` otherwise (the beat grid) — same fallback the cue
- * engine at `CueEngine.fireDueTokens` uses, so the spine cannot drift
- * from the engine by construction.
+ * Reads through the shared authority chain (M39-V1c, Kyle 2026-08-30):
+ * `visualOffsetsMs ?? phraseTokenTimesMs ?? tokenOffsetsMs` via
+ * `tokenOffsetFor`. The ring engine at `CueEngine.fireDueTokens` uses
+ * the same helper, so the spine (which drives the avatar frame
+ * schedule) cannot drift from the ring times by construction — the
+ * "interfering maps" Kyle observed on Pass 5 (avatar on beat grid,
+ * rings on engine slots) resolve here.
  */
 export function beatsFor(cue: CueInstance): TokenBeat[] {
-  const offsets = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const out: TokenBeat[] = []
   const timing = timingFor(cue)
   // Kyle's avatar rule (2026-08-29): the cue's on-screen life is
@@ -165,9 +168,15 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
   const avatarFrameMs =
     punchTokenCount > 0 ? onScreenMs / (2 * punchTokenCount) : 0
   for (let i = 0; i < cue.tokens.length; i += 1) {
-    const off = offsets[i]
+    const off = tokenOffsetFor(cue, i)
     if (off === undefined) continue
     const atMs = cue.scheduledStartMs + off
+    // Match `CueEngine.fireDueTokens`'s cap: a token that would land
+    // past the cue's window never fires the ring, so the avatar must
+    // not schedule a frame for it either. Without this, engine-mode
+    // reps with a short beat-grid stride emit avatar beats for tokens
+    // whose rings never light — a second desync.
+    if (atMs > cue.windowEndMs) continue
     const token = cue.tokens[i]
     const expected =
       token?.kind === 'punch' ? cue.expectedPunches.find((p) => p.tokenIndex === i) : undefined
