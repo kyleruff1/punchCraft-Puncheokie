@@ -372,10 +372,62 @@ interface BlockContext {
   graceAfterMs: number
 }
 
+/**
+ * When the caller's `bpm` is a whole-slot multiple of the 60 BPM master
+ * pulse (Kyle's spec), the workout is in engine mode and rings can be
+ * snapped to the engine grid. Ratio 1..4 → BeatDivision 1..4;
+ * anything else → not engine mode.
+ */
+function engineDivision(bpm: number): 1 | 2 | 3 | 4 | undefined {
+  const ratio = bpm / 60
+  if (ratio === 1 || ratio === 2 || ratio === 3 || ratio === 4) {
+    return ratio as 1 | 2 | 3 | 4
+  }
+  return undefined
+}
+
+/**
+ * Snap each token's authored beatOffset to the nearest engine slot
+ * (Kyle 2026-08-30, Pass 5 verdict: "visual cues should disperse
+ * logically into metronome beat invisible backtrack").
+ *
+ * At engine mode, one authored beat maps to `division` grid slots. A
+ * token at beatOffset 0.55 in a division-4 grid rounds to slot 2 (out
+ * of 4-per-beat). Monotonicity is enforced so a rounding collision
+ * bumps the later token forward one slot rather than dropping onto
+ * the earlier one. Result: rings light on note-value logic (16th /
+ * triplet / 8th / quarter per cadence), never on fractional beats.
+ */
+function engineVisualOffsetsMs(
+  tokens: readonly WorkoutToken[],
+  bpm: number,
+  division: 1 | 2 | 3 | 4,
+): number[] {
+  const slotMs = beatsToMs(1, bpm)
+  const out: number[] = []
+  let prevSlot = -1
+  for (const t of tokens) {
+    let slot = Math.round(t.beatOffset * division)
+    if (slot <= prevSlot) slot = prevSlot + 1
+    out.push(slot * slotMs)
+    prevSlot = slot
+  }
+  return out
+}
+
 function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
   const offsets = tokenOffsetsMs(block.tokens, ctx.bpm)
   const comboSpanMs = beatsToMs(maxBeatOffset(block.tokens), ctx.bpm)
   const gapMs = beatsToMs(block.gapBeats, ctx.bpm)
+  // M39-V1c ring smoothing: engine-mode blocks with the
+  // announce-then-work voice policy get visualOffsetsMs stamped from
+  // the engine grid. Legacy blocks and non-engine cadences leave the
+  // field undefined and rings ride the beat-grid path unchanged.
+  const division = engineDivision(ctx.bpm)
+  const visualOffsetsMs =
+    division !== undefined && block.voicePolicy === 'announce-then-work'
+      ? engineVisualOffsetsMs(block.tokens, ctx.bpm, division)
+      : undefined
 
   // A repeat of 1 and no repeat are the same thing; treating them alike
   // keeps `exact-combo` and `repeated-combo` on one code path.
@@ -445,6 +497,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
         ? {}
         : { setupCallout: block.setupCallout }),
       ...(block.voicePolicy === undefined ? {} : { voicePolicy: block.voicePolicy }),
+      ...(visualOffsetsMs === undefined ? {} : { visualOffsetsMs }),
     })
   }
 

@@ -97,6 +97,17 @@ export const speedCombos: GeneratedWorkout = {
     bias: 'lead',
     defaultStance: 'orthodox',
     cadenceProfile: 'sprint',
+    // M39-V1c full engine mode (Kyle 2026-08-30, Pass 5 verdict): sprint
+    // maps to division 4 (240 slots/min at the 60 BPM master pulse), swing
+    // 0.54 for character. The audible click track ships with the audio-only
+    // fix — the whole workout rides ONE stable clock instead of the legacy
+    // nominalBpm=140 with irregular intra/inter-combo spacing.
+    coachTempo: { baseBpm: 60, division: 4, swing: 0.54 },
+    // volume 0: engine BPM (bpmForRecipe path) applies for grid math,
+    // but no audible click track (Kyle 2026-08-30: the metronome is a
+    // MEASUREMENT reference for ring / voice components, never audible
+    // to the user in production).
+    metronome: { enabled: true, volume: 0 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'speed-combos-2026-08-29',
   },

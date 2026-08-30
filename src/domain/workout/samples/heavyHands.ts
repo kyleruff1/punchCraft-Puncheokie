@@ -100,6 +100,11 @@ export const heavyHands: GeneratedWorkout = {
     bias: 'rear',
     defaultStance: 'orthodox',
     cadenceProfile: 'pressure',
+    // M39-V1c full engine mode (Kyle 2026-08-30): pressure maps to
+    // division 3 (180 slots/min at the 60 BPM master pulse), swing 0.54.
+    coachTempo: { baseBpm: 60, division: 3, swing: 0.54 },
+    // volume 0: engine BPM applies; click never plays (measurement-only).
+    metronome: { enabled: true, volume: 0 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'heavy-hands-2026-08-29',
   },

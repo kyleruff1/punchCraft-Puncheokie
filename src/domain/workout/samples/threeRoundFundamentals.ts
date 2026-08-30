@@ -273,7 +273,10 @@ export const threeRoundFundamentals: GeneratedWorkout = {
     // pulse); swing 0.54 is the "cohesive rolling" band. The click
     // ships audible at Volumes.metronome × 0.6.
     coachTempo: { baseBpm: 60, division: 2, swing: 0.54 },
-    metronome: { enabled: true, volume: 0.6 },
+    // volume 0: engine BPM applies; click never plays (measurement-only).
+    // Kyle 2026-08-30: "the user should never have to actually hear the
+    // metronome we are measuring our components with."
+    metronome: { enabled: true, volume: 0 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'fundamentals-2026-08-22',
   },

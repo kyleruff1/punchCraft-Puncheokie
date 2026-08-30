@@ -130,14 +130,21 @@ describe('byte identity — V1a fields must not touch legacy compiles', () => {
     },
   )
 
-  it('the M39-V1b engine samples opt in and take the engine BPM path', () => {
+  it('the M39-V1b/V1c engine samples opt in and take the engine BPM path', () => {
     // Guard: the moment a sample's recipe.metronome.enabled flips to
     // true, this list catches it — if a new engine sample lands without
     // an explicit mention here, this fails and prompts a review of the
-    // V1b runtime contract. Currently the only engine sample is
-    // `threeRoundFundamentals` (division 2 · swing 0.54 · 120 BPM).
+    // V1b runtime contract. V1c Pass-5 verdict (Kyle 2026-08-30) added
+    // the three sprint/pressure samples so ring cadence snaps to the
+    // engine grid via visualOffsetsMs (metronome.volume: 0 — the click
+    // is a measurement reference, never audible to the user).
     const engineSamples = samples.filter((s) => s.workout.recipe.metronome.enabled)
-    expect(engineSamples.map((s) => s.key).sort()).toEqual(['three-round-fundamentals'])
+    expect(engineSamples.map((s) => s.key).sort()).toEqual([
+      'heavy-hands',
+      'pace-pusher',
+      'speed-combos',
+      'three-round-fundamentals',
+    ])
     for (const sample of engineSamples) {
       const legacy = CADENCE_PROFILES[sample.workout.recipe.cadenceProfile].nominalBpm
       const bridged = bpmForRecipe(sample.workout.recipe)
