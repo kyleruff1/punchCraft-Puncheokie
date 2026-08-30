@@ -40,8 +40,67 @@
  * same purity rules as `../workout/cadence.ts`.
  */
 
+/**
+ * Master resolution — ticks per master pulse (Kyle 2026-08-30 V2
+ * blueprint §2). Twelve is divisible by every supported division
+ * (1, 2, 3, 4), so a single tick grid exactly represents technical
+ * (12 ticks/pulse), flow (6/pulse), triplet (4/pulse), and sprint
+ * (3/pulse) cadences with no rounding.
+ *
+ * At 60 BPM base, 1 tick = 60_000 / (60 × 12) = ~83.333 ms.
+ *
+ * `MetronomeTransport` uses this constant to convert its absolute
+ * unwrapped position into ticks. Every downstream consumer that
+ * needs to talk in ticks (`compileCue`, ring engine, avatar
+ * dispatcher, tracker acceptance windows) reads through helpers
+ * grounded here — no hardcoded 12 anywhere else in the codebase.
+ */
+export const TICKS_PER_PULSE = 12 as const
+
 /** Number of call positions per master beat. */
 export type BeatDivision = 1 | 2 | 3 | 4
+
+/**
+ * Ticks per one strike unit at the given division. Returns an
+ * integer because `TICKS_PER_PULSE` (12) is divisible by every
+ * supported division:
+ *
+ *   division 1 (technical): 12 ticks/unit → 1000 ms at 60 BPM
+ *   division 2 (flow):       6 ticks/unit →  500 ms at 60 BPM
+ *   division 3 (triplet):    4 ticks/unit →  333 ms at 60 BPM
+ *   division 4 (sprint):     3 ticks/unit →  250 ms at 60 BPM
+ *
+ * Throws on any division outside 1..4 (which would produce a
+ * non-integer ticks-per-unit and break the tick-as-integer
+ * contract V2 relies on).
+ */
+export function ticksPerUnit(division: BeatDivision): number {
+  const ticks = TICKS_PER_PULSE / division
+  if (!Number.isInteger(ticks)) {
+    throw new Error(
+      `TICKS_PER_PULSE (${TICKS_PER_PULSE}) must divide evenly by division ${division}`,
+    )
+  }
+  return ticks
+}
+
+/** Milliseconds per tick at a given master BPM. */
+export function tickDurationMs(baseBpm: number): number {
+  if (!Number.isFinite(baseBpm) || baseBpm <= 0) {
+    throw new Error('baseBpm must be a positive number')
+  }
+  return 60_000 / (baseBpm * TICKS_PER_PULSE)
+}
+
+/** Absolute tick at the given elapsed milliseconds. */
+export function tickAt(elapsedMs: number, baseBpm: number): number {
+  return (elapsedMs / 60_000) * baseBpm * TICKS_PER_PULSE
+}
+
+/** Elapsed milliseconds at the given absolute tick. */
+export function msAtTick(tick: number, baseBpm: number): number {
+  return (tick / (baseBpm * TICKS_PER_PULSE)) * 60_000
+}
 
 export interface CoachTempo {
   /** Master pulse. Start with 60. */

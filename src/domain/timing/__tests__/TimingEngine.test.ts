@@ -13,12 +13,17 @@ import {
   callSlotsPerMinute,
   combinationDurationMs,
   density,
+  msAtTick,
   plannedPacePerMinute,
   scheduleCombination,
   stepOffsetMs,
   SWING_EVEN,
   SWING_ROLLING,
   SWING_SINGSONG,
+  tickAt,
+  tickDurationMs,
+  TICKS_PER_PULSE,
+  ticksPerUnit,
   type BeatDivision,
   type CoachTempo,
   type RhythmicCombination,
@@ -264,6 +269,61 @@ describe('voice policy — decoupled from ring cadence (M39 addendum)', () => {
     ] as const) {
       expect(withPolicy(p).voicePolicy).toBe(p)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// M39-V2 Phase 1: tick-native helpers grounded on TICKS_PER_PULSE=12.
+// These pin the ratios every downstream V2 consumer (compileCue, ring,
+// avatar, tracker windows) will read through.
+// ---------------------------------------------------------------------------
+
+describe('tick grid — TICKS_PER_PULSE + ticksPerUnit', () => {
+  it('TICKS_PER_PULSE is 12 (divisible by every supported division)', () => {
+    expect(TICKS_PER_PULSE).toBe(12)
+  })
+
+  it('ticksPerUnit(division) is an integer at every division', () => {
+    expect(ticksPerUnit(1)).toBe(12)
+    expect(ticksPerUnit(2)).toBe(6)
+    expect(ticksPerUnit(3)).toBe(4)
+    expect(ticksPerUnit(4)).toBe(3)
+  })
+
+  it('rejects a division outside 1..4', () => {
+    // Runtime coverage — the type gate blocks it at compile time,
+    // but callers may cast through `any` from JS layers.
+    expect(() => ticksPerUnit(5 as unknown as BeatDivision)).toThrow()
+    expect(() => ticksPerUnit(0 as unknown as BeatDivision)).toThrow()
+  })
+})
+
+describe('tickDurationMs + tickAt + msAtTick', () => {
+  it('60 BPM → 1000/12 ≈ 83.333 ms per tick', () => {
+    expect(tickDurationMs(60)).toBeCloseTo(1000 / 12, 5)
+  })
+
+  it('120 BPM → half the tick duration', () => {
+    expect(tickDurationMs(120)).toBeCloseTo(tickDurationMs(60) / 2, 5)
+  })
+
+  it('tickAt(1000 ms, 60 BPM) → 12 ticks (one pulse)', () => {
+    expect(tickAt(1_000, 60)).toBeCloseTo(12, 5)
+  })
+
+  it('msAtTick and tickAt are inverses', () => {
+    for (const bpm of [60, 120, 180, 240]) {
+      for (const tick of [0, 1, 12, 24, 333]) {
+        const ms = msAtTick(tick, bpm)
+        expect(tickAt(ms, bpm)).toBeCloseTo(tick, 5)
+      }
+    }
+  })
+
+  it('tickDurationMs rejects non-positive bpm', () => {
+    expect(() => tickDurationMs(0)).toThrow()
+    expect(() => tickDurationMs(-1)).toThrow()
+    expect(() => tickDurationMs(NaN)).toThrow()
   })
 })
 
