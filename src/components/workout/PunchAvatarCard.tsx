@@ -46,9 +46,11 @@ const CARD_ASPECT = 1024 / 1536
  * A FIXED height, not a share of the zone. The cue stage's current zone
  * grows and shrinks as the "Next" preview comes and goes, and a
  * percentage height made the figure jump between two sizes on every one
- * of those layout changes.
+ * of those layout changes. Grown 400 → 480 on Kyle's 2026-08-30 live
+ * observation that the stage has room for a larger figure without
+ * competing with the token row.
  */
-const CARD_HEIGHT = 400
+const CARD_HEIGHT = 480
 /**
  * How often the flip clock is sampled. Well under the shortest frame
  * (MIN_FRAME_MS 90) so a strike can never be skipped, and cheap: it
