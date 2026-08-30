@@ -30,6 +30,7 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
 import {
   CHIME_IN_RELEASE_MS,
+  COACH_LANE_RELEASE_GRACE_MS,
   FALLBACK_CLIP_MS,
   MIN_CLIP_GAP_MS,
   VoiceOutputExpo,
@@ -627,6 +628,70 @@ describe('audibleUntilMs — A15 (#256) busy-until timing signal', () => {
     // 1-2 at pressure ships ~656 ms in numbers, ~800+ ms in names —
     // either way the window must extend at least half a second.
     expect(h.output.audibleUntilMs()).toBeGreaterThan(h.now() + 400)
+  })
+})
+
+describe('coach lane release grace (M39-V2 Phase 4-ii) — "extra muted measure" fix', () => {
+  // Kyle plan §Fix release grace: the coach lane holds itself busy for
+  // audibleEnd + ~50 ms so the next armed clip does not collide with the
+  // previous clip's tail decay. The constant is exported so tests can
+  // pin the exact value.
+  it('exports the 50 ms release grace constant', () => {
+    expect(COACH_LANE_RELEASE_GRACE_MS).toBe(50)
+  })
+
+  it('extends audibleUntilMs by the release grace past the clip duration', async () => {
+    const h = harness()
+    await h.output.preload()
+    // co-closer-01 is 690 ms per the manifest. audibleUntil should be
+    // now + 690 + 50 = now + 740, not now + 690.
+    h.output.playAsset('co-closer-01')
+    const now = h.now()
+    const until = h.output.audibleUntilMs()
+    expect(until).toBe(now + 690 + COACH_LANE_RELEASE_GRACE_MS)
+  })
+})
+
+describe('coach-lane runId (M39-V2 Phase 4-ii) — exclusive arm + stale-callback drop', () => {
+  // Kyle plan: every arm mints a fresh runId; a late finish callback
+  // that carries a superseded runId self-checks via isArmedRunId and
+  // no-ops. The lane is exclusive — only one runId is armed at a time.
+  it('mints a fresh runId each call and returns it', () => {
+    const h = harness()
+    const first = h.output.mintCoachRunId()
+    const second = h.output.mintCoachRunId()
+    expect(first).toMatch(/^coach-\d+$/)
+    expect(second).toMatch(/^coach-\d+$/)
+    expect(first).not.toBe(second)
+  })
+
+  it('reports only the most recently minted runId as armed', () => {
+    const h = harness()
+    const first = h.output.mintCoachRunId()
+    expect(h.output.isArmedRunId(first)).toBe(true)
+    const second = h.output.mintCoachRunId()
+    expect(h.output.isArmedRunId(second)).toBe(true)
+    // The first is now stale — a callback carrying it must self-drop.
+    expect(h.output.isArmedRunId(first)).toBe(false)
+  })
+
+  it('reports no runId armed until the first mint (fresh instance)', () => {
+    const h = harness()
+    expect(h.output.isArmedRunId('coach-1')).toBe(false)
+  })
+
+  it('clearCoachRunId drops the armed id (subsequent isArmedRunId returns false)', () => {
+    const h = harness()
+    const runId = h.output.mintCoachRunId()
+    expect(h.output.isArmedRunId(runId)).toBe(true)
+    h.output.clearCoachRunId()
+    expect(h.output.isArmedRunId(runId)).toBe(false)
+  })
+
+  it('clearCoachRunId is idempotent (safe to call when no arm)', () => {
+    const h = harness()
+    expect(() => h.output.clearCoachRunId()).not.toThrow()
+    expect(() => h.output.clearCoachRunId()).not.toThrow()
   })
 })
 

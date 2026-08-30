@@ -84,6 +84,24 @@ export const isChimeInAsset = (id: string): boolean =>
 /** Clearance after a chime-in before the calls come back. */
 export const CHIME_IN_RELEASE_MS = 250
 
+/**
+ * Grace after a coach clip's audible end during which the coach lane
+ * still reports itself busy (M39-V2 Phase 4-ii, Kyle amended blueprint
+ * §Fix release grace).
+ *
+ * Without a small grace, the next coach event arms exactly when the
+ * previous clip's last audible sample finishes — and the next clip's
+ * onset can collide with the tail decay of the previous one (the
+ * "extra muted measure" bug where the coach effectively skips a beat
+ * because the following armed clip immediately dropped it). 50 ms is
+ * short enough to be inaudible as a pause but long enough that the
+ * audio graph's own release ramp completes before the next start.
+ *
+ * Applied via `markBusy(durationMs)`, which advances `busyUntilMs` by
+ * `durationMs + COACH_LANE_RELEASE_GRACE_MS`.
+ */
+export const COACH_LANE_RELEASE_GRACE_MS = 50
+
 /** Clips carried on the bells volume rather than the voice volume (doc §25). */
 const BELL_ASSETS: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
   'bell',
@@ -240,6 +258,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private busyUntilMs = 0
 
   /**
+   * The current coach-lane arm id (M39-V2 Phase 4-ii). Every `arm` mints
+   * a fresh id; any late finish callback that carries a stale id is
+   * dropped without side effect. Null when no coach event is armed.
+   *
+   * The lane is EXCLUSIVE per Kyle's plan §Phase 4 — only one coach
+   * event is armed at a time. Superseding an armed event is legal
+   * (a chime-in or a mid-cue interrupt) — the new arm mints a new
+   * runId, the old runId becomes stale, and any deferred callback
+   * tied to the old runId no-ops.
+   */
+  private armedRunId: string | null = null
+
+  /** Monotonic counter feeding `mintCoachRunId`. */
+  private runIdCounter = 0
+
+  /**
    * The 3rd audio track — a boxing-flavored one-bar loop that anchors
    * every ring and voice call to the master pulse (M39-V1b / #280).
    * Constructed once per session, shared across every round; the runner
@@ -298,14 +332,52 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   /**
-   * Advance `busyUntilMs` to cover a clip of `durationMs` starting now.
+   * Advance `busyUntilMs` to cover a clip of `durationMs` starting now,
+   * plus a `COACH_LANE_RELEASE_GRACE_MS` tail so the next armed event
+   * doesn't collide with the previous clip's decay (M39-V2 Phase 4-ii
+   * "extra muted measure" fix).
+   *
    * A shorter clip does NOT shorten the window — if a longer clip is
    * already sounding, the earlier deadline stands.
    */
   private markBusy(durationMs: number | undefined): void {
     if (!durationMs || durationMs <= 0) return
-    const end = this.clock() + durationMs
+    const end = this.clock() + durationMs + COACH_LANE_RELEASE_GRACE_MS
     if (end > this.busyUntilMs) this.busyUntilMs = end
+  }
+
+  /**
+   * Mint a fresh coach-lane arm id and store it as the current
+   * armed run. Every previously issued runId becomes stale and any
+   * deferred callback carrying it will fail `isArmedRunId` — the
+   * exclusive-lane guarantee (M39-V2 Phase 4-ii).
+   *
+   * Returns the new runId string. Caller passes it into any timer or
+   * finish-callback that must self-check its liveness.
+   */
+  mintCoachRunId(): string {
+    this.runIdCounter += 1
+    this.armedRunId = `coach-${this.runIdCounter}`
+    return this.armedRunId
+  }
+
+  /**
+   * Whether the given runId is still the armed coach-lane owner. A
+   * finish callback whose runId is stale should return without
+   * modifying any lane state (marking busy, releasing focus, etc.);
+   * see the coach-lane exclusivity contract in the plan.
+   */
+  isArmedRunId(runId: string): boolean {
+    return this.armedRunId === runId
+  }
+
+  /**
+   * Drop the current coach-lane arm without minting a new one. Used
+   * when a coach event finishes cleanly and no follow-up is queued;
+   * the next arm must be minted via `mintCoachRunId`. Idempotent.
+   */
+  clearCoachRunId(): void {
+    this.armedRunId = null
   }
 
   /** Which clip set is playing. Changing it reloads on the next `preload`. */
