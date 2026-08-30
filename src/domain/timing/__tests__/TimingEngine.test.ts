@@ -8,6 +8,8 @@
  * separate from rate; acceptance windows widen on the fast grids.
  */
 import {
+  authoringStepAt,
+  AUTHORING_STEPS_PER_PULSE,
   beatDurationMs,
   callSlotDurationMs,
   callSlotsPerMinute,
@@ -21,9 +23,11 @@ import {
   SWING_ROLLING,
   SWING_SINGSONG,
   tickAt,
+  tickAtAuthoringStep,
   tickDurationMs,
-  TICKS_PER_PULSE,
+  TICKS_PER_AUTHORING_STEP,
   ticksPerUnit,
+  TRANSPORT_TICKS_PER_PULSE,
   type BeatDivision,
   type CoachTempo,
   type RhythmicCombination,
@@ -273,21 +277,32 @@ describe('voice policy — decoupled from ring cadence (M39 addendum)', () => {
 })
 
 // ---------------------------------------------------------------------------
-// M39-V2 Phase 1: tick-native helpers grounded on TICKS_PER_PULSE=12.
-// These pin the ratios every downstream V2 consumer (compileCue, ring,
-// avatar, tracker windows) will read through.
+// M39-V2 Phase 1' (Kyle amendments): 960 PPQN transport with a simple
+// 12-step authoring surface. TRANSPORT_TICKS_PER_PULSE gives ms-precision
+// for fit-checks + coach-lane grace; AUTHORING_STEPS_PER_PULSE stays the
+// combo-author-facing grid. compileCue lowers steps → ticks at compile
+// time via tickAtAuthoringStep.
 // ---------------------------------------------------------------------------
 
-describe('tick grid — TICKS_PER_PULSE + ticksPerUnit', () => {
-  it('TICKS_PER_PULSE is 12 (divisible by every supported division)', () => {
-    expect(TICKS_PER_PULSE).toBe(12)
+describe('tick grid — TRANSPORT_TICKS_PER_PULSE + AUTHORING_STEPS_PER_PULSE', () => {
+  it('TRANSPORT_TICKS_PER_PULSE is 960 (ms-precision at 60 BPM)', () => {
+    expect(TRANSPORT_TICKS_PER_PULSE).toBe(960)
+  })
+
+  it('AUTHORING_STEPS_PER_PULSE is 12 (divisible by every supported division)', () => {
+    expect(AUTHORING_STEPS_PER_PULSE).toBe(12)
+  })
+
+  it('TICKS_PER_AUTHORING_STEP is 80 (960 / 12)', () => {
+    expect(TICKS_PER_AUTHORING_STEP).toBe(80)
   })
 
   it('ticksPerUnit(division) is an integer at every division', () => {
-    expect(ticksPerUnit(1)).toBe(12)
-    expect(ticksPerUnit(2)).toBe(6)
-    expect(ticksPerUnit(3)).toBe(4)
-    expect(ticksPerUnit(4)).toBe(3)
+    // 960 / division → 960 / 480 / 320 / 240
+    expect(ticksPerUnit(1)).toBe(960)
+    expect(ticksPerUnit(2)).toBe(480)
+    expect(ticksPerUnit(3)).toBe(320)
+    expect(ticksPerUnit(4)).toBe(240)
   })
 
   it('rejects a division outside 1..4', () => {
@@ -298,22 +313,38 @@ describe('tick grid — TICKS_PER_PULSE + ticksPerUnit', () => {
   })
 })
 
+describe('tickAtAuthoringStep / authoringStepAt', () => {
+  it('lowers an authored step to its transport tick (×80)', () => {
+    expect(tickAtAuthoringStep(0)).toBe(0)
+    expect(tickAtAuthoringStep(1)).toBe(80)
+    expect(tickAtAuthoringStep(3)).toBe(240) // one sprint slot
+    expect(tickAtAuthoringStep(6)).toBe(480) // one flow slot
+    expect(tickAtAuthoringStep(12)).toBe(960) // one full pulse
+  })
+
+  it('is the inverse of authoringStepAt', () => {
+    for (const step of [0, 1, 3, 6, 12, 33]) {
+      expect(authoringStepAt(tickAtAuthoringStep(step))).toBeCloseTo(step, 10)
+    }
+  })
+})
+
 describe('tickDurationMs + tickAt + msAtTick', () => {
-  it('60 BPM → 1000/12 ≈ 83.333 ms per tick', () => {
-    expect(tickDurationMs(60)).toBeCloseTo(1000 / 12, 5)
+  it('60 BPM → 1000/960 ≈ 1.0417 ms per tick', () => {
+    expect(tickDurationMs(60)).toBeCloseTo(1000 / 960, 8)
   })
 
   it('120 BPM → half the tick duration', () => {
-    expect(tickDurationMs(120)).toBeCloseTo(tickDurationMs(60) / 2, 5)
+    expect(tickDurationMs(120)).toBeCloseTo(tickDurationMs(60) / 2, 8)
   })
 
-  it('tickAt(1000 ms, 60 BPM) → 12 ticks (one pulse)', () => {
-    expect(tickAt(1_000, 60)).toBeCloseTo(12, 5)
+  it('tickAt(1000 ms, 60 BPM) → 960 ticks (one pulse)', () => {
+    expect(tickAt(1_000, 60)).toBeCloseTo(960, 5)
   })
 
   it('msAtTick and tickAt are inverses', () => {
     for (const bpm of [60, 120, 180, 240]) {
-      for (const tick of [0, 1, 12, 24, 333]) {
+      for (const tick of [0, 1, 80, 240, 960, 26_666]) {
         const ms = msAtTick(tick, bpm)
         expect(tickAt(ms, bpm)).toBeCloseTo(tick, 5)
       }

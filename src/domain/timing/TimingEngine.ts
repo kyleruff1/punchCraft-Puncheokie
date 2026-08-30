@@ -41,65 +41,100 @@
  */
 
 /**
- * Master resolution — ticks per master pulse (Kyle 2026-08-30 V2
- * blueprint §2). Twelve is divisible by every supported division
- * (1, 2, 3, 4), so a single tick grid exactly represents technical
- * (12 ticks/pulse), flow (6/pulse), triplet (4/pulse), and sprint
- * (3/pulse) cadences with no rounding.
+ * Master transport resolution — internal tick rate in ticks per pulse
+ * (Kyle 2026-08-30 V2 blueprint + amendments).
  *
- * At 60 BPM base, 1 tick = 60_000 / (60 × 12) = ~83.333 ms.
+ * The V1c initial ship used `TICKS_PER_PULSE = 12` — fine for
+ * authoring but too coarse for the ±10-15 ms fit-check tolerance and
+ * ~50 ms coach-lane cleanup grace the rest of V2 needs. V2 splits
+ * transport (960 ticks/pulse ≈ 1.04 ms per tick at 60 BPM) from the
+ * simple 12-step authoring grid (`AUTHORING_STEPS_PER_PULSE`).
  *
- * `MetronomeTransport` uses this constant to convert its absolute
- * unwrapped position into ticks. Every downstream consumer that
- * needs to talk in ticks (`compileCue`, ring engine, avatar
- * dispatcher, tracker acceptance windows) reads through helpers
- * grounded here — no hardcoded 12 anywhere else in the codebase.
+ * 960 is divisible by every supported division AND by every
+ * authoring-step multiple:
+ *   division 1 (technical): 960 transport ticks / step
+ *   division 2 (flow):       480
+ *   division 3 (triplet):    320
+ *   division 4 (sprint):     240
+ *   1 authoring step:         80 (12 steps × 80 = 960)
+ *
+ * Every downstream consumer that needs to talk in ticks (`compileCue`,
+ * ring engine, avatar dispatcher, tracker acceptance windows) reads
+ * through helpers grounded here — no hardcoded 12 or 960 anywhere
+ * else in the codebase.
  */
-export const TICKS_PER_PULSE = 12 as const
+export const TRANSPORT_TICKS_PER_PULSE = 960 as const
+
+/**
+ * Author-facing coarse grid — number of positions per master pulse
+ * used in `ProgramCue` / `ComboPattern` manifests. `atStep: 3` in a
+ * combo spec means "third position in the 12-step grid" regardless
+ * of division. The compiler converts to transport ticks via
+ * `tickAtAuthoringStep(step, bpm)` at compile time.
+ */
+export const AUTHORING_STEPS_PER_PULSE = 12 as const
+
+/** Transport ticks per one author-facing step. `960 / 12 = 80`. */
+export const TICKS_PER_AUTHORING_STEP =
+  TRANSPORT_TICKS_PER_PULSE / AUTHORING_STEPS_PER_PULSE
 
 /** Number of call positions per master beat. */
 export type BeatDivision = 1 | 2 | 3 | 4
 
 /**
- * Ticks per one strike unit at the given division. Returns an
- * integer because `TICKS_PER_PULSE` (12) is divisible by every
- * supported division:
+ * Transport ticks per one strike unit at the given division. Returns
+ * an integer at every supported division because
+ * `TRANSPORT_TICKS_PER_PULSE` (960) is divisible by every division:
  *
- *   division 1 (technical): 12 ticks/unit → 1000 ms at 60 BPM
- *   division 2 (flow):       6 ticks/unit →  500 ms at 60 BPM
- *   division 3 (triplet):    4 ticks/unit →  333 ms at 60 BPM
- *   division 4 (sprint):     3 ticks/unit →  250 ms at 60 BPM
+ *   division 1 (technical): 960 ticks/unit → 1000 ms at 60 BPM
+ *   division 2 (flow):       480 ticks/unit →  500 ms at 60 BPM
+ *   division 3 (triplet):    320 ticks/unit →  333 ms at 60 BPM
+ *   division 4 (sprint):     240 ticks/unit →  250 ms at 60 BPM
  *
- * Throws on any division outside 1..4 (which would produce a
- * non-integer ticks-per-unit and break the tick-as-integer
- * contract V2 relies on).
+ * Throws on any division outside 1..4 (which would still divide
+ * cleanly at 960, but the domain contract only supports 1..4).
  */
 export function ticksPerUnit(division: BeatDivision): number {
-  const ticks = TICKS_PER_PULSE / division
-  if (!Number.isInteger(ticks)) {
-    throw new Error(
-      `TICKS_PER_PULSE (${TICKS_PER_PULSE}) must divide evenly by division ${division}`,
-    )
+  if (division !== 1 && division !== 2 && division !== 3 && division !== 4) {
+    throw new Error(`ticksPerUnit: division must be 1..4, got ${division}`)
   }
-  return ticks
+  return TRANSPORT_TICKS_PER_PULSE / division
 }
 
-/** Milliseconds per tick at a given master BPM. */
+/** Milliseconds per transport tick at a given master BPM. */
 export function tickDurationMs(baseBpm: number): number {
   if (!Number.isFinite(baseBpm) || baseBpm <= 0) {
     throw new Error('baseBpm must be a positive number')
   }
-  return 60_000 / (baseBpm * TICKS_PER_PULSE)
+  return 60_000 / (baseBpm * TRANSPORT_TICKS_PER_PULSE)
 }
 
-/** Absolute tick at the given elapsed milliseconds. */
+/** Absolute transport tick at the given elapsed milliseconds. */
 export function tickAt(elapsedMs: number, baseBpm: number): number {
-  return (elapsedMs / 60_000) * baseBpm * TICKS_PER_PULSE
+  return (elapsedMs / 60_000) * baseBpm * TRANSPORT_TICKS_PER_PULSE
 }
 
-/** Elapsed milliseconds at the given absolute tick. */
+/** Elapsed milliseconds at the given absolute transport tick. */
 export function msAtTick(tick: number, baseBpm: number): number {
-  return (tick / (baseBpm * TICKS_PER_PULSE)) * 60_000
+  return (tick / (baseBpm * TRANSPORT_TICKS_PER_PULSE)) * 60_000
+}
+
+/**
+ * Transport tick at the given author-facing step. `step × 80`. The
+ * compiler uses this to lower `ComboPattern.strikes[i].atStep` values
+ * into absolute transport positions on the compiled timeline.
+ */
+export function tickAtAuthoringStep(step: number): number {
+  return step * TICKS_PER_AUTHORING_STEP
+}
+
+/**
+ * Author-facing step at the given transport tick. Fractional when the
+ * transport tick doesn't land on an author-grid boundary (rare —
+ * authored steps are always integer multiples of 80).
+ */
+export function authoringStepAt(tick: number): number {
+  return tick / TICKS_PER_AUTHORING_STEP
 }
 
 export interface CoachTempo {

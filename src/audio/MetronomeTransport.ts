@@ -54,7 +54,7 @@
 import { logger, safe } from '@/diagnostics/logger'
 import type { MonotonicClock } from '@/domain/time/MonotonicClock'
 import { systemMonotonicClock } from '@/domain/time/MonotonicClock'
-import { TICKS_PER_PULSE } from '@/domain/timing/TimingEngine'
+import { TRANSPORT_TICKS_PER_PULSE } from '@/domain/timing/TimingEngine'
 
 export type MetronomeTransportState = 'stopped' | 'running' | 'paused'
 
@@ -80,7 +80,8 @@ export interface MetronomeTransportSnapshot {
    */
   sampledAtMonotonicMs: number
   /**
-   * `baseBpm × TICKS_PER_PULSE / 60`. Zero while stopped.
+   * `baseBpm × TRANSPORT_TICKS_PER_PULSE / 60`. Zero while stopped.
+   * At 60 BPM: 960 ticks/second (~1.04 ms/tick).
    */
   ticksPerSecond: number
   /** Master BPM the transport was started at. Zero while stopped. */
@@ -116,7 +117,7 @@ export class MetronomeTransport {
     }
     this.generation += 1
     this.baseBpm = baseBpm
-    this.ticksPerSecond = (baseBpm * TICKS_PER_PULSE) / 60
+    this.ticksPerSecond = (baseBpm * TRANSPORT_TICKS_PER_PULSE) / 60
     this.anchorMonotonicMs = this.clock.now()
     this.anchorAbsoluteTick = 0
     this.state = 'running'

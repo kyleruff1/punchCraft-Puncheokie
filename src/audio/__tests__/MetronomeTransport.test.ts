@@ -12,10 +12,11 @@
  *  3. **Pause preserves position.** `pause()` freezes the tick;
  *     `resume()` continues from the pause point. Elapsed monotonic
  *     time during the pause does NOT advance the tick.
- *  4. **Correct ticks-per-second at every supported cadence.** The
- *     TICKS_PER_PULSE=12 grid must divide evenly at divisions 1/2/3/4,
- *     which the ticksPerSecond helper honors via
- *     `baseBpm × TICKS_PER_PULSE / 60`.
+ *  4. **Correct ticks-per-second at every supported cadence.** V2
+ *     amendment: transport publishes 960 ticks/pulse (not 12) so the
+ *     ±10 ms fit-check tolerance and ~50 ms coach-lane grace fit
+ *     inside a single tick's precision. `baseBpm × 960 / 60` gives
+ *     960 tps at 60 BPM (~1.04 ms/tick).
  */
 import { createFakeClock } from '@testing/fakeClock'
 
@@ -32,13 +33,13 @@ describe('MetronomeTransport', () => {
     expect(s.generation).toBe(0)
   })
 
-  it('start(60) sets ticksPerSecond to 12 (TICKS_PER_PULSE) and bumps generation', () => {
+  it('start(60) sets ticksPerSecond to 960 (TRANSPORT_TICKS_PER_PULSE) and bumps generation', () => {
     const t = new MetronomeTransport(createFakeClock())
     t.start(60)
     const s = t.snapshot()
     expect(s.state).toBe('running')
     expect(s.baseBpm).toBe(60)
-    expect(s.ticksPerSecond).toBe(12)
+    expect(s.ticksPerSecond).toBe(960)
     expect(s.generation).toBe(1)
     expect(s.absoluteTick).toBe(0)
   })
@@ -47,11 +48,11 @@ describe('MetronomeTransport', () => {
     const clock = createFakeClock(1_000)
     const t = new MetronomeTransport(clock)
     t.start(60)
-    // At 60 BPM, 12 ticks/s → 1 s = 12 ticks.
+    // At 60 BPM, 960 transport ticks/s → 1 s = 960 ticks.
     clock.advance(1_000)
-    expect(t.currentTick()).toBeCloseTo(12, 5)
+    expect(t.currentTick()).toBeCloseTo(960, 5)
     clock.advance(500)
-    expect(t.currentTick()).toBeCloseTo(18, 5)
+    expect(t.currentTick()).toBeCloseTo(1_440, 5)
   })
 
   it('monotonicity — repeated snapshots at successive times never decrease', () => {
@@ -71,10 +72,10 @@ describe('MetronomeTransport', () => {
     const clock = createFakeClock()
     const t = new MetronomeTransport(clock)
     t.start(60)
-    clock.advance(500) // 6 ticks
+    clock.advance(500) // 480 ticks at 960 tps
     t.pause()
     const paused = t.currentTick()
-    expect(paused).toBeCloseTo(6, 5)
+    expect(paused).toBeCloseTo(480, 5)
     clock.advance(10_000) // long pause
     expect(t.currentTick()).toBeCloseTo(paused, 5)
     expect(t.snapshot().state).toBe('paused')
@@ -89,10 +90,10 @@ describe('MetronomeTransport', () => {
     clock.advance(10_000)
     t.resume()
     // Immediately after resume, tick == pause point.
-    expect(t.currentTick()).toBeCloseTo(6, 5)
+    expect(t.currentTick()).toBeCloseTo(480, 5)
     clock.advance(500)
-    // After another 500 ms, +6 ticks.
-    expect(t.currentTick()).toBeCloseTo(12, 5)
+    // After another 500 ms, +480 ticks.
+    expect(t.currentTick()).toBeCloseTo(960, 5)
   })
 
   it('stop resets to zero and the next start bumps generation again', () => {
@@ -100,7 +101,7 @@ describe('MetronomeTransport', () => {
     const t = new MetronomeTransport(clock)
     t.start(60)
     clock.advance(1_000)
-    expect(t.currentTick()).toBeCloseTo(12, 5)
+    expect(t.currentTick()).toBeCloseTo(960, 5)
     t.stop()
     expect(t.snapshot().state).toBe('stopped')
     expect(t.currentTick()).toBe(0)
@@ -111,12 +112,12 @@ describe('MetronomeTransport', () => {
   })
 
   it('ticksPerSecond is correct at every engine-supported BPM (60/120/180/240)', () => {
-    // baseBpm × TICKS_PER_PULSE / 60 → 12 / 24 / 36 / 48
+    // baseBpm × TRANSPORT_TICKS_PER_PULSE / 60 → 960 / 1920 / 2880 / 3840
     const cases: Array<[number, number]> = [
-      [60, 12],
-      [120, 24],
-      [180, 36],
-      [240, 48],
+      [60, 960],
+      [120, 1_920],
+      [180, 2_880],
+      [240, 3_840],
     ]
     for (const [bpm, tps] of cases) {
       const t = new MetronomeTransport(createFakeClock())
@@ -138,11 +139,11 @@ describe('MetronomeTransport', () => {
     const t = new MetronomeTransport(clock)
     t.start(60)
     clock.advance(1_000)
-    expect(t.currentTick()).toBeCloseTo(12, 5)
+    expect(t.currentTick()).toBeCloseTo(960, 5)
     t.start(120) // BPM change
     expect(t.snapshot().generation).toBe(2)
     expect(t.currentTick()).toBe(0)
-    expect(t.snapshot().ticksPerSecond).toBeCloseTo(24, 5)
+    expect(t.snapshot().ticksPerSecond).toBeCloseTo(1_920, 5)
   })
 
   it('pause with no prior start is a no-op (state stays stopped)', () => {
