@@ -268,6 +268,12 @@ export const threeRoundFundamentals: GeneratedWorkout = {
     totalPunchGoal: totalGoal,
     defaultStance: 'orthodox',
     cadenceProfile: 'steady',
+    // M39-V1b: first sample to opt into the engine. Steady maps to
+    // division 2 (2 calls/beat, 120 slots/min at the 60 BPM master
+    // pulse); swing 0.54 is the "cohesive rolling" band. The click
+    // ships audible at Volumes.metronome × 0.6.
+    coachTempo: { baseBpm: 60, division: 2, swing: 0.54 },
+    metronome: { enabled: true, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'fundamentals-2026-08-22',
   },

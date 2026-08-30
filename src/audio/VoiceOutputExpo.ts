@@ -52,6 +52,7 @@ import {
 } from './voiceAssets/manifest'
 import { findPhraseAsset } from './voiceAssets/phraseManifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
+import { MetronomePlayer } from './MetronomePlayer'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -237,6 +238,38 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * gate.
    */
   private busyUntilMs = 0
+
+  /**
+   * The 3rd audio track — a boxing-flavored one-bar loop that anchors
+   * every ring and voice call to the master pulse (M39-V1b / #280).
+   * Constructed once per session, shared across every round; the runner
+   * calls `.start()` on `work-entered` and `.stop()` on the phase
+   * transitions that end work. Public via the `metronome` port method,
+   * which is optional so any pre-V1b test double compiles unchanged.
+   */
+  private readonly metronomePlayer = new MetronomePlayer()
+
+  /**
+   * Port hook for the metronome track (M39-V1b). The runner calls
+   * `start`/`stop`/`setVolume` on this from its `applyTransitions`
+   * dispatch; `metronomePlayer` owns the native loop underneath.
+   * Volume defaults to `Volumes.metronome` at start, and `setVolume`
+   * carries slider changes without restarting the loop.
+   */
+  metronome = {
+    start: (
+      loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number },
+      volume: number,
+    ): void => {
+      this.metronomePlayer.start(loop, volume)
+    },
+    stop: (): void => {
+      this.metronomePlayer.stop()
+    },
+    setVolume: (volume: number): void => {
+      this.metronomePlayer.setVolume(volume)
+    },
+  }
 
   constructor(opts: VoiceOutputExpoOptions = {}) {
     this.manifest = opts.manifest ?? voiceAssetManifest
@@ -759,6 +792,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       const id = key.split('/')[2] as VoiceAssetId
       player.volume = BELL_ASSETS.has(id) ? this.volumes.bells : this.volumes.voice
     }
+    // The metronome loop is its own player and its own volume axis
+    // — carry the slider change through without restarting the loop.
+    this.metronomePlayer.setVolume(this.volumes.metronome)
   }
 
   /** Release players and any held focus. */
@@ -781,6 +817,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       }
     }
     this.players.clear()
+    // Tear the metronome loop down alongside every other native
+    // handle — a stranded loop after `release()` would keep clicking
+    // over the summary screen.
+    try {
+      this.metronomePlayer.stop()
+    } catch {
+      // Already gone.
+    }
     this.focusHeld = false
   }
 

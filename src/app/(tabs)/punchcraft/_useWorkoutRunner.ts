@@ -28,7 +28,8 @@ import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { CueEngine, DEFAULT_LEAD_TIMES } from '@domain/programs/CueEngine'
 import { LiveCueMatcher, type LiveMatcherEvent } from '@domain/programs/LiveCueMatcher'
 import { PacingEngine, type PacingCueText } from '@domain/programs/PacingEngine'
-import { CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
+import { bpmForRecipe, CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
+import { metronomeLoopFor } from '@audio/voiceAssets/metronomeAssets'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
@@ -41,7 +42,6 @@ import {
   pulseCursorAt,
   type SpineSchedule,
 } from '@domain/programs/RhythmSpine'
-import { CADENCE_PROFILES } from '@domain/workout/cadence'
 import { resolveCapabilityTier, sequenceScoreLabel } from '@domain/workout/capabilityTier'
 import { systemMonotonicClock, type MonotonicClock } from '@domain/time/MonotonicClock'
 import { WorkoutSessionClock, type SessionTransition } from '@domain/session/WorkoutSessionClock'
@@ -244,7 +244,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     args
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
-  const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
+  // M39-V1b: engine tempo when the recipe opts in (`metronome.enabled`),
+  // legacy `nominalBpm` otherwise — the bridge is `bpmForRecipe`. With
+  // `enabled: false` this returns the same value as before, so all
+  // pre-M39 samples produce a byte-identical timeline.
+  const bpm = bpmForRecipe(workout.recipe)
   const timeline = useMemo(
     () => expandTimeline(workout, stance, bpm),
     [workout, stance, bpm],
@@ -866,6 +870,34 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const applyTransitions = useCallback((transitions: SessionTransition[]): void => {
     const engine = engineRef.current
     if (!engine) return
+    // M39-V1b: the metronome click is the master pulse. It plays only
+    // during WORK — every rest, pause, and terminal phase tears it down
+    // so the next work-entered restarts on the downbeat and drift can't
+    // accumulate across a boundary. `metronome` is optional on the port
+    // (unavailable in headless tests / older `VoiceOutputExpo` builds).
+    const startMetronome = (): void => {
+      if (!workout.recipe.metronome.enabled) return
+      const port = voice?.output.metronome
+      if (!port) return
+      const loop = metronomeLoopFor(
+        workout.recipe.coachTempo.division,
+        workout.recipe.coachTempo.swing,
+      )
+      if (!loop) {
+        logger.warn('puncheokie.metronome', 'no loop for tempo', {
+          division: safe(workout.recipe.coachTempo.division),
+          swing: safe(workout.recipe.coachTempo.swing),
+        })
+        return
+      }
+      port.start(loop, workout.recipe.metronome.volume)
+    }
+    const stopMetronome = (): void => {
+      // Gate stop on the same flag as start — a legacy recipe never
+      // touched the port, so the tear-down side shouldn't either.
+      if (!workout.recipe.metronome.enabled) return
+      voice?.output.metronome?.stop()
+    }
     for (const transition of transitions) {
       // Mapped rather than cast: `SessionTransition` and `SessionPhaseEvent`
       // are different shapes, and `completed` is `finishing` on the other
@@ -897,6 +929,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             roundIndex: transition.roundIndex,
             nowMs: clock.now(),
           })
+          startMetronome()
           break
         }
         case 'rest-entered': {
@@ -907,6 +940,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           if (frozen) setLive({ frozenRoundResult: frozen })
 
           engine.onSessionPhase({ type: 'rest-entered', nowMs: clock.now() })
+          stopMetronome()
           // A rest is a safe boundary (doc §22) — the only place pacing may
           // propose anything.
           const restSnapshot = sessionRef.current?.snapshot()
@@ -931,18 +965,25 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         }
         case 'paused':
           engine.onSessionPhase({ type: 'paused', nowMs: clock.now() })
+          stopMetronome()
           break
         case 'resumed':
           engine.onSessionPhase({ type: 'resumed', nowMs: clock.now() })
+          // Re-anchor: a paused loop that resumes from its previous
+          // position would land off the downbeat by the pause duration.
+          // Starting fresh keeps the click on the grid.
+          startMetronome()
           break
         case 'completed':
           engine.onSessionPhase({ type: 'finishing', nowMs: clock.now() })
+          stopMetronome()
           // After the engine, so the last cue has settled and its rows are
           // in hand before the transaction opens.
           endSession(false)
           break
         case 'cancelled':
           engine.onSessionPhase({ type: 'cancelled', nowMs: clock.now() })
+          stopMetronome()
           // A cancelled workout is still a workout that happened; it is
           // written with status 'cancelled' rather than discarded.
           endSession(true)
@@ -951,7 +992,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           break
       }
     }
-  }, [clock, endSession, workout])
+  }, [clock, endSession, voice, workout])
 
   // -------------------------------------------------------------------------
   // Wiring. Keyed on the timeline + source so a recipe change rebuilds

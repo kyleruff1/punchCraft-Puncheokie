@@ -505,7 +505,7 @@ describe('volumes are independent (doc §25)', () => {
   it('carries bells and tones on the bells volume', async () => {
     const h = harness()
     await h.output.preload()
-    h.output.setVolumes({ voice: 0.4, bells: 0.9, haptics: 1 })
+    h.output.setVolumes({ voice: 0.4, bells: 0.9, haptics: 1, metronome: 0.6 })
 
     h.output.playAsset('1')
     h.output.playAsset('bell')
@@ -518,7 +518,7 @@ describe('volumes are independent (doc §25)', () => {
     const h = harness()
     await h.output.preload()
     h.output.playAsset('1')
-    h.output.setVolumes({ voice: 0.2, bells: 1, haptics: 1 })
+    h.output.setVolumes({ voice: 0.2, bells: 1, haptics: 1, metronome: 0.6 })
     h.output.playAsset('1')
     expect(h.plays.map((p) => p.volume)).toEqual([1, 0.2])
   })
@@ -764,7 +764,7 @@ describe('no-audio mode is first class (doc §25)', () => {
       h.output.tone('ready')
       h.output.speak('anything', AUDIO_PRIORITY.metric)
       h.output.cancel(AUDIO_PRIORITY.safety)
-      h.output.setVolumes({ voice: 1, bells: 1, haptics: 1 })
+      h.output.setVolumes({ voice: 1, bells: 1, haptics: 1, metronome: 0.6 })
     }).not.toThrow()
 
     h.advance(500)

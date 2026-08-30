@@ -92,12 +92,18 @@ describe('byte identity — V1a fields must not touch legacy compiles', () => {
     expect(samples.length).toBeGreaterThanOrEqual(9)
   })
 
-  it.each(samples.map((s) => [s.key, s]))(
+  // Samples that have opted into the engine (M39-V1b onward). Their
+  // timelines are DIFFERENT from the legacy path by design — the whole
+  // point of enabling the engine is a new BPM. They are exercised in
+  // engine tests below rather than in the byte-identity block.
+  const legacySamples = samples.filter((s) => !s.workout.recipe.metronome.enabled)
+
+  it.each(legacySamples.map((s) => [s.key, s]))(
     '`%s`: expandTimeline is deep-equal at nominalBpm regardless of M39 fields',
     (_key, sample) => {
-      // Every shipped sample already carries the new fields (the type
-      // requires them); the invariant is that `metronome.enabled: false`
-      // gives us the SAME timeline as bpmForRecipe would when computed
+      // Every legacy sample carries the new fields (the type requires
+      // them), but the invariant here is that `metronome.enabled: false`
+      // gives us the SAME timeline as `bpmForRecipe` would when computed
       // from the legacy cadenceProfile path. Both sides of the compare
       // go through `expandTimeline` with the same bpm number.
       const legacy = CADENCE_PROFILES[sample.workout.recipe.cadenceProfile].nominalBpm
@@ -123,6 +129,26 @@ describe('byte identity — V1a fields must not touch legacy compiles', () => {
       expect(bridgedTimeline).toEqual(legacyTimeline)
     },
   )
+
+  it('the M39-V1b engine samples opt in and take the engine BPM path', () => {
+    // Guard: the moment a sample's recipe.metronome.enabled flips to
+    // true, this list catches it — if a new engine sample lands without
+    // an explicit mention here, this fails and prompts a review of the
+    // V1b runtime contract. Currently the only engine sample is
+    // `threeRoundFundamentals` (division 2 · swing 0.54 · 120 BPM).
+    const engineSamples = samples.filter((s) => s.workout.recipe.metronome.enabled)
+    expect(engineSamples.map((s) => s.key).sort()).toEqual(['three-round-fundamentals'])
+    for (const sample of engineSamples) {
+      const legacy = CADENCE_PROFILES[sample.workout.recipe.cadenceProfile].nominalBpm
+      const bridged = bpmForRecipe(sample.workout.recipe)
+      const engineBpm =
+        sample.workout.recipe.coachTempo.baseBpm *
+        sample.workout.recipe.coachTempo.division *
+        sample.workout.recipe.globalSpeed
+      expect(bridged).toBe(engineBpm)
+      expect(bridged).not.toBe(legacy)
+    }
+  })
 
   it('a hand-flipped `metronome.enabled: true` sample compiles at a DIFFERENT bpm', () => {
     // The mirror of the byte-identity check: prove the bridge actually

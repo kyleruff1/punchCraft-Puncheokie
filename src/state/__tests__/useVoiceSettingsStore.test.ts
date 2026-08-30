@@ -138,7 +138,7 @@ describe('settings survive a restart', () => {
 
   it('reloads the volumes', () => {
     const h = harness()
-    h.store().setVolumes({ voice: 0.5, bells: 0.25, haptics: 0 })
+    h.store().setVolumes({ voice: 0.5, bells: 0.25, haptics: 0, metronome: 0.6 })
 
     __resetVoiceSettingsForTests()
     useVoiceSettingsStore.getState().load(h.repo)
@@ -147,6 +147,7 @@ describe('settings survive a restart', () => {
       voice: 0.5,
       bells: 0.25,
       haptics: 0,
+      metronome: 0.6,
     })
   })
 

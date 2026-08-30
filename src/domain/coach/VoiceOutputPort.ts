@@ -316,9 +316,17 @@ export interface Volumes {
   voice: number
   bells: number
   haptics: number
+  /**
+   * The boxing-flavored metronome loop (M39-V1b). Default 0.6 — hot
+   * enough to sit under both the coach and chime-ins as the floor,
+   * quiet enough that a chatty round doesn't have to fight it. The
+   * click does NOT duck under speech: a metronome that disappears
+   * on every combo call defeats its purpose.
+   */
+  metronome: number
 }
 
-export const DEFAULT_VOLUMES: Volumes = { voice: 1, bells: 1, haptics: 1 }
+export const DEFAULT_VOLUMES: Volumes = { voice: 1, bells: 1, haptics: 1, metronome: 0.6 }
 
 export interface VoiceOutputPort {
   /**
@@ -339,6 +347,22 @@ export interface VoiceOutputPort {
    * Optional: implementations that predate WS4 no-op silently.
    */
   playInstruction?(clip: { text: string; module: number; durationMs: number }): void
+  /**
+   * The metronome track (M39-V1b / #280). The 3rd audio track — a
+   * boxing-flavored one-bar loop that anchors every ring and voice
+   * call to the master pulse. The runner's `applyTransitions` calls
+   * `start` on `work-entered`, `stop` on `rest-entered` / paused /
+   * finishing / cancelled, and `start` again on `resumed` (which
+   * re-anchors on the master beat). Optional so a domain consumer
+   * that predates V1b compiles and no-ops silently.
+   */
+  metronome?: {
+    /** Load and play the loop wav at `volume`. Restart on the downbeat when the loop changes. */
+    start(loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number }, volume: number): void
+    stop(): void
+    /** Change the mixer volume without restarting the loop. */
+    setVolume(volume: number): void
+  }
   /** Descriptive text only. Never a punch command (D16). */
   speak(text: string, priority: AudioPriority): void
   tone(kind: ToneKind): void

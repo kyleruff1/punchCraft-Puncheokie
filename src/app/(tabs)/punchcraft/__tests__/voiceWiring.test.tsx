@@ -99,6 +99,7 @@ class RecordingPort implements VoiceOutputPort {
   readonly tones: ToneKind[] = []
   readonly spoken: string[] = []
   cancels = 0
+  readonly metronomeCalls: string[] = []
 
   playAsset(id: VoiceAssetId): void {
     this.assets.push(id)
@@ -113,6 +114,16 @@ class RecordingPort implements VoiceOutputPort {
     this.cancels += 1
   }
   setVolumes(_v: Volumes): void {}
+
+  readonly metronome = {
+    start: (loop: { division: number; swing: number }): void => {
+      this.metronomeCalls.push(`start:${loop.division}:${loop.swing}`)
+    },
+    stop: (): void => {
+      this.metronomeCalls.push('stop')
+    },
+    setVolume: (): void => {},
+  }
 }
 
 interface Harness {
@@ -375,5 +386,145 @@ describe('a workout with no voice configured', () => {
     act(() => {
       tree.unmount()
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The M39-V1b metronome wiring. The port's `metronome` hook is optional and
+// the runner is expected to gate on `recipe.metronome.enabled` — a legacy
+// recipe with the flag off must NEVER call start/stop even when the port is
+// present. When the flag is on, the runner drives the click on the phase
+// edges (work → start; rest/pause/end → stop; resume → start again to
+// re-anchor on the downbeat).
+// ---------------------------------------------------------------------------
+
+function workoutWithMetronome(enabled: boolean): GeneratedWorkout {
+  return {
+    ...WORKOUT,
+    recipe: {
+      ...WORKOUT.recipe,
+      coachTempo: { baseBpm: 60, division: 2, swing: 0.54 },
+      metronome: { enabled, volume: 0.6 },
+    },
+  }
+}
+
+function mountWithWorkout(workout: GeneratedWorkout): Harness {
+  const clock = createFakeClock()
+  const port = new RecordingPort()
+  const ref = React.createRef<WorkoutRunner>()
+  const voice = {
+    output: port,
+    policy: defaultVoiceCoachPolicy(),
+    detector: new StaticPlaybackDetector(false),
+  }
+
+  function Probe(): React.JSX.Element {
+    const runner = useWorkoutRunner({
+      workout,
+      source: new SilentSource(),
+      stance: 'orthodox',
+      clock,
+      persistence: null,
+      voice,
+    })
+    useImperativeHandle(ref, () => runner, [runner])
+    return <View />
+  }
+
+  let tree!: ReactTestRenderer
+  act(() => {
+    tree = create(<Probe />)
+  })
+
+  const step = (ms: number): void => {
+    act(() => {
+      for (let elapsed = 0; elapsed < ms; elapsed += TICK_INTERVAL_MS) {
+        clock.advance(TICK_INTERVAL_MS)
+        jest.advanceTimersByTime(TICK_INTERVAL_MS)
+      }
+    })
+  }
+
+  return {
+    get runner() {
+      return ref.current as WorkoutRunner
+    },
+    port,
+    clock,
+    step,
+    begin: () => {
+      act(() => {
+        ;(ref.current as WorkoutRunner).start()
+      })
+      step(COUNTDOWN_MS + TICK_INTERVAL_MS)
+    },
+    settle: async () => {
+      await act(async () => {
+        await Promise.resolve()
+      })
+    },
+    unmount: () => {
+      act(() => {
+        tree.unmount()
+      })
+    },
+  }
+}
+
+describe('metronome wiring (M39-V1b / #280)', () => {
+  it('starts the click on work-entered and stops on rest-entered when the recipe opts in', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(true))
+    await h.settle()
+    h.begin()
+
+    expect(h.port.metronomeCalls[0]).toBe('start:2:0.54')
+
+    h.step(WORK_MS + TICK_INTERVAL_MS * 2)
+
+    // start on round 1 work-entered, then stop on rest-entered.
+    expect(h.port.metronomeCalls.slice(0, 2)).toEqual(['start:2:0.54', 'stop'])
+    h.unmount()
+  })
+
+  it('re-starts on resume (re-anchors on the downbeat)', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(true))
+    await h.settle()
+    h.begin()
+
+    act(() => {
+      h.runner.pause()
+    })
+    act(() => {
+      h.runner.resume()
+    })
+
+    const calls = h.port.metronomeCalls
+    // start (work), stop (pause), start (resume).
+    expect(calls).toEqual(['start:2:0.54', 'stop', 'start:2:0.54'])
+    h.unmount()
+  })
+
+  it('is silent when the recipe has metronome.enabled: false — no port calls at all', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(false))
+    await h.settle()
+    h.begin()
+    h.step(WORK_MS + TICK_INTERVAL_MS * 2)
+
+    expect(h.port.metronomeCalls).toEqual([])
+    h.unmount()
+  })
+
+  it('stops the click on emergencyStop / cancel', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(true))
+    await h.settle()
+    h.begin()
+
+    act(() => {
+      h.runner.emergencyStop()
+    })
+
+    expect(h.port.metronomeCalls).toContain('stop')
+    h.unmount()
   })
 })
