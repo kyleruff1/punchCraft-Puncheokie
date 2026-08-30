@@ -253,3 +253,83 @@ if (!manifestOnly) {
   )
   console.log('Report: tools/analysis/combo-announce-report.json')
 }
+
+// -----------------------------------------------------------------------------
+// Manifest — every rendered wav is registered so the runtime can look it up
+// by (combination, vocabulary). Mirrors `instructionManifest.ts`: a TS array
+// with a small lookup helper. Always rebuilt from disk against the full
+// candidate list, so a subset render doesn't truncate the manifest.
+// -----------------------------------------------------------------------------
+
+writeManifest()
+
+function writeManifest() {
+  const have = allJobs.filter((j) => existsSync(j.wav))
+  const lines = [
+    '/**',
+    ' * Combo-announce clips (generated).',
+    ' *',
+    ' * DO NOT EDIT — produced by `node tools/voice/make-combo-announce-clips.mjs`.',
+    ' *',
+    ' * One rendered wav per (combination, vocabulary). Consumed by the',
+    ' * VoicePolicy = announce-then-work path in CueAnnouncer (M39-V1c):',
+    ' * fires at rep 0 of a block whose voicePolicy is announce-then-work,',
+    ' * silent on interior reps. Rings still march to the CueEngine grid.',
+    ' *',
+    ' * Lookup: `findComboAnnounce(combination, vocabulary)`.',
+    ' */',
+    '',
+    '/* eslint-disable @typescript-eslint/no-require-imports */',
+    '',
+    "import type { CalloutVocabulary } from '@domain/coach/VoiceOutputPort'",
+    '',
+    'export interface ComboAnnounceClip {',
+    '  id: string',
+    '  combination: string',
+    '  vocabulary: CalloutVocabulary',
+    '  /** The exact rendered text — what the ASR gate scored against. */',
+    '  text: string',
+    '  /** Metro module id for the wav. */',
+    '  module: number',
+    '  /** Measured duration of the rendered clip, in milliseconds. */',
+    '  durationMs: number',
+    '}',
+    '',
+    'export const COMBO_ANNOUNCE_CLIPS: readonly ComboAnnounceClip[] = [',
+  ]
+  for (const clip of have) {
+    const durationMs = measureDuration(clip.wav)
+    lines.push(
+      `  { id: '${clip.id}', combination: '${clip.notation}', vocabulary: '${clip.vocabulary}', ` +
+        `text: ${JSON.stringify(clip.text)}, ` +
+        `module: require('../../../assets/voice/combo-announces/${PERSONA.id}/${clip.id}.wav'), ` +
+        `durationMs: ${durationMs} },`,
+    )
+  }
+  lines.push(
+    ']',
+    '',
+    '/**',
+    ' * The announce clip for a combination at a vocabulary, or undefined',
+    ' * when the library has no rendering for it. A missing clip means the',
+    ' * announce-then-work block falls back to silence for that combo — the',
+    ' * runtime does not synthesize at runtime.',
+    ' */',
+    'export function findComboAnnounce(',
+    '  combination: string,',
+    '  vocabulary: CalloutVocabulary,',
+    '): ComboAnnounceClip | undefined {',
+    '  return COMBO_ANNOUNCE_CLIPS.find(',
+    '    (c) => c.combination === combination && c.vocabulary === vocabulary,',
+    '  )',
+    '}',
+    '',
+    '/* eslint-enable @typescript-eslint/no-require-imports */',
+    '',
+  )
+  writeFileSync(
+    join('src', 'audio', 'voiceAssets', 'comboAnnounceManifest.ts'),
+    lines.join('\n'),
+  )
+  console.log(`Wrote comboAnnounceManifest.ts (${have.length}/${allJobs.length} clips)`)
+}

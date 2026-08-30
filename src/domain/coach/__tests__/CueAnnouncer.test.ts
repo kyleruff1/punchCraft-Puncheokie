@@ -857,6 +857,111 @@ describe('VoicePolicy = announce-then-work', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// VoicePolicy Phase B2 (Kyle 2026-08-30, #281): rep 0 of an
+// announce-then-work block plays the combo-announce clip via
+// `playComboAnnounce`, not the per-punch phrase. Fall through to
+// interim per-punch phrase when the library has no announce clip.
+// ---------------------------------------------------------------------------
+
+describe('VoicePolicy = announce-then-work — Phase B2 combo-announce clip', () => {
+  interface AnnounceCall {
+    text: string
+    module: number
+    durationMs: number
+  }
+
+  function makeHarness(
+    opts: {
+      library?: ReadonlyMap<string, { text: string; module: number; durationMs: number }>
+      hasPhraseFallback?: boolean
+    } = {},
+  ): {
+    announcer: CueAnnouncer
+    port: RecordingPort
+    announces: AnnounceCall[]
+    phrases: Array<[string, string]>
+  } {
+    const library = opts.library ?? new Map()
+    const hasPhrase = opts.hasPhraseFallback ?? true
+    const port = new RecordingPort()
+    const announces: AnnounceCall[] = []
+    const phrases: Array<[string, string]> = []
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: (combination: string, cadence: string) => {
+          phrases.push([combination, cadence])
+          return hasPhrase
+        },
+        combinationDurationMs: () => (hasPhrase ? 600 : undefined),
+        playComboAnnounce: (clip: AnnounceCall) => {
+          announces.push(clip)
+        },
+      }),
+      cadence: 'sprint',
+      vocabulary: 'numbers',
+      comboAnnounceFor: (combination, vocabulary) => {
+        // Key by "combination|vocabulary" for lookup.
+        return library.get(`${combination}|${vocabulary}`)
+      },
+    })
+    return { announcer, port, announces, phrases }
+  }
+
+  it('rep 0 plays the combo-announce clip when the library has it', () => {
+    const library = new Map([
+      ['1-2|numbers', { text: 'One, Two, go!', module: 42, durationMs: 1500 }],
+    ])
+    const h = makeHarness({ library })
+    const first = cue({
+      id: 'atw-rep0-announce',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+
+    expect(h.announces).toEqual([
+      { text: 'One, Two, go!', module: 42, durationMs: 1500 },
+    ])
+    // The per-punch phrase path did NOT fire — the announce clip owns rep 0.
+    expect(h.phrases).toEqual([])
+  })
+
+  it('falls through to the interim per-punch phrase when library has no announce', () => {
+    const h = makeHarness({ library: new Map() })
+    const first = cue({
+      id: 'atw-rep0-fallback',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+
+    expect(h.announces).toEqual([])
+    // Phase A interim: the per-punch phrase call fired for rep 0.
+    expect(h.phrases).toEqual([['1-2', 'sprint']])
+  })
+
+  it('interior reps stay silent even when the library has the announce', () => {
+    const library = new Map([
+      ['1-2|numbers', { text: 'One, Two, go!', module: 42, durationMs: 1500 }],
+    ])
+    const h = makeHarness({ library })
+    const rep2 = cue({
+      id: 'atw-rep2',
+      repeatIndex: 2,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', rep2))
+
+    expect(h.announces).toEqual([])
+    expect(h.phrases).toEqual([])
+  })
+})
+
 describe('the callout vocabulary and performance reach the port (D15, Phase C)', () => {
   /** Records the `voice` argument handed to the phrase methods. */
   function voiceHarness(opts: {

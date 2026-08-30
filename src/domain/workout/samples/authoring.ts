@@ -132,6 +132,29 @@ export function layBlocks(specs: readonly BlockSpec[], bpm: number): WorkoutBloc
  * tracker count rather than by prescribing every punch (doc §14), so their
  * declared target is authoritative.
  */
+/**
+ * Stamp `voicePolicy` on every block in the list.
+ *
+ * The M39-V1c bulk-flip helper (Kyle 2026-08-30): sprint + pressure
+ * samples flip every one of their blocks to `announce-then-work` so
+ * the coach speaks once at the block's first cue and stays silent on
+ * interior reps while rings still march to the CueEngine grid. See
+ * `CueAnnouncer.announce` + `WorkoutBlock.voicePolicy`.
+ *
+ * Mutates in place — the samples build blocks then pass them through
+ * this helper as the last step, so the "one place to flip a whole
+ * sample" lever is right there in the recipe file.
+ */
+export function withVoicePolicy(
+  blocks: WorkoutBlock[],
+  voicePolicy: WorkoutBlock['voicePolicy'],
+): WorkoutBlock[] {
+  for (const block of blocks) {
+    block.voicePolicy = voicePolicy
+  }
+  return blocks
+}
+
 export function blockPunchCount(block: WorkoutBlock): number {
   if (block.targetPunches !== undefined) return block.targetPunches
   const enumerated = block.tokens.filter((t) => t.kind === 'punch').length

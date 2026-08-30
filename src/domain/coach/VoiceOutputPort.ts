@@ -348,6 +348,26 @@ export interface VoiceOutputPort {
    */
   playInstruction?(clip: { text: string; module: number; durationMs: number }): void
   /**
+   * Play a combo-announce clip (M39-V1c Phase B, Kyle 2026-08-30).
+   *
+   * The audio side of the `announce-then-work` VoicePolicy: at the
+   * first cue of a sprint/pressure block the announcer fires ONE
+   * combo-level announcement ("One, Two, Three, go!") and stays silent
+   * on interior reps. Rings keep marching on the CueEngine grid.
+   *
+   * Payload shape matches `playInstruction` — text (for logging /
+   * duck), module (Metro require id), durationMs (bus advance). The
+   * two are kept as separate methods because a combo-announce is a
+   * COMMAND (like a call/refire) while an instruction is a
+   * CONVERSATIONAL ASIDE (like a callout / recovery line); a mixer
+   * that ducks or prioritizes differently will read the distinction.
+   *
+   * Optional: implementations that predate V1c no-op silently. The
+   * runtime falls back to the interim per-punch phrase call in that
+   * case, matching Phase A behaviour.
+   */
+  playComboAnnounce?(clip: { text: string; module: number; durationMs: number }): void
+  /**
    * The metronome track (M39-V1b / #280). The 3rd audio track — a
    * boxing-flavored one-bar loop that anchors every ring and voice
    * call to the master pulse. The runner's `applyTransitions` calls

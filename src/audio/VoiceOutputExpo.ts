@@ -443,6 +443,37 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
   }
 
+  /**
+   * Play a combo-announce clip (M39-V1c Phase B).
+   *
+   * Mechanically identical to `playInstruction` — one-shot playback of
+   * a pre-rendered wav under the voice envelope — but tagged as
+   * `combo-announce` in the log stream so the analyzer/audit trail
+   * can separate "coach's aside" from "coach's block-start command."
+   * Same duck posture, same bus advance.
+   */
+  playComboAnnounce(clip: { text: string; module: number; durationMs: number }): void {
+    if (this.failed) return
+    this.requestFocus()
+    try {
+      const player = this.makePlayer(clip.module)
+      player.volume = this.callsMuted() ? 0 : this.volumes.voice
+      player.seekTo(0)
+      player.play()
+      this.markBusy(clip.durationMs)
+      logger.info('puncheokie.voice.play', 'combo-announce playing', {
+        kind: safe('combo-announce'),
+        text: safe(clip.text),
+        durationMs: safe(clip.durationMs),
+      })
+    } catch (err) {
+      logger.warn('puncheokie.voice.playFailed', 'combo-announce did not play', {
+        text: safe(clip.text),
+        error: safe(String(err)),
+      })
+    }
+  }
+
   playAsset(id: VoiceAssetId, atMs?: number): void {
     if (this.failed) return
     const priority = assetPriority(id)

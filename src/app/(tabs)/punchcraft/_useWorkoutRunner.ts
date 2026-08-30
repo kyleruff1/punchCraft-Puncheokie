@@ -34,6 +34,7 @@ import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
+import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
@@ -1060,6 +1061,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               voice.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
               'work',
             )?.startPadMs,
+          // M39-V1c Phase B2: resolve the combo-announce clip for rep 0
+          // of a block whose voicePolicy is announce-then-work. Undefined
+          // returned when the announce library has no rendering for this
+          // (combination, vocabulary) pair — the announcer falls back to
+          // the interim per-punch phrase clip in that case.
+          comboAnnounceFor: (combination, vocabulary) => {
+            const clip = findComboAnnounce(combination, vocabulary)
+            return clip
+              ? { text: clip.text, module: clip.module, durationMs: clip.durationMs }
+              : undefined
+          },
         })
       : null
     announcerRef.current = announcer

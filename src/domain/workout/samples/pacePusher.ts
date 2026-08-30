@@ -5,7 +5,7 @@ import { buildRoundSchedule } from '../roundSchedule'
 import { suggestGoal } from '../punchGoals'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, padBlocksToRound, roundPunchCount, withVoicePolicy, type BlockSpec } from './authoring'
 
 const BPM = CADENCE_PROFILES.pressure.nominalBpm
 const schedule = buildRoundSchedule(20)
@@ -79,7 +79,12 @@ const PAD_MOTIFS = [
 
 const rounds: ProgramRound[] = ROUND_SPECS.map((spec, index) => {
   const laid = layBlocks(spec.specs, BPM)
-  const blocks = padBlocksToRound(laid, BPM, 240_000, PAD_MOTIFS[index]!)
+  // M39-V1c: pressure samples flip to announce-then-work — the coach
+  // speaks the whole combo ONCE at rep 0, silent on interior reps.
+  const blocks = withVoicePolicy(
+    padBlocksToRound(laid, BPM, 240_000, PAD_MOTIFS[index]!),
+    'announce-then-work',
+  )
   const isLast = index === ROUND_SPECS.length - 1
   return {
     id: `pp-r${index + 1}`,

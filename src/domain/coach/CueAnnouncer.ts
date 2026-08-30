@@ -189,6 +189,17 @@ export interface CueAnnouncerOptions {
    * placement stay in agreement. Absent = shipped behaviour unchanged.
    */
   phraseShiftFor?: (combination: string, cadence: string) => number | undefined
+  /**
+   * M39-V1c Phase B2 (Kyle 2026-08-30): resolver for the combo-announce
+   * clip that fires at rep 0 of an `announce-then-work` block. Absent =
+   * fall back to the interim per-punch phrase call (Phase A behaviour).
+   * The runner provides it — the announcer stays free of audio-manifest
+   * imports (same pattern as `instructionClipFor` in the runner).
+   */
+  comboAnnounceFor?: (
+    combination: string,
+    vocabulary: CalloutVocabulary,
+  ) => { text: string; module: number; durationMs: number } | undefined
 }
 
 export class CueAnnouncer {
@@ -203,6 +214,12 @@ export class CueAnnouncer {
   private readonly delivery: CueDelivery
   private readonly phraseShiftFor:
     | ((combination: string, cadence: string) => number | undefined)
+    | undefined
+  private readonly comboAnnounceFor:
+    | ((
+        combination: string,
+        vocabulary: CalloutVocabulary,
+      ) => { text: string; module: number; durationMs: number } | undefined)
     | undefined
 
   private playbackActive = false
@@ -242,6 +259,7 @@ export class CueAnnouncer {
     this.onSkip = opts.onSkip
     this.cadence = opts.cadence ?? 'steady'
     this.phraseShiftFor = opts.phraseShiftFor
+    this.comboAnnounceFor = opts.comboAnnounceFor
     this.vocabulary = opts.vocabulary ?? 'numbers'
     this.performanceFor = opts.performanceFor ?? (() => 'work')
     this.delivery = opts.delivery ?? 'call-ahead'
@@ -364,6 +382,21 @@ export class CueAnnouncer {
         // the placeholder combo-phrase for a purpose-built announce clip.
         if (cue?.voicePolicy === 'announce-then-work' && cue.repeatIndex !== 0) {
           return
+        }
+        // Phase B2 swap on the compiled-map path: same rule as
+        // `announce()` — rep 0 of an announce-then-work block plays
+        // the combo-announce clip when the library has one.
+        if (
+          cue?.voicePolicy === 'announce-then-work' &&
+          cue.repeatIndex === 0 &&
+          this.comboAnnounceFor &&
+          this.output.playComboAnnounce
+        ) {
+          const clip = this.comboAnnounceFor(payload.combination, this.vocabulary)
+          if (clip) {
+            this.output.playComboAnnounce(clip)
+            return
+          }
         }
         if (payload.mode === 'phrase' && this.output.playCombination) {
           const voice: CombinationVoice = {
@@ -710,6 +743,27 @@ export class CueAnnouncer {
     // the whole combination and the athlete works to the rings.
     if (cue.voicePolicy === 'announce-then-work' && cue.repeatIndex !== 0) {
       return
+    }
+
+    // Phase B2 swap (Kyle 2026-08-30): rep 0 of an announce-then-work
+    // block plays the purpose-built combo-announce clip ("One, Two,
+    // Three, go!") if the library has one, instead of the interim
+    // per-punch phrase call. When the announce library is missing the
+    // clip, the fallthrough below plays the per-punch phrase as the
+    // Phase A interim — the block still speaks at boundary, just with
+    // the old per-punch audio.
+    if (
+      cue.voicePolicy === 'announce-then-work' &&
+      cue.repeatIndex === 0 &&
+      this.comboAnnounceFor &&
+      this.output.playComboAnnounce
+    ) {
+      const combination = formatCombo(cue.tokens)
+      const clip = this.comboAnnounceFor(combination, this.vocabulary)
+      if (clip) {
+        this.output.playComboAnnounce(clip)
+        return
+      }
     }
 
     // A repeated combination is called every time it comes round. It used to be
