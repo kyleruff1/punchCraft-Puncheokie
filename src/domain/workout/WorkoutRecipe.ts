@@ -25,6 +25,7 @@
 import type { PunchNumber, Stance, DefenseCommand, FootworkCommand, CoachCommand } from './WorkoutTokens'
 import { suggestGoal } from './punchGoals'
 import { GENERATOR_VERSION } from './versions'
+import type { CoachTempo } from '../timing/TimingEngine'
 
 /** Nominal cadence bands from doc §17. Beats become milliseconds via M31-02. */
 export type CadenceProfile = 'technical' | 'steady' | 'pressure' | 'sprint'
@@ -97,6 +98,38 @@ export interface WorkoutRecipe {
   voiceMode: VoiceMode
   voiceVocabulary: VoiceVocabulary
 
+  // -- Timing Engine (M39, Kyle's spec 2026-08-30) ---------------------------
+  /**
+   * Master pulse + subdivision + swing. Present on every recipe from V1a
+   * onward; consumed by the runtime only when `metronome.enabled` is true
+   * (V1b). Legacy behaviour (byte-identical to the pre-M39 pipeline)
+   * remains as long as `metronome.enabled` is `false` — `bpmForRecipe`
+   * bridges to `CADENCE_PROFILES[cadenceProfile].nominalBpm` in that case.
+   *
+   * Defaults: baseBpm 60 (Kyle's target), division derived from
+   * `cadenceProfile` (technical=1, steady=2, pressure=3, sprint=4) so a
+   * recipe migrated forward preserves the same rate expectations, and
+   * swing 0.54 (rolling cornerman default within Kyle's 0.54–0.57 band).
+   */
+  coachTempo: CoachTempo
+  /**
+   * Metronome track — the boxing-flavored 3rd audio track (V1b).
+   * `enabled: false` on every recipe today; V1b flips
+   * `threeRoundFundamentals` first, V1c flips the rest.
+   */
+  metronome: {
+    enabled: boolean
+    /** 0..1, mixer channel. Default 0.6 — hot enough to sit under both coach and chime-ins. */
+    volume: number
+  }
+  /**
+   * Runtime speed scalar (V2). Multiplies `coachTempo.baseBpm` — 1.0 leaves
+   * the grid untouched; 0.75 slows every ring/voice/click; 1.25 speeds them
+   * up together. UI slider ships in V2; the recipe field lands here so the
+   * V1a byte-identity test also covers the future scaling path.
+   */
+  globalSpeed: number
+
   // -- determinism (D8, R18) -------------------------------------------------
   /** Same recipe + generatorVersion + seed must reproduce an identical plan. */
   generatorVersion: string
@@ -168,7 +201,33 @@ export function defaultRecipe(): WorkoutRecipe {
     voiceMode: 'standard',
     voiceVocabulary: 'numbers',
 
+    // Timing Engine (M39/#278). Default `metronome.enabled: false` keeps
+    // every existing timeline compile byte-identical — `bpmForRecipe`
+    // falls through to the legacy nominalBpm path (see cadence.ts). The
+    // steady profile picks division 2 = 120 slots/min at baseBpm 60.
+    coachTempo: { baseBpm: 60, division: 2, swing: 0.54 },
+    metronome: { enabled: false, volume: 0.6 },
+    globalSpeed: 1.0,
+
     generatorVersion: GENERATOR_VERSION,
     seed: 'default-seed',
+  }
+}
+
+/**
+ * Map a legacy `cadenceProfile` name to its natural `BeatDivision` on the
+ * new 60 BPM grid. Kept as a helper (not a `switch` inlined at call sites)
+ * so a future recipe migration or fixture rewrite has one place to touch.
+ * The mapping is Kyle's spec verbatim: 4 profiles are 4 subdivisions of ONE
+ * clock, not four unrelated BPMs.
+ */
+export function divisionForCadenceProfile(
+  cadence: CadenceProfile,
+): CoachTempo['division'] {
+  switch (cadence) {
+    case 'technical': return 1
+    case 'steady':    return 2
+    case 'pressure':  return 3
+    case 'sprint':    return 4
   }
 }

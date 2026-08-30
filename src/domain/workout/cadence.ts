@@ -8,10 +8,20 @@
  *
  * **BPM is authored, never derived (D3).** It is a plain number carried on
  * the recipe and scheduled on the spec §18.3 monotonic clock. Nothing here
- * accepts audio, track metadata, playback position or microphone input, and
- * no such parameter should be added "for later" — spec §14.6 and CLAUDE.md
- * rule 8 forbid beat sync outright, so any coincidence between cadence and
- * music is accidental and the workout is identical with music off.
+ * accepts audio, track metadata, playback position or microphone input.
+ *
+ * ## Superseded 2026-08-30 by M39 (Timing Engine)
+ *
+ * The four-profile band model (technical/steady/pressure/sprint with
+ * unrelated BPMs) is being replaced by a single 60 BPM master pulse with
+ * four subdivisions (see `src/domain/timing/TimingEngine.ts`). The
+ * doctrine "no beat sync" survives — BPM is still authored on the
+ * recipe; the metronome track PLAYS the authored value, never derives
+ * tempo from an external audio stream. What changes is that "the BPM"
+ * becomes `baseBpm × globalSpeed × division` instead of a profile's
+ * nominalBpm. `bpmForRecipe(recipe)` below is the bridge that keeps
+ * legacy behaviour byte-identical while `metronome.enabled: false`, and
+ * flips to the engine value the moment a recipe opts in.
  *
  * This module converts durations; it never places them on a clock.
  * Scheduling against `workElapsedMs` belongs to M32-03/M32-04.
@@ -21,6 +31,7 @@
  */
 
 import type { WorkoutToken } from './WorkoutTokens'
+import type { WorkoutRecipe } from './WorkoutRecipe'
 
 export type CadenceProfileId = 'technical' | 'steady' | 'pressure' | 'sprint'
 
@@ -90,6 +101,38 @@ export function blockDurationMs(
   bpm: number,
 ): number {
   return beatsToMs(maxBeatOffset(tokens) + gapBeats, bpm)
+}
+
+/**
+ * The BPM to feed every downstream compiler for this recipe.
+ *
+ * Two paths, chosen by `recipe.metronome.enabled`:
+ *
+ * - **Legacy (metronome off, the default in V1a)**: return
+ *   `CADENCE_PROFILES[recipe.cadenceProfile].nominalBpm`. Byte-identical
+ *   to every timeline compile before M39 — a `recipe` with the new
+ *   `coachTempo`/`metronome`/`globalSpeed` fields present but
+ *   `metronome.enabled: false` produces exactly the same
+ *   `tokenOffsetsMs`, `blockDurationMs`, and `RhythmMap` output as a
+ *   pre-M39 recipe. That is the property the new byte-identity test
+ *   locks in.
+ *
+ * - **Engine (metronome on, V1b onward)**: return
+ *   `recipe.coachTempo.baseBpm × recipe.coachTempo.division ×
+ *   recipe.globalSpeed`. This turns "beats per minute" into "call slots
+ *   per minute" — which is what the compiler expects when
+ *   `WorkoutToken.beatOffset` values are authored in note-value multiples
+ *   on the engine grid. `globalSpeed` is the future speed slider (V2).
+ *
+ * The bridge is the single seam that keeps the old and new models
+ * coexisting through the migration window. Every other consumer stays
+ * "just pass a BPM."
+ */
+export function bpmForRecipe(recipe: WorkoutRecipe): number {
+  if (recipe.metronome.enabled) {
+    return recipe.coachTempo.baseBpm * recipe.coachTempo.division * recipe.globalSpeed
+  }
+  return CADENCE_PROFILES[recipe.cadenceProfile].nominalBpm
 }
 
 /**

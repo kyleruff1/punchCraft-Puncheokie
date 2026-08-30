@@ -41,6 +41,9 @@ const recipe: WorkoutRecipe = {
   extraPunchPolicy: 'neutral',
   voiceMode: 'standard',
   voiceVocabulary: 'numbers',
+  coachTempo: { baseBpm: 60, division: 2, swing: 0.54 },
+  metronome: { enabled: false, volume: 0.6 },
+  globalSpeed: 1.0,
   generatorVersion: 'test-1',
   seed: 'seed-1',
 }
