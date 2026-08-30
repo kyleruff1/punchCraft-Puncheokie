@@ -24,6 +24,7 @@ import { beatsToMs, maxBeatOffset, tokenOffsetsMs } from '../workout/cadence'
 import { resolveEffectiveStance, resolveHand } from './StanceMapper'
 import type { GeneratedWorkout } from '../workout/GeneratedWorkout'
 import type { PunchType } from '../punch/PunchEvent'
+import type { VoicePolicy } from '../timing/TimingEngine'
 import type {
   PunchNumber,
   SetupCallout,
@@ -170,6 +171,14 @@ export interface CueInstance {
    * as `visualOffsetsMs`; absent falls back to `tokenOffsetsMs`.
    */
   expectedStrikeOffsetsMs?: number[]
+  /**
+   * How the coach voices this cue's block (M39-V1c, Kyle 2026-08-30).
+   * Threaded through from `WorkoutBlock.voicePolicy` at expansion time;
+   * absent means `per-punch` (the pre-M39 default). See
+   * `CueAnnouncer.onCueEvent` for how `announce-then-work` is consumed
+   * (one announce at repeatIndex 0; silent on interior reps).
+   */
+  voicePolicy?: VoicePolicy
 }
 
 export interface RoundTimeline {
@@ -435,6 +444,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       ...(block.setupCallout === undefined || repeatIndex !== 0
         ? {}
         : { setupCallout: block.setupCallout }),
+      ...(block.voicePolicy === undefined ? {} : { voicePolicy: block.voicePolicy }),
     })
   }
 
@@ -492,6 +502,7 @@ function expandCountScoredBlock(block: WorkoutBlock, ctx: BlockContext): CueInst
     ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
       ...(block.instruction === undefined ? {} : { instruction: block.instruction }),
     ...(block.setupCallout === undefined ? {} : { setupCallout: block.setupCallout }),
+    ...(block.voicePolicy === undefined ? {} : { voicePolicy: block.voicePolicy }),
   }
 }
 

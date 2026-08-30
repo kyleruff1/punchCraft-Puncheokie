@@ -585,3 +585,58 @@ describe('the graces stay structural, not tuned (M36-03 must not break this)', (
     expect(DEFAULT_GRACE_BEFORE_MS).toBeGreaterThan(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// M39-V1c: block.voicePolicy threads through expansion to every cue
+// instance the block produces. The runtime (CueAnnouncer) consumes the
+// policy per-cue; the timeline just carries it faithfully.
+// ---------------------------------------------------------------------------
+
+describe('voicePolicy threads from block to every produced cue', () => {
+  it('absent voicePolicy leaves cues with an undefined field (pre-M39 default)', () => {
+    const cues = expandTimeline(
+      workoutWith([block({ repeat: 3 })]),
+      'orthodox',
+      STEADY_BPM,
+    )[0]!.cues
+    for (const c of cues) expect(c.voicePolicy).toBeUndefined()
+  })
+
+  it('propagates announce-then-work to every rep of the block', () => {
+    const cues = expandTimeline(
+      workoutWith([
+        block({
+          id: 'sprint-block',
+          repeat: 4,
+          voicePolicy: 'announce-then-work',
+        }),
+      ]),
+      'orthodox',
+      STEADY_BPM,
+    )[0]!.cues
+    expect(cues).toHaveLength(4)
+    for (const c of cues) expect(c.voicePolicy).toBe('announce-then-work')
+  })
+
+  it('per-block, so mixed blocks in one round carry their own policies', () => {
+    const cues = expandTimeline(
+      workoutWith([
+        block({ id: 'per-punch-block', startOffsetMs: 0, repeat: 2 }),
+        block({
+          id: 'announce-block',
+          startOffsetMs: 10_000,
+          repeat: 2,
+          voicePolicy: 'announce-then-work',
+        }),
+      ]),
+      'orthodox',
+      STEADY_BPM,
+    )[0]!.cues
+    const perPunch = cues.filter((c) => c.blockId === 'per-punch-block')
+    const announce = cues.filter((c) => c.blockId === 'announce-block')
+    expect(perPunch).toHaveLength(2)
+    expect(announce).toHaveLength(2)
+    for (const c of perPunch) expect(c.voicePolicy).toBeUndefined()
+    for (const c of announce) expect(c.voicePolicy).toBe('announce-then-work')
+  })
+})

@@ -742,6 +742,121 @@ describe('a rendered combination is preferred over per-word clips', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// M39-V1c VoicePolicy = 'announce-then-work' (Kyle 2026-08-30, #281).
+//
+// Decouples the coach voice from the ring cadence. `per-punch` (absent /
+// default) keeps the pre-M39 behaviour verbatim; `announce-then-work`
+// fires once at the block's first cue (repeatIndex 0) and stays silent
+// on interior reps and per-token events. Rings still march to the grid
+// via the CueEngine — this suite only asserts what the ANNOUNCER does,
+// not what the rings do.
+//
+// This is the sprint/pressure fix landing in Phase A. The `call` at
+// repeatIndex 0 uses the existing phrase clip as a Phase B interim; the
+// eventual announce-clip audio replaces it without changing this
+// dispatch shape.
+// ---------------------------------------------------------------------------
+
+describe('VoicePolicy = announce-then-work', () => {
+  function phraseHarness(
+    over: { durationMs?: number; has?: boolean } = {},
+  ): {
+    port: RecordingPort
+    announcer: CueAnnouncer
+    calls: Array<[string, string, number?, CombinationVoice?]>
+  } {
+    const port = new RecordingPort()
+    const calls: Array<[string, string, number?, CombinationVoice?]> = []
+    const has = over.has ?? true
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: (
+          combination: string,
+          cadence: string,
+          atMs?: number,
+          voice?: CombinationVoice,
+        ) => {
+          if (!has) return false
+          calls.push([combination, cadence, atMs, voice])
+          return true
+        },
+        combinationDurationMs: () => (has ? (over.durationMs ?? 600) : undefined),
+      }),
+      cadence: 'steady',
+    })
+    return { port, announcer, calls }
+  }
+
+  it('speaks at repeatIndex 0 of the block (unchanged behaviour)', () => {
+    const h = phraseHarness()
+    const first = cue({
+      id: 'atw-rep0',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+    expect(h.calls.length).toBe(1)
+    expect(h.calls[0]?.[0]).toBe('1-2')
+  })
+
+  it('stays silent on interior reps of the block (rep 1..N)', () => {
+    const h = phraseHarness()
+    // Two interior reps arrive after rep 0; neither should call the port.
+    for (const idx of [1, 2, 3]) {
+      const rep = cue({
+        id: `atw-rep${idx}`,
+        repeatIndex: idx,
+        voicePolicy: 'announce-then-work',
+      })
+      h.announcer.onCueEvent(cueEvent('cue-announcing', rep))
+    }
+    expect(h.calls).toEqual([])
+    // Ready tone is also suppressed on interior reps — the whole block
+    // interior is silent under this policy.
+    expect(h.port.assets()).not.toContain('tone-ready')
+  })
+
+  it('per-token voice is suppressed under announce-then-work regardless of style/delivery', () => {
+    // `follow-the-call` normally speaks every token as it lands; under
+    // announce-then-work it must NOT — the announcement covers the whole
+    // combination and the athlete works to the rings.
+    const port = new RecordingPort()
+    const followAnnouncer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'follow-the-call' },
+      output: port,
+      cadence: 'sprint',
+    })
+    const c = cue({
+      id: 'atw-token',
+      repeatIndex: 2, // interior rep — under 'follow-the-call' rep would still speak
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    followAnnouncer.onCueEvent(tokenDue(c, 0))
+    followAnnouncer.onCueEvent(tokenDue(c, 1))
+    // No per-word assets played — the whole token stream is silent.
+    expect(port.assets()).toEqual([])
+    expect(port.calls.filter((x) => x.kind === 'phrase' || x.kind === 'asset')).toEqual([])
+  })
+
+  it('per-punch policy (default / absent) behaves exactly as before', () => {
+    // The Phase A ship must not regress the pre-M39 default: an absent
+    // voicePolicy is byte-identical to today's behaviour — every rep
+    // calls the phrase.
+    const h = phraseHarness()
+    for (const idx of [0, 1, 2]) {
+      const rep = cue({
+        id: `pp-rep${idx}`,
+        repeatIndex: idx,
+      })
+      h.announcer.onCueEvent(cueEvent('cue-announcing', rep))
+    }
+    expect(h.calls.length).toBe(3)
+  })
+})
+
 describe('the callout vocabulary and performance reach the port (D15, Phase C)', () => {
   /** Records the `voice` argument handed to the phrase methods. */
   function voiceHarness(opts: {

@@ -355,6 +355,16 @@ export class CueAnnouncer {
         if (!this.speakable('punch-command')) return
 
         const cue = this.mapCues.get(event.cueId)
+        // M39-V1c VoicePolicy (Kyle 2026-08-30): `announce-then-work`
+        // decouples the coach from the ring cadence — one voice event at
+        // repeatIndex 0 (the block-start announcement), silence on
+        // interior reps. Rings still fire per-token; only the phrase
+        // dispatch is gated. `refire` is treated like `call` under this
+        // policy: neither should double the announcement. Phase B swaps
+        // the placeholder combo-phrase for a purpose-built announce clip.
+        if (cue?.voicePolicy === 'announce-then-work' && cue.repeatIndex !== 0) {
+          return
+        }
         if (payload.mode === 'phrase' && this.output.playCombination) {
           const voice: CombinationVoice = {
             vocabulary: this.vocabulary,
@@ -691,6 +701,17 @@ export class CueAnnouncer {
     // phrase, so it is emitted whatever the style does with the words.
     const readyAt = cue.scheduledStartMs - this.leadTimes.readyToneMs + clockOffsetMs
 
+    // M39-V1c VoicePolicy: under `announce-then-work` the coach speaks
+    // ONCE at the block's first cue (repeatIndex 0); interior reps of
+    // the same block are silent — no phrase, no ready tone. Rings still
+    // fire per-token from the CueEngine grid; only the coach is gated.
+    // This is the sprint/pressure fix: a per-punch clip is physically
+    // unfittable to a 250 ms slot; the block-level announcement carries
+    // the whole combination and the athlete works to the rings.
+    if (cue.voicePolicy === 'announce-then-work' && cue.repeatIndex !== 0) {
+      return
+    }
+
     // A repeated combination is called every time it comes round. It used to be
     // spoken once and beeped thereafter under `coach-shorthand` (doc §18.1),
     // which is exactly the behaviour D22 retired: a tone tells the athlete that
@@ -931,6 +952,13 @@ export class CueAnnouncer {
     // a repeated combo eight times in a row is what a coach actually does.
     const inTime = this.delivery === 'in-time'
     if (this.policy.style !== 'follow-the-call' && !inTime) return
+    // M39-V1c VoicePolicy: `announce-then-work` means the coach announces
+    // the block once and then stays silent through the work. Under
+    // `follow-the-call`/`in-time` styles this token-due handler would
+    // otherwise voice every strike; suppress it for announce-then-work
+    // regardless of rep or style. The announcement itself lands via the
+    // `call` event at rep 0 (see onCueEvent case 'call'/'refire').
+    if (cue.voicePolicy === 'announce-then-work') return
     const token = cue.tokens[tokenIndex]
     if (!token) return
 

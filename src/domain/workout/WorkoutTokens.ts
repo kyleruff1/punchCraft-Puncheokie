@@ -20,6 +20,8 @@
  * block kind rather than a gap.
  */
 
+import type { VoicePolicy } from '../timing/TimingEngine'
+
 export type PunchNumber = 1 | 2 | 3 | 4 | 5 | 6
 
 /** D2 — the legacy third stance value is retired; spec §13.2/§13.3 silently equated it with orthodox. */
@@ -111,6 +113,21 @@ export interface WorkoutBlock {
    * beat grid stays on the workout's profile. Absent = workout default.
    */
   cadence?: string
+  /**
+   * How the coach VOICES this block (M39-V1c, Kyle 2026-08-30).
+   *
+   * The engine spec decouples the coach voice from the ring cadence.
+   * `per-punch` (absent / default) preserves the pre-M39 behaviour:
+   * one spoken phrase clip per cue. `announce-then-work` fires a single
+   * combo-level announcement at the block's first cue and stays silent
+   * on the interior — the sprint/pressure fix, since a per-punch sprint
+   * clip is physically unfittable to the 250 ms grid slot.
+   *
+   * Rings and per-token cue events still fire at grid times regardless
+   * of policy — this only gates the announcer's voice dispatch. See
+   * `VoicePolicy` in src/domain/timing/TimingEngine.ts:147.
+   */
+  voicePolicy?: VoicePolicy
 }
 
 export interface ProgramRound {
