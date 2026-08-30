@@ -99,7 +99,19 @@ export function computeAnchors(sessionDir) {
   return anchors
 }
 
-/** Merge computed anchors into manifest.json without disturbing other fields. */
+/**
+ * Merge computed anchors into manifest.json without disturbing other fields.
+ *
+ * REFUSES to overwrite an audioT0EpochMs that is more recent (and looks
+ * self-consistent — audioDurationS under an hour) with a stale one. This
+ * situation arises when the session dir is reused across runs and
+ * `capture.wav` is appended to instead of overwritten: `mtime - duration`
+ * then produces an audioT0 hours in the past, and the downstream matcher
+ * classifies every launch as SILENT because the offset between mic and
+ * logcat is nonsense. Keeping the existing anchor when the new one would
+ * silently destroy an analysis is safer than trusting the arithmetic.
+ * The caller sees the returned merged object and can inspect it.
+ */
 export function writeAnchors(sessionDir, anchors) {
   const manifestPath = join(sessionDir, 'manifest.json')
   let manifest = {}
@@ -108,7 +120,31 @@ export function writeAnchors(sessionDir, anchors) {
   } catch (err) {
     if (!String(err.message).includes('ENOENT')) throw err
   }
-  const merged = { ...manifest, ...anchors }
+  const REASONABLE_DURATION_S = 60 * 60
+  const existingT0 = Number(manifest.audioT0EpochMs)
+  const newT0 = Number(anchors.audioT0EpochMs)
+  const newDur = Number(anchors.audioDurationS)
+  // Prefer the existing anchor when the NEW one looks wrong: an audio
+  // duration over an hour is almost never legit (the monitor caps at
+  // 15 minutes), and the resulting audioT0 sits hours before whatever
+  // clock the logcat actually stamps against.
+  const patch = { ...anchors }
+  if (
+    Number.isFinite(existingT0) &&
+    Number.isFinite(newT0) &&
+    Number.isFinite(newDur) &&
+    newDur > REASONABLE_DURATION_S &&
+    existingT0 > newT0
+  ) {
+    console.warn(
+      `WARN: refusing to overwrite audioT0EpochMs=${existingT0} with computed ${newT0}\n` +
+      `  (new audioDurationS=${newDur.toFixed(1)}s exceeds ${REASONABLE_DURATION_S}s cap;\n` +
+      `  the session dir was likely reused and capture.wav was appended to).`,
+    )
+    delete patch.audioT0EpochMs
+    delete patch.audioDurationS
+  }
+  const merged = { ...manifest, ...patch }
   writeFileSync(manifestPath, `${JSON.stringify(merged, null, 1)}\n`)
   return merged
 }

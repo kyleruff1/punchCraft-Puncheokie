@@ -257,6 +257,68 @@ def main() -> int:
     drift_s = args.drift / 1000.0
     window_s = args.match_window / 1000.0
 
+    # Anchor drift auto-correction. `anchor.mjs`'s `mtime - duration`
+    # formula silently produces a nonsense audioT0EpochMs when the
+    # session dir is reused and `capture.wav` is appended to rather than
+    # overwritten (a fresh monitor pass on top of an abandoned earlier
+    # one). The mic and logcat clocks then drift by whatever the leftover
+    # WAV added, and every launch gets classified SILENT because no
+    # utterance sits within `match_window`.
+    #
+    # Detect and correct by search: for every candidate offset that would
+    # align SOME launch with SOME utterance, count how many launches land
+    # within `match_window` of an utterance at that offset. Pick the
+    # offset that maximises the count. If the best offset beats the
+    # anchor's zero-offset matching by a solid margin, apply it and warn.
+    # Otherwise trust the anchor — a workout that genuinely lost audio
+    # for a stretch should not be silently reinterpreted.
+    def score_offset(off_s: float) -> int:
+        """Count launches whose start-of-nearest-utterance is within window."""
+        hits = 0
+        for ev_t in launch_t:
+            adj = ev_t + off_s
+            for a in utter_starts:
+                d = a - adj
+                if -1.0 <= d <= window_s:
+                    hits += 1
+                    break
+        return hits
+
+    launch_t = [ev["t"] for ev in launches]
+    utter_starts = [a for a, _b in utters]
+    offset_s = 0.0
+    if launch_t and utter_starts:
+        baseline = score_offset(0.0)
+        # Candidate offsets: every (utter - launch) that would align at
+        # least one pair. Quantise to 100 ms so nearby candidates dedupe.
+        candidates: set[float] = {0.0}
+        MAX_GAP_S = 3600.0
+        for lt in launch_t:
+            for us in utter_starts:
+                d = us - lt
+                if abs(d) <= MAX_GAP_S:
+                    candidates.add(round(d, 1))
+        best_off = 0.0
+        best_hits = baseline
+        for off in candidates:
+            h = score_offset(off)
+            if h > best_hits:
+                best_hits = h
+                best_off = off
+        # Apply only when the shift explains at least twice as many
+        # launches as trusting the anchor did — a shift of 1 or 2 extra
+        # matches is inside noise for a small session.
+        if best_off != 0.0 and best_hits >= max(3, baseline * 2):
+            offset_s = best_off
+            print(
+                f"\nWARNING: anchor drift detected — shifting launches by {offset_s:+.1f}s\n"
+                f"  (best-offset matches={best_hits}, zero-offset matches={baseline}).\n"
+                f"  Likely cause: session dir was reused and capture.wav was appended to;\n"
+                f"  `anchor.mjs`'s mtime-based formula wrote a stale audioT0EpochMs.\n"
+            )
+            for ev in launches:
+                ev["t"] = ev["t"] + offset_s
+
     matched: List[dict] = []
     unmatched_utters = list(range(len(utters)))
     silent_launches: List[dict] = []
