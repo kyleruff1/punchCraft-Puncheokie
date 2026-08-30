@@ -169,7 +169,13 @@ describe('pulses for count-scored windows (A2 / issue #257)', () => {
       scheduledStartMs: 0, scheduledEndMs: 4000,
       windowStartMs: 0, windowEndMs: 4000,
     }
-    const spine = { roundIndex: 0, beats: {}, pulses: { burst: pulsesFor(cue) }, audio: {} }
+    const spine = {
+      roundIndex: 0,
+      beats: {},
+      pulses: { burst: pulsesFor(cue) },
+      audio: {},
+      compiled: {},
+    }
     // Before any pulse.
     expect(pulseCursorAt(spine, cue, -1)).toBe(-1)
     // Just after pulse 0.
@@ -382,6 +388,58 @@ describe('beatsFor — the single source of truth', () => {
     for (const b of beats) {
       expect(b.audioEndMs).toBe(b.atMs - RAIL_K_MS)
       expect(b.audioAtMs).toBeLessThan(b.audioEndMs)
+    }
+  })
+})
+
+describe('compileRoundSpine — compiled field (M39-V2 Phase 4-vi)', () => {
+  // The spine now carries a `compiled: Record<string, CompiledCueTimeline | null>`
+  // alongside beats/pulses/audio. Punch-bearing cues get a full Phase 3b
+  // timeline; non-punch cues (defense-only, coach-only, coast markers)
+  // appear as null — the consumer's "fall back to V1c dispatch" signal.
+  it('exposes a `compiled` slot for every cue', () => {
+    for (const sample of SAMPLES) {
+      const rounds = expandTimeline(sample.workout, 'orthodox', 120)
+      for (const round of rounds) {
+        const spine = compileRoundSpine(round)
+        expect(spine.compiled).toBeDefined()
+        // Every cue id in the round must appear as a compiled key
+        // (either a compiled timeline or null).
+        for (const cue of round.cues) {
+          expect(cue.id in spine.compiled).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('produces a compiled timeline whose strikes count matches the cue\'s punch tokens', () => {
+    const rounds = expandTimeline(pacePusher, 'orthodox', 120)
+    const spine = compileRoundSpine(rounds[0]!)
+    for (const cue of rounds[0]!.cues) {
+      const compiled = spine.compiled[cue.id]
+      const punchCount = cue.tokens.filter((t) => t.kind === 'punch').length
+      if (punchCount === 0) {
+        // Non-punch cue → null (bridge contract).
+        expect(compiled).toBeNull()
+      } else {
+        expect(compiled).not.toBeNull()
+        expect(compiled!.strikes).toHaveLength(punchCount)
+      }
+    }
+  })
+
+  it('is deterministic — two compiles of the same round produce identical timeline identities', () => {
+    const rounds = expandTimeline(pacePusher, 'orthodox', 120)
+    const spineA = compileRoundSpine(rounds[0]!)
+    const spineB = compileRoundSpine(rounds[0]!)
+    for (const cueId of Object.keys(spineA.compiled)) {
+      const a = spineA.compiled[cueId]
+      const b = spineB.compiled[cueId]
+      if (a === null) {
+        expect(b).toBeNull()
+      } else {
+        expect(b!.identity).toEqual(a.identity)
+      }
     }
   })
 })

@@ -31,6 +31,11 @@ import type { PunchHand, PunchType } from '../punch/PunchEvent'
 import { DEFAULT_REP_ID, strikeIdFor } from '../strikes/strikeCatalog'
 import { tokenOffsetFor } from './tokenOffsets'
 import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
+import type { CoachAssetResolver, CompiledCueTimeline } from './compileCue'
+import {
+  NULL_COACH_ASSET_RESOLVER,
+  compileCueFromInstance,
+} from './programCueBridge'
 /**
  * The rail's fixed offset between a word's audible end and the ring
  * lighting for that token. Kept as one constant so the spine, the
@@ -130,6 +135,19 @@ export interface SpineSchedule {
   beats: Record<string, TokenBeat[]>
   pulses: Record<string, TokenBeat[]>
   audio: Record<string, AudioLayout | null>
+  /**
+   * V2 compiled cue timeline per cue (M39-V2 Phase 4-vi, Kyle plan
+   * §Modify: compileRoundSpine to call compileCue per cue). One entry
+   * per cue that produced a compiled timeline via the
+   * `CueInstance → ProgramCue` bridge (a punch-bearing cue).
+   *
+   * A cue with zero punch tokens (defense-only, coach-only, coast
+   * marker) appears here as `null` — signals to consumers that the
+   * V1c dispatch path is the source of truth for it. Consumers that
+   * ONLY care about strike events can iterate this map and skip nulls;
+   * the coexisting `beats` / `pulses` remain populated for every cue.
+   */
+  compiled: Record<string, CompiledCueTimeline | null>
 }
 
 /**
@@ -137,19 +155,40 @@ export interface SpineSchedule {
  *
  * Pure and cheap — regenerate on any timeline mutation. Does not
  * modify the input; produces a new `SpineSchedule` per call.
+ *
+ * `coachAssets` is the resolver `compileCue` uses to look up coach
+ * assets per (contentKind, vocabulary). It defaults to the
+ * `NULL_COACH_ASSET_RESOLVER` — every cue gets a compiled timeline
+ * with EMPTY coach tracks (strike events still land). The runtime
+ * passes a real resolver when it needs to actually schedule coach
+ * playback from the compiled timeline.
  */
-export function compileRoundSpine(round: RoundTimeline): SpineSchedule {
+export function compileRoundSpine(
+  round: RoundTimeline,
+  opts: { coachAssets?: CoachAssetResolver } = {},
+): SpineSchedule {
   const beats: Record<string, TokenBeat[]> = {}
   const pulses: Record<string, TokenBeat[]> = {}
   const audio: Record<string, AudioLayout | null> = {}
+  const compiled: Record<string, CompiledCueTimeline | null> = {}
+  const coachAssets = opts.coachAssets ?? NULL_COACH_ASSET_RESOLVER
   for (const cue of round.cues) {
     beats[cue.id] = beatsFor(cue)
     pulses[cue.id] = pulsesFor(cue)
     // A11 lands the paired vocab layout in follow-up work — slot is
     // stable so consumers can hard-code the read shape now.
     audio[cue.id] = null
+    // V2 compiled timeline (M39-V2 Phase 4-vi). Non-punch cues return
+    // null — consumers know to fall back to the V1c dispatch path for
+    // them. Punch-bearing cues get the full Phase 3b timeline
+    // (strike events + rep structure + empty coach tracks under the
+    // default null resolver).
+    compiled[cue.id] = compileCueFromInstance(cue, {
+      roundId: `round-${round.roundIndex}`,
+      coachAssets,
+    })
   }
-  return { roundIndex: round.roundIndex, beats, pulses, audio }
+  return { roundIndex: round.roundIndex, beats, pulses, audio, compiled }
 }
 
 /**
