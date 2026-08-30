@@ -279,5 +279,51 @@ export function padBlocksToRound(
   return [...blocks, block]
 }
 
+/**
+ * Author a sustained-strike block — one canonical strike pumped for a
+ * fixed window (M39-V2 Phase 4b).
+ *
+ * The compiler resolves the coach line via
+ * `sustainedClipFor({ token, vocabulary })` — one clip per (token,
+ * vocabulary), pre-rendered CALM+teach+land. The block spec's
+ * `notation` is the single token; `durationBeats` is what fixes the
+ * window because the token-derived duration would be one repetition
+ * of one punch (typically <1 beat).
+ *
+ * Rate: at 60 BPM steady and `gapBeats: 1`, a 60-second window pumps
+ * ~60 punches; halving gapBeats doubles the rate. The default
+ * `gapBeats: 1` matches the "pump every second" musical intent of
+ * the render batch's asset text ("Pump the jab.").
+ */
+export function withSustainedStrike(spec: {
+  id: string
+  /** The canonical strike token ('1', '1b', '2', ..., '6b'). */
+  token: string
+  /** Block window in beats. Fixed — token-derived duration would be one punch. */
+  durationBeats: number
+  /** Beats between each pump (default 1 — "one per beat"). */
+  gapBeats?: number
+  stance?: BlockStance
+  /** Vocabulary hint — the runtime picks numeric/technique per user setting. */
+  cadence?: string
+  /**
+   * On-screen instruction, if different from what the sustained-instruction
+   * clip already covers audibly. Rarely used — the whole point of a
+   * sustained-strike is one clip covers the block.
+   */
+  instruction?: string
+}): BlockSpec {
+  return {
+    id: spec.id,
+    kind: 'sustained-strike',
+    notation: spec.token,
+    gapBeats: spec.gapBeats ?? 1,
+    durationBeats: spec.durationBeats,
+    ...(spec.stance !== undefined ? { stance: spec.stance } : {}),
+    ...(spec.cadence !== undefined ? { cadence: spec.cadence } : {}),
+    ...(spec.instruction !== undefined ? { instruction: spec.instruction } : {}),
+  }
+}
+
 /** Convenience re-export so samples never import cadence directly. */
 export { beatsToMs }

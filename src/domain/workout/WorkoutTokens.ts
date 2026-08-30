@@ -66,6 +66,17 @@ export type BlockKind =
   | 'active-recovery'
   | 'open-pressure'
   | 'coast'
+  /**
+   * One canonical strike pumped for a fixed window (M39-V2 Phase 4b).
+   *
+   * The coach speaks a single `sustained-instruction` at cue start
+   * ("Pump the jab") and stays silent through the block interior.
+   * Rings light every strike; scoring is count. Distinguished from
+   * `volume-burst` (which permits multi-token motifs) so the coach
+   * lookup is a single-token `sustainedClipFor({ token, vocabulary })`
+   * rather than an ad-hoc phrase.
+   */
+  | 'sustained-strike'
 
 /**
  * A pre-set coach call-out (Set Ceremonies): the sentence variant to

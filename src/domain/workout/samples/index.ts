@@ -15,6 +15,7 @@ import { establishTheJab20 } from './establishTheJab20'
 import { heavyHands } from './heavyHands'
 import { pacePusher } from './pacePusher'
 import { progressiveBuildup } from './progressiveBuildup'
+import { pumpAndCoast } from './pumpAndCoast'
 import { speedCombos } from './speedCombos'
 import { switchByRound } from './switchByRound'
 import { threeRoundFundamentals } from './threeRoundFundamentals'
@@ -31,6 +32,7 @@ export type SampleWorkoutKey =
   | 'progressive-buildup'
   | 'body-work'
   | 'pace-pusher'
+  | 'pump-and-coast'
 
 export interface SampleWorkout {
   key: SampleWorkoutKey
@@ -101,6 +103,13 @@ const SAMPLES: Record<SampleWorkoutKey, SampleWorkout> = {
     description: 'A volume ladder with an open flurry every round, each one longer than the last.',
     workout: pacePusher,
   },
+  'pump-and-coast': {
+    key: 'pump-and-coast',
+    name: 'Pump & Coast',
+    description:
+      'Three short rounds pumping one punch per round with voiced coasting recoveries — the M39-V2 Phase 4b demo.',
+    workout: pumpAndCoast,
+  },
 }
 
 /** Presentation order for the "Start with a sample" list — the 3×3
@@ -115,6 +124,7 @@ const ORDER: SampleWorkoutKey[] = [
   'progressive-buildup',
   'body-work',
   'pace-pusher',
+  'pump-and-coast',
 ]
 
 export function listSampleWorkouts(): SampleWorkout[] {
@@ -135,4 +145,5 @@ export {
   progressiveBuildup,
   bodyWork,
   pacePusher,
+  pumpAndCoast,
 }

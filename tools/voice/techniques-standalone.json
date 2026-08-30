@@ -1,0 +1,17 @@
+{
+  "_comment": "Technique standalone strike names (M39-V2 Phase 4b). One wav per canonical strike, spoken as its technique name — the technique-vocabulary partner of the existing numbers/standalone/1.wav..6b.wav corpus. Used by synchronized `strike-call` cues where the coach says the strike name on the strike beat itself. Rendered push+shout (single hit anchor, not a settled instruction). Ids are frozen. Runtime lookup: techniqueStandaloneClipFor(token).",
+  "techniques": [
+    { "id": "ts-1",  "token": "1",  "text": "Jab." },
+    { "id": "ts-1b", "token": "1B", "text": "Body jab." },
+    { "id": "ts-2",  "token": "2",  "text": "Cross." },
+    { "id": "ts-2b", "token": "2B", "text": "Body cross." },
+    { "id": "ts-3",  "token": "3",  "text": "Lead hook." },
+    { "id": "ts-3b", "token": "3B", "text": "Body hook." },
+    { "id": "ts-4",  "token": "4",  "text": "Rear hook." },
+    { "id": "ts-4b", "token": "4B", "text": "Rear body hook." },
+    { "id": "ts-5",  "token": "5",  "text": "Lead uppercut." },
+    { "id": "ts-5b", "token": "5B", "text": "Lead body uppercut." },
+    { "id": "ts-6",  "token": "6",  "text": "Rear uppercut." },
+    { "id": "ts-6b", "token": "6B", "text": "Rear body uppercut." }
+  ]
+}

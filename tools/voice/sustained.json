@@ -1,0 +1,29 @@
+{
+  "_comment": "Sustained-strike coach lines (M39-V2 Phase 4b). One instruction covers a whole pump/pressure block: 'Pump the jab', 'Pump the body cross', etc. Rendered CALM+teach+land per the rhythmic-template scout (Aug 30 2026); intensity preset mirrors make-recovery-clips.mjs CALM. Ids are frozen. VOCABULARY-SCOPED: same punch produces two clips, one per vocab. `token` mirrors the strike catalog canonical id (1..6 head, 1b..6b body). Runtime lookup: sustainedClipFor({ token, vocabulary }).",
+  "sustained": [
+    { "id": "su-pump-1-numbers",   "token": "1",  "vocabulary": "numbers",    "text": "Pump the one." },
+    { "id": "su-pump-1b-numbers",  "token": "1B", "vocabulary": "numbers",    "text": "Pump the body one." },
+    { "id": "su-pump-2-numbers",   "token": "2",  "vocabulary": "numbers",    "text": "Pump the two." },
+    { "id": "su-pump-2b-numbers",  "token": "2B", "vocabulary": "numbers",    "text": "Pump the body two." },
+    { "id": "su-pump-3-numbers",   "token": "3",  "vocabulary": "numbers",    "text": "Pump the three." },
+    { "id": "su-pump-3b-numbers",  "token": "3B", "vocabulary": "numbers",    "text": "Pump the body three." },
+    { "id": "su-pump-4-numbers",   "token": "4",  "vocabulary": "numbers",    "text": "Pump the four." },
+    { "id": "su-pump-4b-numbers",  "token": "4B", "vocabulary": "numbers",    "text": "Pump the body four." },
+    { "id": "su-pump-5-numbers",   "token": "5",  "vocabulary": "numbers",    "text": "Pump the five." },
+    { "id": "su-pump-5b-numbers",  "token": "5B", "vocabulary": "numbers",    "text": "Pump the body five." },
+    { "id": "su-pump-6-numbers",   "token": "6",  "vocabulary": "numbers",    "text": "Pump the six." },
+    { "id": "su-pump-6b-numbers",  "token": "6B", "vocabulary": "numbers",    "text": "Pump the body six." },
+    { "id": "su-pump-1-techniques",  "token": "1",  "vocabulary": "techniques", "text": "Pump the jab." },
+    { "id": "su-pump-1b-techniques", "token": "1B", "vocabulary": "techniques", "text": "Pump the body jab." },
+    { "id": "su-pump-2-techniques",  "token": "2",  "vocabulary": "techniques", "text": "Pump the cross." },
+    { "id": "su-pump-2b-techniques", "token": "2B", "vocabulary": "techniques", "text": "Pump the body cross." },
+    { "id": "su-pump-3-techniques",  "token": "3",  "vocabulary": "techniques", "text": "Pump the lead hook." },
+    { "id": "su-pump-3b-techniques", "token": "3B", "vocabulary": "techniques", "text": "Pump the body hook." },
+    { "id": "su-pump-4-techniques",  "token": "4",  "vocabulary": "techniques", "text": "Pump the rear hook." },
+    { "id": "su-pump-4b-techniques", "token": "4B", "vocabulary": "techniques", "text": "Pump the rear body hook." },
+    { "id": "su-pump-5-techniques",  "token": "5",  "vocabulary": "techniques", "text": "Pump the lead uppercut." },
+    { "id": "su-pump-5b-techniques", "token": "5B", "vocabulary": "techniques", "text": "Pump the lead body uppercut." },
+    { "id": "su-pump-6-techniques",  "token": "6",  "vocabulary": "techniques", "text": "Pump the rear uppercut." },
+    { "id": "su-pump-6b-techniques", "token": "6B", "vocabulary": "techniques", "text": "Pump the rear body uppercut." }
+  ]
+}

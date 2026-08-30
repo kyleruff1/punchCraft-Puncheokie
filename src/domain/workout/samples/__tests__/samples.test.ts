@@ -25,7 +25,7 @@ import { handSequence, resolveEffectiveStance } from '../../../programs/StanceMa
 const ALL = listSampleWorkouts()
 
 describe('the sample catalogue', () => {
-  it('exposes exactly the nine binding keys', () => {
+  it('exposes exactly the ten binding keys', () => {
     expect(ALL.map((s) => s.key)).toEqual([
       'three-round-fundamentals',
       'establish-the-jab-20',
@@ -36,6 +36,7 @@ describe('the sample catalogue', () => {
       'progressive-buildup',
       'body-work',
       'pace-pusher',
+      'pump-and-coast',
     ])
   })
 

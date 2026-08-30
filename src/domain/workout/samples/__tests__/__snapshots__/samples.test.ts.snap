@@ -1887,6 +1887,202 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
 ]
 `;
 
+exports[`token streams are stable fixtures pump-and-coast token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "pc1-b1",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+        ],
+      },
+      {
+        "id": "pc1-b2",
+        "kind": "sustained-strike",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+        ],
+      },
+      {
+        "id": "pc1-b3",
+        "kind": "active-recovery",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 5,
+        "tokens": [
+          "1@0",
+        ],
+      },
+      {
+        "id": "pc1-b3#pad",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 111,
+        "tokens": [
+          "1@0",
+        ],
+      },
+    ],
+    "target": 133,
+    "theme": "Pump the jab",
+  },
+  {
+    "blocks": [
+      {
+        "id": "pc2-b1",
+        "kind": "repeated-combo",
+        "repeat": 6,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+          "3@1.35",
+        ],
+      },
+      {
+        "id": "pc2-b2",
+        "kind": "sustained-strike",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+        ],
+      },
+      {
+        "id": "pc2-b3",
+        "kind": "active-recovery",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 5,
+        "tokens": [
+          "1@0",
+        ],
+      },
+      {
+        "id": "pc2-b3#pad",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 111,
+        "tokens": [
+          "1@0",
+        ],
+      },
+    ],
+    "target": 135,
+    "theme": "Pump the cross",
+  },
+  {
+    "blocks": [
+      {
+        "id": "pc3-b1",
+        "kind": "repeated-combo",
+        "repeat": 6,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+          "3b@1.35",
+        ],
+      },
+      {
+        "id": "pc3-b2",
+        "kind": "sustained-strike",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "3b@0",
+        ],
+      },
+      {
+        "id": "pc3-b3",
+        "kind": "active-recovery",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 5,
+        "tokens": [
+          "1@0",
+        ],
+      },
+      {
+        "id": "pc3-b3#pad",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 111,
+        "tokens": [
+          "1@0",
+        ],
+      },
+    ],
+    "target": 135,
+    "theme": "Pump the body hook",
+  },
+  {
+    "blocks": [
+      {
+        "id": "pc4-b1",
+        "kind": "repeated-combo",
+        "repeat": 6,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.65",
+          "5@1.35",
+        ],
+      },
+      {
+        "id": "pc4-b2",
+        "kind": "sustained-strike",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "5@0",
+        ],
+      },
+      {
+        "id": "pc4-b3",
+        "kind": "active-recovery",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 5,
+        "tokens": [
+          "1@0",
+        ],
+      },
+      {
+        "id": "pc4-b3#pad",
+        "kind": "volume-burst",
+        "repeat": null,
+        "stance": "inherit",
+        "targetPunches": 111,
+        "tokens": [
+          "1@0",
+        ],
+      },
+    ],
+    "target": 135,
+    "theme": "Pump the lead uppercut",
+  },
+]
+`;
+
 exports[`token streams are stable fixtures speed-combos token stream snapshot 1`] = `
 [
   {
