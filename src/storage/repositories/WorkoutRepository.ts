@@ -160,12 +160,10 @@ interface RawRecipe {
 interface RawWorkout {
   id: string
   recipe_id: string
-  session_id: string | null
   generator_version: string
   seed: string
   params_snapshot_json: string
   blocks_json: string
-  realized_tokens_json: string
   created_at: string
 }
 
@@ -282,8 +280,8 @@ export class WorkoutRepository {
   /* -- generated workouts ----------------------------------------------- */
 
   /**
-   * Persist one expansion of a recipe together with the token stream that was
-   * (or is about to be) executed.
+   * Persist a generated workout, and — when a session ran it — the realized
+   * token stream for that session.
    *
    * `recipeId` is an additive fourth parameter, not in #177's Interfaces block:
    * `generated_workouts.recipe_id` is NOT NULL but `GeneratedWorkout` carries
@@ -296,21 +294,27 @@ export class WorkoutRepository {
    * Rejects an empty realized stream (D8): before any adaptation the realized
    * stream simply equals the planned expansion, so the caller always has one.
    *
-   * Idempotent on `id` — running the same generated workout twice (the generator
-   * is deterministic per recipe + seed) updates the existing row's run-specific
-   * fields (realized stream, session pointer, blocks, wall-clock timestamp)
-   * rather than raising a UNIQUE constraint. The plan's identity fields
-   * (`recipe_id`, `generator_version`, `seed`, `params_snapshot_json`) are
-   * fixed on first save and left alone on the second — those describe the
-   * plan, and running it a second time did not change it. Storing the second
-   * run's realized stream loses the first — this repository holds one
-   * snapshot per generated workout, not per session (A21, Kyle 2026-08-30);
-   * per-session detail lives in `cue_results`, keyed on (session, workout).
+   * ## Two rows, two invariants (A21 / #274, migration 007)
    *
-   * `INSERT OR REPLACE` would DELETE-then-INSERT the parent row and cascade
-   * away every `cue_results` and `adaptations` row FKed to it — including
-   * the FIRST session's results. `ON CONFLICT DO UPDATE` mutates only the
-   * columns named and leaves child rows alone.
+   * - `generated_workouts` is the IMMUTABLE plan snapshot: one row per id
+   *   (id is deterministic per recipe + seed). `INSERT OR IGNORE` keeps the
+   *   first save and skips the rest. Re-running the same recipe finds the
+   *   existing row and does not touch it.
+   *
+   * - `workout_runs` is the per-SESSION record of what actually executed:
+   *   one row per session. Adaptation during the session mutates the realized
+   *   stream — `ON CONFLICT(session_id) DO UPDATE` overwrites the row for
+   *   that session, without touching other sessions' runs.
+   *
+   * The two writes are independent: a plan can be saved without a session
+   * (`sessionId` omitted), and running the same plan twice produces two
+   * `workout_runs` rows tied to the same `generated_workouts` row. Neither
+   * row can collide with itself and take the session-persist path down.
+   *
+   * A prior fix that ran here used `ON CONFLICT(id) DO UPDATE` on
+   * `generated_workouts` and overwrote the previous session's realized stream
+   * on the shared row. That unblocked the persist path but lost per-session
+   * realized detail; the split here preserves both.
    */
   saveGeneratedWorkout(
     w: GeneratedWorkout,
@@ -334,29 +338,40 @@ export class WorkoutRepository {
       estimatedActivePunchesPerMinute: w.estimatedActivePunchesPerMinute,
       warnings: w.warnings,
     }
+    const now = new Date().toISOString()
 
+    // Plan snapshot: idempotent per id. If the row already exists, do nothing.
     this.run(
-      `INSERT INTO generated_workouts
-         (id, recipe_id, session_id, generator_version, seed,
-          params_snapshot_json, blocks_json, realized_tokens_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         session_id = excluded.session_id,
-         blocks_json = excluded.blocks_json,
-         realized_tokens_json = excluded.realized_tokens_json,
-         created_at = excluded.created_at`,
+      `INSERT OR IGNORE INTO generated_workouts
+         (id, recipe_id, generator_version, seed,
+          params_snapshot_json, blocks_json, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         w.id,
         resolvedRecipeId,
-        sessionId ?? null,
         w.recipe.generatorVersion,
         w.recipe.seed,
         JSON.stringify(w.recipe),
         JSON.stringify(blocks),
-        JSON.stringify(realized),
-        new Date().toISOString(),
+        now,
       ],
     )
+
+    if (sessionId !== undefined) {
+      // Per-session realized stream. One row per session; a re-save during
+      // the same session (after mid-workout adaptation) mutates it in place.
+      this.run(
+        `INSERT INTO workout_runs
+           (session_id, generated_workout_id, realized_tokens_json, created_at)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(session_id) DO UPDATE SET
+           generated_workout_id = excluded.generated_workout_id,
+           realized_tokens_json = excluded.realized_tokens_json,
+           created_at = excluded.created_at`,
+        [sessionId, w.id, JSON.stringify(realized), now],
+      )
+    }
+
     logger.info('storage.workout.generated.save', 'generated workout saved', {
       id: safe(w.id),
       recipeId: safe(resolvedRecipeId),
@@ -366,41 +381,87 @@ export class WorkoutRepository {
   }
 
   /**
-   * The workout linked to a session, with the stream that actually executed.
-   * `null` when the session ran no generated workout — that is a legitimate
-   * miss, not a decode failure, which is why every decode failure throws.
+   * The workout a session ran, with the stream that actually executed.
+   * Reads from `workout_runs` (per-session realized stream) joined onto
+   * `generated_workouts` (immutable plan). `null` when the session ran no
+   * generated workout — that is a legitimate miss, not a decode failure,
+   * which is why every decode failure throws.
    */
   getWorkoutBySession(
     sessionId: string,
   ): { workout: GeneratedWorkout; realized: RealizedTokenStream } | null {
-    const row = this.select<RawWorkout>(
-      'SELECT * FROM generated_workouts WHERE session_id = ? ORDER BY created_at DESC, id ASC',
+    const row = this.select<{
+      workout_id: string
+      recipe_id: string
+      generator_version: string
+      seed: string
+      params_snapshot_json: string
+      blocks_json: string
+      workout_created_at: string
+      realized_tokens_json: string
+    }>(
+      `SELECT
+         g.id AS workout_id,
+         g.recipe_id AS recipe_id,
+         g.generator_version AS generator_version,
+         g.seed AS seed,
+         g.params_snapshot_json AS params_snapshot_json,
+         g.blocks_json AS blocks_json,
+         g.created_at AS workout_created_at,
+         r.realized_tokens_json AS realized_tokens_json
+       FROM workout_runs r
+       JOIN generated_workouts g ON g.id = r.generated_workout_id
+       WHERE r.session_id = ?`,
       [sessionId],
     )[0]
     if (!row) return null
-    return this.hydrate(row)
-  }
-
-  getWorkoutById(id: string): { workout: GeneratedWorkout; realized: RealizedTokenStream } | null {
-    const row = this.select<RawWorkout>('SELECT * FROM generated_workouts WHERE id = ?', [id])[0]
-    if (!row) return null
-    return this.hydrate(row)
+    return this.hydrate(
+      {
+        id: row.workout_id,
+        recipe_id: row.recipe_id,
+        generator_version: row.generator_version,
+        seed: row.seed,
+        params_snapshot_json: row.params_snapshot_json,
+        blocks_json: row.blocks_json,
+        created_at: row.workout_created_at,
+      },
+      row.realized_tokens_json,
+      row.workout_id,
+    )
   }
 
   /**
-   * Replace the realized stream after the pacing engine mutated the plan
-   * (M33-07). Still refuses an empty stream — D8 holds after adaptation too.
+   * The plan for a generated-workout id. Returns only the plan (recipe,
+   * schedule, blocks) — a plan is shared by every session that ran it, so
+   * asking for "the realized stream" without naming a session is ambiguous
+   * (migration 007 / A21). Use {@link getWorkoutBySession} when the
+   * per-session realized stream is what the caller needs.
    */
-  updateRealizedTokens(generatedWorkoutId: string, realized: RealizedTokenStream): void {
+  getWorkoutById(id: string): GeneratedWorkout | null {
+    const row = this.select<RawWorkout>(
+      'SELECT * FROM generated_workouts WHERE id = ?',
+      [id],
+    )[0]
+    if (!row) return null
+    return this.hydratePlan(row)
+  }
+
+  /**
+   * Replace the realized stream for a session after the pacing engine
+   * mutated its plan (M33-07). Still refuses an empty stream — D8 holds
+   * after adaptation too. Targets `workout_runs` for that one session; other
+   * sessions' streams on the same plan are untouched.
+   */
+  updateRealizedTokens(sessionId: string, realized: RealizedTokenStream): void {
     if (!Array.isArray(realized) || realized.length === 0) {
       throw new WorkoutPersistenceError(
         'empty-realized-stream',
-        `refusing to blank the realized token stream of ${generatedWorkoutId} (D8, §8.6)`,
+        `refusing to blank the realized token stream of session ${sessionId} (D8, §8.6)`,
       )
     }
-    this.run('UPDATE generated_workouts SET realized_tokens_json = ? WHERE id = ?', [
+    this.run('UPDATE workout_runs SET realized_tokens_json = ? WHERE session_id = ?', [
       JSON.stringify(realized),
-      generatedWorkoutId,
+      sessionId,
     ])
   }
 
@@ -573,10 +634,7 @@ export class WorkoutRepository {
 
   /* -- internals -------------------------------------------------------- */
 
-  private hydrate(row: RawWorkout): {
-    workout: GeneratedWorkout
-    realized: RealizedTokenStream
-  } {
+  private hydratePlan(row: RawWorkout): GeneratedWorkout {
     const recipe = parseJson<WorkoutRecipe>(
       row.params_snapshot_json,
       'generated_workouts.params_snapshot_json',
@@ -590,16 +648,24 @@ export class WorkoutRepository {
       )
     }
     return {
-      workout: {
-        id: row.id,
-        recipe,
-        schedule: blocks.schedule,
-        roundPunchTargets: blocks.roundPunchTargets ?? [],
-        expectedTechniqueDistribution: blocks.expectedTechniqueDistribution ?? {},
-        estimatedActivePunchesPerMinute: blocks.estimatedActivePunchesPerMinute ?? 0,
-        warnings: blocks.warnings ?? [],
-      },
-      realized: parseRealized(row.realized_tokens_json, row.id),
+      id: row.id,
+      recipe,
+      schedule: blocks.schedule,
+      roundPunchTargets: blocks.roundPunchTargets ?? [],
+      expectedTechniqueDistribution: blocks.expectedTechniqueDistribution ?? {},
+      estimatedActivePunchesPerMinute: blocks.estimatedActivePunchesPerMinute ?? 0,
+      warnings: blocks.warnings ?? [],
+    }
+  }
+
+  private hydrate(
+    row: RawWorkout,
+    realizedJson: string,
+    workoutId: string,
+  ): { workout: GeneratedWorkout; realized: RealizedTokenStream } {
+    return {
+      workout: this.hydratePlan(row),
+      realized: parseRealized(realizedJson, workoutId),
     }
   }
 

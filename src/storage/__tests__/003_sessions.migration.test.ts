@@ -34,7 +34,7 @@ afterEach(() => {
 describe('migration registry', () => {
   it('registers 003_sessions with a unique, never-renumbered id', () => {
     const ids = MIGRATIONS_FOR_TESTS.map((m) => m.id)
-    expect(ids).toEqual([1, 2, 3, 4, 5, 6])
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7])
     expect(new Set(ids).size).toBe(ids.length)
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 3)?.name).toBe('003_sessions')
     // 004 was claimed by the workouts migration (#176) and 005 by the
@@ -42,6 +42,8 @@ describe('migration registry', () => {
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 4)?.name).toBe('004_workouts')
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 5)?.name).toBe('cue_result_repeat_index')
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 6)?.name).toBe('app_settings')
+    // 007 splits per-session realized streams off generated_workouts (A21).
+    expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 7)?.name).toBe('007_workout_runs')
   })
 })
 

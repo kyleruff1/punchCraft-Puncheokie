@@ -149,13 +149,14 @@ describe('generated workouts', () => {
 
   it('persists generator_version and seed for deterministic replay (R18)', () => {
     repo.saveGeneratedWorkout(threeRoundFundamentals, plannedStream(threeRoundFundamentals))
-    const row = db.query<{ generator_version: string; seed: string; session_id: string | null }>(
-      'SELECT generator_version, seed, session_id FROM generated_workouts',
+    const row = db.query<{ generator_version: string; seed: string }>(
+      'SELECT generator_version, seed FROM generated_workouts',
     )[0]
     expect(row?.generator_version).toBe(threeRoundFundamentals.recipe.generatorVersion)
     expect(row?.seed).toBe(threeRoundFundamentals.recipe.seed)
-    // Nullable until the workout is run.
-    expect(row?.session_id).toBeNull()
+    // No workout_run yet — a plan without a session has no run record
+    // (migration 007 moved that per-session detail off the plan row).
+    expect(db.count('SELECT COUNT(*) AS n FROM workout_runs')).toBe(0)
   })
 
   it('links to an already-saved recipe rather than cloning it', () => {
@@ -208,52 +209,52 @@ describe('generated workouts', () => {
     repo.saveGeneratedWorkout(threeRoundFundamentals, plannedStream(threeRoundFundamentals), 'ses-1')
 
     const shortened: RealizedTokenStream = [{ blockId: 'blk-1', tokens: [] }]
-    repo.updateRealizedTokens(threeRoundFundamentals.id, shortened)
+    repo.updateRealizedTokens('ses-1', shortened)
     expect(repo.getWorkoutBySession('ses-1')?.realized).toEqual(shortened)
 
-    expect(() => repo.updateRealizedTokens(threeRoundFundamentals.id, [])).toThrow(
-      WorkoutPersistenceError,
-    )
+    expect(() => repo.updateRealizedTokens('ses-1', [])).toThrow(WorkoutPersistenceError)
     expect(repo.getWorkoutBySession('ses-1')?.realized).toEqual(shortened)
   })
 
-  it('is idempotent on id — a re-run updates rather than raising UNIQUE (A21)', () => {
-    // The generator is deterministic per (recipe, seed), so running the same
+  it('preserves per-session realized streams across re-runs of the same plan (A21 / #274)', () => {
+    // The generator is deterministic per (recipe, seed): running the same
     // sample workout twice produces the same generated-workout id both times.
-    // The first save landed; the second one used to raise
-    // `UNIQUE constraint failed: generated_workouts.id` and lose the finished
-    // session. `ON CONFLICT DO UPDATE` mutates the run-specific columns instead.
+    // Before migration 007 the plan carried its own single realized column;
+    // the second save either collided on UNIQUE(id) (endWriteFailed) or, after
+    // the first-pass fix, silently overwrote the earlier session's stream.
+    // Migration 007 splits per-session runs onto workout_runs, so two sessions
+    // through the same plan produce two runs and one plan row — and each
+    // session's realized stream is preserved.
     const first = sessions.create({ id: 'ses-1', mode: 'puncheokie' })
-    repo.saveGeneratedWorkout(threeRoundFundamentals, plannedStream(threeRoundFundamentals), first.id)
+    const firstStream = plannedStream(threeRoundFundamentals)
+    repo.saveGeneratedWorkout(threeRoundFundamentals, firstStream, first.id)
 
-    // Second session runs the SAME generated workout with an evolved stream.
     const second = sessions.create({ id: 'ses-2', mode: 'puncheokie' })
-    const evolved: RealizedTokenStream = [{ blockId: 'blk-1', tokens: [] }]
-    // With plannedStream but re-tagged; using shortened stream to make the
-    // update visible.
+    const shortened: RealizedTokenStream = [
+      { blockId: 'blk-1', tokens: threeRoundFundamentals.schedule[0]!.blocks[0]!.tokens.slice(0, 1) },
+    ]
     expect(() =>
-      repo.saveGeneratedWorkout(threeRoundFundamentals, [
-        { blockId: 'blk-1', tokens: threeRoundFundamentals.schedule[0]!.blocks[0]!.tokens.slice(0, 1) },
-      ], second.id),
+      repo.saveGeneratedWorkout(threeRoundFundamentals, shortened, second.id),
     ).not.toThrow()
 
-    // Second run's realized stream is what is stored now — one snapshot per
-    // workout id, not per session.
-    const found = repo.getWorkoutBySession('ses-2')
-    expect(found).not.toBeNull()
-    expect(found!.realized).toHaveLength(1)
-    expect(found!.realized[0]!.tokens).toHaveLength(1)
+    // Each session sees its OWN realized stream — the first session's stream
+    // is not clobbered by the second session's save.
+    expect(repo.getWorkoutBySession('ses-1')?.realized).toEqual(firstStream)
+    const secondFound = repo.getWorkoutBySession('ses-2')
+    expect(secondFound?.realized).toHaveLength(1)
+    expect(secondFound?.realized[0]!.tokens).toHaveLength(1)
 
-    // And exactly one row exists — no duplication, no cascade delete.
-    const rowCount = db.query<{ n: number }>(
-      "SELECT COUNT(*) as n FROM generated_workouts WHERE id = ?",
-      [threeRoundFundamentals.id],
-    )[0]!.n
-    expect(rowCount).toBe(1)
-
-    // Sanity: `evolved` was defined for readability of the "keep updating"
-    // shape; touch it so lint doesn't warn about the unused local.
-    expect(evolved[0]!.blockId).toBe('blk-1')
+    // Exactly one PLAN row (shared) and two RUN rows (one per session).
+    expect(
+      db.query<{ n: number }>('SELECT COUNT(*) as n FROM generated_workouts WHERE id = ?', [
+        threeRoundFundamentals.id,
+      ])[0]!.n,
+    ).toBe(1)
+    expect(
+      db.query<{ n: number }>('SELECT COUNT(*) as n FROM workout_runs WHERE generated_workout_id = ?', [
+        threeRoundFundamentals.id,
+      ])[0]!.n,
+    ).toBe(2)
   })
 
   it('raises a typed error rather than returning null when blocks_json is corrupt', () => {

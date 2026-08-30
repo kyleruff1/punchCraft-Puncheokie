@@ -34,7 +34,10 @@ const tableNames = (db: MemoryDb): string[] =>
     .query<{ name: string }>(`SELECT name FROM sqlite_master WHERE type = 'table'`)
     .map((t) => t.name)
 
-/** A recipe row + a workout row the other tables can point at. */
+/** A recipe row + a workout row the other tables can point at. Migration 007
+ * moved `session_id` and `realized_tokens_json` off `generated_workouts` onto
+ * the new `workout_runs` table; passing `sessionId` here creates the run row
+ * as well, so tests that need the (session, workout) link get one atomically. */
 function seedWorkout(db: MemoryDb, opts: { sessionId?: string | null } = {}): void {
   db.execSync(`
     INSERT INTO workout_recipes
@@ -42,14 +45,21 @@ function seedWorkout(db: MemoryDb, opts: { sessionId?: string | null } = {}): vo
     VALUES ('r1', 'Fundamentals', NULL, 'orthodox', '{}', 1,
             '2026-08-23T00:00:00.000Z', '2026-08-23T00:00:00.000Z');
   `)
+  db.execSync(`
+    INSERT INTO generated_workouts
+      (id, recipe_id, generator_version, seed,
+       params_snapshot_json, blocks_json, created_at)
+    VALUES ('w1', 'r1', '1.0.0', 'seed-1', '{}', '[]', '2026-08-23T00:00:00.000Z');
+  `)
   const sessionId = opts.sessionId === undefined ? null : opts.sessionId
-  const stmt = db.raw.prepare(
-    `INSERT INTO generated_workouts
-       (id, recipe_id, session_id, generator_version, seed,
-        params_snapshot_json, blocks_json, realized_tokens_json, created_at)
-     VALUES ('w1', 'r1', ?, '1.0.0', 'seed-1', '{}', '[]', '[]', '2026-08-23T00:00:00.000Z')`,
-  )
-  stmt.run(sessionId)
+  if (sessionId !== null) {
+    const stmt = db.raw.prepare(
+      `INSERT INTO workout_runs
+         (session_id, generated_workout_id, realized_tokens_json, created_at)
+       VALUES (?, 'w1', '[]', '2026-08-23T00:00:00.000Z')`,
+    )
+    stmt.run(sessionId)
+  }
 }
 
 function seedSession(db: MemoryDb, id = 's1'): void {
@@ -92,15 +102,25 @@ describe('schema shape', () => {
     ])
   })
 
-  it('creates generated_workouts with the §17.1 columns', () => {
+  it('creates generated_workouts with the §17.1 columns (post-007 shape)', () => {
+    // Migration 007 moved `session_id` and `realized_tokens_json` off this row
+    // — a plan is shared by every session that ran it, and per-session detail
+    // lives in workout_runs.
     expect(columnsOf(db, 'generated_workouts')).toEqual([
       'id',
       'recipe_id',
-      'session_id',
       'generator_version',
       'seed',
       'params_snapshot_json',
       'blocks_json',
+      'created_at',
+    ])
+  })
+
+  it('creates workout_runs with the split per-session shape (migration 007)', () => {
+    expect(columnsOf(db, 'workout_runs')).toEqual([
+      'session_id',
+      'generated_workout_id',
       'realized_tokens_json',
       'created_at',
     ])
@@ -174,22 +194,21 @@ describe('schema shape', () => {
 })
 
 describe('D8 — realized_tokens_json is NOT NULL', () => {
-  it('declares the column NOT NULL', () => {
-    expect(columnInfo(db, 'generated_workouts', 'realized_tokens_json')?.notnull).toBe(1)
+  it('declares the column NOT NULL on workout_runs (moved by migration 007)', () => {
+    // The realized stream lives on `workout_runs` after migration 007 —
+    // still NOT NULL, because recalculation replays what actually ran and a
+    // row with no realized stream could never be recomputed (D8, §8.6).
+    expect(columnInfo(db, 'workout_runs', 'realized_tokens_json')?.notnull).toBe(1)
   })
 
-  it('rejects an insert that leaves the realized stream null', () => {
-    db.execSync(`
-      INSERT INTO workout_recipes
-        (id, name, preset_key, default_stance, params_json, recipe_schema_version, created_at, updated_at)
-      VALUES ('r1', 'Fundamentals', NULL, 'orthodox', '{}', 1, 'now', 'now');
-    `)
+  it('rejects a workout_run insert that leaves the realized stream null', () => {
+    seedSession(db)
+    seedWorkout(db)
     expect(() =>
       db.execSync(`
-        INSERT INTO generated_workouts
-          (id, recipe_id, session_id, generator_version, seed,
-           params_snapshot_json, blocks_json, realized_tokens_json, created_at)
-        VALUES ('w1', 'r1', NULL, '1.0.0', 'seed-1', '{}', '[]', NULL, 'now')
+        INSERT INTO workout_runs
+          (session_id, generated_workout_id, realized_tokens_json, created_at)
+        VALUES ('s1', 'w1', NULL, 'now')
       `),
     ).toThrow(/NOT NULL/i)
   })
@@ -280,9 +299,9 @@ describe('foreign keys', () => {
     expect(() =>
       db.execSync(`
         INSERT INTO generated_workouts
-          (id, recipe_id, session_id, generator_version, seed,
-           params_snapshot_json, blocks_json, realized_tokens_json, created_at)
-        VALUES ('w9', 'nope', NULL, '1.0.0', 's', '{}', '[]', '[]', 'now')
+          (id, recipe_id, generator_version, seed,
+           params_snapshot_json, blocks_json, created_at)
+        VALUES ('w9', 'nope', '1.0.0', 's', '{}', '[]', 'now')
       `),
     ).toThrow(/FOREIGN KEY/i)
   })
@@ -304,7 +323,7 @@ describe('foreign keys', () => {
     expect(() => db.execSync(`DELETE FROM workout_recipes WHERE id = 'r1'`)).toThrow(/FOREIGN KEY/i)
   })
 
-  it('cascades cue results and adaptations away with their session/workout', () => {
+  it('cascades cue results and workout_runs away with their session', () => {
     seedSession(db)
     seedWorkout(db, { sessionId: 's1' })
     db.execSync(
@@ -321,13 +340,15 @@ describe('foreign keys', () => {
 
     db.execSync(`DELETE FROM sessions WHERE id = 's1'`)
 
+    // Session-scoped rows follow the session: cue_results (CASCADE) and
+    // workout_runs (CASCADE on session_id, migration 007).
     expect(db.count('SELECT COUNT(*) AS n FROM cue_results')).toBe(0)
-    // The plan itself survives: session_id is SET NULL, not CASCADE.
+    expect(db.count('SELECT COUNT(*) AS n FROM workout_runs')).toBe(0)
+    // The plan itself survives — a plan can be shared across sessions.
     expect(db.count('SELECT COUNT(*) AS n FROM generated_workouts')).toBe(1)
-    expect(
-      db.query<{ session_id: string | null }>('SELECT session_id FROM generated_workouts')[0]
-        ?.session_id,
-    ).toBeNull()
+    // Adaptations are keyed on the workout id, not the session, so they
+    // survive the session's delete and cascade only when the workout is
+    // removed.
     expect(db.count('SELECT COUNT(*) AS n FROM workout_adaptations')).toBe(1)
 
     db.execSync(`DELETE FROM generated_workouts WHERE id = 'w1'`)
