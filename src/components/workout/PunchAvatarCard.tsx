@@ -61,7 +61,7 @@ const CARD_HEIGHT = 480
  * portrait/landscape and tablet/phone all offset the same fraction of
  * the frame, not a fixed pixel count that would drift with viewport.
  */
-const RIGHT_SHIFT_PCT = 0.15
+const RIGHT_SHIFT_PCT = 0.2
 const UP_SHIFT_PCT = 0.05
 /**
  * How often the flip clock is sampled. Well under the shortest frame
