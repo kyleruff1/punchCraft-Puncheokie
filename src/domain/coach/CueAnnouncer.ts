@@ -383,6 +383,16 @@ export class CueAnnouncer {
         if (cue?.voicePolicy === 'announce-then-work' && cue.repeatIndex !== 0) {
           return
         }
+        // Pass 5 fix (Kyle 2026-08-30): `refire` events are periodic
+        // re-calls scheduled by the count-scored refire path or the
+        // burst extender. Under `announce-then-work` the block is
+        // supposed to speak ONCE at first call and stay silent —
+        // "duplicated overlapping vocals" was every refire re-triggering
+        // the combo-announce. Gate refires here so only the initial
+        // `call` fires the announce; the athlete works to the rings.
+        if (cue?.voicePolicy === 'announce-then-work' && event.kind === 'refire') {
+          return
+        }
         // Phase B2 swap on the compiled-map path: same rule as
         // `announce()` — rep 0 of an announce-then-work block plays
         // the combo-announce clip when the library has one.

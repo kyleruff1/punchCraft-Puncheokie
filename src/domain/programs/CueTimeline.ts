@@ -391,23 +391,29 @@ function engineDivision(bpm: number): 1 | 2 | 3 | 4 | undefined {
  * (Kyle 2026-08-30, Pass 5 verdict: "visual cues should disperse
  * logically into metronome beat invisible backtrack").
  *
- * At engine mode, one authored beat maps to `division` grid slots. A
- * token at beatOffset 0.55 in a division-4 grid rounds to slot 2 (out
- * of 4-per-beat). Monotonicity is enforced so a rounding collision
- * bumps the later token forward one slot rather than dropping onto
- * the earlier one. Result: rings light on note-value logic (16th /
- * triplet / 8th / quarter per cadence), never on fractional beats.
+ * At engine mode, `bpm` is already the SLOT rate (baseBpm × division),
+ * so one bpm-beat is one engine slot. Snap by rounding the authored
+ * beatOffset to the nearest whole slot, preserving relative order via
+ * a monotonic collision-bump.
+ *
+ * Preserves both the "density 1.0" tight-pack case (a 3-token combo
+ * with offsets [0, 0.55, 1.15] → slots [0, 1, 2]) AND authored
+ * syncopation (a 2-token combo at [0, 2] → slots [0, 2] with a gap).
+ *
+ * Pass 5 rerun caught the earlier `round(beatOffset × division)`
+ * formula: it multiplied span by `division`, pushing 3-token combos
+ * past the beat-grid rep stride and `truncateWindowsAtNextCue` clipped
+ * the last token. "Never gets to the last one" — Kyle 2026-08-30.
  */
 function engineVisualOffsetsMs(
   tokens: readonly WorkoutToken[],
   bpm: number,
-  division: 1 | 2 | 3 | 4,
 ): number[] {
   const slotMs = beatsToMs(1, bpm)
   const out: number[] = []
   let prevSlot = -1
   for (const t of tokens) {
-    let slot = Math.round(t.beatOffset * division)
+    let slot = Math.round(t.beatOffset)
     if (slot <= prevSlot) slot = prevSlot + 1
     out.push(slot * slotMs)
     prevSlot = slot
@@ -431,7 +437,7 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
   const division = engineDivision(ctx.bpm)
   const visualOffsetsMs =
     division !== undefined && block.voicePolicy === 'announce-then-work'
-      ? engineVisualOffsetsMs(block.tokens, ctx.bpm, division)
+      ? engineVisualOffsetsMs(block.tokens, ctx.bpm)
       : undefined
 
   // A repeat of 1 and no repeat are the same thing; treating them alike
