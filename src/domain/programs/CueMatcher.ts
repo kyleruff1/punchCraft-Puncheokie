@@ -197,9 +197,23 @@ export class CueMatcher {
     return null
   }
 
-  /** When this expectation's token was actually called. */
+  /**
+   * When this expectation's token was expected to LAND (the reference
+   * used for the signed match offset).
+   *
+   * M39-V1c plumbing (2026-08-30): engine mode returns the authored
+   * expected-strike time (visualAtMs + `EXPECTED_STRIKE_DELAY_MS`) so
+   * scoring measures against "when the strike should land" rather than
+   * "when the coach said the token." For legacy cues (no
+   * `expectedStrikeOffsetsMs`) the moment is `scheduledStartMs +
+   * tokenOffsetsMs[i]` — the identical value produced by the pre-M39
+   * scheduledMomentMs.
+   */
   private scheduledMomentMs(cue: CueInstance, expected: ExpectedPunch): number {
-    const offset = cue.tokenOffsetsMs[expected.tokenIndex] ?? 0
+    const offset =
+      cue.expectedStrikeOffsetsMs?.[expected.tokenIndex] ??
+      cue.tokenOffsetsMs[expected.tokenIndex] ??
+      0
     return cue.scheduledStartMs + offset
   }
 

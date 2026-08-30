@@ -76,6 +76,14 @@ export interface WorkoutRecipe {
   maximumComboPunches: number
   defenseFrequency: Frequency
   footworkFrequency: Frequency
+  /**
+   * @deprecated (M39-V1c prep, 2026-08-30) — superseded by `coachTempo`
+   * once every sample opts into the engine. Still read while
+   * `metronome.enabled: false` (the `bpmForRecipe` bridge selects
+   * `CADENCE_PROFILES[cadenceProfile].nominalBpm` for legacy recipes),
+   * and still stored on every recipe because samples migrate one at a
+   * time. Remove after the corpus re-render + full sample flip lands.
+   */
   cadenceProfile: CadenceProfile
   /**
    * Content tier (Rhythm Map M1). Selects VOCABULARY — which combination

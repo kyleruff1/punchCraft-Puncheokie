@@ -151,6 +151,25 @@ export interface CueInstance {
    * (per-word calls, missing wordMarks, or non-phrase mode).
    */
   phraseTokenTimesMs?: number[]
+  /**
+   * M39-V1c plumbing (2026-08-30): engine-authored per-token ring-fire
+   * times, relative to `scheduledStartMs` (same reference as
+   * `tokenOffsetsMs`). Populated only when the recipe has
+   * `metronome.enabled: true` AND the block was authored with an engine
+   * rhythm (a follow-up chunk of V1c adds `BlockSpec.rhythm`). Absent
+   * means the cue falls back to `phraseTokenTimesMs` (the rail), then
+   * `tokenOffsetsMs` (the beat grid) — the pre-M39 order is preserved
+   * verbatim for every legacy cue.
+   */
+  visualOffsetsMs?: number[]
+  /**
+   * M39-V1c plumbing (2026-08-30): engine-authored expected-strike times
+   * (visualAtMs + `EXPECTED_STRIKE_DELAY_MS`, from `acceptance.ts`),
+   * relative to `scheduledStartMs`. Used by `CueMatcher.scheduledMomentMs`
+   * to compute the signed match offset. Populated in the same conditions
+   * as `visualOffsetsMs`; absent falls back to `tokenOffsetsMs`.
+   */
+  expectedStrikeOffsetsMs?: number[]
 }
 
 export interface RoundTimeline {
