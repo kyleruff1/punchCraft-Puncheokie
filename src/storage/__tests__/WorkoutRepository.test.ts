@@ -217,6 +217,45 @@ describe('generated workouts', () => {
     expect(repo.getWorkoutBySession('ses-1')?.realized).toEqual(shortened)
   })
 
+  it('is idempotent on id — a re-run updates rather than raising UNIQUE (A21)', () => {
+    // The generator is deterministic per (recipe, seed), so running the same
+    // sample workout twice produces the same generated-workout id both times.
+    // The first save landed; the second one used to raise
+    // `UNIQUE constraint failed: generated_workouts.id` and lose the finished
+    // session. `ON CONFLICT DO UPDATE` mutates the run-specific columns instead.
+    const first = sessions.create({ id: 'ses-1', mode: 'puncheokie' })
+    repo.saveGeneratedWorkout(threeRoundFundamentals, plannedStream(threeRoundFundamentals), first.id)
+
+    // Second session runs the SAME generated workout with an evolved stream.
+    const second = sessions.create({ id: 'ses-2', mode: 'puncheokie' })
+    const evolved: RealizedTokenStream = [{ blockId: 'blk-1', tokens: [] }]
+    // With plannedStream but re-tagged; using shortened stream to make the
+    // update visible.
+    expect(() =>
+      repo.saveGeneratedWorkout(threeRoundFundamentals, [
+        { blockId: 'blk-1', tokens: threeRoundFundamentals.schedule[0]!.blocks[0]!.tokens.slice(0, 1) },
+      ], second.id),
+    ).not.toThrow()
+
+    // Second run's realized stream is what is stored now — one snapshot per
+    // workout id, not per session.
+    const found = repo.getWorkoutBySession('ses-2')
+    expect(found).not.toBeNull()
+    expect(found!.realized).toHaveLength(1)
+    expect(found!.realized[0]!.tokens).toHaveLength(1)
+
+    // And exactly one row exists — no duplication, no cascade delete.
+    const rowCount = db.query<{ n: number }>(
+      "SELECT COUNT(*) as n FROM generated_workouts WHERE id = ?",
+      [threeRoundFundamentals.id],
+    )[0]!.n
+    expect(rowCount).toBe(1)
+
+    // Sanity: `evolved` was defined for readability of the "keep updating"
+    // shape; touch it so lint doesn't warn about the unused local.
+    expect(evolved[0]!.blockId).toBe('blk-1')
+  })
+
   it('raises a typed error rather than returning null when blocks_json is corrupt', () => {
     sessions.create({ id: 'ses-1', mode: 'puncheokie' })
     repo.saveGeneratedWorkout(threeRoundFundamentals, plannedStream(threeRoundFundamentals), 'ses-1')

@@ -295,6 +295,22 @@ export class WorkoutRepository {
    *
    * Rejects an empty realized stream (D8): before any adaptation the realized
    * stream simply equals the planned expansion, so the caller always has one.
+   *
+   * Idempotent on `id` — running the same generated workout twice (the generator
+   * is deterministic per recipe + seed) updates the existing row's run-specific
+   * fields (realized stream, session pointer, blocks, wall-clock timestamp)
+   * rather than raising a UNIQUE constraint. The plan's identity fields
+   * (`recipe_id`, `generator_version`, `seed`, `params_snapshot_json`) are
+   * fixed on first save and left alone on the second — those describe the
+   * plan, and running it a second time did not change it. Storing the second
+   * run's realized stream loses the first — this repository holds one
+   * snapshot per generated workout, not per session (A21, Kyle 2026-08-30);
+   * per-session detail lives in `cue_results`, keyed on (session, workout).
+   *
+   * `INSERT OR REPLACE` would DELETE-then-INSERT the parent row and cascade
+   * away every `cue_results` and `adaptations` row FKed to it — including
+   * the FIRST session's results. `ON CONFLICT DO UPDATE` mutates only the
+   * columns named and leaves child rows alone.
    */
   saveGeneratedWorkout(
     w: GeneratedWorkout,
@@ -323,7 +339,12 @@ export class WorkoutRepository {
       `INSERT INTO generated_workouts
          (id, recipe_id, session_id, generator_version, seed,
           params_snapshot_json, blocks_json, realized_tokens_json, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         session_id = excluded.session_id,
+         blocks_json = excluded.blocks_json,
+         realized_tokens_json = excluded.realized_tokens_json,
+         created_at = excluded.created_at`,
       [
         w.id,
         resolvedRecipeId,
