@@ -49,6 +49,7 @@ import { compilePhrase, spokenFor } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
 import { ACTIVE_PERSONA, PERSONAS, getPersona, rendererId } from './personas.mjs'
 import { insertBeats, measureDuration, readWav, renameWithRetry, trimEnds } from './wav.mjs'
+import { fitBoundsMs, fitPct, fitVerdict, gridDurationMs } from './grid_targets.mjs'
 
 /**
  * The persona to render, via `--persona=<id>`; the active one by default.
@@ -380,6 +381,76 @@ if (dumpArg) {
   process.exit(0)
 }
 
+// `--fit-check` — the V1c grid-fit inspector (M39-V1c / #281).
+//
+// Walks every job whose wav is present on disk, measures the actual
+// duration, and compares to `gridDurationMs(job)` — the target the
+// engine schedules the phrase to fill on the 60 BPM master grid at the
+// cadence's division. Writes tools/analysis/fit-report.json with the
+// full table plus a summary of preferred / acceptable / reject counts.
+// Non-destructive — no Chatterbox call, no re-render — so it's safe to
+// run on the shipped corpus before a batch to see what the current
+// clips look like against the new contract.
+//
+// Exit code: 0 if every measured clip is in-band (preferred or
+// acceptable); 1 if any clip lands beyond ±10%.
+if (process.argv.includes('--fit-check')) {
+  const rows = []
+  const summary = { preferred: 0, acceptable: 0, reject: 0, missing: 0 }
+  for (const j of allJobs) {
+    const target = gridDurationMs({ tokens: j.tokens, cadence: j.cadence })
+    if (!existsSync(j.wav)) {
+      summary.missing += 1
+      rows.push({ key: j.key, cadence: j.cadence, gridDurationMs: Math.round(target), missing: true })
+      continue
+    }
+    const actual = measureDuration(j.wav)
+    const ratio = fitPct(actual, target)
+    const verdict = fitVerdict(ratio)
+    summary[verdict] += 1
+    rows.push({
+      key: j.key,
+      cadence: j.cadence,
+      tokens: j.tokens,
+      actualMs: actual,
+      gridDurationMs: Math.round(target),
+      fitPct: Number(ratio.toFixed(4)),
+      driftPct: Number((ratio - 1).toFixed(4)),
+      verdict,
+      fitBoundsMs: fitBoundsMs(target),
+    })
+  }
+  // Sort worst first so a reader sees rejects at the top of the file.
+  rows.sort((a, b) => (Math.abs(b.driftPct ?? 0) - Math.abs(a.driftPct ?? 0)))
+  const outPath = join('tools', 'analysis', 'fit-report.json')
+  mkdirSync(join('tools', 'analysis'), { recursive: true })
+  writeFileSync(
+    outPath,
+    `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      persona: PERSONA.id,
+      summary,
+      rejectKeys: rows.filter((r) => r.verdict === 'reject').map((r) => r.key),
+      rows,
+    }, null, 2)}\n`,
+  )
+  const total = summary.preferred + summary.acceptable + summary.reject
+  console.log(
+    `Fit-check: ${summary.preferred} preferred / ${summary.acceptable} acceptable / ` +
+      `${summary.reject} REJECT of ${total} measured (${summary.missing} missing).`,
+  )
+  console.log(`Full report: ${outPath}`)
+  if (summary.reject > 0) {
+    console.log('\nTop 10 rejects (by |drift|):')
+    for (const r of rows.filter((x) => x.verdict === 'reject').slice(0, 10)) {
+      const pct = ((r.driftPct ?? 0) * 100).toFixed(1)
+      console.log(`  ${r.key.padEnd(48)} actual ${String(r.actualMs).padStart(5)} ms  target ${String(r.gridDurationMs).padStart(5)} ms  drift ${pct}%`)
+    }
+    process.exit(1)
+  }
+  process.exit(0)
+}
+
 // `--missing-only` renders just the clips with no file on disk — the
 // corpus-expansion batch: new notations render, the shipped 248 stay
 // untouched. Like other subset renders it skips the index/manifest writes;
@@ -677,6 +748,13 @@ for (const job of jobs) {
     source = 'none'
   }
 
+  // Grid fit (M39-V1c). The wav must fit the engine's allocated grid
+  // within ±5% (preferred) / ±10% (hard cap). Stored on the per-persona
+  // index.json for post-hoc analysis; the TS phraseManifest stays lean.
+  const gridMs = gridDurationMs({ tokens: job.tokens, cadence: job.cadence })
+  const ratio = fitPct(durationMs, gridMs)
+  const verdict = fitVerdict(ratio)
+
   index.push({
     cueId: job.key,
     persona: PERSONA.id,
@@ -687,13 +765,55 @@ for (const job of jobs) {
     file: `${job.key}.wav`,
     tokens: job.tokens,
     durationMs,
+    gridDurationMs: Math.round(gridMs),
+    fitPct: Number(ratio.toFixed(4)),
+    fitVerdict: verdict,
     wordMarks,
     wordMarksSource: wordMarks.length === job.tokens.length ? source : 'none',
     renderer: RENDERER,
   })
 
   const kb = (statSync(job.wav).size / 1024).toFixed(0)
-  console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB`)
+  const fitTag =
+    verdict === 'reject'
+      ? ` FIT!${((ratio - 1) * 100).toFixed(1)}%`
+      : verdict === 'acceptable'
+        ? ` fit${((ratio - 1) * 100).toFixed(1)}%`
+        : ''
+  console.log(`${job.key.padEnd(40)} ${String(durationMs).padStart(5)} ms  ${kb.padStart(4)} KB${fitTag}`)
+}
+
+// Post-render fit summary (M39-V1c). Written alongside render-report.json
+// so a batch operator can `--only-keys=$(jq -r '.rejectKeys[]' fit-report.json)`
+// to re-render the failing clips at a fresh --attempts budget rather than
+// letting them ship at the wrong duration.
+if (!manifestOnly && index.length > 0) {
+  const fitSummary = { preferred: 0, acceptable: 0, reject: 0 }
+  const rejectKeys = []
+  for (const entry of index) {
+    if (entry.fitVerdict) {
+      fitSummary[entry.fitVerdict] += 1
+      if (entry.fitVerdict === 'reject') rejectKeys.push(entry.cueId)
+    }
+  }
+  writeFileSync(
+    join('tools', 'analysis', 'fit-report.json'),
+    `${JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      persona: PERSONA.id,
+      summary: fitSummary,
+      rejectKeys,
+    }, null, 2)}\n`,
+  )
+  console.log(
+    `Fit: ${fitSummary.preferred} preferred / ${fitSummary.acceptable} acceptable / ` +
+      `${fitSummary.reject} REJECT (see tools/analysis/fit-report.json)`,
+  )
+  if (rejectKeys.length > 0) {
+    console.log(
+      `  Retry: node tools/voice/make-phrase-clips.mjs "--only-keys=$(jq -r '.rejectKeys | join(",")' tools/analysis/fit-report.json)" --attempts=12 --asr-exact --soft-head`,
+    )
+  }
 }
 
 // Whisper backfill (source: 'whisper') for entries the envelope couldn't

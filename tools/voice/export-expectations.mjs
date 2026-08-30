@@ -24,6 +24,7 @@ import { join } from 'node:path'
 import { CADENCES, VOCABULARIES, combinationsFromCorpus, corpusV1, finalBoundsMs } from './corpus.mjs'
 import { compileAdlib, compilePhrase, spokenFor } from './prosody.mjs'
 import { ACTIVE_PERSONA, getPersona } from './personas.mjs'
+import { fitBoundsMs, gridDurationMs } from './grid_targets.mjs'
 import { FORM_SPEED, SHARED_WORDS, TONES, VOCABULARY_WORDS, maxWordMs } from './wordCorpus.mjs'
 
 const personaArg = process.argv.find((a) => a.startsWith('--persona='))?.slice('--persona='.length)
@@ -87,6 +88,11 @@ for (const combination of combinationsFromCorpus()) {
           .trim()
           .split(/\s+/)
           .filter(Boolean).length
+        // M39-V1c grid target — what the engine schedules this
+        // combination to fill on the ±60 BPM master grid at the
+        // cadence's division. The rendered wav must fit within ±5%
+        // (preferred) / ±10% (hard cap). See tools/voice/grid_targets.mjs.
+        const gridMs = gridDurationMs({ tokens, cadence })
         push({
           kind: 'phrase',
           key,
@@ -97,6 +103,9 @@ for (const combination of combinationsFromCorpus()) {
           tempoRate: Number((plan.speed * TEMPO_CALIBRATION).toFixed(3)),
           // The window the shipped file promises (already post-tempo-fit).
           boundsMs: finalBoundsMs(spokenWordCount),
+          // Engine grid target + tolerance bands (V1c).
+          gridDurationMs: Math.round(gridMs),
+          fitBoundsMs: fitBoundsMs(gridMs),
           vocabulary,
           cadence,
           performance: performance.name,
