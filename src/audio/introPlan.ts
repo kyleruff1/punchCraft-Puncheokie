@@ -3,22 +3,28 @@
  * what rhythm, and how long the pre-round countdown must stretch to fit.
  *
  * "Hello! Welcome to punch craft. I'm your coach, Jonathan punch craft.
- * Today, we're boxing six rounds of four minutes each… (double breath)
- * …joke… (beat) …Let's get started!"
+ * Today, we're boxing six rounds of four minutes each… Let's get started!"
  *
- * The joke is an EXTENSION OF THE INTRO — the coach sets up the workout,
- * takes a double breath, lands the joke, lets it sit, then sends the
- * athlete off. The pauses are part of the plan (per-segment
- * `gapBeforeMs`), because the whole point is the coach's timing — a flat
- * 350ms everywhere would read as a script, not a cornerman.
+ * The pauses are part of the plan (per-segment `gapBeforeMs`), because
+ * the whole point is the coach's timing — a flat 350ms everywhere would
+ * read as a script, not a cornerman.
  *
  * The variation space stays finite by composition: whole-sentence clips,
- * one per setting axis (round count, tier x cadence), plus one random
- * joke from the 30-deep pool. The rhythm map is untouched: everything
- * here plays inside an EXTENDED countdown, and the session clock — not
- * the playback — decides when the bell rings. A segment missing from a
- * manifest (render gate rejected it) is skipped, and the countdown
- * shortens to match: durations are measured, never guessed.
+ * one per setting axis (round count, tier × cadence). The rhythm map is
+ * untouched: everything here plays inside an EXTENDED countdown, and the
+ * session clock — not the playback — decides when the bell rings. A
+ * segment missing from a manifest (render gate rejected it) is skipped,
+ * and the countdown shortens to match: durations are measured, never
+ * guessed.
+ *
+ * ## Jokes removed 2026-08-30
+ *
+ * The original walkout laid a lobby joke between the setup and the
+ * send-off ("…double breath …joke… beat …Let's get started!"). Kyle
+ * retired the joke pool ("they are all pretty bad, we don't need those
+ * and can save time testing"), so the plan is now the three-part walkout
+ * above. The double-breath and joke-landing pause logic went with the
+ * joke — plain intro-segment gaps carry the flow.
  */
 
 import {
@@ -28,28 +34,9 @@ import {
 import { tierFor } from '@domain/workout/WorkoutRecipe'
 
 import { INTRO_SEGMENTS, type IntroSegment } from './voiceAssets/introManifest'
-import { pickLobbyJoke, type LobbyJoke } from './voiceAssets/jokeManifest'
 
 /** Breath between plain sentences. */
 export const INTRO_SEGMENT_GAP_MS = 350
-/** The double breath before the joke — the setup hangs, then it drops. */
-export const DOUBLE_BREATH_MS = 1_700
-/**
- * The beat after the punchline, before "Let's get started!", scales with
- * the joke itself — the manifest carries measured lengths, so a longer
- * setup earns a longer laugh. Bounded: never clipped, never a dead stage.
- */
-export const JOKE_LANDING_MIN_MS = 800
-export const JOKE_LANDING_MAX_MS = 2_200
-export function jokeLandingMs(jokeDurationMs: number): number {
-  // Quantized to 200ms so every possible pause exists as a silence track —
-  // the walkout plays through a native playlist, and its pauses are audio.
-  const raw = Math.min(
-    JOKE_LANDING_MAX_MS,
-    Math.max(JOKE_LANDING_MIN_MS, Math.round(jokeDurationMs * 0.18)),
-  )
-  return Math.min(JOKE_LANDING_MAX_MS, Math.round(raw / 200) * 200)
-}
 /** Quiet after "Let's get started!" before the bell — a beat, not a wall. */
 export const INTRO_TAIL_PAD_MS = 900
 
@@ -86,7 +73,6 @@ const STANDARD_REST_MS = 60_000
 export function planIntro(
   workout: GeneratedWorkout,
   manifest: Readonly<Record<string, IntroSegment>> = INTRO_SEGMENTS,
-  joke: LobbyJoke | null = pickLobbyJoke() ?? null,
 ): IntroPlan {
   const ids: string[] = ['intro-hello']
 
@@ -106,25 +92,11 @@ export function planIntro(
     .filter((s): s is IntroSegment => s !== undefined)
     .map((s, index) => ({ ...s, gapBeforeMs: index === 0 ? 0 : INTRO_SEGMENT_GAP_MS }))
 
-  if (joke) {
-    segments.push({
-      id: joke.id,
-      module: joke.module,
-      durationMs: joke.durationMs,
-      gapBeforeMs: segments.length === 0 ? 0 : DOUBLE_BREATH_MS,
-    })
-  }
-
   const sendOff = manifest['intro-letsgo']
   if (sendOff) {
     segments.push({
       ...sendOff,
-      gapBeforeMs:
-        segments.length === 0
-          ? 0
-          : joke
-            ? jokeLandingMs(joke.durationMs)
-            : INTRO_SEGMENT_GAP_MS,
+      gapBeforeMs: segments.length === 0 ? 0 : INTRO_SEGMENT_GAP_MS,
     })
   }
 

@@ -12,9 +12,10 @@
  *
  * Files land in the existing `assets/voice/numbers/standalone/`
  * directory. **Adding a new directory under `assets/` breaks Metro's
- * Windows file map** (see `make-joke-clips.mjs`) and it does not
- * recover — a recovery segment is not a call, but it lives beside the
- * jokes and openers for that reason.
+ * Windows file map** and it does not recover — a recovery segment is
+ * not a call, but it lives beside the openers for that reason. (The
+ * jokes that used to live here were retired 2026-08-30, but the
+ * "one-directory" rule survives them.)
  *
  * Delivery direction (corpus, verbatim): "old-school cornerman;
  * dramatically aged, caring, calm, and authoritative. Use less
