@@ -654,6 +654,71 @@ describe('coach lane release grace (M39-V2 Phase 4-ii) — "extra muted measure"
   })
 })
 
+describe('ArmedCoachEvent + vocabulary swap (M39-V2 Phase 4-iv)', () => {
+  // Kyle plan §Vocabulary switch at the next unarmed coach event: an
+  // armed event's dialect is FROZEN; a mid-play setVocabulary call
+  // defers to the next arm. No recompilation, no strike-timing change
+  // — the compiled timeline covers both dialects.
+  it('armCoachEvent returns an ArmedCoachEvent with runId + locked vocab', () => {
+    const h = harness()
+    const armed = h.output.armCoachEvent({ eventId: 'cue-A:rep-0:coach-0' })
+    expect(armed.eventId).toBe('cue-A:rep-0:coach-0')
+    expect(armed.runId).toMatch(/^coach-\d+$/)
+    expect(armed.lockedVocabulary).toBe('numbers') // default
+    expect(h.output.isArmedRunId(armed.runId)).toBe(true)
+  })
+
+  it('activeCoachArm reflects the current arm', () => {
+    const h = harness()
+    expect(h.output.activeCoachArm()).toBeNull()
+    const armed = h.output.armCoachEvent({ eventId: 'e1' })
+    expect(h.output.activeCoachArm()).toBe(armed)
+  })
+
+  it('a mid-play setVocabulary is DEFERRED — the armed event keeps its dialect', () => {
+    const h = harness()
+    const rep0 = h.output.armCoachEvent({ eventId: 'cue-A:rep-0' })
+    expect(rep0.lockedVocabulary).toBe('numbers')
+    // User swaps mid-play. rep0 keeps 'numbers'; the swap queues.
+    h.output.setVocabulary('names')
+    expect(h.output.activeCoachArm()?.lockedVocabulary).toBe('numbers')
+    expect(h.output.nextArmVocabulary()).toBe('names')
+    // rep 0 finishes.
+    h.output.clearCoachRunId()
+    // rep 1 arms in the new dialect.
+    const rep1 = h.output.armCoachEvent({ eventId: 'cue-A:rep-1' })
+    expect(rep1.lockedVocabulary).toBe('names')
+    expect(h.output.nextArmVocabulary()).toBe('names')
+  })
+
+  it('setVocabulary with nothing armed applies immediately (V1c parity)', () => {
+    const h = harness()
+    h.output.setVocabulary('names')
+    // Next arm uses the new dialect straight away — no queueing needed.
+    const armed = h.output.armCoachEvent({ eventId: 'first' })
+    expect(armed.lockedVocabulary).toBe('names')
+  })
+
+  it('clearCoachRunId clears the armed event too (not just the runId)', () => {
+    const h = harness()
+    h.output.armCoachEvent({ eventId: 'a' })
+    expect(h.output.activeCoachArm()).not.toBeNull()
+    h.output.clearCoachRunId()
+    expect(h.output.activeCoachArm()).toBeNull()
+  })
+
+  it('a pending swap arms only ONCE — a second armCoachEvent stays in the new dialect', () => {
+    const h = harness()
+    h.output.armCoachEvent({ eventId: 'r0' })
+    h.output.setVocabulary('names')
+    h.output.clearCoachRunId()
+    const rep1 = h.output.armCoachEvent({ eventId: 'r1' })
+    const rep2 = h.output.armCoachEvent({ eventId: 'r2' })
+    expect(rep1.lockedVocabulary).toBe('names')
+    expect(rep2.lockedVocabulary).toBe('names')
+  })
+})
+
 describe('latency-compensated dispatch (M39-V2 Phase 4-iii)', () => {
   // Kyle plan §Latency-compensated audio dispatch: the canonical
   // timeline stays clean; the AUDIO backend subtracts a measured

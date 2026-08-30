@@ -154,6 +154,27 @@ const BELL_ASSETS: ReadonlySet<VoiceAssetId> = new Set<VoiceAssetId>([
   'tone-warning',
 ])
 
+/**
+ * The full arm record for one coach event (M39-V2 Phase 4-iv, Kyle
+ * amended blueprint §Vocabulary switch at the next unarmed coach
+ * event).
+ *
+ * An armed event carries THREE identities so the dispatcher and any
+ * deferred callback can reason about it correctly:
+ *
+ *   - `eventId` — the compiled coach event's stable id.
+ *   - `runId` — the coach-lane arm token; a stale runId no-ops.
+ *   - `lockedVocabulary` — the dialect the event will play in.
+ *     Mid-play the user cannot hijack this: a `setVocabulary` call
+ *     records into `pendingVocabulary` and takes effect at the NEXT
+ *     `armCoachEvent`.
+ */
+export interface ArmedCoachEvent {
+  eventId: string
+  runId: string
+  lockedVocabulary: VoiceVocabulary
+}
+
 export interface VoiceOutputExpoOptions {
   manifest?: VoiceAssetManifest
   vocabulary?: VoiceVocabulary
@@ -327,6 +348,26 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private runIdCounter = 0
 
   /**
+   * The full record of the currently-armed coach event (M39-V2
+   * Phase 4-iv). Extends `armedRunId` with the vocabulary the arm
+   * FROZE at — a mid-play user vocab switch reads this to know NOT
+   * to hijack the in-flight event. See `armCoachEvent`.
+   *
+   * Null when no coach event is armed. When set, its `runId` matches
+   * `armedRunId` exactly (invariant enforced at set/clear time).
+   */
+  private armedEvent: ArmedCoachEvent | null = null
+
+  /**
+   * The vocabulary the next UNARMED coach event will resolve into.
+   * A user-facing "swap vocabulary" call sets this without touching
+   * `armedEvent` — the in-flight event finishes in its own dialect,
+   * the next one arms in the new dialect. No recompilation, no
+   * strike-timing change (compiled timeline covers both tracks).
+   */
+  private pendingVocabulary: VoiceVocabulary | null = null
+
+  /**
    * Calibrated audio-output latency for THIS device (M39-V2 Phase 4-iii).
    * Set from `VoiceOutputExpoOptions.calibratedAudioOutputLatencyMs`
    * at construction; the default is
@@ -468,11 +509,74 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   clearCoachRunId(): void {
     this.armedRunId = null
+    this.armedEvent = null
   }
 
-  /** Which clip set is playing. Changing it reloads on the next `preload`. */
+  /**
+   * Arm a compiled coach event on the exclusive lane (M39-V2 Phase 4-iv).
+   *
+   * Mints a fresh runId (via `mintCoachRunId`), resolves the dialect
+   * from `pendingVocabulary` if a swap has been queued (else the
+   * current `vocabulary`), and stores the full arm as `armedEvent`.
+   * The arm's `lockedVocabulary` is FROZEN — a subsequent
+   * `setVocabulary` call goes into `pendingVocabulary` and only
+   * takes effect on the NEXT `armCoachEvent`. This is what preserves
+   * "rep 0 finishes numbers even if the user tapped 'names' mid-play"
+   * while letting rep 1 start in the new dialect.
+   *
+   * Returns the full `ArmedCoachEvent` so the caller can thread the
+   * runId through any timers or finish callbacks that need to
+   * self-check via `isArmedRunId`.
+   */
+  armCoachEvent(spec: { eventId: string }): ArmedCoachEvent {
+    // Take the pending vocab (a user-requested swap) if one is queued
+    // — the swap "commits" at the next arm. Otherwise keep the current.
+    if (this.pendingVocabulary !== null) {
+      this.vocabulary = this.pendingVocabulary
+      this.pendingVocabulary = null
+    }
+    const runId = this.mintCoachRunId()
+    const armed: ArmedCoachEvent = {
+      eventId: spec.eventId,
+      runId,
+      lockedVocabulary: this.vocabulary,
+    }
+    this.armedEvent = armed
+    return armed
+  }
+
+  /**
+   * The currently-armed coach event, or null when nothing is armed.
+   * Useful for dispatchers that need to inspect the frozen vocab of
+   * the in-flight event without racing on it.
+   */
+  activeCoachArm(): ArmedCoachEvent | null {
+    return this.armedEvent
+  }
+
+  /**
+   * Switch the coach vocabulary. If no event is armed, the switch
+   * takes effect immediately (matches V1c behaviour). If an event IS
+   * armed, the switch is DEFERRED: `pendingVocabulary` records the
+   * user's choice and the swap commits at the next `armCoachEvent`.
+   * The in-flight event finishes in its own dialect — no mid-clip
+   * hijack, no strike-timing change (M39-V2 Phase 4-iv).
+   */
   setVocabulary(vocabulary: VoiceVocabulary): void {
+    if (this.armedEvent !== null) {
+      this.pendingVocabulary = vocabulary
+      return
+    }
     this.vocabulary = vocabulary
+  }
+
+  /**
+   * The vocabulary the NEXT armed coach event will resolve into. When
+   * a swap has been queued (armed-event-in-flight case) this reports
+   * the queued dialect; otherwise it reports the current one.
+   */
+  nextArmVocabulary(): VoiceVocabulary {
+    return this.pendingVocabulary ?? this.vocabulary
   }
 
   /**
