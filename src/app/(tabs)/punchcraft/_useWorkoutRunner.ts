@@ -42,7 +42,7 @@ import {
 import { runtimeCoachAssetResolver } from '@audio/coachAssetResolvers'
 import { SlotDispatcher } from '@audio/SlotDispatcher'
 import { compileWorkoutScore } from '@domain/programs/workoutScore'
-import { TRANSPORT_TICKS_PER_PULSE } from '@domain/timing/TimingEngine'
+import { roundStartTicksFrom, scoreTickAt } from '@domain/programs/scoreClock'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
@@ -69,7 +69,11 @@ import { selectPerformanceState } from '@domain/coach/performanceState'
 import { AUDIO_PRIORITY, type VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
 import type { HapticOutputPort } from '@domain/coach/HapticOutputPort'
 import { TIMING_TIGHT_MS } from '@domain/programs/cueScoring'
-import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
+import {
+  shouldSpeak,
+  voiceAllowed,
+  type VoiceCoachPolicy,
+} from '@domain/coach/VoiceCoachPolicy'
 import type { ThirdPartyPlaybackDetector } from '@audio/ThirdPartyPlaybackDetector'
 import { getWorkoutPersistence, type WorkoutPersistence } from '@storage/getWorkoutPersistence'
 import { persistWorkoutSession, type PersistedWorkoutSession } from '@storage/persistWorkoutSession'
@@ -414,6 +418,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    */
   const realizedBlocksRef = useRef(new Set<string>())
   const announcerRef = useRef<CueAnnouncer | null>(null)
+  /**
+   * D1 third-party-playback state, mirrored out of the detector so the
+   * score-authoritative dispatcher can consult it. The announcer keeps its
+   * own copy via `setThirdPartyPlayback`; this exists because the
+   * dispatcher plays without going through the announcer.
+   */
+  const playbackActiveRef = useRef(false)
   // Token-order forensics recorder (2026-08-31). Null unless a forensic
   // drive armed it; see `vizForensics.ts` for why this is a buffer rather
   // than per-transition logging.
@@ -1167,6 +1178,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // for 3-a-ii the dispatcher checks at fire time — good enough while
     // slots are only combo-announces).
     let slotDispatcher: SlotDispatcher | null = null
+    /**
+     * Score tick each round's work phase begins at, indexed by round.
+     *
+     * The score's tick space is CUMULATIVE across the whole workout
+     * (round 0 at 0, round 1 at 230400, …) while `WorkoutSessionClock`
+     * resets `workElapsedMs` to ~0 on every `work-entered`. Feeding the
+     * round-relative millisecond straight to `advance()` therefore only
+     * ever addressed round 0's band: at the end of round 0 the cursor
+     * crossed 230400 and dumped EVERY round-1 slot in a single tick,
+     * then the reset dropped it back to 0 and rounds 2+ never came due
+     * at all (GH #305 blocker 2). This lets the runner lift the
+     * round-relative clock back into the score's axis.
+     */
+    let roundStartTicks: number[] = []
     if (announcer && voice) {
       const compiledScore = compileWorkoutScore(workout, {
         stance,
@@ -1179,12 +1204,39 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         getCurrentVocabulary: () =>
           voice.policy.vocabulary === 'names' ? 'technique' : 'numeric',
         play: (assetId, _atTick, slotId) => {
+          // The gates the announcer applies before ANY combo-announce.
+          // The score path bypasses the announcer entirely, so without
+          // these the coach talks when the athlete has asked it not to
+          // (adversarial review, 2026-08-31).
+          //
+          // D1 (spec §13.5, §14.6): silent when the coach is off, and
+          // never over someone else's music unless they opted in.
+          if (!voiceAllowed(voice.policy, playbackActiveRef.current)) return
+          // Category gate: a combo-announce is a punch command, which
+          // `minimal` mode leaves to the visuals. `inCombo: false` — the
+          // announce lands at block start, before the work.
+          if (!shouldSpeak(voice.policy, 'punch-command', false)) return
+
           const clip = findComboAnnounceById(assetId)
           if (!clip) {
             logger.warn(
               'puncheokie.slotDispatcher.assetMissing',
               'compiled coach slot references an unknown combo-announce id',
               { assetId: safe(assetId), slotId: safe(slotId) },
+            )
+            return
+          }
+          // Coach-lane collision: the announcer defers a clip when the
+          // lane is still sounding (instruction, encouragement, ceremony)
+          // rather than stacking a second voice on it. `playComboAnnounce`
+          // creates a fresh player and starts it immediately, so nothing
+          // downstream would prevent the overlap.
+          const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
+          if (audibleUntilMs > 0) {
+            logger.info(
+              'puncheokie.slotDispatcher.deferred',
+              'coach lane busy — combo-announce dropped rather than stacked',
+              { slotId: safe(slotId), audibleUntilMs: safe(audibleUntilMs) },
             )
             return
           }
@@ -1237,6 +1289,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       const enqueuableSlots = compiledScore.coachSlots.filter((slot) =>
         atwCueIds.has(slot.cueId),
       )
+      roundStartTicks = roundStartTicksFrom(compiledScore)
       slotDispatcher.enqueueAll(enqueuableSlots)
       announcer.setScoreOwnsCombos(true)
       logger.info(
@@ -1252,9 +1305,6 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       )
     }
     slotDispatcherRef.current = slotDispatcher
-    const MS_PER_SCORE_TICK = 60_000 / (60 * TRANSPORT_TICKS_PER_PULSE)
-    const scoreTickAt = (workElapsedMs: number): number =>
-      Math.round(workElapsedMs / MS_PER_SCORE_TICK)
 
     const pacing = new PacingEngine({
       totalGoal: workout.recipe.totalPunchGoal,
@@ -1279,6 +1329,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
     // The D1 input. `available === false` means this build cannot tell, and
     // the surfaces say so rather than the gate silently assuming silence.
+    //
+    // The state is mirrored into `playbackActiveRef` as well as the
+    // announcer, because the score-authoritative SlotDispatcher (Slice
+    // 3-a-ii) plays combo-announces WITHOUT going through the announcer —
+    // so the announcer's copy of this flag no longer gates everything the
+    // coach says. Adversarial review 2026-08-31 found the dispatcher
+    // consulted no policy at all: with third-party music playing, or
+    // `mode: 'off'`, or `style: 'minimal'`, the announcer fell silent and
+    // the score kept talking. `CueAnnouncer` calls that "the one thing the
+    // design says must never happen."
     let offDetector = (): void => {}
     if (voice && announcer && voice.detector.available) {
       // Assume playback until the first answer arrives. `isActive` is async,
@@ -1286,13 +1346,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // however long the first read took — and that window covers the
       // countdown and the opening bell. Silence is recoverable; talking over
       // someone's music is the failure D1 exists to prevent.
+      playbackActiveRef.current = true
       announcer.setThirdPartyPlayback(true)
       void voice.detector.isActive().then((active) => {
+        playbackActiveRef.current = active
         announcer.setThirdPartyPlayback(active)
       })
       offDetector = voice.detector.subscribe((active) => {
+        playbackActiveRef.current = active
         announcer.setThirdPartyPlayback(active)
       })
+    } else {
+      // No detector: nothing is known to be playing, and the announcer's
+      // own default is likewise open. Matching it keeps the two paths
+      // consistent rather than silently stricter on one.
+      playbackActiveRef.current = false
     }
 
     // Token-order forensics (2026-08-31). On by default in dev; a
@@ -1354,7 +1422,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // combo-announce dispatcher against the same clock sample. The
         // announcer's map path skips combo-announces (setScoreOwnsCombos
         // above); the dispatcher fires them from the compiled score.
-        slotDispatcher?.advance(scoreTickAt(snapshot.workElapsedMs))
+        slotDispatcher?.advance(
+          scoreTickAt(roundStartTicks, snapshot.workElapsedMs, snapshot.roundIndex),
+        )
       }
       voice?.output.advance?.()
       syncFromEngine()
