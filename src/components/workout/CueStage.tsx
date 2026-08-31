@@ -17,7 +17,10 @@ import { CoachBanner } from './CoachBanner'
 import { ComboFlourish } from './ComboFlourish'
 import { DefenseToken } from './DefenseToken'
 import { FootworkToken } from './FootworkToken'
+import type { SharedValue } from 'react-native-reanimated'
+
 import { PunchAvatarCard } from './PunchAvatarCard'
+import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
 import { PunchToken } from './PunchToken'
 import type { TokenVisualState } from './tokenVisuals'
 import { colors } from '@/theme/colors'
@@ -68,6 +71,14 @@ export interface CueStageProps {
    * so the athlete keeps working instead of reading a frozen combination.
    */
   idleLabel?: string
+  /**
+   * Optional shared transport anchor (M39-V2 Phase W0-b-iii, Kyle
+   * 2026-08-30). Passed through to `PunchAvatarCard`, which uses it
+   * to drive its flip from a `useFrameCallback` worklet instead of
+   * a JS `setInterval`. Absent (test doubles, screens predating
+   * W0) → the card falls back to the setInterval path.
+   */
+  avatarAnchor?: SharedValue<SharedTransportAnchor>
 }
 
 /** Hand letter for a punch token, taken from the resolved expectations. */
@@ -203,7 +214,7 @@ function CueRow(props: {
 }
 
 function CueStageInner(props: CueStageProps): React.JSX.Element {
-  const { current, next, reducedMotion = false, idleLabel } = props
+  const { current, next, reducedMotion = false, idleLabel, avatarAnchor } = props
 
   return (
     <View style={styles.root} testID="cue-stage">
@@ -236,6 +247,7 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
                 (state, i) => state === 'active' && current.cue.tokens[i]?.kind === 'punch',
               )}
               reducedMotion={reducedMotion}
+              {...(avatarAnchor ? { anchor: avatarAnchor } : {})}
             />
             <CueRow
               view={current}

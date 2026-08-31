@@ -51,6 +51,7 @@ import { useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
+import { useSharedTransportAnchor } from '@audio/useSharedTransportAnchor'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
@@ -161,6 +162,14 @@ export default function LiveScreen(): React.JSX.Element {
     () => ({ output, policy, detector }),
     [output, policy, detector],
   )
+
+  // Shared transport anchor (M39-V2 Phase W0-b-iii). Publishes on
+  // every metronome start/stop/pause/resume; consumers (currently
+  // just PunchAvatarCard's flip via CueStage) read it inside
+  // `useFrameCallback` worklets. The port may not have exposed a
+  // metronome yet on very old test doubles — the hook accepts
+  // undefined and stays at SHARED_ANCHOR_STOPPED until one appears.
+  const avatarAnchor = useSharedTransportAnchor(output.metronome?.transport)
 
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
@@ -562,6 +571,7 @@ export default function LiveScreen(): React.JSX.Element {
               {...(cues.next ? { next: cues.next } : {})}
               {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
               reducedMotion={reducedMotion}
+              avatarAnchor={avatarAnchor}
             />
           )}
 

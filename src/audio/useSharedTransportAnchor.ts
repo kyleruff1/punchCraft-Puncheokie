@@ -71,12 +71,21 @@ export interface AnchorSlot {
   value: SharedTransportAnchor
 }
 
-/** Pure helper — subscribes and publishes. Test with a plain slot. */
+/**
+ * Pure helper — subscribes and publishes. Test with a plain slot.
+ *
+ * `transport` is nullable so the React hook can call this
+ * unconditionally when the caller may not yet have a transport
+ * (screens loaded before `VoiceOutputExpo` exposes its
+ * metronome port). Null / undefined = no-op, slot stays at its
+ * current value (typically `SHARED_ANCHOR_STOPPED`).
+ */
 export function bindSharedTransportAnchor(
   slot: AnchorSlot,
-  transport: MetronomeTransportPort,
+  transport: MetronomeTransportPort | null | undefined,
   nowFrameTimestampMs: () => number = defaultNow,
 ): () => void {
+  if (!transport) return () => {}
   // Initial publish covers the case where the consumer mounted
   // AFTER the transport started. Transport's own subscribe
   // contract skips the initial state.
@@ -108,9 +117,14 @@ function defaultNow(): number {
  * returned `SharedValue<SharedTransportAnchor>` down to any
  * `useFrameCallback` consumer that derives visual state from
  * the transport tick.
+ *
+ * `transport` is nullable to satisfy the rules-of-hooks in
+ * callers whose port may not have exposed a metronome yet.
+ * When null / undefined, the shared value stays at
+ * `SHARED_ANCHOR_STOPPED` and consumers read tick 0 forever.
  */
 export function useSharedTransportAnchor(
-  transport: MetronomeTransportPort,
+  transport: MetronomeTransportPort | null | undefined,
   nowFrameTimestampMs: () => number = defaultNow,
 ): SharedValue<SharedTransportAnchor> {
   const shared = useSharedValue<SharedTransportAnchor>(SHARED_ANCHOR_STOPPED)
