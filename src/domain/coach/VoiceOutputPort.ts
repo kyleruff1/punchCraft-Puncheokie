@@ -362,6 +362,33 @@ export interface Volumes {
 
 export const DEFAULT_VOLUMES: Volumes = { voice: 1, bells: 1, haptics: 1, metronome: 0.6 }
 
+/**
+ * Domain-side view of the metronome transport (M39-V2 Phase W0-a,
+ * Kyle 2026-08-30). The concrete class lives at
+ * `src/audio/MetronomeTransport.ts`. Domain consumers see only the
+ * read surface — `snapshot()` for the current tick / generation /
+ * state, and `currentTick()` as a convenience. Lifecycle (start /
+ * stop / pause / resume) is owned by the audio implementation and
+ * driven by the runner via `metronome.start` / `metronome.stop`; a
+ * domain consumer that started or stopped the transport directly
+ * would break the "audio and clock move together" invariant.
+ */
+export interface MetronomeTransportPort {
+  snapshot(): MetronomeTransportSnapshot
+  currentTick(nowMs?: number): number
+}
+
+export type MetronomeTransportState = 'stopped' | 'running' | 'paused'
+
+export interface MetronomeTransportSnapshot {
+  generation: number
+  state: MetronomeTransportState
+  absoluteTick: number
+  sampledAtMonotonicMs: number
+  ticksPerSecond: number
+  baseBpm: number
+}
+
 export interface VoiceOutputPort {
   /**
    * Play a pre-rendered clip.
@@ -409,13 +436,31 @@ export interface VoiceOutputPort {
    * finishing / cancelled, and `start` again on `resumed` (which
    * re-anchors on the master beat). Optional so a domain consumer
    * that predates V1b compiles and no-ops silently.
+   *
+   * ## Transport (M39-V2 Phase W0-a, Kyle 2026-08-30)
+   *
+   * The metronome track has TWO lifecycles that must move together:
+   * the native playlist (audible click) and the logical
+   * `MetronomeTransport` (authoritative unwrapped tick clock — see
+   * `src/audio/MetronomeTransport.ts`). `start` takes an optional
+   * `baseBpm`; when provided, the implementation starts both the
+   * audio loop and the transport in the same call. `stop` stops
+   * both. The transport is exposed via `transport` so downstream
+   * consumers (score dispatcher, frame-clock visual dispatcher)
+   * read the same authoritative tick the runner started. The
+   * metronome player and the coach lane never share a native
+   * handle: coach ops must NEVER pause / seek / clear / release
+   * the metronome playlist (principle #20 of the amended Timing
+   * Engine v2 plan).
    */
   metronome?: {
-    /** Load and play the loop wav at `volume`. Restart on the downbeat when the loop changes. */
-    start(loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number }, volume: number): void
+    /** Load and play the loop wav at `volume`. Restart on the downbeat when the loop changes. When `baseBpm` is provided, the shared `MetronomeTransport` starts alongside the audio loop. */
+    start(loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number }, volume: number, baseBpm?: number): void
     stop(): void
     /** Change the mixer volume without restarting the loop. */
     setVolume(volume: number): void
+    /** The shared logical clock. Undefined on domain consumers that predate W0. */
+    readonly transport?: MetronomeTransportPort
   }
   /** Descriptive text only. Never a punch command (D16). */
   speak(text: string, priority: AudioPriority): void

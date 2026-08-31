@@ -877,7 +877,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         })
         return
       }
-      port.start(loop, workout.recipe.metronome.volume)
+      // baseBpm from the recipe drives the shared logical transport
+      // (M39-V2 Phase W0-a) alongside the audible loop — one call,
+      // both lifecycles synced. Consumers reading
+      // `port.transport.snapshot()` see the fresh generation on
+      // this start.
+      port.start(loop, workout.recipe.metronome.volume, bpmForRecipe(workout.recipe))
     }
     const stopMetronome = (): void => {
       // Gate stop on the same flag as start — a legacy recipe never

@@ -52,6 +52,7 @@ import {
 } from './voiceAssets/manifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 import { MetronomePlayer } from './MetronomePlayer'
+import { MetronomeTransport } from './MetronomeTransport'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -387,25 +388,51 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly metronomePlayer = new MetronomePlayer()
 
   /**
-   * Port hook for the metronome track (M39-V1b). The runner calls
-   * `start`/`stop`/`setVolume` on this from its `applyTransitions`
-   * dispatch; `metronomePlayer` owns the native loop underneath.
-   * Volume defaults to `Volumes.metronome` at start, and `setVolume`
-   * carries slider changes without restarting the loop.
+   * The logical tick clock — the sole timing authority for score
+   * dispatch, ring rendering, avatar frames, and tracker acceptance
+   * windows (M39-V2 Phase W0-a, Kyle 2026-08-30). Held by reference
+   * inside the `metronome` port so a domain consumer can read
+   * `port.transport.snapshot()` without ever needing to import the
+   * class.
+   *
+   * The transport is a pure LOGICAL clock — it has no native
+   * playback and cannot touch the metronome's playlist. The coach
+   * lane's `playAsset` / `playPhrase` / `playCallout` /
+   * `playInstruction` paths never see this transport OR the
+   * metronomePlayer: they can only affect their own player pool.
+   * Isolation is preserved by construction (principle #20 of the
+   * amended Timing Engine v2 plan).
+   */
+  private readonly metronomeTransport = new MetronomeTransport()
+
+  /**
+   * Port hook for the metronome track (M39-V1b, transport added
+   * M39-V2 Phase W0-a). The runner calls `start`/`stop`/`setVolume`
+   * on this from its `applyTransitions` dispatch; `metronomePlayer`
+   * owns the native loop underneath and `metronomeTransport` owns
+   * the logical clock. When `start` is called with a `baseBpm`, the
+   * transport starts alongside the loop and consumers reading
+   * `transport.snapshot()` see the fresh generation. Volume defaults
+   * to `Volumes.metronome` at start, and `setVolume` carries slider
+   * changes without restarting the loop OR the transport.
    */
   metronome = {
     start: (
       loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number },
       volume: number,
+      baseBpm?: number,
     ): void => {
       this.metronomePlayer.start(loop, volume)
+      if (baseBpm !== undefined) this.metronomeTransport.start(baseBpm)
     },
     stop: (): void => {
       this.metronomePlayer.stop()
+      this.metronomeTransport.stop()
     },
     setVolume: (volume: number): void => {
       this.metronomePlayer.setVolume(volume)
     },
+    transport: this.metronomeTransport,
   }
 
   constructor(opts: VoiceOutputExpoOptions = {}) {

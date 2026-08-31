@@ -52,43 +52,34 @@
  */
 
 import { logger, safe } from '@/diagnostics/logger'
+import type {
+  MetronomeTransportPort,
+  MetronomeTransportSnapshot,
+  MetronomeTransportState,
+} from '@/domain/coach/VoiceOutputPort'
 import type { MonotonicClock } from '@/domain/time/MonotonicClock'
 import { systemMonotonicClock } from '@/domain/time/MonotonicClock'
 import { TRANSPORT_TICKS_PER_PULSE } from '@/domain/timing/TimingEngine'
 
-export type MetronomeTransportState = 'stopped' | 'running' | 'paused'
+// Re-export the shared types so callers already importing them from
+// this module keep working. The domain module at
+// `@domain/coach/VoiceOutputPort` is the single source of truth.
+export type { MetronomeTransportSnapshot, MetronomeTransportState }
 
-export interface MetronomeTransportSnapshot {
-  /**
-   * Monotonically increasing counter. Incremented on every `start()`
-   * — a stale timeline compiled under a prior generation can be
-   * rejected by comparing its `generation` against this one.
-   */
-  generation: number
-  state: MetronomeTransportState
-  /**
-   * Absolute unwrapped tick. Never wraps at loop boundaries. Grows
-   * monotonically while the transport is `running`; frozen while
-   * `paused`; resets to 0 on the next `start()`.
-   */
-  absoluteTick: number
-  /**
-   * `MonotonicClock.now()` at the moment `absoluteTick` was
-   * computed. Consumers wanting sub-status-update precision
-   * interpolate as `absoluteTick + (now - sampledAtMonotonicMs) ×
-   * ticksPerSecond / 1000`.
-   */
-  sampledAtMonotonicMs: number
-  /**
-   * `baseBpm × TRANSPORT_TICKS_PER_PULSE / 60`. Zero while stopped.
-   * At 60 BPM: 960 ticks/second (~1.04 ms/tick).
-   */
-  ticksPerSecond: number
-  /** Master BPM the transport was started at. Zero while stopped. */
-  baseBpm: number
-}
-
-export class MetronomeTransport {
+/**
+ * `snapshot()`:
+ *   - `absoluteTick`: unwrapped, monotonic while `running`, frozen
+ *     while `paused`, resets to 0 on the next `start()`.
+ *   - `sampledAtMonotonicMs`: consumers wanting sub-status-update
+ *     precision interpolate as `absoluteTick + (now -
+ *     sampledAtMonotonicMs) × ticksPerSecond / 1000`.
+ *   - `ticksPerSecond`: `baseBpm × TRANSPORT_TICKS_PER_PULSE / 60`
+ *     (960 at 60 BPM). Zero while stopped.
+ *   - `generation`: bumps on every `start()`; a stale timeline
+ *     compiled against a prior generation can be discarded by
+ *     comparing its recorded generation to this one.
+ */
+export class MetronomeTransport implements MetronomeTransportPort {
   private readonly clock: MonotonicClock
   private generation = 0
   private state: MetronomeTransportState = 'stopped'
