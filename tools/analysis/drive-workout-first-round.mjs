@@ -259,6 +259,19 @@ async function drive(args) {
     //    app to the foreground even if another activity is on top.
     //    `am start -n <activity>` alone doesn't foreground the app
     //    reliably when a different package is the current task.
+    //
+    //    Some foreground apps (notably Android Settings' sub-screens
+    //    on the Lenovo tablet) ignore KEYCODE_HOME while a modal is
+    //    open. Five BACK keyevents defensively unwind whatever's on
+    //    screen, then HOME lands on the launcher, and finally the
+    //    monkey intent brings up punchCraft.
+    log('BACK x5 + HOME to unwind any foreground activity')
+    for (let i = 0; i < 5; i += 1) {
+      adbShell('input keyevent KEYCODE_BACK', deviceId)
+      await sleep(400)
+    }
+    adbShell('input keyevent KEYCODE_HOME', deviceId)
+    await sleep(2000)
     log(`launching ${PACKAGE} via LAUNCHER intent`)
     adbShell(
       `monkey -p ${PACKAGE} -c android.intent.category.LAUNCHER 1`,
