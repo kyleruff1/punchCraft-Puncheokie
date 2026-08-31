@@ -64,7 +64,7 @@ import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
 import { CueAnnouncer, deliveryForCadence } from '@domain/coach/CueAnnouncer'
 import { selectPerformanceState } from '@domain/coach/performanceState'
-import type { VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
+import { AUDIO_PRIORITY, type VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
 import type { HapticOutputPort } from '@domain/coach/HapticOutputPort'
 import { TIMING_TIGHT_MS } from '@domain/programs/cueScoring'
 import type { VoiceCoachPolicy } from '@domain/coach/VoiceCoachPolicy'
@@ -945,6 +945,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
 
           engine.onSessionPhase({ type: 'rest-entered', nowMs: clock.now() })
           stopMetronome()
+          // 2026-08-31 audio-append fix side-effect drain:
+          // playSequence's new append-not-clear semantic keeps clips
+          // from the ending round queued if they hadn't fired yet.
+          // Without a drain those pending clips continue playing
+          // through rest and into round 2, so round 2 rings light
+          // on time but audio is behind by round 1's tail. Cancel
+          // everything below bell priority (keeps the round-end bell
+          // itself intact but drops pending punch commands / coach
+          // reminders).
+          voice?.output.cancel(AUDIO_PRIORITY.bell)
           // A rest is a safe boundary (doc §22) — the only place pacing may
           // propose anything.
           const restSnapshot = sessionRef.current?.snapshot()
