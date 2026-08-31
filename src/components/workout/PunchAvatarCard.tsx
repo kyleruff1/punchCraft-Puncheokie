@@ -175,15 +175,33 @@ export function PunchAvatarCard(props: {
   shownRef.current = shown
   const promoteRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Which STRIKE OCCURRENCE is on screen — not just which punch art.
+  //
+  // Kyle 2026-08-31: "our avatar flipping should always coincide with the
+  // node lighting up that it's representing... relighting of a token, or
+  // pumping, would be new avatar flips." A pump block (`1 × 8`) mints a
+  // separate cue per rep (`r1-b3#0` … `r1-b3#7`) but every rep requests the
+  // SAME punch art (`'1'`), so the adopt guard below — which compared only
+  // `key` — bailed after the first rep. The card then sat on one frame for
+  // the whole pump: "avatar stays stagnant on single punch indicator
+  // session pumps". Keying adoption on (cue, token) re-arms the flip for
+  // every re-light while still letting the art lookup stay by punch key.
+  const occurrenceKey = requested ? `${cueId}:${tokenIndex}` : null
+  const adoptedOccurrenceRef = useRef<string | null>(null)
+
   // Adopt the requested punch, honouring the minimum hold so a fast
   // sequence can never show half a flip.
   useEffect(() => {
     const req = requestedRef.current
     if (!req) return
     const current = shownRef.current
-    if (current && current.key === req.key) return
+    // Same art AND same occurrence: nothing new to show. A repeat of the
+    // same punch in a new occurrence falls through and re-flips.
+    if (current && current.key === req.key && adoptedOccurrenceRef.current === occurrenceKey)
+      return
 
     const adopt = (): void => {
+      adoptedOccurrenceRef.current = occurrenceKey
       setShown({ ...req, startedAt: Date.now() })
       setStep('step1')
     }
@@ -205,7 +223,7 @@ export function PunchAvatarCard(props: {
       if (promoteRef.current) clearTimeout(promoteRef.current)
       promoteRef.current = null
     }
-  }, [requestedKey, requestedWindowMs, requestedIsLast])
+  }, [requestedKey, requestedWindowMs, requestedIsLast, occurrenceKey])
 
   // Walk to the next punch when the engine is quiet, on that punch's own
   // window so the demonstration keeps the combination's rhythm.
