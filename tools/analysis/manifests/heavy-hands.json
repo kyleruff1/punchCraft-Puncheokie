@@ -1023,6 +1023,7 @@
   "coachEvents": [
     {
       "kind": "combo-announce",
+      "slotId": "hh1-b1#0:rep-0:combo-announce:precall:hh1-b1#0:rep-0:0,hh1-b1#0:rep-0:1",
       "cueId": "hh1-b1#0",
       "repId": "rep-0",
       "assetId": "ca-1-2-numbers",
@@ -1036,6 +1037,7 @@
     },
     {
       "kind": "combo-announce",
+      "slotId": "hh1-b2#0:rep-0:combo-announce:precall:hh1-b2#0:rep-0:0,hh1-b2#0:rep-0:1,hh1-b2#0:rep-0:2",
       "cueId": "hh1-b2#0",
       "repId": "rep-0",
       "assetId": "ca-1-1-2-numbers",
@@ -1049,6 +1051,7 @@
     },
     {
       "kind": "combo-announce",
+      "slotId": "hh1-b3#burst:rep-0:combo-announce:precall:hh1-b3#burst:rep-0:0,hh1-b3#burst:rep-0:1",
       "cueId": "hh1-b3#burst",
       "repId": "rep-0",
       "assetId": "ca-1-2-numbers",
@@ -1062,6 +1065,7 @@
     },
     {
       "kind": "combo-announce",
+      "slotId": "hh1-b5#0:rep-0:combo-announce:precall:hh1-b5#0:rep-0:0,hh1-b5#0:rep-0:1,hh1-b5#0:rep-0:2,hh1-b5#0:rep-0:3",
       "cueId": "hh1-b5#0",
       "repId": "rep-0",
       "assetId": "ca-1-2-1-2-numbers",
@@ -1075,6 +1079,7 @@
     },
     {
       "kind": "combo-announce",
+      "slotId": "hh1-b6#burst:rep-0:combo-announce:precall:hh1-b6#burst:rep-0:0,hh1-b6#burst:rep-0:1,hh1-b6#burst:rep-0:2",
       "cueId": "hh1-b6#burst",
       "repId": "rep-0",
       "assetId": "ca-1-1-2-numbers",

@@ -33,7 +33,7 @@
  */
 
 import { spawn, execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -169,8 +169,21 @@ async function sleep(ms) {
  * Poll a logcat file (that's being written by a background tail) until
  * a matching line appears or the timeout elapses. Returns the timestamp
  * ms of the matching line (adb -v time format) or null if timeout.
+ *
+ * `alsoMatches` is an optional extra predicate on the SAME line, for
+ * picking one variant of a repeated event out of the stream. It is
+ * same-line by design: the app's structured records can wrap onto
+ * continuation lines, but Node keeps the object's FIRST property on the
+ * event-name line, so a discriminating field placed first is always
+ * co-located with its event name.
  */
-async function waitForLogLine(sessionDir, needleSubstring, timeoutMs, pollMs = 500) {
+async function waitForLogLine(
+  sessionDir,
+  needleSubstring,
+  timeoutMs,
+  alsoMatches = null,
+  pollMs = 500,
+) {
   const start = Date.now()
   const logPath = join(sessionDir, 'logcat.txt')
   const seen = new Set()
@@ -181,7 +194,9 @@ async function waitForLogLine(sessionDir, needleSubstring, timeoutMs, pollMs = 5
       for (const line of lines) {
         if (seen.has(line)) continue
         seen.add(line)
-        if (line.includes(needleSubstring)) return { line, elapsed: Date.now() - start }
+        if (!line.includes(needleSubstring)) continue
+        if (alsoMatches && !alsoMatches(line)) continue
+        return { line, elapsed: Date.now() - start }
       }
     }
     await sleep(pollMs)
@@ -405,14 +420,31 @@ async function drive(args) {
     if (!runnerArmed) throw new Error('runner.start log line never appeared')
     log(`runner armed at ${runnerArmed.line.split(' ').slice(0, 2).join(' ')}`)
 
-    // 6. Wait for first `rest-entered` after runner.start — that's the round-1
-    //    bell of round 2 = round 1 complete
-    log(`waiting for round-1 completion (rest-entered) — up to ${args.timeoutSec}s`)
-    const roundEnded = await waitForLogLine(sessionDir, "'rest-entered'", args.timeoutSec * 1000)
+    // 6. Wait for the round-1 bell — the first rest boundary after
+    //    runner.start — which is what "one round deep" means.
+    //
+    //    This used to wait on the literal `'rest-entered'`. That string is a
+    //    domain event TYPE and was never written to logcat by anything, so the
+    //    wait could not succeed: every drive burned the full timeout, then fell
+    //    through to a 5 s search for the substring 'rest' that matched nothing
+    //    either. Captures therefore ran long and spanned more than the one
+    //    round the protocol calls for, while screenrecord capped out at 180 s
+    //    partway through. Verified against all archived sessions: zero contain
+    //    `rest-entered` (GH #305).
+    //
+    //    `puncheokie.round.boundary` is emitted by the runner at every
+    //    work/rest transition and carries `transition` + `roundIndex`.
+    log(`waiting for round-1 completion (round.boundary rest) — up to ${args.timeoutSec}s`)
+    const roundEnded = await waitForLogLine(
+      sessionDir,
+      'puncheokie.round.boundary',
+      args.timeoutSec * 1000,
+      (line) => line.includes('rest-entered'),
+    )
     if (!roundEnded) {
-      // Fallback: many logs won't stringify session phases; try 'phase' + 'rest'
-      const alt = await waitForLogLine(sessionDir, 'rest', 5_000)
-      if (!alt) log('WARN: rest-entered marker not seen — session may be short/incomplete')
+      log('WARN: round boundary never seen — is the bundle older than the')
+      log('      puncheokie.round.boundary instrumentation? Capture may span')
+      log('      more than one round; treat its verdict as unscoped.')
     } else {
       log(`round 1 complete at ${roundEnded.line.split(' ').slice(0, 2).join(' ')}`)
     }
@@ -443,8 +475,17 @@ async function drive(args) {
     await sleep(1000)
 
     if (screenrecordProc) {
-      log('stopping screenrecord')
-      screenrecordProc.kill('SIGINT')
+      // Stop it DEVICE-side. `screenrecordProc.kill('SIGINT')` signals the
+      // local adb client, which on Windows does not reach the on-device
+      // recorder at all — and by this point the recorder has usually
+      // self-terminated anyway (see the 180s note below).
+      log('stopping screenrecord (device-side)')
+      try {
+        adbShell('pkill -INT screenrecord', deviceId)
+      } catch {}
+      try {
+        screenrecordProc.kill('SIGINT')
+      } catch {}
       await sleep(2000)
       try {
         adb(['pull', '/sdcard/session.mp4', join(sessionDir, 'screen.mp4')], deviceId)
@@ -452,6 +493,32 @@ async function drive(args) {
       } catch (e) {
         log(`WARN: could not pull screen.mp4 (${e.message})`)
       }
+      // Be honest about what the video actually covers. `screenrecord` on
+      // this device (v1.3, SDK 33) hard-caps at 180s — "Default / maximum
+      // is 180" — and all seven forensic captures to date hit it
+      // (179.7-180.0s) against 403-431s of audio. Since 180s is less than
+      // the pre-roll (19-36s) plus a 240s round, NO start offset can make
+      // one recording bracket the whole round. Fixing round detection does
+      // not fix this; segmentation or a deliberately-delayed window is
+      // follow-up work. Until then the file is a partial view and the
+      // report must not imply otherwise.
+      const roundEndedMs = roundEnded ? roundEnded.elapsed : null
+      log('WARN: screenrecord caps at 180s — video covers only the START of')
+      log('      the round. Do not read absence-of-evidence from screen.mp4.')
+      writeFileSync(
+        join(sessionDir, 'capture-window.json'),
+        JSON.stringify(
+          {
+            screenrecordCapSec: 180,
+            roundEndedAfterMs: roundEndedMs,
+            videoCoversWholeRound: roundEndedMs !== null && roundEndedMs <= 180_000,
+            note: 'screenrecord --time-limit maxes at 180s on this device; logcat and capture.wav span the full round, video does not.',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      )
     }
 
     cleanup()

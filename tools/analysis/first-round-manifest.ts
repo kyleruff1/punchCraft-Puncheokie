@@ -57,6 +57,13 @@ interface ExpectedStrike {
 type ExpectedCoachEvent =
   | {
       kind: 'combo-announce'
+      /**
+       * The compiled slot's id, carried so the correlator can JOIN a
+       * `puncheokie.slotDispatcher.deferred` log line to the expectation it
+       * suppressed. Without it a dropped combo-announce is indistinguishable
+       * from one the app never tried to play (GH #305).
+       */
+      slotId: string
       cueId: string
       repId: string | null
       assetId: string
@@ -128,6 +135,7 @@ function toExpectedCoachEvent(slot: CompiledCoachSlot): ExpectedCoachEvent | nul
   const clip = findComboAnnounceById(preferred.assetId)
   return {
     kind: 'combo-announce',
+    slotId: slot.slotId,
     cueId: slot.cueId,
     repId: slot.repId,
     assetId: preferred.assetId,

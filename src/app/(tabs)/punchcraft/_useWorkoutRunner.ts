@@ -978,6 +978,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // announcer does not recognise.
       const phase = toSessionPhaseEvent(transition, clock.now())
       if (phase) announcerRef.current?.onSessionPhase(phase)
+      // Round boundaries are the inspection harness's only way to know which
+      // round a captured event belongs to, and until now NOTHING marked them
+      // in logcat — the drive harness waited on the literal string
+      // 'rest-entered', which is a domain event TYPE that was never logged, so
+      // every capture burned its full timeout and ran past the round it meant
+      // to record (GH #305). Cheap: two lines per round, not per tick.
+      logger.info('puncheokie.round.boundary', 'session phase boundary', {
+        transition: safe(transition.type),
+        roundIndex: safe(
+          transition.type === 'work-entered'
+            ? transition.roundIndex
+            : (sessionRef.current?.snapshot()?.roundIndex ?? -1),
+        ),
+        workElapsedMs: safe(sessionRef.current?.snapshot()?.workElapsedMs ?? -1),
+      })
       switch (transition.type) {
         case 'work-entered': {
           // A new round opens fresh tallies, and the previous round's frozen

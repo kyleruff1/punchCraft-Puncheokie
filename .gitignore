@@ -70,6 +70,10 @@ tools/analysis/*
 !tools/analysis/manifests/
 tools/analysis/manifests/*
 !tools/analysis/manifests/*.json
+# The negations above are top-level-only globs, so a test in a subdirectory
+# would be silently untracked — it must be re-admitted directory-first.
+!tools/analysis/__tests__/
+!tools/analysis/__tests__/*.js
 tools/voice/__pycache__/
 tools/audition/__pycache__/
 
