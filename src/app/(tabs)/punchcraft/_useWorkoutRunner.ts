@@ -1218,6 +1218,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       slotDispatcher = new SlotDispatcher({
         getCurrentVocabulary: () =>
           voice.policy.vocabulary === 'names' ? 'technique' : 'numeric',
+        onSkipped: (slot, reason) => {
+          logger.warn(
+            'puncheokie.slotDispatcher.skipped',
+            'coach slot dropped without playing',
+            { slotId: safe(slot.slotId), roundIndex: safe(slot.roundIndex), reason: safe(reason) },
+          )
+        },
         play: (assetId, _atTick, slotId) => {
           // The gates the announcer applies before ANY combo-announce.
           // The score path bypasses the announcer entirely, so without
@@ -1439,6 +1446,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // above); the dispatcher fires them from the compiled score.
         slotDispatcher?.advance(
           scoreTickAt(roundStartTicks, snapshot.workElapsedMs, snapshot.roundIndex),
+          // Clamp dispatch to the round the athlete is actually in — see
+          // SlotDispatcher.advance. Without it the next round's opening
+          // announce (authored to lead its bell) fires during THIS round's
+          // final seconds, because the score's tick axis has no rest gap
+          // for the lead-in to occupy.
+          snapshot.roundIndex,
         )
       }
       voice?.output.advance?.()

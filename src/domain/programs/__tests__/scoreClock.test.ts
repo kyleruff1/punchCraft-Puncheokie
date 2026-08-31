@@ -123,4 +123,34 @@ describe('multi-round dispatch (the blocker-2 regression)', () => {
     const total = [...fired.values()].reduce((sum, list) => sum + list.length, 0)
     expect(total).toBe(SCORE.coachSlots.length)
   })
+
+  it('with the round-band clamp on, every slot still fires — in its OWN round', () => {
+    // The clamp (GH #305 precall bleed) holds a slot until its round
+    // starts. The risk it introduces is the opposite of the bug: a slot
+    // held and then never released. This walks the whole workout with the
+    // clamp engaged and asserts nothing is lost AND nothing leaks across
+    // a boundary.
+    const starts = roundStartTicksFrom(SCORE)
+    const firedIn = new Map<string, number>()
+    let currentRound = 0
+    const dispatcher = new SlotDispatcher({
+      getCurrentVocabulary: () => 'numeric',
+      play: (_assetId, _atTick, slotId) => firedIn.set(slotId, currentRound),
+    })
+    dispatcher.enqueueAll(SCORE.coachSlots)
+
+    for (const [roundIndex, round] of threeRoundFundamentals.schedule.entries()) {
+      currentRound = roundIndex
+      for (let ms = 0; ms <= round.workDurationMs; ms += 50) {
+        dispatcher.advance(scoreTickAt(starts, ms, roundIndex), roundIndex)
+      }
+    }
+
+    expect(firedIn.size).toBe(SCORE.coachSlots.length)
+    expect(dispatcher.getStaleSkippedCount()).toBe(0)
+    // The whole point: every slot sounded during the round it belongs to.
+    for (const slot of SCORE.coachSlots) {
+      expect(firedIn.get(slot.slotId)).toBe(slot.roundIndex)
+    }
+  })
 })

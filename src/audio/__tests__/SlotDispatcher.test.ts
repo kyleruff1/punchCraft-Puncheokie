@@ -384,3 +384,91 @@ describe('SlotDispatcher — play() errors', () => {
     expect(d.getPendingCount()).toBe(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Round band clamp — the "precall bleed" (GH #305)
+// ---------------------------------------------------------------------------
+
+describe('SlotDispatcher — round band', () => {
+  // The real shape: the score's tick axis has no rest gap, so a round's
+  // opening announce (authored to LEAD its bell) carries an absolute tick
+  // that falls inside the PREVIOUS round's band. Measured on speed-combos:
+  // round 1's first slot sits at 228139 against a round-0 band ending at
+  // 230400, and fired 2.7s before the round-0 bell.
+  const roundOneLeadIn = () =>
+    slot({ slotId: 'r1-open', reservationStartTick: 228_139, roundIndex: 1 })
+
+  it('holds a next-round slot that is due by TICK but whose round has not started', () => {
+    const spy = makeSpy()
+    const d = new SlotDispatcher({ play: spy.play, getCurrentVocabulary: () => 'numeric' })
+    d.enqueue(roundOneLeadIn())
+    d.advance(230_000, 0)
+    expect(spy.calls).toHaveLength(0)
+    // Held, NOT discarded — it must still be there to fire in its own round.
+    expect(d.getPendingCount()).toBe(1)
+  })
+
+  it('fires the held slot at the first tick of its own round', () => {
+    const spy = makeSpy()
+    const d = new SlotDispatcher({ play: spy.play, getCurrentVocabulary: () => 'numeric' })
+    d.enqueue(roundOneLeadIn())
+    d.advance(230_000, 0)
+    // Round 1 opens; the runner's cursor jumps to that round's start tick.
+    d.advance(230_400, 1)
+    expect(spy.calls.map((c) => c.slotId)).toEqual(['r1-open'])
+  })
+
+  it('does not block a due CURRENT-round slot behind a held next-round slot', () => {
+    // Head-of-line: a next-round lead-in sorts AHEAD of a current-round
+    // call whenever the current round has a call in its final seconds.
+    // Returning early on the held slot would silence the current round.
+    const spy = makeSpy()
+    const d = new SlotDispatcher({ play: spy.play, getCurrentVocabulary: () => 'numeric' })
+    d.enqueue(roundOneLeadIn())
+    d.enqueue(slot({ slotId: 'r0-late', reservationStartTick: 229_000, roundIndex: 0 }))
+    d.advance(230_000, 0)
+    expect(spy.calls.map((c) => c.slotId)).toEqual(['r0-late'])
+    expect(d.getPendingCount()).toBe(1)
+  })
+
+  it('drops a slot whose round already ENDED rather than playing it late', () => {
+    // The previous round's combination called over the current round is
+    // worse than silence.
+    const spy = makeSpy()
+    const skipped: string[] = []
+    const d = new SlotDispatcher({
+      play: spy.play,
+      getCurrentVocabulary: () => 'numeric',
+      onSkipped: (s, reason) => skipped.push(`${s.slotId}:${reason}`),
+    })
+    d.enqueue(slot({ slotId: 'r0-orphan', reservationStartTick: 100, roundIndex: 0 }))
+    d.advance(230_500, 1)
+    expect(spy.calls).toHaveLength(0)
+    expect(skipped).toEqual(['r0-orphan:round-elapsed'])
+    expect(d.getStaleSkippedCount()).toBe(1)
+  })
+
+  it('is unchanged when no round is supplied — the clamp is opt-in', () => {
+    const spy = makeSpy()
+    const d = new SlotDispatcher({ play: spy.play, getCurrentVocabulary: () => 'numeric' })
+    d.enqueue(roundOneLeadIn())
+    d.advance(230_000)
+    expect(spy.calls.map((c) => c.slotId)).toEqual(['r1-open'])
+  })
+
+  it('a throw from play() does not strand held slots outside the queue', () => {
+    const d = new SlotDispatcher({
+      play: () => {
+        throw new Error('player refused')
+      },
+      getCurrentVocabulary: () => 'numeric',
+    })
+    d.enqueue(roundOneLeadIn())
+    d.enqueue(slot({ slotId: 'r0-boom', reservationStartTick: 229_000, roundIndex: 0 }))
+    expect(() => d.advance(230_000, 0)).toThrow(/player refused/)
+    // The held round-1 slot must be back in the queue, or it is silenced
+    // for the rest of the workout.
+    expect(d.getPendingCount()).toBe(1)
+    expect(d.hasDispatched('r1-open')).toBe(false)
+  })
+})

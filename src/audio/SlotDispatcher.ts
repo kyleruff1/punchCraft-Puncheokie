@@ -93,6 +93,13 @@ export interface SlotDispatcherConfig {
    * latency-compensated.
    */
   latencyTicks?: number
+  /**
+   * Called when a slot is discarded without playing. Today the only
+   * reason is `round-elapsed` — its round ended before it dispatched.
+   * Optional; exists so the runner can log what the athlete did not hear
+   * rather than letting it vanish.
+   */
+  onSkipped?: (slot: CompiledCoachSlot, reason: 'round-elapsed') => void
 }
 
 export class SlotDispatcher {
@@ -101,12 +108,15 @@ export class SlotDispatcher {
   private readonly latencyTicks: number
   private readonly queue: CompiledCoachSlot[] = []
   private readonly dispatched = new Set<string>()
+  private readonly onSkipped: SlotDispatcherConfig['onSkipped']
   private sorted = true
+  private staleSkipped = 0
 
   constructor(config: SlotDispatcherConfig) {
     this.play = config.play
     this.getCurrentVocabulary = config.getCurrentVocabulary
     this.latencyTicks = config.latencyTicks ?? 0
+    this.onSkipped = config.onSkipped
   }
 
   /**
@@ -136,21 +146,69 @@ export class SlotDispatcher {
    * (earlier dispatchAt first). Throws whatever `play()` throws;
    * a throw from `play()` does NOT re-queue the slot — it is
    * marked dispatched and the runner surfaces the error.
+   *
+   * ## The round band (GH #305, "precall bleed")
+   *
+   * `currentRoundIndex` clamps dispatch to the round the athlete is
+   * actually in. It is optional: omit it and this behaves exactly as
+   * before, which keeps the dispatcher usable without a session clock.
+   *
+   * It is needed because the score's tick axis contains only WORK time —
+   * rest is not represented, so consecutive round starts sit exactly
+   * `workDurationMs` apart. A round's opening announce is authored to
+   * LEAD its bell (speed-combos round 1: −2355 ms), and with no rest gap
+   * to live in, that lead-in lands inside the PREVIOUS round's work
+   * band: absolute tick 228139 of a round-0 band ending at 230400.
+   * Measured on-glass — round 1's `One, Two, go!` fired 2.7 s before the
+   * round-0 bell, while the athlete was still working round 0.
+   *
+   * A slot whose round has not started is HELD, not skipped: it fires at
+   * the first tick of its own round, which is the earliest legal moment
+   * and preserves the authored intent of leading the round.
+   *
+   * Holding must not block the queue. A future-round slot can sort ahead
+   * of a still-due current-round slot whenever the previous round has a
+   * call inside its final ~2.4 s, so returning early on one would starve
+   * the other. Held slots are set aside and re-queued instead.
+   *
+   * A slot whose round has already ENDED is dropped, not played late:
+   * the previous round's combination called over the current round is
+   * worse than silence, and the report shows it honestly as `missing`.
    */
-  advance(nowTick: number): void {
+  advance(nowTick: number, currentRoundIndex: number | null = null): void {
     if (!this.sorted) {
       this.queue.sort((a, b) => a.reservationStartTick - b.reservationStartTick)
       this.sorted = true
     }
-    while (this.queue.length > 0) {
-      const head = this.queue[0]!
-      const dispatchAt = head.reservationStartTick - this.latencyTicks
-      if (nowTick < dispatchAt) return
-      this.queue.shift()
-      if (this.dispatched.has(head.slotId)) continue
-      this.dispatched.add(head.slotId)
-      const variant = this.pickVariant(head)
-      this.play(variant.assetId, head.reservationStartTick, head.slotId)
+    const held: CompiledCoachSlot[] = []
+    try {
+      while (this.queue.length > 0) {
+        const head = this.queue[0]!
+        const dispatchAt = head.reservationStartTick - this.latencyTicks
+        // Sorted by tick, so nothing behind this is due either.
+        if (nowTick < dispatchAt) break
+        this.queue.shift()
+        if (currentRoundIndex !== null && head.roundIndex > currentRoundIndex) {
+          held.push(head)
+          continue
+        }
+        if (this.dispatched.has(head.slotId)) continue
+        this.dispatched.add(head.slotId)
+        if (currentRoundIndex !== null && head.roundIndex < currentRoundIndex) {
+          this.staleSkipped += 1
+          this.onSkipped?.(head, 'round-elapsed')
+          continue
+        }
+        const variant = this.pickVariant(head)
+        this.play(variant.assetId, head.reservationStartTick, head.slotId)
+      }
+    } finally {
+      // In a `finally` so a throw from `play()` cannot strand held slots
+      // outside the queue, which would silence them for the whole workout.
+      if (held.length > 0) {
+        this.queue.unshift(...held)
+        this.sorted = false
+      }
     }
   }
 
@@ -173,6 +231,11 @@ export class SlotDispatcher {
   /** Test seam — has this slotId already fired? */
   hasDispatched(slotId: string): boolean {
     return this.dispatched.has(slotId)
+  }
+
+  /** Test seam — slots dropped because their round had already ended. */
+  getStaleSkippedCount(): number {
+    return this.staleSkipped
   }
 
   /**
