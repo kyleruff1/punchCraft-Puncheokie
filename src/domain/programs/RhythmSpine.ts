@@ -29,6 +29,7 @@
 import type { CueInstance, RoundTimeline } from './CueTimeline'
 import type { PunchHand, PunchType } from '../punch/PunchEvent'
 import { DEFAULT_REP_ID, strikeIdFor } from '../strikes/strikeCatalog'
+import { tokenOffsetFor } from './tokenOffsets'
 import { findPhraseTiming, type PhraseTimingEntry } from './phraseTimingManifest'
 import type { CoachAssetResolver, CompiledCueTimeline } from './compileCue'
 import {
@@ -217,7 +218,7 @@ export function beatsFor(cue: CueInstance): TokenBeat[] {
   const avatarFrameMs =
     punchTokenCount > 0 ? onScreenMs / (2 * punchTokenCount) : 0
   for (let i = 0; i < cue.tokens.length; i += 1) {
-    const off = cue.tokenOffsetsMs[i]
+    const off = tokenOffsetFor(cue, i)
     if (off === undefined) continue
     const atMs = cue.scheduledStartMs + off
     // Match `CueEngine.fireDueTokens`'s cap: a token that would land

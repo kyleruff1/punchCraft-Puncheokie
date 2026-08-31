@@ -27,6 +27,7 @@
 
 import type { MonotonicClock } from '../time/MonotonicClock'
 import type { CueInstance, RoundTimeline } from './CueTimeline'
+import { tokenOffsetFor } from './tokenOffsets'
 import { DEFAULT_REP_ID, strikeIdFor } from '../strikes/strikeCatalog'
 import {
   TERMINAL_STATUSES,
@@ -465,15 +466,18 @@ export class CueEngine {
     // tokens of a truncated cue that a 10ms tick never reaches, and the
     // event stream would depend on frame rate.
     const until = Math.min(t, cue.windowEndMs)
-    // Ring-fire time reads from the beat grid (M39-V2 Phase 5-ii + iii:
-    // the V1c authority chain retired). Engine-authored per-strike ticks
-    // live on `SpineSchedule.compiled[cueId]` now — a follow-up Phase 5
-    // pass wires the ring dispatcher to that shared authority; today's
-    // ring fires still use the beat grid.
-    cue.tokenOffsetsMs.forEach((offset, tokenIndex) => {
+    // Ring-fire time resolves in order of authority (2026-08-30, M39-V1c):
+    //   1. `visualOffsetsMs` — engine-authored (baseBpm × division × swing);
+    //   2. `phraseTokenTimesMs` — the rail (word[N] end + RAIL_K_MS);
+    //   3. `tokenOffsetsMs` — beat-grid (legacy pre-M39).
+    // The physical throw window (`windowEndMs`) and cue scoring stay on
+    // the beat grid — this is a DISPLAY concern; the athlete still throws
+    // when they hear the coach.
+    cue.tokenOffsetsMs.forEach((_offset, tokenIndex) => {
       const strikeId = strikeIdFor(cue.id, DEFAULT_REP_ID, tokenIndex)
       if (runtime.firedTokens.has(strikeId)) return
-      if (until < cue.scheduledStartMs + offset) return
+      const effective = tokenOffsetFor(cue, tokenIndex)
+      if (until < cue.scheduledStartMs + effective) return
       runtime.firedTokens.add(strikeId)
       this.publish({
         type: 'token-due',
