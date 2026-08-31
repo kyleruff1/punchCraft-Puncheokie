@@ -11,6 +11,7 @@
 
 import type { GeneratedWorkout } from '../GeneratedWorkout'
 import { bodyWork } from './bodyWork'
+import { diagnosticTokenSequence } from './diagnosticTokenSequence'
 import { establishTheJab20 } from './establishTheJab20'
 import { heavyHands } from './heavyHands'
 import { pacePusher } from './pacePusher'
@@ -33,6 +34,7 @@ export type SampleWorkoutKey =
   | 'body-work'
   | 'pace-pusher'
   | 'pump-and-coast'
+  | 'diagnostic-token-sequence'
 
 export interface SampleWorkout {
   key: SampleWorkoutKey
@@ -109,6 +111,13 @@ const SAMPLES: Record<SampleWorkoutKey, SampleWorkout> = {
     description:
       'Three short rounds pumping one punch per round with voiced coasting recoveries — the M39-V2 Phase 4b demo.',
     workout: pumpAndCoast,
+  },
+  'diagnostic-token-sequence': {
+    key: 'diagnostic-token-sequence',
+    name: 'Diagnostic Token Sequence',
+    description:
+      'INTERNAL QA rig — five known-truth combos back-to-back in R1 for the verify-workout harness. Not intended as a user-facing workout.',
+    workout: diagnosticTokenSequence,
   },
 }
 
