@@ -1206,10 +1206,32 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // as echo / "1-2-3 as 1-2-1" on-glass, 2026-08-31 QA). Until
       // slice 6 threads voicePolicy through the compiler, filter
       // slots to the cues actually authored as announce-then-work.
+      // `announce-then-work` means speak the combination ONCE at the start
+      // of a BLOCK, then stay silent while the athlete works to the rings.
+      // `expandBlock` mints one CueInstance PER REPETITION (`sp1-b4#0` …
+      // `#9`), and every rep carries the block's policy — so matching on
+      // the policy alone admitted a slot per REP.
+      //
+      // Measured on-glass (speed-combos, 2026-08-31): 98 slots enqueued
+      // for 117 ATW cues where the design calls for ~7 per round. At a
+      // 525 ms rep stride against 1000-1400 ms clips, the dispatcher fired
+      // a fresh combo-announce every rep and they piled on top of each
+      // other — Kyle: "big delay then overlapping hard".
+      //
+      // `repeatIndex === 0` is the same gate `CueAnnouncer` has always
+      // applied to its own ATW dispatch, so the score-authoritative path
+      // now reproduces the announcer's semantic rather than contradicting
+      // it. (The score compiler emits a slot per cue because
+      // `programCueBridge` hands it `repetition: { count: 1 }` — each
+      // CueInstance is already one rep — so the block-level collapse has
+      // to happen here until Slice 6 threads the V1c policy into the
+      // compiler.)
       const atwCueIds = new Set<string>()
       for (const round of timeline) {
         for (const cue of round.cues) {
-          if (cue.voicePolicy === 'announce-then-work') atwCueIds.add(cue.id)
+          if (cue.voicePolicy === 'announce-then-work' && cue.repeatIndex === 0) {
+            atwCueIds.add(cue.id)
+          }
         }
       }
       const enqueuableSlots = compiledScore.coachSlots.filter((slot) =>
