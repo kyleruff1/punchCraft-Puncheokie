@@ -1,4 +1,26 @@
 /**
+ * ⚠️ DEPRECATED — M39-V2 Phase 5-iv retired the per-punch phrase corpus.
+ *
+ * This script rendered `assets/voice/phrases/cornerman/*.wav` — 776
+ * whole-combination phrase clips at every (combination, cadence,
+ * vocabulary, performance). The V2 successor is the announce path:
+ *   - `tools/voice/make-combo-announce-clips.mjs` — one clip per
+ *     (combination, vocabulary), fired at rep 0 of an
+ *     `announce-then-work` block.
+ *   - `tools/voice/make-sustained-clips.mjs` — one line per (token,
+ *     vocabulary) for sustained-strike blocks.
+ *   - `tools/voice/make-coast-clips.mjs` — intros + check-ins for
+ *     coasting blocks.
+ *   - `tools/voice/make-technique-standalone-clips.mjs` — per-strike
+ *     technique wavs for synchronized strike-call reinforcement.
+ *
+ * The rendered wavs have moved to `assets/voice/phrases-legacy/` and
+ * are unreferenced at runtime; the corpus survives as a diagnostic
+ * archive. `src/audio/voiceAssets/phraseManifest.ts` was deleted with
+ * this pass. Do not run this script without a very good reason — the
+ * rendered clips no longer land anywhere the runtime consumes.
+ *
+ * ---
  * Whole-phrase combination clips — the production library.
  *
  * ## What this renders
