@@ -1,12 +1,14 @@
 /**
  * The walkout announcement plan: which segments a workout gets and the
- * countdown arithmetic the first bell waits on. Jokes retired 2026-08-30
- * (Kyle: "they are all pretty bad") — the plan is now hello → round-count
- * → program → send-off, with a plain sentence breath between each.
+ * countdown arithmetic the first bell waits on. Jokes retired
+ * 2026-08-30 (Kyle: "they are all pretty bad"). Round-count sentence
+ * retired 2026-08-30 (Kyle: "extends the walkout too much without
+ * actually describing anything helpful about the workout"). Plan is
+ * now hello → program → send-off, with a plain sentence breath
+ * between each.
  */
 
 import { generateWorkout } from '@domain/workout/generateWorkout'
-import { scoredRounds } from '@domain/workout/GeneratedWorkout'
 import { defaultRecipe, type WorkoutRecipe } from '@domain/workout/WorkoutRecipe'
 
 import {
@@ -24,7 +26,6 @@ function fakeManifest(ids: string[], durationMs = 5_000): Record<string, IntroSe
 const FULL_FAKE = fakeManifest([
   'intro-hello',
   'intro-letsgo',
-  ...Array.from({ length: 11 }, (_, i) => `intro-rounds-${i + 2}`),
   ...['beginner', 'intermediate', 'advanced'].flatMap((tier) =>
     ['technical', 'steady', 'pressure', 'sprint'].map((c) => `intro-program-${tier}-${c}`),
   ),
@@ -35,13 +36,11 @@ function workoutFor(overrides: Partial<WorkoutRecipe> = {}) {
 }
 
 describe('planIntro', () => {
-  it('sequences hello, round count, program, then the send-off', () => {
+  it('sequences hello, program, then the send-off', () => {
     const workout = workoutFor({ tier: 'intermediate', cadenceProfile: 'steady' })
-    const rounds = scoredRounds(workout.schedule).length
     const plan = planIntro(workout, FULL_FAKE)
     expect(plan.segments.map((s) => s.id)).toEqual([
       'intro-hello',
-      `intro-rounds-${rounds}`,
       'intro-program-intermediate-steady',
       'intro-letsgo',
     ])
@@ -60,7 +59,7 @@ describe('planIntro', () => {
   it('has a silence track for every gap the planner can emit', () => {
     // The walkout plays as a NATIVE playlist, so a pause without a silence
     // track silently vanishes from the speech (the missing-1700 bug, run 6).
-    // With jokes retired the plan only ever emits the plain sentence gap.
+    // The plan only ever emits the plain sentence gap.
     expect(silenceFor(INTRO_SEGMENT_GAP_MS)).toBeDefined()
   })
 
@@ -80,8 +79,8 @@ describe('planIntro', () => {
       workoutFor(),
       fakeManifest(['intro-hello', 'intro-letsgo'], 4_000),
     )
-    // Round-count and program segments are absent from this manifest, so the
-    // plan shrinks to hello → (breath) → send-off.
+    // Program segment is absent from this manifest, so the plan
+    // shrinks to hello → (breath) → send-off.
     expect(plan.segments.map((s) => s.id)).toEqual(['intro-hello', 'intro-letsgo'])
     expect(plan.totalMs).toBe(
       4_000 + INTRO_SEGMENT_GAP_MS + 4_000 + INTRO_TAIL_PAD_MS,
@@ -94,35 +93,29 @@ describe('planIntro', () => {
     expect(plan.totalMs).toBe(0)
   })
 
-  it('skips the round-count sentence for a non-standard round shape', () => {
-    const workout = workoutFor()
-    const bent = {
-      ...workout,
-      schedule: workout.schedule.map((r) =>
-        r.countsTowardGoal ? { ...r, workDurationMs: 180_000 } : r,
-      ),
-    }
-    const plan = planIntro(bent, FULL_FAKE)
-    expect(plan.segments.some((s) => s.id.startsWith('intro-rounds-'))).toBe(false)
-    expect(plan.segments.map((s) => s.id)).toContain('intro-hello')
-  })
-
   it('announces every generated default workout from the SHIPPED manifests', () => {
     // The real manifest: whatever the generator emits must be announceable
     // and every duration is a measurement.
     const workout = workoutFor()
     const plan = planIntro(workout)
-    const rounds = scoredRounds(workout.schedule).length
     expect(plan.segments.map((s) => s.id)).toEqual([
       'intro-hello',
-      `intro-rounds-${rounds}`,
       expect.stringMatching(/^intro-program-/),
       'intro-letsgo',
     ])
-    expect(plan.totalMs).toBeGreaterThan(10_000)
+    expect(plan.totalMs).toBeGreaterThan(5_000)
     for (const segment of Object.values(INTRO_SEGMENTS)) {
       expect(segment.durationMs).toBeGreaterThan(500)
     }
+  })
+
+  it('has no round-count sentence — retired 2026-08-30', () => {
+    // Regression guard: the "N rounds of four minutes each with rests"
+    // clip added ~6 seconds without saying anything the athlete didn't
+    // already pick. Even if the shipped manifest carries the wavs, the
+    // planner must NOT compose them.
+    const plan = planIntro(workoutFor(), FULL_FAKE)
+    expect(plan.segments.some((s) => s.id.startsWith('intro-rounds-'))).toBe(false)
   })
 
   it('has no joke segments — jokes retired 2026-08-30', () => {

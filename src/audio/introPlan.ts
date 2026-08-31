@@ -3,34 +3,35 @@
  * what rhythm, and how long the pre-round countdown must stretch to fit.
  *
  * "Hello! Welcome to punch craft. I'm your coach, Jonathan punch craft.
- * Today, we're boxing six rounds of four minutes each… Let's get started!"
+ * <program-tier sentence> … Let's get started!"
  *
  * The pauses are part of the plan (per-segment `gapBeforeMs`), because
  * the whole point is the coach's timing — a flat 350ms everywhere would
  * read as a script, not a cornerman.
  *
  * The variation space stays finite by composition: whole-sentence clips,
- * one per setting axis (round count, tier × cadence). The rhythm map is
- * untouched: everything here plays inside an EXTENDED countdown, and the
- * session clock — not the playback — decides when the bell rings. A
- * segment missing from a manifest (render gate rejected it) is skipped,
- * and the countdown shortens to match: durations are measured, never
- * guessed.
+ * one per setting axis (tier × cadence). The rhythm map is untouched:
+ * everything here plays inside an EXTENDED countdown, and the session
+ * clock — not the playback — decides when the bell rings. A segment
+ * missing from a manifest (render gate rejected it) is skipped, and the
+ * countdown shortens to match: durations are measured, never guessed.
  *
- * ## Jokes removed 2026-08-30
+ * ## Trims
  *
- * The original walkout laid a lobby joke between the setup and the
- * send-off ("…double breath …joke… beat …Let's get started!"). Kyle
- * retired the joke pool ("they are all pretty bad, we don't need those
- * and can save time testing"), so the plan is now the three-part walkout
- * above. The double-breath and joke-landing pause logic went with the
- * joke — plain intro-segment gaps carry the flow.
+ * - **Jokes removed 2026-08-30.** Kyle retired the joke pool ("they are
+ *   all pretty bad, we don't need those and can save time testing"), so
+ *   the double-breath / joke-landing pause logic went with the joke —
+ *   plain intro-segment gaps carry the flow.
+ * - **Round-count sentence removed 2026-08-30.** The "Today, we're boxing
+ *   N rounds of four minutes each, with one minute of rest between
+ *   rounds." clip added ~6 seconds without telling the athlete anything
+ *   they didn't already know from the workout picker. The walkout now
+ *   goes hello → program → send-off. The `intro-rounds-{2..12}` wavs
+ *   remain on disk (archived); a follow-up prunes the manifest + render
+ *   tool.
  */
 
-import {
-  scoredRounds,
-  type GeneratedWorkout,
-} from '@domain/workout/GeneratedWorkout'
+import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import { tierFor } from '@domain/workout/WorkoutRecipe'
 
 import { INTRO_SEGMENTS, type IntroSegment } from './voiceAssets/introManifest'
@@ -66,24 +67,11 @@ export interface IntroPlan {
   totalMs: number
 }
 
-/** The round-count sentence exists only for the standard 4-min/1-min shape. */
-const STANDARD_WORK_MS = 240_000
-const STANDARD_REST_MS = 60_000
-
 export function planIntro(
   workout: GeneratedWorkout,
   manifest: Readonly<Record<string, IntroSegment>> = INTRO_SEGMENTS,
 ): IntroPlan {
   const ids: string[] = ['intro-hello']
-
-  const scored = scoredRounds(workout.schedule)
-  const standardShape =
-    scored.length >= 2 &&
-    scored.length <= 12 &&
-    scored.every((r) => r.workDurationMs === STANDARD_WORK_MS) &&
-    // The last round's rest never gets announced — or heard.
-    scored.slice(0, -1).every((r) => r.restAfterMs === STANDARD_REST_MS)
-  if (standardShape) ids.push(`intro-rounds-${scored.length}`)
 
   ids.push(`intro-program-${tierFor(workout.recipe)}-${workout.recipe.cadenceProfile}`)
 
