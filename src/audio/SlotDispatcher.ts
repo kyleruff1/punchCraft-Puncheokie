@@ -73,8 +73,15 @@ export interface SlotDispatcherConfig {
    * `reservationStartTick` — the intended audible onset — so
    * the underlying player can log it for post-hoc analysis.
    * Any throw propagates out of `advance()`.
+   *
+   * Return `false` to DECLINE the play — "not now, try again". The
+   * dispatcher re-queues the slot and re-offers it on later ticks until
+   * `desiredAudibleEndTick`, after which the call is too late to teach
+   * the strike it names and is dropped via `onSkipped`.
+   *
+   * Returning anything else (including `undefined`) counts as played.
    */
-  play: (assetId: string, atTick: number, slotId: string) => void
+  play: (assetId: string, atTick: number, slotId: string) => void | boolean
   /**
    * Called at each dispatch to decide which variant to play.
    * The dispatcher freezes the choice as it fires — a vocab
@@ -99,7 +106,7 @@ export interface SlotDispatcherConfig {
    * Optional; exists so the runner can log what the athlete did not hear
    * rather than letting it vanish.
    */
-  onSkipped?: (slot: CompiledCoachSlot, reason: 'round-elapsed') => void
+  onSkipped?: (slot: CompiledCoachSlot, reason: 'round-elapsed' | 'retry-expired') => void
 }
 
 export class SlotDispatcher {
@@ -200,7 +207,21 @@ export class SlotDispatcher {
           continue
         }
         const variant = this.pickVariant(head)
-        this.play(variant.assetId, head.reservationStartTick, head.slotId)
+        // Marked dispatched BEFORE the call so a throw cannot re-queue it
+        // (existing contract). An explicit `false` is different from a
+        // throw: it means "declined, ask me again", so we undo that.
+        const played = this.play(variant.assetId, head.reservationStartTick, head.slotId)
+        if (played === false) {
+          this.dispatched.delete(head.slotId)
+          if (nowTick < head.desiredAudibleEndTick) {
+            held.push(head)
+          } else {
+            // Past the strike it teaches — naming the combination now
+            // would describe punches the athlete has already thrown.
+            this.staleSkipped += 1
+            this.onSkipped?.(head, 'retry-expired')
+          }
+        }
       }
     } finally {
       // In a `finally` so a throw from `play()` cannot strand held slots

@@ -472,3 +472,96 @@ describe('SlotDispatcher — round band', () => {
     expect(d.hasDispatched('r1-open')).toBe(false)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Decline + retry — the dropped block opener (GH #305)
+// ---------------------------------------------------------------------------
+
+describe('SlotDispatcher — declined plays retry', () => {
+  // The real case: a round's opening combo-announce is a `precall` authored
+  // ~2355ms BEFORE the bell. The runner only advances during `work`, so it
+  // first comes due a few hundred ms INTO the round — while the round-start
+  // bell is still sounding — and the coach-lane collision check declined it.
+  // Dropping it cost the athlete the call naming the whole block. Measured
+  // on both heavy-hands and pace-pusher.
+  const opener = () =>
+    slot({
+      slotId: 'open',
+      reservationStartTick: 100,
+      desiredAudibleEndTick: 2_000,
+      roundIndex: 0,
+    })
+
+  it('re-queues a slot whose play() returned false', () => {
+    let declines = 1
+    const played: string[] = []
+    const d = new SlotDispatcher({
+      getCurrentVocabulary: () => 'numeric',
+      play: (_a, _t, slotId) => {
+        if (declines > 0) {
+          declines -= 1
+          return false
+        }
+        played.push(slotId)
+      },
+    })
+    d.enqueue(opener())
+    d.advance(150)
+    expect(played).toEqual([])
+    // Declined, NOT consumed — it must still be pending and not marked done.
+    expect(d.getPendingCount()).toBe(1)
+    expect(d.hasDispatched('open')).toBe(false)
+    // Lane frees on the next tick; the call still lands.
+    d.advance(200)
+    expect(played).toEqual(['open'])
+  })
+
+  it('keeps retrying across many ticks while the lane stays busy', () => {
+    const played: string[] = []
+    let busy = true
+    const d = new SlotDispatcher({
+      getCurrentVocabulary: () => 'numeric',
+      play: (_a, _t, slotId) => {
+        if (busy) return false
+        played.push(slotId)
+      },
+    })
+    d.enqueue(opener())
+    for (let t = 150; t <= 900; t += 50) d.advance(t)
+    expect(played).toEqual([])
+    busy = false
+    d.advance(950)
+    expect(played).toEqual(['open'])
+  })
+
+  it('gives up once the strike it names has arrived', () => {
+    // Past desiredAudibleEndTick the call would describe punches already
+    // thrown, so it is dropped and reported rather than played late.
+    const skipped: string[] = []
+    const d = new SlotDispatcher({
+      getCurrentVocabulary: () => 'numeric',
+      play: () => false,
+      onSkipped: (s, reason) => skipped.push(`${s.slotId}:${reason}`),
+    })
+    d.enqueue(opener())
+    d.advance(2_500)
+    expect(skipped).toEqual(['open:retry-expired'])
+    expect(d.getPendingCount()).toBe(0)
+    expect(d.getStaleSkippedCount()).toBe(1)
+  })
+
+  it('a normal (undefined) return still counts as played — no accidental retry loop', () => {
+    const played: string[] = []
+    const d = new SlotDispatcher({
+      getCurrentVocabulary: () => 'numeric',
+      play: (_a, _t, slotId) => {
+        played.push(slotId)
+      },
+    })
+    d.enqueue(opener())
+    d.advance(150)
+    d.advance(200)
+    expect(played).toEqual(['open'])
+    expect(d.hasDispatched('open')).toBe(true)
+  })
+})

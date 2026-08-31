@@ -135,7 +135,13 @@ describe('multi-round dispatch (the blocker-2 regression)', () => {
     let currentRound = 0
     const dispatcher = new SlotDispatcher({
       getCurrentVocabulary: () => 'numeric',
-      play: (_assetId, _atTick, slotId) => firedIn.set(slotId, currentRound),
+      play: (_assetId, _atTick, slotId) => {
+        // Block body, not a concise arrow: `play` returns `void | boolean`,
+        // and `Map.set` returns the Map — an implicit return would be a
+        // type error, and a truthy non-`false` value here would be silently
+        // treated as "played" anyway.
+        firedIn.set(slotId, currentRound)
+      },
     })
     dispatcher.enqueueAll(SCORE.coachSlots)
 

@@ -1255,12 +1255,23 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // downstream would prevent the overlap.
           const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
           if (audibleUntilMs > 0) {
+            // DECLINE, don't discard. Returning `false` re-queues the slot so
+            // the dispatcher re-offers it on later ticks until the strike it
+            // names arrives.
+            //
+            // Dropping here cost the athlete the opening call of a block. Every
+            // round's first combo-announce is a `precall` authored ~2355ms
+            // BEFORE the bell, but the runner only advances during `work`, so
+            // it first becomes due a few hundred ms INTO the round — while the
+            // round-start bell is still sounding. Measured on-glass: both
+            // heavy-hands and pace-pusher lost expectation #1 exactly this way,
+            // and Kyle heard the block open in silence (GH #305).
             logger.info(
               'puncheokie.slotDispatcher.deferred',
-              'coach lane busy — combo-announce dropped rather than stacked',
+              'coach lane busy — combo-announce re-queued for a later tick',
               { slotId: safe(slotId), audibleUntilMs: safe(audibleUntilMs) },
             )
-            return
+            return false
           }
           voice.output.playComboAnnounce?.({
             text: clip.text,
