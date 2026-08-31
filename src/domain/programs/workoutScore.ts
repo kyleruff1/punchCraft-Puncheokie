@@ -343,7 +343,20 @@ export function compileWorkoutScore(
     })
 
     for (const cue of round.cues) {
-      const cueStartTick = roundStartTick + ticksAtMs(cue.scheduledStartMs)
+      // The cue's own offset is ALREADY inside the compiled ticks:
+      // `programCueBridge` sets `executeAtTick: ticksAtMs(cue.scheduledStartMs)`
+      // and `compileCue` builds every strike and coach event from
+      // `cue.executeAtTick + …`. Adding `ticksAtMs(cue.scheduledStartMs)`
+      // here a second time put every event at ~2× its true offset into the
+      // round, so late cues fell off the end and early ones drifted
+      // (adversarial review, 2026-08-31).
+      //
+      // `RhythmSpine.compileRoundSpine` is the control: it stores the same
+      // `compileCueFromInstance` output with no re-offset at all.
+      //
+      // Only the ROUND's origin needs adding, to lift cue-local ticks into
+      // the workout-wide axis.
+      const cueStartTick = roundStartTick
       const compiled = compileCueFromInstance(cue, {
         roundId: `round-${round.roundIndex}`,
         coachAssets,

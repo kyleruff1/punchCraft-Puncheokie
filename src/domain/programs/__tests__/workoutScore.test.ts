@@ -33,6 +33,8 @@
  */
 
 import { compileWorkoutScore, type WorkoutScoreConfig } from '../workoutScore'
+import { expandTimeline } from '../CueTimeline'
+import { TRANSPORT_TICKS_PER_PULSE } from '../../timing/TimingEngine'
 import { listSampleWorkouts } from '../../workout/samples'
 import { threeRoundFundamentals } from '../../workout/samples/threeRoundFundamentals'
 import { bodyWork } from '../../workout/samples/bodyWork'
@@ -209,6 +211,47 @@ describe('compileWorkoutScore — strikes', () => {
         expect(threshold).toBeGreaterThanOrEqual(strike.startTick)
       }
     }
+  })
+
+  it('places each strike at its AUTHORED offset — the cue offset is counted exactly once', () => {
+    // Regression, GH #305 blocker 1. `compileWorkoutScore` used to add
+    // `ticksAtMs(cue.scheduledStartMs)` on top of a compiled tick that
+    // already contained it (`programCueBridge` puts the same offset in
+    // `executeAtTick`, and `compileCue` builds every strike from
+    // `executeAtTick + …`). Every event therefore landed at roughly
+    // TWICE its authored offset into the round, and none of the 38
+    // tests here noticed — they all asserted ordering and bounds,
+    // which a uniform doubling preserves. This one asserts the
+    // absolute position, so a re-offset fails loudly.
+    const bpm = 120
+    const score = compileWorkoutScore(threeRoundFundamentals, baseConfig({ bpm }))
+    const timeline = expandTimeline(threeRoundFundamentals, 'orthodox', bpm)
+
+    // Round 0 starts at tick 0, so a round-0 cue's first strike lands on
+    // the cue's authored millisecond offset, expressed in ticks. (Only
+    // the FIRST strike: positions WITHIN a cue come off `compileCue`'s
+    // step grid, which is a separate mapping from `tokenOffsetsMs`.)
+    const round0 = timeline[0]!
+    const msToTicks = (ms: number) => Math.round(ms / (60_000 / (60 * TRANSPORT_TICKS_PER_PULSE)))
+
+    let checked = 0
+    for (const cue of round0.cues) {
+      const first = score.strikes.find((s) => s.cueId === cue.id && s.roundIndex === 0)
+      if (!first) continue
+      // ±1 tick for the independent rounding on each side.
+      expect(Math.abs(first.startTick - msToTicks(cue.scheduledStartMs))).toBeLessThanOrEqual(1)
+      checked += 1
+    }
+    // Guard the guard: a lookup that silently matched nothing would
+    // make the loop above vacuously true.
+    expect(checked).toBeGreaterThan(10)
+
+    // And the round's content must fit inside the round. Under the
+    // double-count the last round-0 strike sat at 209 s of a 240 s
+    // round instead of 104 s — the tell that everything was stretched.
+    const lastStrike = score.strikes.filter((s) => s.roundIndex === 0).at(-1)!
+    const lastCue = round0.cues.at(-1)!
+    expect(lastStrike.startTick).toBeLessThanOrEqual(msToTicks(lastCue.windowEndMs))
   })
 
   it('bodyWork sample emits body-shot strikes (token includes B) — score sees fused-body tokens', () => {
