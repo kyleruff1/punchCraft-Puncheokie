@@ -505,26 +505,26 @@ export class VoiceOutputExpo implements VoiceOutputPort {
                 // the extra loops beyond the single wrap.
                 const backwardsBy = this.metronomeLastWrappedSec - report.wrappedPositionSec
                 const wrapThreshold = report.loopDurationSec * 0.5
-                const isWrap = backwardsBy > wrapThreshold
-                if (isWrap) {
+                if (backwardsBy > wrapThreshold) {
+                  // Real wrap — position went backwards by more than
+                  // half a loop.
                   this.metronomeLoopCount += 1
-                  // Multi-loop-skip catch-up (JS thread stalled).
-                  const wallDeltaSec = Math.max(
-                    0,
-                    (report.sampleMonotonicMs - this.metronomeStartMonotonicMs) / 1000,
-                  )
-                  const expectedLoopCount = Math.floor(
-                    wallDeltaSec / report.loopDurationSec,
-                  )
-                  if (expectedLoopCount > this.metronomeLoopCount) {
-                    this.metronomeLoopCount = expectedLoopCount
-                  }
                 } else if (backwardsBy > 0) {
-                  // Small backwards jump — JS scheduling glitch.
-                  // Don't update lastWrappedSec, don't correct;
-                  // wait for the next monotonic report.
+                  // Small backwards jump — JS scheduling glitch
+                  // (callbacks arriving out of order). Skip this
+                  // report; wait for the next in-order one.
                   return
                 }
+                // NOTE: no wall-time catch-up. v1 tried that and
+                // over-counted loops because audio startup lag makes
+                // wall time cross loop boundaries before audio does;
+                // v2's first attempt used wall-time as a floor which
+                // also over-counted for the same reason. Pure
+                // position-based counting is the ONLY reliable
+                // source: audio player IS the ground truth for what
+                // it's playing. A rare JS-stall multi-loop skip is
+                // acceptable — the next callback will hard re-anchor
+                // once, then things stabilize.
                 this.metronomeLastWrappedSec = report.wrappedPositionSec
                 const absoluteSec =
                   this.metronomeLoopCount * report.loopDurationSec + report.wrappedPositionSec
