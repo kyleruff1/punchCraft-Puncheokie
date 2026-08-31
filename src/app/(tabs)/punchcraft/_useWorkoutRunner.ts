@@ -33,6 +33,7 @@ import { metronomeLoopFor } from '@audio/voiceAssets/metronomeAssets'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
+import { beatOrdinalAt } from '@domain/programs/beatProjection'
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
 import {
   findComboAnnounce,
@@ -357,16 +358,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const freeWorkRef = useRef(false)
 
   const countsRef = useRef({ total: 0, left: 0, right: 0, inCue: 0, inCueExpected: 0 })
-  /**
-   * How far the beat has walked into the current combination — the ordinal of
-   * the punch expected *now*, advanced by `token-due` on the cue clock.
-   *
-   * The lit cursor follows `max(credited, beatCursor)`, so it leads the athlete
-   * to the next hit on the beat instead of stalling on a punch the tracker
-   * never reported. Landing punches still fill the completed marks; this only
-   * decides which token is highlighted as "throw this next".
-   */
-  const beatCursorRef = useRef(0)
+  // NOTE: there is deliberately no `beatCursorRef` any more. How far the
+  // beat has walked into the current combination is PROJECTED per render by
+  // `beatOrdinalAt(cue, workElapsedMs)` (option C, GH #305) rather than
+  // accumulated from `token-due` events. The lit cursor still follows
+  // `max(credited, beatOrdinal)`, so it leads the athlete to the next hit
+  // on the beat instead of stalling on a punch the tracker never reported —
+  // but it can no longer be desynchronised by event delivery.
   /**
    * The id of the cue whose combination was just completed in sequence, so the
    * stage can play a one-shot whole-combo flourish. Keyed by cue id (which
@@ -559,7 +557,22 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         })
       }
       const credited = countsRef.current.inCue
-      const cursor = Math.max(credited, beatCursorRef.current)
+      // Option C (GH #305): the beat position is PROJECTED from the clock,
+      // not accumulated from `token-due` events.
+      //
+      // The old cursor was a ref advanced by each event and reset on
+      // `cue-active`, which made the displayed position a function of
+      // event HISTORY. With the runner ticking at ~341 ms against a 50 ms
+      // interval, backlogs are routine, so history was routinely replayed.
+      // A projection cannot have that class of bug: it answers "where is
+      // the beat now" from the authored offsets alone (principle #0 —
+      // runtime projects the score, never accumulates; principle #3 — a
+      // stall may skip an event already over, never replay it).
+      //
+      // Count-scored cues have always projected this way via
+      // `pulseCursorAt` above; this puts sequence cues on the same footing.
+      const beatOrdinal = beatOrdinalAt(cue, workElapsedMsRef.current)
+      const cursor = Math.max(credited, beatOrdinal)
       return cue.tokens.map((token, index) => {
         if (token.kind !== 'punch') return active ? 'active' : 'upcoming'
         const punchOrdinal = cue.expectedPunches.findIndex((p) => p.tokenIndex === index)
@@ -610,41 +623,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           workElapsedMs: safe(event.workElapsedMs),
           monotonicTimeMs: safe(event.nowMs),
         })
-        if (ordinal > beatCursorRef.current) {
-          // 2026-08-31 token-order forensics — DO NOT sync/push here.
-          //
-          // This used to call `syncFromEngine()` + `pushStore(true)` per
-          // token-due event. When the runner's 50 ms interval stalls (JS
-          // churn: ~330 transport re-anchors/round each logging + notifying,
-          // store pushes, render churn) the engine's `fireDueTokens` finds
-          // several tokens overdue and publishes them all inside ONE
-          // `engine.tick(...)` call — measured on a TRF drive: 74 token-due
-          // events across only 63 distinct `workElapsedMs` values, worst
-          // tick firing FIVE tokens microseconds apart.
-          //
-          // Each of those events then forced its own immediate, throttle-
-          // bypassing store push and re-render, so the row strobed 0→1→2→3→4
-          // in ~1 ms instead of walking the beat. On-glass: rings lighting
-          // "spastically and out of order", repeating nodes mid-combo, and
-          // the avatar (which follows the active token index) jumping in
-          // lockstep with them — exactly what Kyle reported.
-          //
-          // The cursor is monotonic, so simply advancing it and letting the
-          // runner's own tick loop render is correct AND adds no latency:
-          // `syncFromEngine()` runs a few statements after `engine.tick(...)`
-          // inside the SAME interval callback. A burst therefore collapses
-          // into ONE render at the final cursor position — the visual jumps
-          // to where the beat actually is rather than replaying history
-          // (M39-V2 principle #3: a stall may skip an event that is already
-          // over; missed events are recorded diagnostically, never replayed).
-          //
-          // The per-token `cue.tokenDue` log above still fires for every
-          // token, so the cadence-lab analyzer keeps full resolution.
-          beatCursorRef.current = ordinal
-        }
-        // Record EVERY token-due, including ones the cursor guard skipped:
-        // a burst is exactly the case under investigation, and the skipped
-        // ones are what make it visible.
+        // No cursor to advance: option C made the ring position a
+        // PROJECTION of the clock (`beatOrdinalAt` in `syncFromEngine`),
+        // so `token-due` no longer feeds the visuals at all. It survives
+        // here purely as the cadence-lab timing signal and the forensics
+        // record below — which is the point: a stalled tick can deliver a
+        // backlog of these and the row is unaffected, because nothing
+        // downstream accumulates them.
+        //
+        // Record EVERY token-due; a burst is exactly the case under
+        // investigation, and the skipped ones are what make it visible.
         vizRef.current?.token({
           cueId: event.cue.id,
           repeatIndex: event.cue.repeatIndex,
@@ -664,11 +652,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (event.type === 'cue-active') {
         // Shown, therefore realized — regardless of what the athlete threw.
         realizedBlocksRef.current.add(event.cue.blockId)
-        // A new combination: the per-cue credit, the beat cursor and any combo
-        // celebration reset. A burst's target is its punch count; a sequence
-        // cue's is its expectation count.
+        // A new combination: the per-cue credit and any combo celebration
+        // reset. A burst's target is its punch count; a sequence cue's is
+        // its expectation count. (No beat cursor to reset since option C —
+        // the beat position is projected from the clock per render, so it
+        // is already correct for whichever cue is on stage.)
         countsRef.current.inCue = 0
-        beatCursorRef.current = 0
         comboCompleteRef.current = null
         affirmedRef.current = []
         countsRef.current.inCueExpected =
