@@ -34,7 +34,14 @@ import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
-import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
+import {
+  findComboAnnounce,
+  findComboAnnounceById,
+} from '@audio/voiceAssets/comboAnnounceManifest'
+import { runtimeCoachAssetResolver } from '@audio/coachAssetResolvers'
+import { SlotDispatcher } from '@audio/SlotDispatcher'
+import { compileWorkoutScore } from '@domain/programs/workoutScore'
+import { TRANSPORT_TICKS_PER_PULSE } from '@domain/timing/TimingEngine'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
@@ -408,6 +415,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    */
   const realizedBlocksRef = useRef(new Set<string>())
   const announcerRef = useRef<CueAnnouncer | null>(null)
+  // M39-V2 W1 Epic Slice 3-a-ii — score-authoritative combo-announce
+  // dispatcher. Owned by the runner because it is instantiated at arm
+  // time with the compiled score's coachSlots pre-enqueued and advanced
+  // on every runtime tick.
+  const slotDispatcherRef = useRef<SlotDispatcher | null>(null)
   const startedAtRef = useRef(0)
   /** The end is written once; a cancel after a completion must not double it. */
   const persistedRef = useRef(false)
@@ -1063,6 +1075,75 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       : null
     announcerRef.current = announcer
 
+    // M39-V2 W1 Epic Slice 3-a-ii — score-authoritative combo-announce
+    // dispatch. Compile the full workout score once at arm time; hand its
+    // coach slots to a SlotDispatcher; tell the announcer to skip its
+    // map-driven combo-announce branch so nothing double-fires.
+    //
+    // The dispatcher owns ONE append-only queue for the whole workout
+    // — no per-cue clearSequence, no truncation on cue boundaries. When
+    // a new cue arms, its slots have already been enqueued at compile
+    // time; the queue just plays them in order as each dispatchAtTick
+    // arrives. This is the shape that fixes the 2026-08-30 regression
+    // ("`1-2b-3` heard as `one one two one one one`" — old code's
+    // clearSequence cut the previous cue's `body` clip mid-flight).
+    //
+    // Score tick space = 60 BPM × 960 PPQN = 16 ticks/ms. Runner's tick
+    // sample is `snapshot.workElapsedMs`; advance() reads that in the
+    // same tick unit the compiler used to author reservation windows.
+    //
+    // Vocab picking: the announcer holds the current callout vocab; the
+    // dispatcher asks fresh on every slot dispatch so a mid-workout
+    // toggle takes effect on the next unarmed slot (principle #8's
+    // "vocab locks at earliest dispatch deadline" lands in a later slice;
+    // for 3-a-ii the dispatcher checks at fire time — good enough while
+    // slots are only combo-announces).
+    let slotDispatcher: SlotDispatcher | null = null
+    if (announcer && voice) {
+      const compiledScore = compileWorkoutScore(workout, {
+        stance,
+        bpm: bpmForRecipe(workout.recipe),
+        revision: 1,
+        compiledAtEpochMs: Date.now(),
+        coachAssets: runtimeCoachAssetResolver,
+      })
+      slotDispatcher = new SlotDispatcher({
+        getCurrentVocabulary: () =>
+          voice.policy.vocabulary === 'names' ? 'technique' : 'numeric',
+        play: (assetId, _atTick, slotId) => {
+          const clip = findComboAnnounceById(assetId)
+          if (!clip) {
+            logger.warn(
+              'puncheokie.slotDispatcher.assetMissing',
+              'compiled coach slot references an unknown combo-announce id',
+              { assetId: safe(assetId), slotId: safe(slotId) },
+            )
+            return
+          }
+          voice.output.playComboAnnounce?.({
+            text: clip.text,
+            module: clip.module,
+            durationMs: clip.durationMs,
+          })
+        },
+      })
+      slotDispatcher.enqueueAll(compiledScore.coachSlots)
+      announcer.setScoreOwnsCombos(true)
+      logger.info(
+        'puncheokie.slotDispatcher.armed',
+        'score-authoritative combo-announce dispatcher armed',
+        {
+          workout: safe(workout.id),
+          coachSlots: safe(compiledScore.coachSlots.length),
+          timelineHash: safe(compiledScore.identity.timelineHash),
+        },
+      )
+    }
+    slotDispatcherRef.current = slotDispatcher
+    const MS_PER_SCORE_TICK = 60_000 / (60 * TRANSPORT_TICKS_PER_PULSE)
+    const scoreTickAt = (workElapsedMs: number): number =>
+      Math.round(workElapsedMs / MS_PER_SCORE_TICK)
+
     const pacing = new PacingEngine({
       totalGoal: workout.recipe.totalPunchGoal,
       schedule: workout.schedule,
@@ -1135,6 +1216,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // this tick cancels its remaining events before they dispatch.
       if (snapshot.phase === 'work') {
         announcer?.onTick(snapshot.workElapsedMs, clock.now())
+        // M39-V2 W1 Epic Slice 3-a-ii — advance the score-authoritative
+        // combo-announce dispatcher against the same clock sample. The
+        // announcer's map path skips combo-announces (setScoreOwnsCombos
+        // above); the dispatcher fires them from the compiled score.
+        slotDispatcher?.advance(scoreTickAt(snapshot.workElapsedMs))
       }
       voice?.output.advance?.()
       syncFromEngine()
@@ -1154,6 +1240,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       offMatcher()
       offSource()
       source.stop()
+      // Slot dispatcher's per-workout queue is per-arm — dropped
+      // here so a subsequent arm starts with an empty queue instead
+      // of inheriting the prior workout's dispatched-set.
+      slotDispatcher?.clear()
+      announcer?.setScoreOwnsCombos(false)
+      slotDispatcherRef.current = null
       engineRef.current = null
       sessionRef.current = null
       matcherRef.current = null
@@ -1171,6 +1263,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     onPunch,
     pushStore,
     source,
+    stance,
     syncFromEngine,
     timeline,
     voice,

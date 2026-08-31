@@ -62,6 +62,7 @@ import {
   type BeatDivision,
   type CoachTempo,
 } from '../timing/TimingEngine'
+import { comboSignatureFromStrikes } from './comboSignature'
 import { hashTimelineContent, type TimelineIdentity } from './timelineHash'
 
 // ---------------------------------------------------------------------------
@@ -146,8 +147,28 @@ export interface CoachAssetRef {
 }
 
 /**
+ * Per-cue context handed to the resolver so it can key catalog
+ * lookups on the specific combo being compiled. Combo-announce
+ * clips are keyed by combination (`1-1-2b-numbers`); the resolver
+ * needs the signature to fetch the right clip. Other content kinds
+ * (sustained-instruction, coast-intro, encouragement) currently
+ * ignore this field — new context fields are added as new content
+ * kinds land.
+ */
+export interface CoachAssetContext {
+  /**
+   * Canonical combo signature (e.g., `1-1-2b`) built from the cue's
+   * strike list. Empty string when the cue has zero strikes (the
+   * bridge already refuses to emit a ProgramCue for those, so
+   * runtime resolvers never see an empty signature — the field is
+   * present for the pure-domain shape).
+   */
+  comboSignature: string
+}
+
+/**
  * The compiler's per-cue coach asset lookup — one function taking
- * (contentKind, vocabulary) and returning the asset ref or
+ * (contentKind, vocabulary, ctx) and returning the asset ref or
  * `undefined` if the library has no rendering. The compiler emits
  * `CompiledCoachEvent`s only for kinds the resolver has assets for;
  * absent assets produce silent gaps, which is valid runtime
@@ -160,6 +181,7 @@ export interface CoachAssetRef {
 export type CoachAssetResolver = (
   contentKind: CoachContentKind,
   vocabulary: 'numeric' | 'technique',
+  context: CoachAssetContext,
 ) => CoachAssetRef | undefined
 
 /**
@@ -291,6 +313,14 @@ export function compileCue(cue: ProgramCue): CompiledCueTimeline {
   const gapTicks = cue.repetition.gapSteps * unitTicks
   const passTicks = cue.combo.totalSteps * unitTicks
 
+  // Canonical signature for the combo this cue speaks — combo-announce
+  // resolvers key on this to fetch the pre-rendered clip. Derived here
+  // so every ProgramCue is looked up the same way regardless of who
+  // constructed it (the bridge, a test, a future authoring path).
+  const coachAssetContext: CoachAssetContext = {
+    comboSignature: comboSignatureFromStrikes(cue.combo.strikes),
+  }
+
   const shouldFireForRep = (repIndex: number): boolean => {
     switch (cue.voicePolicy.repeatFrequency) {
       case 'once-per-cue':
@@ -356,7 +386,11 @@ export function compileCue(cue: ProgramCue): CompiledCueTimeline {
     const repCoachIds: string[] = []
     if (shouldFireForRep(repIndex)) {
       for (const vocabulary of ['numeric', 'technique'] as const) {
-        const asset = cue.coachAssets(cue.voicePolicy.contentKind, vocabulary)
+        const asset = cue.coachAssets(
+          cue.voicePolicy.contentKind,
+          vocabulary,
+          coachAssetContext,
+        )
         if (!asset) continue
 
         const eventId = `${cue.cueId}:${repId}:coach:${vocabulary}:${cue.voicePolicy.contentKind}`

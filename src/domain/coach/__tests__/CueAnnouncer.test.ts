@@ -997,6 +997,99 @@ describe('VoicePolicy = announce-then-work — Phase B2 combo-announce clip', ()
   })
 })
 
+// ---------------------------------------------------------------------------
+// M39-V2 W1 Epic Slice 3-a-ii — score-authoritative combo-announce gate.
+//
+// When the runner has compiled a CompiledWorkoutScore and its
+// SlotDispatcher owns combo-announces (`setScoreOwnsCombos(true)`), the
+// announcer's own combo-announce dispatch paths — BOTH the event-driven
+// onCueEvent path AND the map-driven dispatchMapEvent path — must
+// silently return so the athlete hears each announce exactly once.
+// ---------------------------------------------------------------------------
+
+describe('setScoreOwnsCombos gates combo-announce dispatch (Slice 3-a-ii)', () => {
+  interface AnnounceCall {
+    text: string
+    module: number
+    durationMs: number
+  }
+
+  function makeHarness(): {
+    announcer: CueAnnouncer
+    announces: AnnounceCall[]
+    phrases: Array<[string, string]>
+  } {
+    const port = new RecordingPort()
+    const announces: AnnounceCall[] = []
+    const phrases: Array<[string, string]> = []
+    const announcer = new CueAnnouncer({
+      policy: { ...defaultVoiceCoachPolicy(), style: 'call-and-go' },
+      output: Object.assign(port, {
+        playCombination: (combination: string, cadence: string) => {
+          phrases.push([combination, cadence])
+          return true
+        },
+        combinationDurationMs: () => 600,
+        playComboAnnounce: (clip: AnnounceCall) => {
+          announces.push(clip)
+        },
+      }),
+      cadence: 'sprint',
+      vocabulary: 'numbers',
+      comboAnnounceFor: () => ({ text: 'One, Two, go!', module: 42, durationMs: 1500 }),
+    })
+    return { announcer, announces, phrases }
+  }
+
+  it('suppresses the event-stream combo-announce when the score owns combos', () => {
+    const h = makeHarness()
+    h.announcer.setScoreOwnsCombos(true)
+    const first = cue({
+      id: 'atw-scoreowns-1',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+
+    expect(h.announces).toEqual([])
+    // Falling through to the phrase interim is ALSO suppressed — an
+    // announce-then-work cue whose score has no matching slot is
+    // authored silence, not a fallback opportunity.
+    expect(h.phrases).toEqual([])
+  })
+
+  it('re-enables the event-stream combo-announce when the flag flips back', () => {
+    const h = makeHarness()
+    h.announcer.setScoreOwnsCombos(true)
+    h.announcer.setScoreOwnsCombos(false)
+    const first = cue({
+      id: 'atw-scoreowns-2',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+
+    expect(h.announces).toHaveLength(1)
+    expect(h.announces[0]!.text).toBe('One, Two, go!')
+  })
+
+  it('defaults to false so pre-Slice-3 behaviour is preserved', () => {
+    const h = makeHarness()
+    // Never call setScoreOwnsCombos — default is false.
+    const first = cue({
+      id: 'atw-default',
+      repeatIndex: 0,
+      voicePolicy: 'announce-then-work',
+      tokens: [punch(1), punch(2)],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-announcing', first))
+
+    expect(h.announces).toHaveLength(1)
+  })
+})
+
 describe('the callout vocabulary and performance reach the port (D15, Phase C)', () => {
   /** Records the `voice` argument handed to the phrase methods. */
   function voiceHarness(opts: {

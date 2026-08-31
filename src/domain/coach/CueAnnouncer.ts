@@ -261,6 +261,18 @@ export class CueAnnouncer {
   private mapCursor = 0
   private readonly endedCues = new Set<string>()
 
+  // ---- score-authoritative combo-announce (M39-V2 W1 Epic Slice 3-a-ii).
+  // When set to true, the runner has compiled a CompiledWorkoutScore and
+  // handed its coachSlots to the SlotDispatcher — the score now OWNS
+  // combo-announce dispatch. This announcer's map-driven 'call'/'refire'
+  // handler must NOT also fire combo-announce clips or the athlete hears
+  // it twice.
+  //
+  // All other RhythmMap-driven events (set-callout, phrase, instruction,
+  // encouragement) keep flowing through this announcer until later
+  // slices migrate them. Only combo-announce is gated here.
+  private scoreOwnsCombos = false
+
   constructor(opts: CueAnnouncerOptions) {
     this.policy = opts.policy
     this.output = opts.output
@@ -294,6 +306,25 @@ export class CueAnnouncer {
 
   setThirdPartyPlayback(active: boolean): void {
     this.playbackActive = active
+  }
+
+  /**
+   * Tell the announcer whether a `CompiledWorkoutScore` owns
+   * combo-announce dispatch (M39-V2 W1 Epic Slice 3-a-ii,
+   * principle #0).
+   *
+   * When true: the map-driven `'call'` / `'refire'` handler still
+   * fires everything else (per-word phrases, in-time deliveries,
+   * refire tones for the burst extender under technical cadence,
+   * etc.) but SKIPS the combo-announce clip — the runner's
+   * `SlotDispatcher` fires it from the score's `coachSlots`.
+   *
+   * When false (default): the announcer keeps its pre-Slice-3
+   * behavior and fires combo-announces itself. Runner sets false
+   * on stop / when handing off between workouts.
+   */
+  setScoreOwnsCombos(owns: boolean): void {
+    this.scoreOwnsCombos = owns
   }
 
   /** Cue ids with a phrase plan in hand — doc §18's "prepare several ahead". */
@@ -443,12 +474,23 @@ export class CueAnnouncer {
         // Phase B2 swap on the compiled-map path: same rule as
         // `announce()` — rep 0 of an announce-then-work block plays
         // the combo-announce clip when the library has one.
+        //
+        // M39-V2 Slice 3-a-ii: when a CompiledWorkoutScore owns
+        // combo-announces (`scoreOwnsCombos === true`), the runner's
+        // SlotDispatcher fires them from the score's coachSlots
+        // instead — this handler MUST NOT double-fire. The
+        // `announce-then-work` gates above (repeatIndex, refire) still
+        // apply exactly as before; only the concrete dispatch call is
+        // gated. Falling through to a per-word or phrase path below
+        // this block also skipped: an announce-then-work block never
+        // uses those, so there's nothing to hand off.
         if (
           cue?.voicePolicy === 'announce-then-work' &&
           cue.repeatIndex === 0 &&
           this.comboAnnounceFor &&
           this.output.playComboAnnounce
         ) {
+          if (this.scoreOwnsCombos) return
           const clip = this.comboAnnounceFor(payload.combination, this.vocabulary)
           if (clip) {
             this.armFor(event.cueId, 'combo-announce')
@@ -827,12 +869,20 @@ export class CueAnnouncer {
     // clip, the fallthrough below plays the per-punch phrase as the
     // Phase A interim — the block still speaks at boundary, just with
     // the old per-punch audio.
+    //
+    // M39-V2 Slice 3-a-ii: same score-authoritative gate as the map
+    // path — return silently when a CompiledWorkoutScore's
+    // SlotDispatcher owns combo-announces, so this event-stream path
+    // never double-fires. Falling through to the phrase interim is
+    // also skipped: an announce-then-work cue whose score has no slot
+    // is authored silence, not a fallback opportunity.
     if (
       cue.voicePolicy === 'announce-then-work' &&
       cue.repeatIndex === 0 &&
       this.comboAnnounceFor &&
       this.output.playComboAnnounce
     ) {
+      if (this.scoreOwnsCombos) return
       const combination = formatCombo(cue.tokens)
       const clip = this.comboAnnounceFor(combination, this.vocabulary)
       if (clip) {

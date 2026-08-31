@@ -270,4 +270,15 @@ export function findComboAnnounce(
   )
 }
 
+/**
+ * Look up a combo-announce clip by its stable `id` (e.g. `ca-1-1-2-numbers`).
+ * Used by the score-authoritative dispatcher (M39-V2 W1 Epic Slice 3-a-ii)
+ * — the compiler stores `id` on `CompiledCoachSlot.variants[*].assetId`;
+ * at dispatch time the runtime resolves the module + duration back
+ * without having to know the (combination, vocabulary) pair.
+ */
+export function findComboAnnounceById(id: string): ComboAnnounceClip | undefined {
+  return COMBO_ANNOUNCE_CLIPS.find((c) => c.id === id)
+}
+
 /* eslint-enable @typescript-eslint/no-require-imports */
