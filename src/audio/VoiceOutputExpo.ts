@@ -53,7 +53,6 @@ import {
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 import { MetronomePlayer, type MetronomePlayerObserver } from './MetronomePlayer'
 import { MetronomeTransport } from './MetronomeTransport'
-import { wrappedPositionToAbsoluteTick } from './wrappedPositionToAbsoluteTick'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -434,12 +433,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   /**
    * Monotonic timestamp at which the metronome transport last
-   * started (M39-V2 Phase W0-c-ii). Passed as `startMonotonicMs`
-   * to `wrappedPositionToAbsoluteTick` when translating a
-   * playlist status update into an absolute tick observation.
-   * Zero while stopped.
+   * started (M39-V2 Phase W0-c-ii). Zero while stopped.
    */
   private metronomeStartMonotonicMs = 0
+  /**
+   * Monotonic loop counter for the metronome playlist (M39-V2
+   * Phase W0-c-ii hotfix). The audio backend reports a WRAPPED
+   * `currentTime` per callback; the ambiguity — is loop 3 near
+   * its end (currentTime ≈ 0.95) or loop 4 near its start
+   * (currentTime ≈ 0.05)? — killed the translator's
+   * `Math.round`-based inference under real audio load
+   * (observed 60+ spurious re-anchors in 8 seconds on-tablet).
+   * We track the loop count explicitly: increment when
+   * `currentTime` drops sharply (from > 0.7s to < 0.3s of a
+   * 1-second loop). Zero while stopped; reset on start.
+   */
+  private metronomeLoopCount = 0
+  private metronomeLastWrappedSec = 0
 
   metronome = {
     start: (
@@ -452,6 +462,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // generation and non-zero ticksPerSecond.
       if (baseBpm !== undefined) {
         this.metronomeStartMonotonicMs = this.clock()
+        this.metronomeLoopCount = 0
+        this.metronomeLastWrappedSec = 0
         this.metronomeTransport.start(baseBpm)
       }
       const observer: MetronomePlayerObserver | undefined =
@@ -460,18 +472,26 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           : {
               now: () => this.clock(),
               onPositionReport: (report) => {
-                // Translate wrapped position → absolute tick, then
-                // hand it to the transport with the current
-                // generation (which may have already bumped via a
-                // prior large-error re-anchor).
                 const snap = this.metronomeTransport.snapshot()
                 if (snap.state !== 'running' || snap.ticksPerSecond <= 0) return
-                const observedAbsoluteTick = wrappedPositionToAbsoluteTick(
-                  report,
-                  this.metronomeStartMonotonicMs,
-                  snap.ticksPerSecond,
-                )
-                if (observedAbsoluteTick <= 0) return
+                if (!Number.isFinite(report.loopDurationSec) || report.loopDurationSec <= 0) return
+                // Monotonic loop count. Wrap detection: currentTime
+                // must drop by more than half a loop AND land near
+                // the start of a new loop. Callback cadence is
+                // ~500 ms for a ~1 s loop, so between callbacks
+                // currentTime steps by 0.5 forward under normal
+                // running — a backwards step of > 0.5 s is a wrap.
+                const wrapThreshold = report.loopDurationSec * 0.4
+                if (
+                  report.wrappedPositionSec < wrapThreshold &&
+                  this.metronomeLastWrappedSec > report.loopDurationSec - wrapThreshold
+                ) {
+                  this.metronomeLoopCount += 1
+                }
+                this.metronomeLastWrappedSec = report.wrappedPositionSec
+                const absoluteSec =
+                  this.metronomeLoopCount * report.loopDurationSec + report.wrappedPositionSec
+                const observedAbsoluteTick = absoluteSec * snap.ticksPerSecond
                 this.metronomeTransport.correct({
                   observedAbsoluteTick,
                   observedAtMonotonicMs: report.sampleMonotonicMs,
@@ -485,6 +505,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.metronomePlayer.stop()
       this.metronomeTransport.stop()
       this.metronomeStartMonotonicMs = 0
+      this.metronomeLoopCount = 0
+      this.metronomeLastWrappedSec = 0
     },
     setVolume: (volume: number): void => {
       this.metronomePlayer.setVolume(volume)
