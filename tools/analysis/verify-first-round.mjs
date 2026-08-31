@@ -30,8 +30,14 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
-const MATCH_WINDOW_MS = 500 // ±500 ms considered "matched" (loose for now — Stage 3b tightens acoustically)
-const LATE_WINDOW_MS = 1500 // outside this = "missing"
+// The announcer's `announce()` path fires the phrase EARLIER than the
+// strike beat (call-ahead), while `onTokenDue` fires AT the strike beat.
+// The manifest anchors every per-word event to the strike beat (the
+// engine's `token-due` moment), so the observed event may lead the
+// expected by up to a phrase's duration. Widen the windows accordingly:
+// matched = "same second"; late = "within the following combo's window".
+const MATCH_WINDOW_MS = 1000
+const LATE_WINDOW_MS = 2500
 const RE_ANCHOR_BUDGET = 20 // per round; > 20 = soft warn
 
 // ---------------------------------------------------------------------------

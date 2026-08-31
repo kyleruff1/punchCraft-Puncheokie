@@ -163,18 +163,25 @@ export function buildFirstRoundManifest(
   //   - `announce-then-work` cues → SlotDispatcher fires a single
   //     combo-announce clip via score.coachSlots (per Slice 3-a-ii's
   //     hotfix filter, only ATW cues are enqueued).
-  //   - `per-punch` and default cues → announcer's per-word path
-  //     fires one standalone clip per token at the strike's beat.
+  //   - `per-punch` and default cues → announcer's `announce()` fires
+  //     a per-word phrase (playPhrase) that emits one standalone clip
+  //     per PUNCH token, and `onTokenDue` may add per-token calls
+  //     under `follow-the-call` / `in-time` styles.
   //
-  // Both must appear in the expected manifest so the correlator can
-  // match either dispatch path.
+  // For the expected manifest we anchor per-word events to what the
+  // ENGINE emits: `cue.scheduledStartMs + cue.tokenOffsetsMs[tokenIdx]`
+  // — the exact wall-clock ms the runtime uses for its `token-due`
+  // event. Actual observed timing may drift from this (playPhrase
+  // schedules earlier than the strike beat; onTokenDue fires AT the
+  // strike beat) — the correlator's match window absorbs that; the
+  // key correctness invariant is "the right asset for the right
+  // strike position at roughly the right moment", not exact-tick
+  // matching.
   const timeline = expandTimeline(workout, 'orthodox', bpm)
   const round0 = timeline[0]
   const atwCueIds = new Set<string>()
-  const cuesById = new Map<string, (typeof round0.cues)[number]>()
   if (round0) {
     for (const cue of round0.cues) {
-      cuesById.set(cue.id, cue)
       if (cue.voicePolicy === 'announce-then-work') atwCueIds.add(cue.id)
     }
   }
@@ -188,18 +195,27 @@ export function buildFirstRoundManifest(
     const ev = toExpectedCoachEvent(slot)
     if (ev) coachEvents.push(ev)
   }
-  for (const strike of roundOneStrikes) {
-    if (atwCueIds.has(strike.cueId)) continue
-    coachEvents.push({
-      kind: 'per-word',
-      cueId: strike.cueId,
-      repId: strike.repId,
-      strikeIndex: strike.strikeIndex,
-      assetId: strike.token.toLowerCase(),
-      expectedStartTick: strike.targetStrikeTick,
-      expectedStartMs: tickToMs(strike.targetStrikeTick),
-      source: 'announcer.per-word',
-    })
+  if (round0) {
+    for (const cue of round0.cues) {
+      if (atwCueIds.has(cue.id)) continue
+      for (let i = 0; i < cue.tokens.length; i += 1) {
+        const token = cue.tokens[i]!
+        if (token.kind !== 'punch') continue
+        const assetId = token.body ? `${token.number}b` : `${token.number}`
+        const expectedStartMs =
+          cue.scheduledStartMs + (cue.tokenOffsetsMs[i] ?? 0)
+        coachEvents.push({
+          kind: 'per-word',
+          cueId: cue.id,
+          repId: 'rep-0',
+          strikeIndex: i,
+          assetId,
+          expectedStartTick: Math.round(expectedStartMs / MS_PER_TICK),
+          expectedStartMs,
+          source: 'announcer.per-word',
+        })
+      }
+    }
   }
   coachEvents.sort((a, b) => a.expectedStartTick - b.expectedStartTick)
   const notes: string[] = []

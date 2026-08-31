@@ -691,8 +691,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 240,
-      "expectedStartMs": 250,
+      "expectedStartTick": 0,
+      "expectedStartMs": 0,
       "source": "announcer.per-word"
     },
     {
@@ -701,8 +701,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 720,
-      "expectedStartMs": 750,
+      "expectedStartTick": 360,
+      "expectedStartMs": 375,
       "source": "announcer.per-word"
     },
     {
@@ -711,8 +711,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 2400,
-      "expectedStartMs": 2500,
+      "expectedStartTick": 1080,
+      "expectedStartMs": 1125,
       "source": "announcer.per-word"
     },
     {
@@ -721,8 +721,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 2880,
-      "expectedStartMs": 3000,
+      "expectedStartTick": 1440,
+      "expectedStartMs": 1500,
       "source": "announcer.per-word"
     },
     {
@@ -731,8 +731,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 4560,
-      "expectedStartMs": 4750,
+      "expectedStartTick": 2160,
+      "expectedStartMs": 2250,
       "source": "announcer.per-word"
     },
     {
@@ -741,18 +741,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 5040,
-      "expectedStartMs": 5250,
-      "source": "announcer.per-word"
-    },
-    {
-      "kind": "per-word",
-      "cueId": "r1-b2#0",
-      "repId": "rep-0",
-      "strikeIndex": 0,
-      "assetId": "2",
-      "expectedStartTick": 8016,
-      "expectedStartMs": 8350,
+      "expectedStartTick": 2520,
+      "expectedStartMs": 2625,
       "source": "announcer.per-word"
     },
     {
@@ -760,9 +750,9 @@
       "cueId": "r1-b2#0",
       "repId": "rep-0",
       "strikeIndex": 1,
-      "assetId": "3",
-      "expectedStartTick": 8496,
-      "expectedStartMs": 8850,
+      "assetId": "2",
+      "expectedStartTick": 4368,
+      "expectedStartMs": 4550,
       "source": "announcer.per-word"
     },
     {
@@ -770,9 +760,19 @@
       "cueId": "r1-b2#0",
       "repId": "rep-0",
       "strikeIndex": 2,
+      "assetId": "3",
+      "expectedStartTick": 4728,
+      "expectedStartMs": 4925,
+      "source": "announcer.per-word"
+    },
+    {
+      "kind": "per-word",
+      "cueId": "r1-b2#0",
+      "repId": "rep-0",
+      "strikeIndex": 3,
       "assetId": "2",
-      "expectedStartTick": 8976,
-      "expectedStartMs": 9350,
+      "expectedStartTick": 5088,
+      "expectedStartMs": 5300,
       "source": "announcer.per-word"
     },
     {
@@ -781,8 +781,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 13200,
-      "expectedStartMs": 13750,
+      "expectedStartTick": 6480,
+      "expectedStartMs": 6750,
       "source": "announcer.per-word"
     },
     {
@@ -791,8 +791,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 14640,
-      "expectedStartMs": 15250,
+      "expectedStartTick": 7200,
+      "expectedStartMs": 7500,
       "source": "announcer.per-word"
     },
     {
@@ -801,8 +801,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 16080,
-      "expectedStartMs": 16750,
+      "expectedStartTick": 7920,
+      "expectedStartMs": 8250,
       "source": "announcer.per-word"
     },
     {
@@ -811,8 +811,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 17520,
-      "expectedStartMs": 18250,
+      "expectedStartTick": 8640,
+      "expectedStartMs": 9000,
       "source": "announcer.per-word"
     },
     {
@@ -821,8 +821,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 18960,
-      "expectedStartMs": 19750,
+      "expectedStartTick": 9360,
+      "expectedStartMs": 9750,
       "source": "announcer.per-word"
     },
     {
@@ -831,8 +831,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 20400,
-      "expectedStartMs": 21250,
+      "expectedStartTick": 10080,
+      "expectedStartMs": 10500,
       "source": "announcer.per-word"
     },
     {
@@ -841,8 +841,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 21840,
-      "expectedStartMs": 22750,
+      "expectedStartTick": 10800,
+      "expectedStartMs": 11250,
       "source": "announcer.per-word"
     },
     {
@@ -851,8 +851,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 23280,
-      "expectedStartMs": 24250,
+      "expectedStartTick": 11520,
+      "expectedStartMs": 12000,
       "source": "announcer.per-word"
     },
     {
@@ -861,8 +861,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 27024,
-      "expectedStartMs": 28150,
+      "expectedStartTick": 13392,
+      "expectedStartMs": 13950,
       "source": "announcer.per-word"
     },
     {
@@ -871,8 +871,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 27504,
-      "expectedStartMs": 28650,
+      "expectedStartTick": 13680,
+      "expectedStartMs": 14250,
       "source": "announcer.per-word"
     },
     {
@@ -881,8 +881,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 28944,
-      "expectedStartMs": 30150,
+      "expectedStartTick": 14352,
+      "expectedStartMs": 14950,
       "source": "announcer.per-word"
     },
     {
@@ -891,8 +891,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 29424,
-      "expectedStartMs": 30650,
+      "expectedStartTick": 14640,
+      "expectedStartMs": 15250,
       "source": "announcer.per-word"
     },
     {
@@ -901,8 +901,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 30864,
-      "expectedStartMs": 32150,
+      "expectedStartTick": 15312,
+      "expectedStartMs": 15950,
       "source": "announcer.per-word"
     },
     {
@@ -911,8 +911,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 31344,
-      "expectedStartMs": 32650,
+      "expectedStartTick": 15600,
+      "expectedStartMs": 16250,
       "source": "announcer.per-word"
     },
     {
@@ -921,8 +921,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 32784,
-      "expectedStartMs": 34150,
+      "expectedStartTick": 16272,
+      "expectedStartMs": 16950,
       "source": "announcer.per-word"
     },
     {
@@ -931,8 +931,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 33264,
-      "expectedStartMs": 34650,
+      "expectedStartTick": 16560,
+      "expectedStartMs": 17250,
       "source": "announcer.per-word"
     },
     {
@@ -941,8 +941,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 34704,
-      "expectedStartMs": 36150,
+      "expectedStartTick": 17232,
+      "expectedStartMs": 17950,
       "source": "announcer.per-word"
     },
     {
@@ -951,8 +951,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 35184,
-      "expectedStartMs": 36650,
+      "expectedStartTick": 17520,
+      "expectedStartMs": 18250,
       "source": "announcer.per-word"
     },
     {
@@ -961,8 +961,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 36624,
-      "expectedStartMs": 38150,
+      "expectedStartTick": 18192,
+      "expectedStartMs": 18950,
       "source": "announcer.per-word"
     },
     {
@@ -971,8 +971,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 37104,
-      "expectedStartMs": 38650,
+      "expectedStartTick": 18480,
+      "expectedStartMs": 19250,
       "source": "announcer.per-word"
     },
     {
@@ -981,8 +981,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 40848,
-      "expectedStartMs": 42550,
+      "expectedStartTick": 20304,
+      "expectedStartMs": 21150,
       "source": "announcer.per-word"
     },
     {
@@ -991,8 +991,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 41328,
-      "expectedStartMs": 43050,
+      "expectedStartTick": 20664,
+      "expectedStartMs": 21525,
       "source": "announcer.per-word"
     },
     {
@@ -1001,8 +1001,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 86928,
-      "expectedStartMs": 90550,
+      "expectedStartTick": 43344,
+      "expectedStartMs": 45150,
       "source": "announcer.per-word"
     },
     {
@@ -1011,8 +1011,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 87408,
-      "expectedStartMs": 91050,
+      "expectedStartTick": 43680,
+      "expectedStartMs": 45500,
       "source": "announcer.per-word"
     },
     {
@@ -1021,8 +1021,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 88848,
-      "expectedStartMs": 92550,
+      "expectedStartTick": 44304,
+      "expectedStartMs": 46150,
       "source": "announcer.per-word"
     },
     {
@@ -1031,8 +1031,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 89328,
-      "expectedStartMs": 93050,
+      "expectedStartTick": 44640,
+      "expectedStartMs": 46500,
       "source": "announcer.per-word"
     },
     {
@@ -1041,8 +1041,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 90768,
-      "expectedStartMs": 94550,
+      "expectedStartTick": 45264,
+      "expectedStartMs": 47150,
       "source": "announcer.per-word"
     },
     {
@@ -1051,8 +1051,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 91248,
-      "expectedStartMs": 95050,
+      "expectedStartTick": 45600,
+      "expectedStartMs": 47500,
       "source": "announcer.per-word"
     },
     {
@@ -1061,8 +1061,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 92688,
-      "expectedStartMs": 96550,
+      "expectedStartTick": 46224,
+      "expectedStartMs": 48150,
       "source": "announcer.per-word"
     },
     {
@@ -1071,8 +1071,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 93168,
-      "expectedStartMs": 97050,
+      "expectedStartTick": 46560,
+      "expectedStartMs": 48500,
       "source": "announcer.per-word"
     },
     {
@@ -1081,8 +1081,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 94608,
-      "expectedStartMs": 98550,
+      "expectedStartTick": 47184,
+      "expectedStartMs": 49150,
       "source": "announcer.per-word"
     },
     {
@@ -1091,8 +1091,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 95088,
-      "expectedStartMs": 99050,
+      "expectedStartTick": 47520,
+      "expectedStartMs": 49500,
       "source": "announcer.per-word"
     },
     {
@@ -1101,8 +1101,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 96528,
-      "expectedStartMs": 100550,
+      "expectedStartTick": 48144,
+      "expectedStartMs": 50150,
       "source": "announcer.per-word"
     },
     {
@@ -1111,8 +1111,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 97008,
-      "expectedStartMs": 101050,
+      "expectedStartTick": 48480,
+      "expectedStartMs": 50500,
       "source": "announcer.per-word"
     },
     {
@@ -1121,8 +1121,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 98448,
-      "expectedStartMs": 102550,
+      "expectedStartTick": 49104,
+      "expectedStartMs": 51150,
       "source": "announcer.per-word"
     },
     {
@@ -1131,8 +1131,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 98928,
-      "expectedStartMs": 103050,
+      "expectedStartTick": 49440,
+      "expectedStartMs": 51500,
       "source": "announcer.per-word"
     },
     {
@@ -1141,8 +1141,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 100368,
-      "expectedStartMs": 104550,
+      "expectedStartTick": 50064,
+      "expectedStartMs": 52150,
       "source": "announcer.per-word"
     },
     {
@@ -1151,8 +1151,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 100848,
-      "expectedStartMs": 105050,
+      "expectedStartTick": 50400,
+      "expectedStartMs": 52500,
       "source": "announcer.per-word"
     },
     {
@@ -1161,8 +1161,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 102288,
-      "expectedStartMs": 106550,
+      "expectedStartTick": 51024,
+      "expectedStartMs": 53150,
       "source": "announcer.per-word"
     },
     {
@@ -1171,8 +1171,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 102768,
-      "expectedStartMs": 107050,
+      "expectedStartTick": 51360,
+      "expectedStartMs": 53500,
       "source": "announcer.per-word"
     },
     {
@@ -1181,8 +1181,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 104208,
-      "expectedStartMs": 108550,
+      "expectedStartTick": 51984,
+      "expectedStartMs": 54150,
       "source": "announcer.per-word"
     },
     {
@@ -1191,8 +1191,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "2",
-      "expectedStartTick": 104688,
-      "expectedStartMs": 109050,
+      "expectedStartTick": 52320,
+      "expectedStartMs": 54500,
       "source": "announcer.per-word"
     },
     {
@@ -1201,8 +1201,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 109968,
-      "expectedStartMs": 114550,
+      "expectedStartTick": 54864,
+      "expectedStartMs": 57150,
       "source": "announcer.per-word"
     },
     {
@@ -1211,8 +1211,8 @@
       "repId": "rep-0",
       "strikeIndex": 1,
       "assetId": "1",
-      "expectedStartTick": 110448,
-      "expectedStartMs": 115050,
+      "expectedStartTick": 55152,
+      "expectedStartMs": 57450,
       "source": "announcer.per-word"
     },
     {
@@ -1221,8 +1221,8 @@
       "repId": "rep-0",
       "strikeIndex": 2,
       "assetId": "2",
-      "expectedStartTick": 110928,
-      "expectedStartMs": 115550,
+      "expectedStartTick": 55488,
+      "expectedStartMs": 57800,
       "source": "announcer.per-word"
     },
     {
@@ -1231,8 +1231,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 173328,
-      "expectedStartMs": 180550,
+      "expectedStartTick": 86544,
+      "expectedStartMs": 90150,
       "source": "announcer.per-word"
     },
     {
@@ -1241,8 +1241,8 @@
       "repId": "rep-0",
       "strikeIndex": 0,
       "assetId": "1",
-      "expectedStartTick": 200976,
-      "expectedStartMs": 209350,
+      "expectedStartTick": 100368,
+      "expectedStartMs": 104550,
       "source": "announcer.per-word"
     }
   ],
