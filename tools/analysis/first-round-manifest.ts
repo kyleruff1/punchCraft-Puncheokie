@@ -161,8 +161,9 @@ export function buildFirstRoundManifest(
   // Runtime plays combos two different ways depending on the cue's V1c
   // voicePolicy:
   //   - `announce-then-work` cues → SlotDispatcher fires a single
-  //     combo-announce clip via score.coachSlots (per Slice 3-a-ii's
-  //     hotfix filter, only ATW cues are enqueued).
+  //     combo-announce clip via score.coachSlots, ONCE for the block
+  //     (the runner enqueues only `repeatIndex === 0`); the block's
+  //     remaining reps are worked in silence.
   //   - `per-punch` and default cues → announcer's `announce()` fires
   //     a per-word phrase (playPhrase) that emits one standalone clip
   //     per PUNCH token, and `onTokenDue` may add per-token calls
@@ -179,15 +180,36 @@ export function buildFirstRoundManifest(
   // matching.
   const timeline = expandTimeline(workout, 'orthodox', bpm)
   const round0 = timeline[0]
+  // TWO sets, because `announce-then-work` means different things to the
+  // two branches below and one set cannot serve both (GH #305).
+  //
+  // `expandBlock` mints one CueInstance PER REPETITION (`sp1-b4#0` …
+  // `#9`), and every rep carries the block's voicePolicy. So:
+  //
+  //   - Only the rep-0 cue is ANNOUNCED. The runner enqueues score slots
+  //     under `voicePolicy === 'announce-then-work' && repeatIndex === 0`
+  //     (_useWorkoutRunner.ts, commit 28db740) — speak the combination
+  //     once at block start, not once per rep. Expecting a slot per rep
+  //     produced 23 speed-combos expectations against 5 real dispatches,
+  //     i.e. a guaranteed hard FAIL that had nothing to do with the app.
+  //
+  //   - But EVERY rep is silent on the per-word path. Interior reps are
+  //     authored silence: `CueAnnouncer` early-returns for them. Letting
+  //     rep>0 cues fall through to the per-word branch would mint ~50
+  //     phantom per-word expectations per workout — which is why the
+  //     one-line fix of just narrowing the single set is wrong.
+  const atwAnnounceCueIds = new Set<string>()
   const atwCueIds = new Set<string>()
   if (round0) {
     for (const cue of round0.cues) {
-      if (cue.voicePolicy === 'announce-then-work') atwCueIds.add(cue.id)
+      if (cue.voicePolicy !== 'announce-then-work') continue
+      atwCueIds.add(cue.id)
+      if (cue.repeatIndex === 0) atwAnnounceCueIds.add(cue.id)
     }
   }
 
   const roundOneAtwSlots = compiled.coachSlots
-    .filter((s) => s.roundIndex === 0 && atwCueIds.has(s.cueId))
+    .filter((s) => s.roundIndex === 0 && atwAnnounceCueIds.has(s.cueId))
     .slice()
     .sort((a, b) => a.reservationStartTick - b.reservationStartTick)
   const coachEvents: ExpectedCoachEvent[] = []
