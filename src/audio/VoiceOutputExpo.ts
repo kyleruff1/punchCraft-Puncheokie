@@ -490,6 +490,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.metronomePlayer.setVolume(volume)
     },
     transport: this.metronomeTransport,
+    notifyDisruption: (reason: string): void => {
+      // Pass-through to the transport (M39-V2 Phase W0-d).
+      // Caller decides whether to also re-play the metronome
+      // loop — this method only invalidates the JS-side
+      // timeline. If the caller does restart the loop, the
+      // observer wire will re-anchor via the normal correct()
+      // path.
+      this.metronomeTransport.notifyDisruption(reason)
+    },
   }
 
   constructor(opts: VoiceOutputExpoOptions = {}) {

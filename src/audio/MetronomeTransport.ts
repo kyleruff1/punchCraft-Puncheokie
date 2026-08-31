@@ -275,6 +275,50 @@ export class MetronomeTransport implements MetronomeTransportPort {
   }
 
   /**
+   * Report an external audio-session disruption — a Bluetooth
+   * route change, an iOS interruption, an Android app-background
+   * pause, a native player restart — anything that leaves the
+   * audio backend at a position the JS transport can no longer
+   * trust (M39-V2 Phase W0-d, Kyle amended plan 2026-08-30,
+   * principle #20).
+   *
+   * Behavior:
+   *   - When `state !== 'running'`: no-op (nothing to invalidate).
+   *   - Otherwise: preserve the CURRENT tick (workout position
+   *     is unchanged from the athlete's perspective), bump
+   *     generation (so any timeline compiled against the prior
+   *     generation is rejected + re-armed by score dispatch),
+   *     re-anchor the monotonic reference to `now`, and notify
+   *     subscribers.
+   *
+   * The tick does NOT reset to 0 — that would be `stop()` →
+   * `start()`. A disruption is a break in the AUDIO PIPELINE, not
+   * a break in the athlete's workout: they're still throwing
+   * punches; only the coach's schedule needs to be re-armed
+   * because it may have missed events during the disruption
+   * window.
+   *
+   * Callers (typically the runner reacting to expo-audio
+   * interruption events, or the metronome player noticing a
+   * playlist restart) supply a short `reason` string for the
+   * diagnostic log.
+   */
+  notifyDisruption(reason: string): void {
+    if (this.state !== 'running') return
+    const now = this.clock.now()
+    const currentTick = this.absoluteTickAt(now)
+    this.generation += 1
+    this.anchorMonotonicMs = now
+    this.anchorAbsoluteTick = currentTick
+    logger.info('puncheokie.transport', 'transport disrupted — generation bumped', {
+      generation: safe(this.generation),
+      reason: safe(reason),
+      absoluteTick: safe(currentTick),
+    })
+    this.notify()
+  }
+
+  /**
    * Subscribe to state transitions (M39-V2 Phase W0-b-ii). The
    * callback fires synchronously on every `start` / `stop` /
    * `pause` / `resume` with a fresh snapshot; use it to keep a
@@ -287,6 +331,8 @@ export class MetronomeTransport implements MetronomeTransportPort {
    * that needs it should read `snapshot()` immediately after
    * subscribing. This matches the "publish-on-change" contract
    * and avoids a synchronous side-effect during subscribe.
+   *
+   * `notifyDisruption` also fires this callback (see above).
    */
   subscribe(cb: (snapshot: MetronomeTransportSnapshot) => void): () => void {
     this.subscribers.add(cb)

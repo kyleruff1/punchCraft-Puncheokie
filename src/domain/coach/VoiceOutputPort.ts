@@ -469,6 +469,19 @@ export interface VoiceOutputPort {
     setVolume(volume: number): void
     /** The shared logical clock. Undefined on domain consumers that predate W0. */
     readonly transport?: MetronomeTransportPort
+    /**
+     * Notify the transport of an external audio-session
+     * disruption — a Bluetooth route change, an iOS
+     * interruption, an Android app-background pause, a native
+     * player restart — anything that leaves the audio backend
+     * at a position the JS-side transport can no longer trust
+     * (M39-V2 Phase W0-d). The transport preserves the CURRENT
+     * tick (workout position is unchanged) but bumps its
+     * generation so score dispatch can re-arm any events the
+     * disruption window may have swallowed. No-op when the
+     * transport isn't running.
+     */
+    notifyDisruption?(reason: string): void
   }
   /** Descriptive text only. Never a punch command (D16). */
   speak(text: string, priority: AudioPriority): void

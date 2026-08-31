@@ -440,3 +440,77 @@ describe('MetronomeTransport.correct — bounded phase correction (W0-c)', () =>
     expect(t.snapshot().generation).toBe(startGen)
   })
 })
+
+describe('MetronomeTransport.notifyDisruption (W0-d)', () => {
+  it('is a no-op when the transport is not running (disruption of stopped is meaningless)', () => {
+    const clock = createFakeClock()
+    const t = new MetronomeTransport(clock)
+    const before = t.snapshot()
+    t.notifyDisruption('bluetooth-route-change')
+    const after = t.snapshot()
+    expect(after).toEqual(before)
+  })
+
+  it('is a no-op when the transport is paused', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(500)
+    t.pause()
+    const before = t.snapshot()
+    t.notifyDisruption('interruption')
+    const after = t.snapshot()
+    expect(after.state).toBe('paused')
+    expect(after.generation).toBe(before.generation)
+    expect(after.absoluteTick).toBe(before.absoluteTick)
+  })
+
+  it('bumps generation but PRESERVES the current tick when running', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(2_500) // ~2400 ticks in
+    const tickBefore = t.currentTick()
+    const genBefore = t.snapshot().generation
+
+    t.notifyDisruption('route-change')
+
+    // Tick position is unchanged from the athlete's perspective.
+    expect(t.currentTick()).toBeCloseTo(tickBefore, 3)
+    // Generation bumped so downstream can reject stale timelines.
+    expect(t.snapshot().generation).toBe(genBefore + 1)
+    // State still running.
+    expect(t.snapshot().state).toBe('running')
+  })
+
+  it('notifies subscribers with a running snapshot', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000)
+    const seen: Array<{ state: string; generation: number }> = []
+    t.subscribe((snap) => seen.push({ state: snap.state, generation: snap.generation }))
+
+    t.notifyDisruption('audio-underrun')
+
+    expect(seen).toHaveLength(1)
+    expect(seen[0]!.state).toBe('running')
+    expect(seen[0]!.generation).toBe(2) // was 1 after start; bumped to 2
+  })
+
+  it('advances tick continuously across the disruption (no reset to 0)', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000)
+    const tick1 = t.currentTick() // ~960
+    t.notifyDisruption('route-change')
+    clock.advance(1_000)
+    const tick2 = t.currentTick() // ~1920
+    // Second read should be tick1 + 960 (one more second of running),
+    // NOT reset to 960 (which would be the tick a full restart would
+    // produce).
+    expect(tick2).toBeGreaterThan(tick1 + 900)
+    expect(tick2).toBeLessThan(tick1 + 1_020)
+  })
+})

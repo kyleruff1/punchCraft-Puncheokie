@@ -270,6 +270,33 @@ describe('metronome position observer → transport.correct (W0-c-ii)', () => {
   })
 })
 
+describe('metronome.notifyDisruption port method (W0-d)', () => {
+  it('bumps transport generation without resetting the tick', () => {
+    const output = buildOutput()
+    output.metronome.start(FAKE_LOOP, 0.6, 60)
+    const genBefore = output.metronome.transport!.snapshot().generation
+    const tickBefore = output.metronome.transport!.currentTick()
+
+    output.metronome.notifyDisruption!('bluetooth-route-change')
+
+    const snap = output.metronome.transport!.snapshot()
+    expect(snap.generation).toBe(genBefore + 1)
+    expect(snap.state).toBe('running')
+    // Tick preserved to within the arithmetic tolerance of the
+    // controlled clock (buildOutput's clock doesn't advance
+    // between the reads, so should be exact).
+    expect(output.metronome.transport!.currentTick()).toBe(tickBefore)
+  })
+
+  it('is a no-op when the transport was never started', () => {
+    const output = buildOutput()
+    const before = output.metronome.transport!.snapshot()
+    output.metronome.notifyDisruption!('unused')
+    const after = output.metronome.transport!.snapshot()
+    expect(after).toEqual(before)
+  })
+})
+
 describe('metronome/coach isolation (principle #20)', () => {
   it('coach activity never touches the transport state', async () => {
     const output = buildOutput()
