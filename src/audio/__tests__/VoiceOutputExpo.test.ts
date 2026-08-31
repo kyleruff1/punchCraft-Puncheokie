@@ -29,6 +29,7 @@ jest.mock('expo-audio', () => ({
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
 import {
+  CHIME_IN_RELEASE_MS,
   COACH_LANE_RELEASE_GRACE_MS,
   DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
   FALLBACK_CLIP_MS,
@@ -622,15 +623,13 @@ describe('audibleUntilMs — A15 (#256) busy-until timing signal', () => {
     expect(h.output.audibleUntilMs()).toBe(0)
   })
 
-  it('does NOT advance for playCombination — the phrase player retired in Phase 5-iv', async () => {
+  it("advances for a combination phrase using the sidecar's measured length", async () => {
     const h = harness()
     await h.output.preload()
-    // Phase 5-iv retired the per-punch phrase corpus. playCombination
-    // is now a no-op stub that always returns false; the coach lane's
-    // audibleUntilMs is untouched.
-    const ret = h.output.playCombination('1-2', 'pressure')
-    expect(ret).toBe(false)
-    expect(h.output.audibleUntilMs()).toBe(0)
+    h.output.playCombination('1-2', 'pressure')
+    // 1-2 at pressure ships ~656 ms in numbers, ~800+ ms in names —
+    // either way the window must extend at least half a second.
+    expect(h.output.audibleUntilMs()).toBeGreaterThan(h.now() + 400)
   })
 })
 
@@ -845,11 +844,66 @@ describe('coach-lane runId (M39-V2 Phase 4-ii) — exclusive arm + stale-callbac
 })
 
 describe('a chime-in mutes the shot calling, then it comes back (Kyle)', () => {
-  // Phase 5-iv: the three phrase-player mute regressions (co- clip
-  // real length, longest co- ceremony, born-silent inside the window)
-  // retired with their subject — playCombination no longer creates a
-  // phrasePlayer. The per-word / bell mute behaviour survives and is
-  // pinned below.
+  // A1 fix: co- ceremony assets use their compiled manifest durations
+  // (CALLOUT_CLIPS[id].durationMs) rather than the fixed fallback.
+  // Everything else (`double-up`, `power-strikes` …) still goes through
+  // the runtime `durations` cache or the fallback.
+  const FALLBACK_MS = 2_500
+  const CLOSER_01_MS = 690 // from calloutManifest.ts
+
+  it('mutes for the co- clip\'s real length, not the 2.5s fallback', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+    expect(phrase.volume).toBe(1)
+
+    h.output.playAsset('co-closer-01')
+    expect(phrase.volume).toBe(0)
+
+    // The manifest length holds the phrase silent until the whole
+    // ceremony has cleared, then the timer restores it.
+    h.advance(CLOSER_01_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(1)
+  })
+
+  it('covers even the longest co- ceremony (A1 regression: co-pressure-03 ~8.4s)', async () => {
+    const h = harness()
+    await h.output.preload()
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+
+    h.output.playAsset('co-pressure-03')
+    expect(phrase.volume).toBe(0)
+
+    // Under the old 2500 ms fallback the phrase came back to full
+    // volume while co-pressure-03 was still speaking — the doubled
+    // coach Kyle reported. The manifest holds it silent for the full
+    // clip, so at the fallback window it must still be muted.
+    h.advance(FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(0)
+
+    // The manifest lists co-pressure-03 at 8373 ms; past that + release
+    // the restore fires normally.
+    h.advance(8373 - FALLBACK_MS + 100)
+    expect(phrase.volume).toBe(1)
+  })
+
+  it('births a phrase silent inside the window, restored by the same timer', async () => {
+    const h = harness()
+    await h.output.preload()
+    // `double-up` is not a `co-` asset — its runtime duration is unknown
+    // in this harness (playerFor's create branch does not measure), so
+    // it falls back to 2500 ms. The invariant under test is the born-
+    // silent + restore behaviour, which is independent of duration.
+    h.output.playAsset('double-up')
+    h.output.playCombination('1-2', 'steady')
+    const phrase = h.created[h.created.length - 1]!
+    expect(phrase.volume).toBe(0)
+
+    h.advance(FALLBACK_MS + CHIME_IN_RELEASE_MS)
+    expect(phrase.volume).toBe(1)
+  })
 
   it('mutes per-word calls but never the bell', async () => {
     const h = harness()
@@ -986,16 +1040,51 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
   // pending call when the next was scheduled, so a 30-second volume burst
   // got its opening call and then silence: the exact mid-round quiet the
   // refires were built to fill (measured on device, 2026-08-25).
-  // Phase 5-iv retired the phrasePlayer + scheduledPhrases queue.
-  // The A13 additive-handles regression + cancelScheduledCombinations
-  // test suites survived here only for that queue; both are gone now
-  // that playCombination is a no-op.
-  it('playCombination returns false and schedules nothing (Phase 5-iv no-op)', () => {
+  it('plays every future-scheduled combination, not just the last', () => {
+    // A13 (#267): the original single-handle implementation cancelled
+    // each pending call when the next was scheduled — a 30-second
+    // burst got its opening call and then silence. The additive fix
+    // kept every pending call. A13 layered on top: when several
+    // phrases become due on the same tick, the port fires the first
+    // and requeues the rest for the next tick so busyUntilMs can
+    // serialize them (pre-A13 they all called start() back-to-back and
+    // each removed the previous phrasePlayer — one audible outcome).
+    // In runtime the tick cycle is 50 ms, so all three fire within
+    // ~150 ms; the test simulates that by advancing repeatedly.
     const h = harness()
     const t0 = h.now()
-    expect(h.output.playCombination('1-2', 'steady', t0 + 6_000)).toBe(false)
+    expect(h.output.playCombination('1-2', 'steady', t0 + 6_000)).toBe(true)
+    expect(h.output.playCombination('1-2', 'steady', t0 + 12_000)).toBe(true)
+    expect(h.output.playCombination('1-2', 'steady', t0 + 18_000)).toBe(true)
+
     h.advance(20_000)
     for (let i = 0; i < 3; i += 1) h.output.advance()
-    expect(h.plays.filter((p) => p.source !== undefined)).toHaveLength(0)
+    expect(h.plays).toHaveLength(3)
+  })
+
+  it('cancel() clears every pending re-call', () => {
+    const h = harness()
+    const t0 = h.now()
+    h.output.playCombination('1-2', 'steady', t0 + 6_000)
+    h.output.playCombination('1-2', 'steady', t0 + 12_000)
+    h.output.cancel(AUDIO_PRIORITY.safety)
+
+    h.advance(20_000)
+    h.output.advance()
+    expect(h.plays).toHaveLength(0)
+  })
+})
+
+describe('cancelScheduledCombinations', () => {
+  it('drops pending re-calls without touching anything sounding', () => {
+    const h = harness()
+    const t0 = h.now()
+    h.output.playCombination('1-2', 'steady', t0 + 6_000)
+    h.output.playCombination('1-2', 'steady', t0 + 12_000)
+    h.output.cancelScheduledCombinations()
+
+    h.advance(20_000)
+    h.output.advance()
+    expect(h.plays).toHaveLength(0)
   })
 })

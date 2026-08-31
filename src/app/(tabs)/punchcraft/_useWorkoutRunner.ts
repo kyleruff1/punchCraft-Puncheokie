@@ -36,6 +36,7 @@ import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/pr
 import { CALLOUT_CLIPS } from '@audio/voiceAssets/calloutManifest'
 import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
+import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
   compileRoundSpine,
@@ -287,12 +288,25 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             vocabulary,
             performance: 'work',
           }),
-        // Phase 5-iv retired the per-punch phrase corpus. The cadence-lab
-        // per-clip shift and the scalable-rail wordMarks both lived on
-        // that manifest; both now return undefined uniformly. RhythmMap's
-        // rail-vs-beat-grid decision degrades to beat grid for every cue.
-        phraseShiftFor: () => undefined,
-        wordMarksFor: () => undefined,
+        // Cadence-lab per-clip placement shift (2026-08-28): read from the
+        // manifest's baked `startPadMs`. Empty for the shipped library —
+        // starts moving the day the audit's report authors clip-shifts.json.
+        phraseShiftFor: (combination, cadence) =>
+          findPhraseAsset(combination, cadence, vocabulary, 'work')?.startPadMs,
+        // Scalable cadence rail: per-token word onsets + ends from the
+        // manifest. When present for every token, RhythmMap places the
+        // clip so word 0 ends RAIL_K_MS before ring 0 and drives rings
+        // 1+ from the clip's inter-word spacing. Clips without full
+        // wordMarks fall back to the beat grid unchanged.
+        wordMarksFor: (combination, cadence) => {
+          const asset = findPhraseAsset(combination, cadence, vocabulary, 'work')
+          if (!asset || asset.wordMarks.length === 0) return undefined
+          return asset.wordMarks.map((m) => ({
+            tokenIndex: m.tokenIndex,
+            offsetMs: m.offsetMs,
+            endOffsetMs: m.endOffsetMs,
+          }))
+        },
         encouragement:
           workout.recipe.enabledCoachCalls.length > 0 && workout.recipe.voiceMode !== 'off',
         // Set Ceremonies: measured sentence lengths from the generated
@@ -1038,11 +1052,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // Call the combo ahead of the throw at speed; call each punch in time
           // at a slow technical cadence (doc §18.1).
           delivery: deliveryForCadence(workout.recipe.cadenceProfile),
-          // Phase 5-iv: the per-punch phrase manifest retired; the
-          // cadence-lab shift lookup goes with it. Live-executor + compiled
-          // map both return undefined uniformly here (see phraseShiftFor
-          // on the compiled-map wiring above).
-          phraseShiftFor: () => undefined,
+          // Same cadence-lab shift the compiled map uses, so live-driven and
+          // executor-driven placement agree.
+          phraseShiftFor: (combination, cadence) =>
+            findPhraseAsset(
+              combination,
+              cadence,
+              voice.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
+              'work',
+            )?.startPadMs,
           // M39-V1c Phase B2: resolve the combo-announce clip for rep 0
           // of a block whose voicePolicy is announce-then-work. Undefined
           // returned when the announce library has no rendering for this

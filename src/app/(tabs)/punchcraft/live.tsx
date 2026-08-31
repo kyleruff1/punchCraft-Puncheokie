@@ -52,7 +52,7 @@ import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
-import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
+import { findPhraseAsset } from '@audio/voiceAssets/phraseManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
 import { RecoveryPlayer } from '@audio/RecoveryPlayer'
 import { CALLOUT_CLIPS, themeClipFor } from '@audio/voiceAssets/calloutManifest'
@@ -209,10 +209,8 @@ export default function LiveScreen(): React.JSX.Element {
   const generated = useMemo(() => {
     const vocabulary = recipe.voiceVocabulary === 'names' ? 'techniques' : 'numbers'
     return generateWorkout(recipe, {
-      // M39-V2 Phase 5-iv: the per-punch phrase corpus retired; the
-      // gate now reads from the combo-announce library, which is the
-      // V2 source of truth for "coach can speak this combination."
-      voiceReady: (notation) => findComboAnnounce(notation, vocabulary) !== undefined,
+      voiceReady: (notation) =>
+        findPhraseAsset(notation, recipe.cadenceProfile, vocabulary) !== undefined,
       // Set Ceremonies: price a pre-set call-out from MEASURED clip
       // lengths so the fill can reserve exactly the lead-in the coach
       // needs. Any missing clip prices to undefined — the ceremony is
@@ -228,9 +226,7 @@ export default function LiveScreen(): React.JSX.Element {
                 if (sentence === undefined) return undefined
                 let total = sentence
                 if (notation !== undefined) {
-                  // Phase 5-iv: read the announce clip's measured length
-                  // instead of the retired per-punch phrase clip.
-                  const recite = findComboAnnounce(notation, vocabulary)?.durationMs
+                  const recite = findPhraseAsset(notation, 'technical', vocabulary)?.durationMs
                   if (recite === undefined) return undefined
                   total += recite + 250
                 }
