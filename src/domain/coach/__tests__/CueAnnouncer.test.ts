@@ -372,8 +372,9 @@ describe('each style calls the combination its own way (doc §18.1)', () => {
     const phrase = h.port.calls.filter((x) => x.kind === 'asset' && x.id !== 'tone-ready')
     expect(phrase).toEqual([
       { kind: 'asset', id: '1', atMs: c.announceAt },
-      { kind: 'asset', id: '2', atMs: c.announceAt },
-      { kind: 'asset', id: 'body', atMs: c.announceAt },
+      // Fused-body: '2b' is one utterance ("Two-bee"), not a split
+      // ['2', 'body'] — [[feedback-fused-bee-pronunciation]] + task #46.
+      { kind: 'asset', id: '2b', atMs: c.announceAt },
       { kind: 'asset', id: '3', atMs: c.announceAt },
     ])
   })

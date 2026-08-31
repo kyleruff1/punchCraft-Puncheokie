@@ -1,0 +1,11 @@
+{
+  "_comment": "Fused-body standalone strike clips (M39-V2 Phase 5 gap-fix, Kyle 2026-08-30). Numbers-vocab body-shot tokens (1b..6b) rendered as ONE fused utterance per [[feedback-fused-bee-pronunciation]] — hyphenated 'One-bee' text is the input format Chatterbox needs to fuse letter+number as a fast single utterance (space / concat / comma / ellipsis all fail; hard-won). These replace the on-the-fly ['digit','body'] compose that dispatchPerWordCall does today — that compose violates the A/B/C rule because the split gives the boxer time to commit head shot before 'body' arrives to redirect. Filenames match the runtime asset id shape: 1b.wav .. 6b.wav in assets/voice/numbers/standalone/. Ids are frozen. Runtime consumer: comboPhraseAssets returns '2b' as a single VoiceAssetId for numbers-vocab body tokens (vocabulary.ts change coming in Step 3). Rendered push+shout — a single hit anchor, matching the existing 1.wav..6b.wav numbers standalone corpus.",
+  "clips": [
+    { "id": "1b", "token": "1", "text": "One-bee." },
+    { "id": "2b", "token": "2", "text": "Two-bee." },
+    { "id": "3b", "token": "3", "text": "Three-bee." },
+    { "id": "4b", "token": "4", "text": "Four-bee." },
+    { "id": "5b", "token": "5", "text": "Five-bee." },
+    { "id": "6b", "token": "6", "text": "Six-bee." }
+  ]
+}

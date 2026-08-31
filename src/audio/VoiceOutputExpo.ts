@@ -688,7 +688,17 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
 
     try {
-      const player = this.makePlayer(this.manifest.assets[this.vocabulary][form][id])
+      const module = this.manifest.assets[this.vocabulary][form][id]
+      if (module === undefined) {
+        // Only fused-body ids (`1b..6b`) can be absent from a slot:
+        // they ship only in numbers/standalone. Reaching here means
+        // an announcer tried to play a fused-body id under
+        // names/* or numbers/combo, which never happens today —
+        // logging + throw lets the existing "clip did not load"
+        // path handle it uniformly.
+        throw new Error(`no manifest entry for ${this.vocabulary}/${form}/${id}`)
+      }
+      const player = this.makePlayer(module)
       this.players.set(key, player)
       // Duration is read lazily, not here. A player reports 0 until its asset
       // has loaded, and reading it at construction meant every clip fell back

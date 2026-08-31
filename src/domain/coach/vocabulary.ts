@@ -23,12 +23,27 @@ const PUNCH_ASSETS: Record<number, VoiceAssetId> = {
   6: '6',
 }
 
+const PUNCH_BODY_ASSETS: Record<number, VoiceAssetId> = {
+  1: '1b',
+  2: '2b',
+  3: '3b',
+  4: '4b',
+  5: '5b',
+  6: '6b',
+}
+
 /**
  * The clips a combination is spoken as, in order.
  *
- * `1-2b-3` becomes `['1', '2', 'body', '3']`: the body suffix follows its
- * own digit rather than flagging the combination, because `b` is per-digit
- * (D10) — `1-2b-3` bodies only the second punch.
+ * `1-2b-3` becomes `['1', '2b', '3']`: `2b` is one FUSED utterance
+ * ("Two-bee") rather than the digit + a separate "body" call. Chatterbox
+ * needs the hyphenated input to fuse letter+number as a fast single
+ * utterance ([[feedback-fused-bee-pronunciation]]); the historical
+ * per-punch phrase corpus at `assets/voice/phrases-legacy/cornerman/`
+ * shipped body-shots this way. Splitting the shot into `['2', 'body']`
+ * violated the A/B/C rule: the boxer committed the head-shot before
+ * "body" arrived to redirect. The fused clip lives at
+ * `assets/voice/numbers/standalone/2b.wav`.
  *
  * **Coach commands produce nothing.** Doc §18.2's closed vocabulary has no
  * clip for `double-up`, `breathe` or `hands-up`; they are display-only, or
@@ -40,7 +55,8 @@ export function comboPhraseAssets(tokens: readonly WorkoutToken[]): VoiceAssetId
   for (const token of tokens) {
     switch (token.kind) {
       case 'punch': {
-        const asset = PUNCH_ASSETS[token.number]
+        const table = token.body ? PUNCH_BODY_ASSETS : PUNCH_ASSETS
+        const asset = table[token.number]
         if (!asset) {
           // The type says 1–6; runtime data from a stored plan might not.
           // A wrong digit spoken confidently is worse than a loud failure.
@@ -49,7 +65,6 @@ export function comboPhraseAssets(tokens: readonly WorkoutToken[]): VoiceAssetId
           )
         }
         assets.push(asset)
-        if (token.body) assets.push('body')
         break
       }
       case 'defense':

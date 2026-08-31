@@ -15,13 +15,17 @@ const punch = (number: 1 | 2 | 3 | 4 | 5 | 6, body = false): WorkoutToken => ({
 // ---------------------------------------------------------------------------
 
 describe('a combination becomes clip ids', () => {
-  it('resolves 1-2b-3-2 with the body suffix on its own digit (D10)', () => {
+  it('resolves 1-2b-3-2 with the fused body id on its own digit (D10)', () => {
     // `b` is per-digit: `1-2b-3` bodies only the second punch, so the suffix
-    // has to follow the 2 rather than flag the combination.
+    // follows the 2 rather than flags the combination. The body-shot
+    // renders as one FUSED asset id ('2b') rather than a ['2','body']
+    // split — chatterbox needs the hyphenated 'Two-bee' input to fuse
+    // letter+number as one utterance ([[feedback-fused-bee-pronunciation]]),
+    // and the split gave the boxer time to commit head-shot before 'body'
+    // arrived to redirect (A/B/C rule).
     expect(comboPhraseAssets([punch(1), punch(2, true), punch(3), punch(2)])).toEqual([
       '1',
-      '2',
-      'body',
+      '2b',
       '3',
       '2',
     ])
@@ -82,9 +86,10 @@ describe('the asset set covers the whole token vocabulary', () => {
     // announcements (D23) + 5 coach lines (M4 encouragement) + the gong
     // (round-end sound; the ding opens rounds, and no beeps exist) + the
     // power-mode call-out + 47 Set Ceremony call-outs + the 30-second
-    // closer pair (1 + 13 rotating finishers). The gong is retired —
-    // rounds start AND end on the ding-ding.
-    expect(VOICE_ASSET_IDS).toHaveLength(101)
+    // closer pair (1 + 13 rotating finishers) + 6 fused-body numeric
+    // ids (1b..6b, added task #46). The gong is retired — rounds
+    // start AND end on the ding-ding.
+    expect(VOICE_ASSET_IDS).toHaveLength(107)
   })
 })
 

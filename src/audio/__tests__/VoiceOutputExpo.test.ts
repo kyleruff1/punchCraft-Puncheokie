@@ -45,6 +45,7 @@ import {
 } from '../voiceAssets/manifest'
 import {
   AUDIO_PRIORITY,
+  FUSED_BODY_ASSET_IDS,
   VOICE_ASSET_IDS,
   type VoiceAssetId,
 } from '@domain/coach/VoiceOutputPort'
@@ -152,7 +153,13 @@ const sourceOf = (
   id: VoiceAssetId,
   vocabulary: 'numbers' | 'names' = 'numbers',
   form: PhraseForm = 'standalone',
-): number => voiceAssetManifest.assets[vocabulary][form][id]
+): number => {
+  const module = voiceAssetManifest.assets[vocabulary][form][id]
+  if (module === undefined) {
+    throw new Error(`sourceOf: no manifest entry for ${vocabulary}/${form}/${id}`)
+  }
+  return module
+}
 
 // ---------------------------------------------------------------------------
 
@@ -198,10 +205,17 @@ describe('the manifest covers the whole vocabulary', () => {
     const calloutNumbers = callouts.match(/assets\/voice\/numbers\/(standalone|combo)\/co-/g) ?? []
     const calloutNames = callouts.match(/assets\/voice\/names\/(standalone|combo)\/co-/g) ?? []
 
-    // One block per form, so each vocabulary names its ids twice.
-    const perVocabulary = VOICE_ASSET_IDS.length * PHRASE_FORMS.length
-    expect((numbersBlock.match(/assets\/voice\/numbers\//g)?.length ?? 0) + calloutNumbers.length).toBe(perVocabulary)
-    expect((namesBlock.match(/assets\/voice\/names\//g)?.length ?? 0) + calloutNames.length).toBe(perVocabulary)
+    // Fused-body ids (`1b..6b`) only ship in numbers/standalone —
+    // the other three slots are exempt per FUSED_BODY_ASSET_IDS
+    // (see missingAssetIds relaxation in manifest.ts). So numbers
+    // carries the full id set once (standalone) + the non-fused
+    // subset once (combo); names carries the non-fused subset in
+    // both forms.
+    const nonFusedCount = VOICE_ASSET_IDS.length - FUSED_BODY_ASSET_IDS.length
+    const expectedNumbers = VOICE_ASSET_IDS.length + nonFusedCount
+    const expectedNames = nonFusedCount * PHRASE_FORMS.length
+    expect((numbersBlock.match(/assets\/voice\/numbers\//g)?.length ?? 0) + calloutNumbers.length).toBe(expectedNumbers)
+    expect((namesBlock.match(/assets\/voice\/names\//g)?.length ?? 0) + calloutNames.length).toBe(expectedNames)
     expect(namesBlock).not.toContain('assets/voice/numbers/')
   })
 
@@ -212,10 +226,11 @@ describe('the manifest covers the whole vocabulary', () => {
     const callouts = readFileSync('src/audio/voiceAssets/calloutManifest.ts', 'utf8')
     const paths = source.match(/assets\/voice\/[a-z]+\/[a-z]+\/[^']+\.wav/g) ?? []
     const calloutPaths = callouts.match(/assets\/voice\/[a-z]+\/[a-z]+\/[^']+\.wav/g) ?? []
-    // 82 VoiceAssetIds × 2 vocabularies × 2 forms, split across the two
-    // sources (theme-* clips are rest-side extras beyond the id set).
+    // Non-fused ids × 2 vocabs × 2 forms + fused-body ids (numbers/
+    // standalone only), split across manifest.ts + calloutManifest.ts.
+    const nonFusedCount = VOICE_ASSET_IDS.length - FUSED_BODY_ASSET_IDS.length
     const idPaths = [...paths, ...calloutPaths.filter((p) => p.includes('/co-'))]
-    expect(idPaths).toHaveLength(VOICE_ASSET_IDS.length * 2 * PHRASE_FORMS.length)
+    expect(idPaths).toHaveLength(nonFusedCount * 2 * PHRASE_FORMS.length + FUSED_BODY_ASSET_IDS.length)
     for (const path of [...paths, ...calloutPaths]) {
       expect([path, existsSync(path)]).toEqual([path, true])
     }

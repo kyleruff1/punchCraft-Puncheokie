@@ -25,7 +25,7 @@
 
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-import { VOICE_ASSET_IDS, type VoiceAssetId } from '@domain/coach/VoiceOutputPort'
+import { FUSED_BODY_ASSET_IDS, VOICE_ASSET_IDS, type VoiceAssetId } from '@domain/coach/VoiceOutputPort'
 import type { VoiceVocabulary } from '@domain/coach/VoiceCoachPolicy'
 // Set Ceremonies: generated per-directory require maps (47 call-out
 // clips × 4 sections) — see tools/voice/make-callout-clips.mjs.
@@ -44,10 +44,22 @@ export type PhraseForm = 'standalone' | 'combo'
 
 export const PHRASE_FORMS: readonly PhraseForm[] = ['standalone', 'combo']
 
+/**
+ * Fused-body ids (`1b..6b`) only ship in numbers/standalone — the
+ * other three slots (names/*, numbers/combo) are exempt at the type
+ * level too, so those blocks can omit them without breaking Record
+ * completeness. `missingAssetIds` mirrors this at runtime.
+ */
+type FusedBodyId = (typeof FUSED_BODY_ASSET_IDS)[number]
+type CoreAssetId = Exclude<VoiceAssetId, FusedBodyId>
+
+export type SlotAssetMap = Record<CoreAssetId, AssetModule> &
+  Partial<Record<FusedBodyId, AssetModule>>
+
 export interface VoiceAssetManifest {
   /** Fixed by the M34-01 decision: uncompressed, no decoder variance. */
   format: 'wav'
-  assets: Record<VoiceVocabulary, Record<PhraseForm, Record<VoiceAssetId, AssetModule>>>
+  assets: Record<VoiceVocabulary, Record<PhraseForm, SlotAssetMap>>
 }
 
 /**
@@ -69,6 +81,16 @@ export const voiceAssetManifest: VoiceAssetManifest = {
         '5': require('../../../assets/voice/numbers/standalone/5.wav'),
         '6': require('../../../assets/voice/numbers/standalone/6.wav'),
         body: require('../../../assets/voice/numbers/standalone/body.wav'),
+        // Fused-body — one fast utterance per body-shot digit,
+        // rendered from the hyphenated 'One-bee'..'Six-bee' Chatterbox
+        // input. Numeric vocab only; the names variant is covered by
+        // the technique-standalone corpus.
+        '1b': require('../../../assets/voice/numbers/standalone/1b.wav'),
+        '2b': require('../../../assets/voice/numbers/standalone/2b.wav'),
+        '3b': require('../../../assets/voice/numbers/standalone/3b.wav'),
+        '4b': require('../../../assets/voice/numbers/standalone/4b.wav'),
+        '5b': require('../../../assets/voice/numbers/standalone/5b.wav'),
+        '6b': require('../../../assets/voice/numbers/standalone/6b.wav'),
         slip: require('../../../assets/voice/numbers/standalone/slip.wav'),
         roll: require('../../../assets/voice/numbers/standalone/roll.wav'),
         duck: require('../../../assets/voice/numbers/standalone/duck.wav'),
@@ -223,12 +245,25 @@ export const voiceAssetManifest: VoiceAssetManifest = {
  * Exported so the test can assert emptiness rather than re-deriving the
  * expected list — a hand-copied list in the test would drift from the union
  * and stop catching anything.
+ *
+ * Fused-body ids (`1b..6b`, [[feedback-fused-bee-pronunciation]]) are
+ * numeric-standalone only — the technique vocab covers body-shots via
+ * the technique-standalone corpus, and the numbers/combo form has no
+ * fused-shout variant yet. `missingAssetIds` skips them for all
+ * slots except numbers/standalone; the completeness invariant still
+ * catches every non-fused-body id in every slot.
  */
+const FUSED_BODY_ID_SET: ReadonlySet<VoiceAssetId> = new Set(FUSED_BODY_ASSET_IDS)
+
 export function missingAssetIds(
   manifest: VoiceAssetManifest,
   vocabulary: VoiceVocabulary,
   form: PhraseForm = 'standalone',
 ): VoiceAssetId[] {
   const set = manifest.assets[vocabulary][form]
-  return VOICE_ASSET_IDS.filter((id) => set[id] === undefined || set[id] === null)
+  const fusedBodyExempt = !(vocabulary === 'numbers' && form === 'standalone')
+  return VOICE_ASSET_IDS.filter((id) => {
+    if (fusedBodyExempt && FUSED_BODY_ID_SET.has(id)) return false
+    return set[id] === undefined || set[id] === null
+  })
 }

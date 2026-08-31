@@ -14,8 +14,9 @@
  *
  * Also pins the specific mismatch surface Kyle's on-glass QA found:
  * a `1-2b-3` combo emits `coach.play` entries whose asset ids come
- * from `comboPhraseAssets` — `['1','2','body','3']` today (task #46
- * ships the fused `'2b'` replacement).
+ * from `comboPhraseAssets`. Task #46 shipped the fused `'2b'`
+ * replacement — a `1-2b-3` combo now emits `['1', '2b', '3']`, not
+ * the old `['1', '2', 'body', '3']` split.
  */
 import {
   compileWorkoutScript,
@@ -125,23 +126,24 @@ describe('compileWorkoutScript — ring.tokenDue per sequence cue', () => {
   })
 })
 
-describe('compileWorkoutScript — the 1-2b-3 mismatch surface (Kyle 2026-08-30)', () => {
-  it('emits coach.play entries whose assets come from comboPhraseAssets', () => {
-    // The body-work sample has combos with 2b tokens. Under the
-    // current comboPhraseAssets split (task #46 pending), a `1-2b`
-    // combo produces `['1','2','body']` — the analyzer will flag
-    // 'body' as missing when the runtime standalone corpus doesn't
-    // include it. Once task #46 lands, this test updates to expect
-    // `['1','2b']`.
+describe('compileWorkoutScript — the 1-2b-3 fused-body surface (task #46 landed)', () => {
+  it('emits coach.play entries with fused-body asset ids (e.g. "2b")', () => {
+    // The body-work sample has combos with 2b tokens. Task #46
+    // renamed the split from `['digit', 'body']` to `['digit-b']`
+    // ([[feedback-fused-bee-pronunciation]]) — Chatterbox needs
+    // the hyphenated 'Two-bee' input to fuse letter+number, and
+    // the split gave the boxer time to commit head-shot before
+    // 'body' arrived to redirect. Test pins the new emission
+    // shape and asserts NO legacy 'body' assets survive.
     const script = compileWorkoutScript(bodyWork, baseConfig())
     const bw1 = script.rounds[0]!
     const coachPlays = bw1.entries.filter(
       (e): e is ScriptCoachPlay => e.kind === 'coach.play',
     )
-    // At least one 'body' asset appears in the split — the current
-    // behavior the analyzer will surface as a runtime-missing entry.
-    const bodyPlays = coachPlays.filter((e) => e.assetId === 'body')
-    expect(bodyPlays.length).toBeGreaterThan(0)
+    const fusedBodyPlays = coachPlays.filter((e) => /^[1-6]b$/.test(e.assetId))
+    expect(fusedBodyPlays.length).toBeGreaterThan(0)
+    const legacyBodyPlays = coachPlays.filter((e) => e.assetId === 'body')
+    expect(legacyBodyPlays).toHaveLength(0)
   })
 })
 

@@ -61,6 +61,21 @@ export type VoiceAssetId =
   | '5'
   | '6'
   | 'body'
+  // Fused-body strikes — numeric vocab only, standalone form only.
+  // "One-bee".."Six-bee" as one fast utterance
+  // ([[feedback-fused-bee-pronunciation]]). Runtime path:
+  // `comboPhraseAssets` emits `2b` as a single asset id for numeric
+  // body-shot tokens; the manifest resolves it against
+  // `numbers/standalone/2b.wav`. Technique vocab covers body-shots
+  // via `techniqueStandaloneClipFor(...)` in a separate manifest —
+  // these ids are not required in the names/* or numbers/combo/*
+  // blocks (see `FUSED_BODY_ASSET_IDS` completeness relaxation).
+  | '1b'
+  | '2b'
+  | '3b'
+  | '4b'
+  | '5b'
+  | '6b'
   // Defense — `DefenseCommand`.
   | 'slip'
   | 'roll'
@@ -201,6 +216,22 @@ export interface CombinationVoice {
   performance?: PerformanceState
 }
 
+/**
+ * Ids that only ship in the numbers/standalone block. `1b..6b` are the
+ * fused numeric body-shots ("One-bee".."Six-bee") — see
+ * [[feedback-fused-bee-pronunciation]]. The names/* and numbers/combo
+ * blocks are not expected to carry them; the completeness check in
+ * `missingAssetIds` skips them for those slots.
+ */
+export const FUSED_BODY_ASSET_IDS: readonly VoiceAssetId[] = [
+  '1b',
+  '2b',
+  '3b',
+  '4b',
+  '5b',
+  '6b',
+]
+
 /** Every id, for manifest completeness checks (M34-04). */
 export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   '1',
@@ -210,6 +241,7 @@ export const VOICE_ASSET_IDS: readonly VoiceAssetId[] = [
   '5',
   '6',
   'body',
+  ...FUSED_BODY_ASSET_IDS,
   'slip',
   'roll',
   'duck',
