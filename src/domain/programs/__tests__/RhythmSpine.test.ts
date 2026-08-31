@@ -47,17 +47,17 @@ describe('RhythmSpine — per-token schedule', () => {
             continue
           }
           // A cue produces a beat for every token whose scheduled fire
-          // time fits inside cue.windowEndMs (M39-V1c: `beatsFor` matches
+          // time fits inside cue.windowEndMs (`beatsFor` matches
           // `CueEngine.fireDueTokens`'s window cap so the avatar and
-          // rings agree). Under engine-mode with a beat-grid rep
-          // stride shorter than the engine slot span, later tokens are
-          // legitimately clipped — that's the shared-chain contract.
-          const offsets = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
+          // rings agree). Phase 5-ii: the V1c `phraseTokenTimesMs` /
+          // `visualOffsetsMs` overrides retired; only the beat grid
+          // remains here.
+          const offsets = cue.tokenOffsetsMs
           const inWindow = offsets.filter((o) => cue.scheduledStartMs + o <= cue.windowEndMs).length
           expect(beats!.length).toBeGreaterThan(0)
           expect(beats!.length).toBeLessThanOrEqual(offsets.length)
-          // If none get clipped (legacy path), full match.
-          if (inWindow === offsets.length && !cue.visualOffsetsMs) {
+          // Every in-window offset produces a beat; the two totals match.
+          if (inWindow === offsets.length) {
             expect(beats!.length).toBe(offsets.length)
           }
         }
@@ -260,13 +260,6 @@ describe('beatsFor — the single source of truth', () => {
     expect(beats.map((b) => b.type)).toEqual(['straight', 'straight'])
   })
 
-  it('honors phraseTokenTimesMs when the rail is present', () => {
-    const railed: CueInstance = { ...cue, phraseTokenTimesMs: [-100, 380] }
-    const beats = beatsFor(railed)
-    // scheduledStartMs 10000 + rail offsets → 9900, 10380
-    expect(beats.map((b) => b.atMs)).toEqual([9_900, 10_380])
-  })
-
   it('stamps a per-occurrence strikeId on every TokenBeat (M39-V2 Phase 2)', () => {
     // Distinct strikeIds fix the `1-1-2` avatar short-circuit — two
     // repeats of the same punch number now produce distinct
@@ -296,22 +289,12 @@ describe('beatsFor — the single source of truth', () => {
     expect(new Set(beats.map((b) => b.strikeId)).size).toBe(3)
   })
 
-  it('honors visualOffsetsMs when the engine authored it (wins over rail — M39-V1c)', () => {
-    // Kyle 2026-08-30 Pass 5 fix: avatar and rings must walk the SAME
-    // authority chain. Engine-authored ring times take priority over
-    // both the rail and the beat grid — otherwise the avatar stays on
-    // the beat grid while the ring fires on the engine slot ("interfering
-    // maps"). Regression guard: this test HAD to fail before the shared
-    // helper landed.
-    const engine: CueInstance = {
-      ...cue,
-      visualOffsetsMs: [0, 250],
-      phraseTokenTimesMs: [-100, 380],
-    }
-    const beats = beatsFor(engine)
-    // scheduledStartMs 10000 + engine offsets → 10000, 10250
-    expect(beats.map((b) => b.atMs)).toEqual([10_000, 10_250])
-  })
+  // Phase 5-ii: the V1c `phraseTokenTimesMs` (rail) and
+  // `visualOffsetsMs` (engine grid) overrides retired. `beatsFor`
+  // now reads only the beat grid; engine authoring lives on
+  // `SpineSchedule.compiled[cueId]` instead. Regression coverage
+  // moved to `programCueBridge.test.ts` +
+  // `compileRoundSpine — compiled field` in this file.
 
   it('is pure — same inputs, deep-equal output', () => {
     expect(beatsFor(cue)).toEqual(beatsFor(cue))
