@@ -54,16 +54,32 @@ function parseArgs(argv) {
     out: undefined,
     screen: true,
     timeoutSec: 420,
+    // Forensic mode (token-order investigation, 2026-08-31): 60 fps
+    // screenrecord + mic capture alongside logcat, all stopped at
+    // `rest-entered` so exactly one round is captured.
+    forensic: false,
+    mic: process.env.AUDITION_MIC ?? 'Analogue 1 + 2 (16- Focusrite USB Audio)',
   }
   for (const a of argv) {
     if (a.startsWith('--workout=')) args.workout = a.slice('--workout='.length)
     else if (a.startsWith('--device=')) args.device = a.slice('--device='.length)
     else if (a.startsWith('--out=')) args.out = a.slice('--out='.length)
     else if (a === '--no-screen') args.screen = false
+    else if (a === '--forensic') args.forensic = true
+    else if (a.startsWith('--mic=')) args.mic = a.slice('--mic='.length)
     else if (a.startsWith('--timeout=')) args.timeoutSec = Number(a.slice('--timeout='.length))
   }
+  // Forensic mode implies video; `--no-screen` would defeat the purpose.
+  if (args.forensic) args.screen = true
   if (!args.workout) {
-    throw new Error('Usage: drive-workout-first-round.mjs --workout=<key> [--device=...] [--out=...]')
+    throw new Error(
+      'Usage: drive-workout-first-round.mjs --workout=<key> [--device=<id>] [--out=<dir>]\n' +
+        '                                    [--forensic] [--mic="<dshow name>"]\n' +
+        '                                    [--no-screen] [--timeout=<sec>]\n\n' +
+        '  --forensic  60 fps screenrecord + mic capture.wav alongside logcat,\n' +
+        '              all stopped at rest-entered (one round). Needs a __DEV__\n' +
+        '              bundle for the viz.batch transition records.',
+    )
   }
   return args
 }
@@ -233,11 +249,54 @@ async function drive(args) {
     log('starting screenrecord (device-side)')
     // screenrecord max ~180s default; timeout matches drive timeout
     const recordDurationSec = Math.min(args.timeoutSec, 180)
+    // Forensic mode raises the bit rate: token nodes are small, and
+    // compression artifacts at the default rate blur exactly the ring
+    // edges we need to read frame by frame.
+    const bitRateArg = args.forensic ? '--bit-rate 8000000 ' : ''
     screenrecordProc = spawn(
       'adb',
-      ['-s', deviceId, 'shell', `screenrecord --time-limit ${recordDurationSec} /sdcard/session.mp4`],
+      [
+        '-s',
+        deviceId,
+        'shell',
+        `screenrecord ${bitRateArg}--time-limit ${recordDurationSec} /sdcard/session.mp4`,
+      ],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     )
+  }
+
+  // Mic capture — the third timeline. Logs give sub-ms ordering truth,
+  // video gives 16.7 ms pixel truth, audio gives sample-accurate truth
+  // about what the athlete actually HEARD. Reuses the dshow invocation
+  // from tools/audition/monitor-session.mjs.
+  let ffmpegProc = null
+  if (args.forensic) {
+    log(`starting mic capture (${args.mic})`)
+    ffmpegProc = spawn(
+      'ffmpeg',
+      [
+        '-hide_banner',
+        '-loglevel',
+        'error',
+        '-f',
+        'dshow',
+        '-rtbufsize',
+        '256M',
+        '-i',
+        `audio=${args.mic}`,
+        '-ac',
+        '1',
+        '-ar',
+        '48000',
+        '-y',
+        join(sessionDir, 'capture.wav'),
+      ],
+      { stdio: ['pipe', 'inherit', 'inherit'] },
+    )
+    ffmpegProc.on('error', (err) => {
+      log(`WARN: mic capture failed to start (${err.message}) — continuing without audio`)
+      ffmpegProc = null
+    })
   }
 
   const cleanup = () => {
@@ -251,6 +310,17 @@ async function drive(args) {
       try {
         screenrecordProc.kill('SIGTERM')
       } catch {}
+    }
+    if (ffmpegProc) {
+      try {
+        // 'q' rather than a signal: ffmpeg finalizes the WAV header on a
+        // graceful quit. A kill leaves an unreadable file.
+        ffmpegProc.stdin.write('q')
+      } catch {
+        try {
+          ffmpegProc.kill('SIGTERM')
+        } catch {}
+      }
     }
   }
 
@@ -351,6 +421,22 @@ async function drive(args) {
     log('grace period 3s')
     await sleep(3000)
 
+    // Stop the mic at the round boundary — Kyle's protocol is one round
+    // per workout, capture off at rest. Video is stopped below, after the
+    // app force-stop, so the final frames are included.
+    if (ffmpegProc) {
+      log('stopping mic capture')
+      try {
+        ffmpegProc.stdin.write('q')
+      } catch {
+        try {
+          ffmpegProc.kill('SIGTERM')
+        } catch {}
+      }
+      ffmpegProc = null
+      await sleep(500)
+    }
+
     // 7. Force-stop + pull screenrecord
     log('force-stopping app')
     adbShell(`am force-stop ${PACKAGE}`, deviceId)
@@ -373,8 +459,28 @@ async function drive(args) {
 
     const stats = existsSync(logcatFile) ? statSync(logcatFile) : { size: 0 }
     log(`logcat size: ${stats.size} bytes → ${logcatFile}`)
+    if (args.forensic) {
+      const wav = join(sessionDir, 'capture.wav')
+      const mp4 = join(sessionDir, 'screen.mp4')
+      const wavSize = existsSync(wav) ? statSync(wav).size : 0
+      const mp4Size = existsSync(mp4) ? statSync(mp4).size : 0
+      log(`capture.wav: ${wavSize} bytes`)
+      log(`screen.mp4:  ${mp4Size} bytes`)
+      const vizBatches = existsSync(logcatFile)
+        ? (readFileSync(logcatFile, 'utf8').match(/puncheokie\.viz\.batch/g) ?? []).length
+        : 0
+      log(`viz.batch lines: ${vizBatches}`)
+      if (vizBatches === 0) {
+        log('WARN: no viz.batch lines — is this a __DEV__ bundle with the forensics wire?')
+      }
+    }
     log('done')
-    return { sessionDir, deviceId, workoutId: args.workout }
+    return {
+      sessionDir,
+      deviceId,
+      workoutId: args.workout,
+      forensic: args.forensic,
+    }
   } catch (err) {
     log(`ERROR: ${err.message}`)
     cleanup()
