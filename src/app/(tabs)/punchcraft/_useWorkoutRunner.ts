@@ -1127,14 +1127,36 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           })
         },
       })
-      slotDispatcher.enqueueAll(compiledScore.coachSlots)
+      // Hotfix (2026-08-31): the compiler unconditionally uses
+      // DEFAULT_COMBO_POLICY (combo-announce) via programCueBridge,
+      // so every cue produces a coach slot regardless of its
+      // authored V1c `voicePolicy`. Meanwhile the announcer only
+      // skips its own combo-announce dispatch for cues whose
+      // voicePolicy === 'announce-then-work' — for `per-punch` cues
+      // the announcer plays per-word. Enqueuing every score slot
+      // stacks a combo-announce on top of the per-word train (heard
+      // as echo / "1-2-3 as 1-2-1" on-glass, 2026-08-31 QA). Until
+      // slice 6 threads voicePolicy through the compiler, filter
+      // slots to the cues actually authored as announce-then-work.
+      const atwCueIds = new Set<string>()
+      for (const round of timeline) {
+        for (const cue of round.cues) {
+          if (cue.voicePolicy === 'announce-then-work') atwCueIds.add(cue.id)
+        }
+      }
+      const enqueuableSlots = compiledScore.coachSlots.filter((slot) =>
+        atwCueIds.has(slot.cueId),
+      )
+      slotDispatcher.enqueueAll(enqueuableSlots)
       announcer.setScoreOwnsCombos(true)
       logger.info(
         'puncheokie.slotDispatcher.armed',
         'score-authoritative combo-announce dispatcher armed',
         {
           workout: safe(workout.id),
-          coachSlots: safe(compiledScore.coachSlots.length),
+          totalCompiledSlots: safe(compiledScore.coachSlots.length),
+          enqueuedSlots: safe(enqueuableSlots.length),
+          announceThenWorkCues: safe(atwCueIds.size),
           timelineHash: safe(compiledScore.identity.timelineHash),
         },
       )
