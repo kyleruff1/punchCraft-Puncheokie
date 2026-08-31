@@ -62,6 +62,7 @@ import type { CueEvent, SessionPhaseEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
 import { logger, safe } from '@diagnostics/logger'
+import { VizForensics, type VizRecord } from '@diagnostics/vizForensics'
 import { CueAnnouncer, deliveryForCadence } from '@domain/coach/CueAnnouncer'
 import { selectPerformanceState } from '@domain/coach/performanceState'
 import { AUDIO_PRIORITY, type VoiceOutputPort } from '@domain/coach/VoiceOutputPort'
@@ -415,6 +416,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    */
   const realizedBlocksRef = useRef(new Set<string>())
   const announcerRef = useRef<CueAnnouncer | null>(null)
+  // Token-order forensics recorder (2026-08-31). Null unless a forensic
+  // drive armed it; see `vizForensics.ts` for why this is a buffer rather
+  // than per-transition logging.
+  const vizRef = useRef<VizForensics | null>(null)
   // M39-V2 W1 Epic Slice 3-a-ii — score-authoritative combo-announce
   // dispatcher. Owned by the runner because it is instantiated at arm
   // time with the compiled score's coachSlots pre-enqueued and advanced
@@ -637,6 +642,19 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // token, so the cadence-lab analyzer keeps full resolution.
           beatCursorRef.current = ordinal
         }
+        // Record EVERY token-due, including ones the cursor guard skipped:
+        // a burst is exactly the case under investigation, and the skipped
+        // ones are what make it visible.
+        vizRef.current?.token({
+          cueId: event.cue.id,
+          repeatIndex: event.cue.repeatIndex,
+          tokenIndex: event.tokenIndex,
+          ordinal,
+          prev: 'upcoming',
+          next: 'active',
+          source: 'token-due',
+          workElapsedMs: event.workElapsedMs,
+        })
         return
       }
       // The matcher needs the window lifecycle to know which cue is open.
@@ -1266,6 +1284,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       })
     }
 
+    // Token-order forensics (2026-08-31). Gated on __DEV__ so a release
+    // build never pays for it; a forensic drive runs the dev bundle. The
+    // recorder is per-arm so a new workout starts with a clean buffer.
+    vizRef.current = new VizForensics({
+      enabled: __DEV__,
+      now: () => clock.now(),
+      emit: (batch: readonly VizRecord[]) => {
+        logger.info('puncheokie.viz.batch', 'visual transition batch', {
+          count: safe(batch.length),
+          records: safe(JSON.stringify(batch)),
+        })
+      },
+    })
+
     const offEngine = engine.subscribe(onCueEvent)
     const offMatcher = matcher.subscribe(onMatcherEvent)
     const offSource = source.subscribe(onPunch)
@@ -1291,6 +1323,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // Latest work-elapsed sample for the pulse cursor to read from
       // syncFromEngine — same clock every other consumer reads.
       workElapsedMsRef.current = snapshot.workElapsedMs
+      // Sample the tick cadence BEFORE the engine advances, so a stall is
+      // attributed to the gap that preceded the burst rather than to the
+      // burst itself (token-order forensics, 2026-08-31).
+      vizRef.current?.tick(snapshot.workElapsedMs)
       engine.tick(snapshot.workElapsedMs)
       // The conductor's beat (M2): dispatch due rhythm-map events, then
       // fire any due scheduled audio — presentation and audio read one
@@ -1308,6 +1344,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       voice?.output.advance?.()
       syncFromEngine()
       pushStore(false)
+      // Flush last: everything this tick recorded goes out in one batched
+      // log line, after the work is done, so the instrumentation can never
+      // sit inside the window it is measuring.
+      vizRef.current?.flush()
     }, TICK_INTERVAL_MS)
 
     logger.info('puncheokie.runner.start', 'workout runner armed', {
@@ -1329,6 +1369,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       slotDispatcher?.clear()
       announcer?.setScoreOwnsCombos(false)
       slotDispatcherRef.current = null
+      // Flush whatever the last tick recorded before dropping the buffer,
+      // so a stall at the very end of a round is not lost.
+      vizRef.current?.flush()
+      vizRef.current = null
       engineRef.current = null
       sessionRef.current = null
       matcherRef.current = null
