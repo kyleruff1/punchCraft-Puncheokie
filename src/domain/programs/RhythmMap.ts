@@ -188,6 +188,19 @@ export const ENCOURAGEMENT_ROTATION: readonly EncouragementPayload['asset'][] = 
  */
 export const REANNOUNCE_MIN_CLEAR_MS = 150
 
+/**
+ * Per-word phrase length estimate when the corpus can no longer provide
+ * `combinationDurationMs` (Phase 5-iv retired the per-punch phrase corpus,
+ * so `durationFor` returns undefined for every combination). The
+ * repeat-thinning gate uses this estimate to decide whether a same-combo
+ * rep would land on top of the previous phrase's tail: `estimatedMs =
+ * tokens.length × PER_TOKEN_ESTIMATE_MS`. Chosen conservatively (a small
+ * over-estimate makes the thinning gate MORE aggressive, which is the
+ * safe side — under-fire is easier for the athlete to follow than
+ * overlapping vocals).
+ */
+export const PER_TOKEN_PHRASE_ESTIMATE_MS = 500
+
 /** Voiced gaps longer than this earn an encouragement (research: 15-20s grid). */
 export const ENCOURAGEMENT_GAP_MS = 15_000
 /** Density cap per round — a coach interjects, never narrates. */
@@ -334,9 +347,30 @@ export function compileRoundRhythmMap(
     let callStartAt = cue.announceAt
     if (lengthMs === undefined) {
       // No rendered phrase: the per-word fallback starts at the announce
-      // lead, exactly where the event-driven announcer started it. Its
-      // length is unknown here, so the thinning window resets.
-      lastPhrase = null
+      // lead, exactly where the event-driven announcer started it.
+      //
+      // Repeat thinning still applies. Phase 5-iv retired the per-punch
+      // phrase corpus, which silently killed the thinning branch below
+      // (durationFor now always returns undefined so this branch runs
+      // every time). Without a thinning gate, `1-2 × 3` fires three
+      // back-to-back `call` events; each triggers `playPhrase(['1','2'])`
+      // whose `playSequence.clearSequence()` drops the previous rep's
+      // pending '2' before it plays. Athlete hears "1, 1" (on-glass
+      // 2026-08-31, GH #295). Restore the thinning gate here using a
+      // token-count estimate for the phrase's audible span.
+      const estimatedPhraseMs = cue.tokens.length * PER_TOKEN_PHRASE_ESTIMATE_MS
+      const crowded =
+        lastPhrase !== null &&
+        lastPhrase.combination === combination &&
+        cue.announceAt < lastPhrase.endMs + REANNOUNCE_MIN_CLEAR_MS &&
+        cue.setupCallout === undefined
+      if (crowded) {
+        // Late rep of a still-audible phrase: skip re-firing the call.
+        // The athlete already heard "1-2" moments ago; a re-fire would
+        // clip the tail without adding information.
+        continue
+      }
+      lastPhrase = { combination, endMs: cue.announceAt + estimatedPhraseMs }
       events.push({
         id: `${cue.id}/call`,
         cueId: cue.id,
