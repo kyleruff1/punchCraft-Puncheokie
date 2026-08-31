@@ -379,31 +379,51 @@ describe('MetronomeTransport.correct — bounded phase correction (W0-c)', () =>
     expect(seen).toEqual([genBefore + 1])
   })
 
-  it('re-anchors on large NEGATIVE error too (large-magnitude discontinuity)', () => {
+  it('re-anchors on large NEGATIVE error but PRESERVES current tick (visual monotonicity)', () => {
     const clock = createFakeClock(1_000)
     const t = new MetronomeTransport(clock)
     t.start(60)
     clock.advance(10_000) // JS predicts 9_600 ticks
     const genBefore = t.snapshot().generation
+    const tickBefore = t.currentTick()
     // Audio reports we're actually at tick 0 — the loop restarted
     // without JS knowing. Magnitude is well over LARGE threshold.
-    // Even though the direction is backwards, this is a
-    // discontinuity, not a "small drift, hold the estimate"
-    // situation. Re-anchor bumps generation so future score
-    // events can be re-armed against the new anchor.
+    //
+    // Anchor-storm fix v4 (2026-08-31): the old contract snapped
+    // the anchor to observedTick unconditionally, moving the
+    // visual clock BACKWARDS from 9600 → 0. That produced Kyle's
+    // "map jumping spastically backwards" on-glass, because the
+    // storm's dominant error direction is negative (audio
+    // startup lag). New contract: bump generation (downstream
+    // re-arms against fresh generation) but HOLD the visual
+    // tick — never rewind. Positive-error re-anchor still snaps
+    // forward (audio ahead of JS is a safe forward move).
     t.correct({
       observedAbsoluteTick: 0,
       observedAtMonotonicMs: clock.now(),
       observedGeneration: genBefore,
     })
     expect(t.snapshot().generation).toBe(genBefore + 1)
-    // Anchor at the observed tick — this DOES snap the visual
-    // clock, but only because the discontinuity is severe enough
-    // that continuing the old anchor would misalign every future
-    // scheduled event. Small-error smoothing (which forbids
-    // backward snaps) covers routine drift; this branch covers
-    // catastrophic desync.
-    expect(t.currentTick()).toBe(0)
+    // Visual tick preserved — no backwards jump.
+    expect(t.currentTick()).toBe(tickBefore)
+  })
+
+  it('re-anchors on large POSITIVE error by snapping FORWARD (safe direction)', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000) // JS predicts 960 ticks
+    const genBefore = t.snapshot().generation
+    // Audio reports we're at tick 5000 — audio ahead of JS by a
+    // wide margin (rare but valid; e.g. after a resync or seek).
+    // Forward moves are always safe visually.
+    t.correct({
+      observedAbsoluteTick: 5000,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: genBefore,
+    })
+    expect(t.snapshot().generation).toBe(genBefore + 1)
+    expect(t.currentTick()).toBe(5000)
   })
 
   it('multiple small corrections converge on the observed rate', () => {
