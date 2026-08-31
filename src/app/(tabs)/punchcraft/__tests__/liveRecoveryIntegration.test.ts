@@ -20,7 +20,6 @@ import { join } from 'node:path'
 
 import { planRecoverySequence, type RecoveryScriptMeta } from '@domain/coach/recoveryPlan'
 
-/* eslint-disable-next-line no-undef */
 const cwd = process.cwd()
 
 interface Corpus {

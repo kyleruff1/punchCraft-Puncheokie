@@ -1284,11 +1284,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       })
     }
 
-    // Token-order forensics (2026-08-31). Gated on __DEV__ so a release
-    // build never pays for it; a forensic drive runs the dev bundle. The
-    // recorder is per-arm so a new workout starts with a clean buffer.
+    // Token-order forensics (2026-08-31). On by default in dev; a
+    // production bundle can opt IN via `EXPO_PUBLIC_VIZ_FORENSICS=1`,
+    // which is what makes the release-like timing gate measurable at all
+    // (M39-V2 principle #18 — the final timing gate must not run only
+    // under Metro debug). Cost is near zero when nothing is anomalous:
+    // clock records are written only past the stall threshold.
+    // The recorder is per-arm, so a new workout starts with a clean buffer.
     vizRef.current = new VizForensics({
-      enabled: __DEV__,
+      enabled: __DEV__ || process.env.EXPO_PUBLIC_VIZ_FORENSICS === '1',
       now: () => clock.now(),
       emit: (batch: readonly VizRecord[]) => {
         logger.info('puncheokie.viz.batch', 'visual transition batch', {

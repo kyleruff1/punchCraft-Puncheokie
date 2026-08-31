@@ -9,7 +9,6 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-/* eslint-disable-next-line no-undef -- node:process is a first-class jest global */
 const cwd = process.cwd()
 
 import { silenceFor, SILENCE_TRACKS } from '../voiceAssets/silenceManifest'

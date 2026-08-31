@@ -28,6 +28,9 @@ export default [
         performance: 'readonly',
         require: 'readonly',
         Buffer: 'readonly',
+        // Expo inlines `process.env.EXPO_PUBLIC_*` at bundle time — the
+        // documented way to read a build-time flag in app code.
+        process: 'readonly',
         // Jest globals (test files) — narrow the impact by only listing what
         // our tests actually use.
         describe: 'readonly',
