@@ -504,44 +504,27 @@ export class VoiceOutputExpo implements VoiceOutputPort {
                 // wall elapsed since last callback > 1.5 loops, add
                 // the extra loops beyond the single wrap.
                 const backwardsBy = this.metronomeLastWrappedSec - report.wrappedPositionSec
-                // Anchor-storm fix v4 (2026-08-31, workflow-verified —
-                // 2 independent perspectives + 3 adversarial verify
-                // agents converged on this diagnosis).
-                //
-                // v3 kept `backwardsBy > wrapThreshold` where
-                // wrapThreshold = 0.5 * loopDuration. But MetronomePlayer
-                // sets updateInterval: 500 ms and metronome loops are
-                // 1000 ms — so a real wrap where the callback lands
-                // exactly 500 ms in produces backwardsBy = 0.5 exactly,
-                // which fails the STRICT `>` comparison. And the fallback
-                // `else if (backwardsBy > 0) return` exited WITHOUT
-                // updating metronomeLastWrappedSec — so the reference
-                // position stuck at its pre-wrap value forever, poisoning
-                // every subsequent comparison. Follow-up callbacks with
-                // wrappedPositionSec back near the same value fell
-                // through with backwardsBy ≤ 0, computed absoluteSec off
-                // by 1 loop, and forced hard re-anchor. Repeats.
-                //
-                // v4 fixes both:
-                //   (a) reordering-cap = 10 % of loop, not 50 %. Real
-                //       backwards jumps > 10 % of the loop are wraps
-                //       (even partial ones where the callback landed
-                //       just after loop restart). Only sub-10 % jumps
-                //       are treated as JS scheduling noise.
-                //   (b) always update metronomeLastWrappedSec, even on
-                //       the reordering-noise skip path. This prevents
-                //       the reference from getting stuck.
-                const reorderingCapSec = report.loopDurationSec * 0.1
-                if (backwardsBy > reorderingCapSec) {
+                const wrapThreshold = report.loopDurationSec * 0.5
+                if (backwardsBy > wrapThreshold) {
+                  // Real wrap — position went backwards by more than
+                  // half a loop.
                   this.metronomeLoopCount += 1
                 } else if (backwardsBy > 0) {
-                  // True out-of-order callback (small backwards jump).
-                  // Update lastWrappedSec so the reference stays fresh;
-                  // skip the correction so we don't inject noise into
-                  // the transport.
-                  this.metronomeLastWrappedSec = report.wrappedPositionSec
+                  // Small backwards jump — JS scheduling glitch
+                  // (callbacks arriving out of order). Skip this
+                  // report; wait for the next in-order one.
                   return
                 }
+                // NOTE: no wall-time catch-up. v1 tried that and
+                // over-counted loops because audio startup lag makes
+                // wall time cross loop boundaries before audio does;
+                // v2's first attempt used wall-time as a floor which
+                // also over-counted for the same reason. Pure
+                // position-based counting is the ONLY reliable
+                // source: audio player IS the ground truth for what
+                // it's playing. A rare JS-stall multi-loop skip is
+                // acceptable — the next callback will hard re-anchor
+                // once, then things stabilize.
                 this.metronomeLastWrappedSec = report.wrappedPositionSec
                 const absoluteSec =
                   this.metronomeLoopCount * report.loopDurationSec + report.wrappedPositionSec

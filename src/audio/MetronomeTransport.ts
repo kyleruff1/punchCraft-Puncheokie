@@ -255,51 +255,13 @@ export class MetronomeTransport implements MetronomeTransportPort {
     const errorAbs = Math.abs(errorTicks)
 
     if (errorAbs >= PHASE_CORRECTION_LARGE_TICKS) {
-      // Anchor-storm fix v4 (2026-08-31): honor principle #4's
-      // visual-monotonicity invariant here too. The previous code
-      // set `anchorAbsoluteTick = observedTickNow` unconditionally,
-      // which SNAPS BACKWARDS when errorTicks < 0 (audio behind JS).
-      // That's the "map/rings jumping spastically" symptom Kyle
-      // observed on-glass — visuals reading currentTick() see the
-      // number decrease between adjacent frames. Even if the small-
-      // slew branch guards backwards moves, the hard-re-anchor path
-      // did not.
-      //
-      // New rule: never move the visible tick BACKWARDS. On a large
-      // NEGATIVE error (JS ahead of audio), preserve the current
-      // tick, bump generation, and treat it as a disruption — audio
-      // is drifting far enough that any downstream cache needs to
-      // invalidate, but the athlete's clock doesn't rewind.
-      // On a large POSITIVE error (audio ahead of JS), it's safe to
-      // snap forward to the observed tick.
       this.generation += 1
-      if (errorTicks < 0) {
-        // Preserve current tick — do not move anchor backwards.
-        // Re-seed the anchor at the CURRENT projected tick so
-        // continued projection from `now` produces the same value.
-        this.anchorMonotonicMs = now
-        this.anchorAbsoluteTick = predictedTickNow
-        logger.info(
-          'puncheokie.transport',
-          'transport re-anchored on audio observation (held, backwards guard)',
-          {
-            generation: safe(this.generation),
-            errorTicks: safe(errorTicks),
-          },
-        )
-      } else {
-        // Positive error — audio ahead, safe to snap forward.
-        this.anchorMonotonicMs = now
-        this.anchorAbsoluteTick = observedTickNow
-        logger.info(
-          'puncheokie.transport',
-          'transport re-anchored on audio observation',
-          {
-            generation: safe(this.generation),
-            errorTicks: safe(errorTicks),
-          },
-        )
-      }
+      this.anchorMonotonicMs = now
+      this.anchorAbsoluteTick = observedTickNow
+      logger.info('puncheokie.transport', 'transport re-anchored on audio observation', {
+        generation: safe(this.generation),
+        errorTicks: safe(errorTicks),
+      })
       this.notify()
       return
     }
