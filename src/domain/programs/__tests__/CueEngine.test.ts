@@ -253,6 +253,27 @@ describe('token-due', () => {
     }
   })
 
+  it('does NOT fire a rest — a padded bar injects no phantom ring events', () => {
+    // A rest holds a slot and a beat but is never thrown. It reaches
+    // `fireDueTokens` like any other token, so without an explicit skip it
+    // would publish `token-due` — polluting `puncheokie.cue.tokenDue` (the
+    // cadence-lab drift signal) and the viz forensics recorder with ring
+    // fires for punches that do not exist (GH #305).
+    const padded: WorkoutToken[] = [
+      { kind: 'punch', number: 1, body: false, beatOffset: 0 },
+      { kind: 'punch', number: 2, body: false, beatOffset: 1 },
+      { kind: 'rest', beatOffset: 2 },
+      { kind: 'rest', beatOffset: 3 },
+    ]
+    const h = harness(timelineFor([block({ tokens: padded })]))
+    h.runTo(20_000)
+    const due = h.events.filter((e) => e.type === 'token-due')
+    // Four slots, two punches, two fires.
+    expect(h.cue.tokens).toHaveLength(4)
+    expect(due).toHaveLength(2)
+    expect(due.map((e) => (e.type === 'token-due' ? e.tokenIndex : -1))).toEqual([0, 1])
+  })
+
   it('fires every token of a repeated-combo across its instances', () => {
     const timeline = timelineFor([block({ kind: 'repeated-combo', repeat: 3 })])
     const h = harness(timeline)

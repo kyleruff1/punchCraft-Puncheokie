@@ -179,3 +179,56 @@ describe('punchTokens', () => {
     expect(punchTokens(tokens).map((t) => t.number)).toEqual([1, 2, 3])
   })
 })
+
+// ---------------------------------------------------------------------------
+// Rest slots — the 4-slot bar (GH #305)
+// ---------------------------------------------------------------------------
+
+describe('rest tokens', () => {
+  it('parses `.` as a rest that holds its beat slot', () => {
+    // `1-1-2` padded to a 4-slot bar: [1][1][2][-]
+    const tokens = parseCombo('1-1-2-.')
+    expect(tokens).toHaveLength(4)
+    expect(tokens[3]).toEqual({ kind: 'rest', beatOffset: 3 })
+    // The rest occupies slot 3 — it does NOT shift the punches before it.
+    expect(punchTokens(tokens).map((t) => t.beatOffset)).toEqual([0, 1, 2])
+  })
+
+  it('parses interior rests without disturbing later offsets', () => {
+    const tokens = parseCombo('1-.-2-.')
+    expect(tokens.map((t) => t.kind)).toEqual(['punch', 'rest', 'punch', 'rest'])
+    expect(tokens.map((t) => t.beatOffset)).toEqual([0, 1, 2, 3])
+  })
+
+  it('DROPS rests from notation — a padded bar spells the same as an unpadded one', () => {
+    // The whole point of decision 7: `formatCombo` output is the lookup key
+    // for 194 committed combo-announce clips. If padding changed the key,
+    // every announce-then-work block would fall silent.
+    expect(formatCombo(parseCombo('1-2-.-.'))).toBe('1-2')
+    expect(formatCombo(parseCombo('1-1-2-.'))).toBe('1-1-2')
+    expect(formatCombo(parseCombo('1-.-2-.'))).toBe('1-2')
+  })
+
+  it('never emits a doubled separator', () => {
+    // Serializing a rest to '' and joining would produce `1-2--`, which
+    // breaks every lookup and the round-trip law at once.
+    for (const notation of ['.-1-2', '1-.-.-2', '1-2-.-.', '.-.-.-1']) {
+      expect(formatCombo(parseCombo(notation))).not.toMatch(/--/)
+      expect(formatCombo(parseCombo(notation))).not.toMatch(/^-|-$/)
+    }
+  })
+
+  it('a bar of only rests formats to the empty string', () => {
+    expect(formatCombo(parseCombo('.-.-.-.'))).toBe('')
+  })
+
+  it('rests are not punches, so they are never scored', () => {
+    expect(punchTokens(parseCombo('1-2-.-.'))).toHaveLength(2)
+  })
+
+  it('round-trips notation that contains no rests', () => {
+    // The law holds for rest-free notation; rests are deliberately outside
+    // it, being an authoring/layout device rather than content.
+    expect(formatCombo(parseCombo('1-2b-3-2'))).toBe('1-2b-3-2')
+  })
+})

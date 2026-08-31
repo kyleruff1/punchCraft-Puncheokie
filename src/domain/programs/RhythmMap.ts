@@ -358,7 +358,13 @@ export function compileRoundRhythmMap(
       // pending '2' before it plays. Athlete hears "1, 1" (on-glass
       // 2026-08-31, GH #295). Restore the thinning gate here using a
       // token-count estimate for the phrase's audible span.
-      const estimatedPhraseMs = cue.tokens.length * PER_TOKEN_PHRASE_ESTIMATE_MS
+      // Rests are silence and cost the coach nothing to "say". Using the raw
+      // token count would make a padded bar look like a longer phrase and
+      // thin calls that would actually have fitted (GH #305).
+      const spokenTokens = cue.tokens.filter(
+        (token) => token.kind !== 'rest' && token.kind !== 'coach',
+      ).length
+      const estimatedPhraseMs = spokenTokens * PER_TOKEN_PHRASE_ESTIMATE_MS
       const crowded =
         lastPhrase !== null &&
         lastPhrase.combination === combination &&

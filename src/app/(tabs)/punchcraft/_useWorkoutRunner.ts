@@ -563,6 +563,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         const spine = round >= 0 ? spinesRef.current[round] : undefined
         const lit = spine ? pulseCursorAt(spine, cue, workElapsedMsRef.current) : -1
         return cue.tokens.map((token, index) => {
+          // A rest holds the bar's width and is never thrown. Without this
+          // it would fall into the non-punch branch below and sit LIT for
+          // the whole cue (GH #305).
+          if (token.kind === 'rest') return 'empty'
           if (token.kind !== 'punch') return active ? 'active' : 'upcoming'
           return index === lit && active ? 'active' : 'upcoming'
         })
@@ -585,6 +589,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       const beatOrdinal = beatOrdinalAt(cue, workElapsedMsRef.current)
       const cursor = Math.max(credited, beatOrdinal)
       return cue.tokens.map((token, index) => {
+        // See the count-scored branch above — a rest must never read as
+        // active, or every padded bar shows a permanently lit slot.
+        if (token.kind === 'rest') return 'empty'
         if (token.kind !== 'punch') return active ? 'active' : 'upcoming'
         const punchOrdinal = cue.expectedPunches.findIndex((p) => p.tokenIndex === index)
         if (punchOrdinal < 0) return 'upcoming'

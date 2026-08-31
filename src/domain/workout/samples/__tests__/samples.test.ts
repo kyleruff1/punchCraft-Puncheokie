@@ -249,9 +249,11 @@ describe('token streams are stable fixtures', () => {
           stance: b.stance,
           repeat: b.repeat ?? null,
           targetPunches: b.targetPunches ?? null,
-          tokens: b.tokens.map((t) =>
-            t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}@${t.beatOffset}` : `${t.command}@${t.beatOffset}`,
-          ),
+          tokens: b.tokens.map((t) => {
+            if (t.kind === 'punch') return `${t.number}${t.body ? 'b' : ''}@${t.beatOffset}`
+            if (t.kind === 'rest') return `rest@${t.beatOffset}`
+            return `${t.command}@${t.beatOffset}`
+          }),
         })),
       }))
       expect(stream).toMatchSnapshot()

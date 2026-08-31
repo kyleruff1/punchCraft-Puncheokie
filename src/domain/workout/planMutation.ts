@@ -239,6 +239,9 @@ export function commandsUsedBy(mutation: PlanMutation): string[] {
   for (const insertion of mutation.insertBlocks ?? []) {
     for (const token of insertion.block.tokens) {
       if (token.kind === 'punch') used.add(`punch:${token.number}`)
+      // A rest carries no command and gates against no enablement list —
+      // it is layout, not content, so it contributes nothing to the set.
+      else if (token.kind === 'rest') continue
       else used.add(`${token.kind}:${token.command}`)
     }
   }

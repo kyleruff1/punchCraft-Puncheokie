@@ -16,7 +16,7 @@
 
 import { colors } from '@/theme/colors'
 
-export type TokenVisualState = 'upcoming' | 'active' | 'completed'
+export type TokenVisualState = 'upcoming' | 'active' | 'completed' | 'empty'
 export type TokenSize = 'stage' | 'preview'
 
 /**
@@ -78,6 +78,18 @@ export const STATE_VISUALS: Record<TokenVisualState, StateVisual> = {
     textColor: colors.textMuted,
     marker: '✓',
     label: 'completed',
+  },
+  // A rest — a slot that holds the bar's width but is never thrown. It has
+  // to read as DELIBERATELY empty rather than as an unlit upcoming punch,
+  // so it is the faintest thing on the row and carries no marker at all.
+  // The athlete should see the shape of the bar, not a punch they missed.
+  empty: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'transparent',
+    textColor: colors.textMuted,
+    marker: '',
+    label: 'rest',
   },
 }
 

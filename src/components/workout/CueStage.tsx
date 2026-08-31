@@ -17,6 +17,7 @@ import { CoachBanner } from './CoachBanner'
 import { ComboFlourish } from './ComboFlourish'
 import { DefenseToken } from './DefenseToken'
 import { FootworkToken } from './FootworkToken'
+import { RestSlot } from './RestSlot'
 import type { SharedValue } from 'react-native-reanimated'
 
 import { PunchAvatarCard } from './PunchAvatarCard'
@@ -137,6 +138,11 @@ function renderToken(
           reducedMotion={reducedMotion}
         />
       )
+    // A rest holds its slot so the bar keeps its width. It must NOT fall
+    // through to `default` — returning null would silently shorten the row
+    // and defeat the fixed-width bar entirely (GH #305).
+    case 'rest':
+      return <RestSlot key={key} size={size} />
     // Coach calls are banners, not tokens — rendered below the row so they
     // stay subordinate to the commands being thrown (doc §13).
     default:

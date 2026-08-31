@@ -151,7 +151,7 @@ export interface ScriptRingTokenDue extends ScriptEntryBase {
   repId: string
   tokenIndex: number
   strikeId: string
-  token: StrikeToken | 'defense' | 'footwork' | 'coach'
+  token: StrikeToken | 'defense' | 'footwork' | 'coach' | 'rest'
 }
 
 export interface ScriptCeremony extends ScriptEntryBase {
@@ -319,7 +319,7 @@ function compileRoundScript(
     for (let i = 0; i < cue.tokenOffsetsMs.length; i += 1) {
       const offset = cue.tokenOffsetsMs[i] ?? 0
       const token = cue.tokens[i]
-      const tokenLabel: StrikeToken | 'defense' | 'footwork' | 'coach' =
+      const tokenLabel: StrikeToken | 'defense' | 'footwork' | 'coach' | 'rest' =
         token?.kind === 'punch'
           ? ((token.body ? `${token.number}B` : `${token.number}`) as StrikeToken)
           : token?.kind ?? 'coach'

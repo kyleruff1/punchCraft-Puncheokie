@@ -42,6 +42,21 @@ export type WorkoutToken =
   | { kind: 'defense'; command: DefenseCommand; beatOffset: number }
   | { kind: 'footwork'; command: FootworkCommand; beatOffset: number }
   | { kind: 'coach'; command: CoachCommand; beatOffset: number }
+  /**
+   * An empty slot in the 4-slot bar — silence the athlete can SEE.
+   *
+   * A bar is four slots wide; a motif that cannot tile it evenly
+   * (`1-1-2`) is padded with rests so every bar reads the same width and
+   * the eye always lands in the same four places (GH #305, Kyle
+   * 2026-08-31).
+   *
+   * A rest occupies a beat and a slot. It is never scored, never spoken,
+   * and INVISIBLE TO NOTATION — `formatCombo` drops it, so a padded
+   * `1-2` still spells `"1-2"` and all 194 committed combo-announce
+   * clips keep resolving. Anything needing the true shape reads
+   * `tokens.length`, not the notation string.
+   */
+  | { kind: 'rest'; beatOffset: number }
 
 /**
  * Doc §14's seven block kinds, plus `coast` (D23).
@@ -256,6 +271,19 @@ export function parseCombo(notation: string): WorkoutToken[] {
       throw new ComboParseError('unknown-segment', rawSegment, index, `empty segment at position ${index}`)
     }
 
+    // Rest: an empty slot that holds the bar's width (GH #305). Spelled
+    // `.` — it cannot be `-`, which is the segment separator, and a word
+    // like `rest` would collide with the athlete-facing vocabulary.
+    //
+    // NOTE the asymmetry with `formatCombo`, which DROPS rests: the
+    // round-trip law therefore holds only for rest-free notation, by
+    // design. Rests are an authoring and layout device, deliberately
+    // absent from the notation used as a clip-lookup key.
+    if (segment === '.') {
+      tokens.push({ kind: 'rest', beatOffset })
+      return
+    }
+
     // Punch: digits with an optional b/B body suffix.
     if (/^\d/.test(segment)) {
       const match = /^(\d+)(b?)$/i.exec(segment)
@@ -318,6 +346,11 @@ export function parseCombo(notation: string): WorkoutToken[] {
  */
 export function formatCombo(tokens: readonly WorkoutToken[]): string {
   return tokens
+    // Rests are FILTERED, not serialized to '' — joining an empty string
+    // would emit `1-2--` and break the round-trip law, every combo-announce
+    // lookup, and the 194-clip library's keys. A padded `1-2` must still
+    // spell exactly `"1-2"` (GH #305 decision 7).
+    .filter((token): token is Exclude<WorkoutToken, { kind: 'rest' }> => token.kind !== 'rest')
     .map((token) => {
       switch (token.kind) {
         case 'punch':

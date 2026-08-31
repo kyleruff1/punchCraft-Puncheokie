@@ -76,6 +76,12 @@ export function comboPhraseAssets(tokens: readonly WorkoutToken[]): VoiceAssetId
       case 'coach':
         // Unvoiced by the closed vocabulary — see the note above.
         break
+      case 'rest':
+        // A rest is silence by definition. Explicit rather than relying on
+        // fall-through: this switch has no `return`, so a missing case is
+        // not a compile error and the next silent kind would slip in
+        // unnoticed.
+        break
     }
   }
   return assets
