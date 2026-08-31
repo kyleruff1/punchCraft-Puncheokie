@@ -225,6 +225,16 @@ export class CueAnnouncer {
   private playbackActive = false
   /** Phrase plans resolved at preview, so nothing is computed at announce. */
   private readonly prepared = new Map<string, VoiceAssetId[]>()
+
+  /**
+   * Monotonic counter used to build a per-dispatch arm eventId (M39-V2
+   * Phase 4-vi). The counter guarantees an eventId is unique across a
+   * cue's lifetime even when the same cue arms multiple times (refire
+   * on a burst, retry after a mute). Combined with the cue id and the
+   * event kind, it identifies WHICH dispatch a later
+   * stale-callback check is guarding against.
+   */
+  private armSeq = 0
   /** True between a cue becoming active and its window closing (doc §18). */
   private inCombo = false
   /** A metric waiting for the combination to end. Newest wins. */
@@ -292,6 +302,41 @@ export class CueAnnouncer {
   }
 
   /**
+   * Arm the exclusive coach lane for a dispatch (M39-V2 Phase 4-vi).
+   *
+   * Called immediately before a coach dispatch site fires (playAsset /
+   * playCombination / playComboAnnounce / playInstruction). Mints a
+   * fresh eventId scoped to `<cueId>:<kind>:<counter>` and hands the
+   * arm through to the port's `armCoachEvent` when available. A
+   * port that predates V2 does not implement it — the arm is a
+   * no-op there, matching the fire-and-forget V1c behavior.
+   *
+   * Returns the eventId (whether armed or not) so tests can trace it,
+   * but nothing time-critical depends on the return value — the arm
+   * itself lives inside the port.
+   */
+  private armFor(cueId: string, kind: string): string {
+    this.armSeq += 1
+    const eventId = `${cueId}:${kind}:${this.armSeq}`
+    this.output.armCoachEvent?.({ eventId })
+    return eventId
+  }
+
+  /**
+   * Clear the current coach-lane arm at the end of a cue's lifetime
+   * (M39-V2 Phase 4-vi). Called on `cue-window-closed` /
+   * `cue-completed` / `cue-expired` / `cue-cancelled` — the deferred
+   * finish callbacks that would've unarm-cleaned the lane naturally
+   * still might race with the next cue's arm, so a defensive clear
+   * on cue lifecycle end keeps `activeCoachArm()` honest.
+   *
+   * The port's method is optional; a V1c port no-ops.
+   */
+  private clearArmForCue(): void {
+    this.output.clearCoachRunId?.()
+  }
+
+  /**
    * Install a round's compiled rhythm map (or clear it with nulls).
    *
    * From here until the next install, the map owns every call time; the
@@ -345,12 +390,14 @@ export class CueAnnouncer {
         if ('recite' in payload) {
           // A false return means the phrase library has no rendering — the
           // recitation is an enhancement; the set's own call still fires.
+          this.armFor(event.cueId, 'set-callout-recite')
           this.output.playCombination?.(payload.recite, payload.cadence, undefined, {
             vocabulary: this.vocabulary === 'techniques' ? 'techniques' : 'numbers',
             performance: 'teach',
           })
           return
         }
+        this.armFor(event.cueId, 'set-callout-asset')
         this.output.playAsset(payload.asset as VoiceAssetId)
         return
       }
@@ -404,6 +451,7 @@ export class CueAnnouncer {
         ) {
           const clip = this.comboAnnounceFor(payload.combination, this.vocabulary)
           if (clip) {
+            this.armFor(event.cueId, 'combo-announce')
             this.output.playComboAnnounce(clip)
             return
           }
@@ -413,6 +461,7 @@ export class CueAnnouncer {
             vocabulary: this.vocabulary,
             performance: cue ? this.performanceFor(cue) : 'work',
           }
+          this.armFor(event.cueId, 'phrase')
           const played = this.output.playCombination(
             payload.combination,
             payload.cadence,
@@ -453,6 +502,7 @@ export class CueAnnouncer {
           this.output.audibleUntilMs() > 0
         )
           return
+        this.armFor(event.cueId, 'instruction')
         this.output.playInstruction?.({
           text: insPayload.text,
           module: insPayload.module,
@@ -485,6 +535,7 @@ export class CueAnnouncer {
           this.output.audibleUntilMs() > 0
         )
           return
+        this.armFor(event.cueId, 'encouragement')
         this.output.playAsset(payload.asset)
         return
       }
@@ -515,7 +566,17 @@ export class CueAnnouncer {
     // gate: a phrase resolved while music plays costs nothing and means the
     // coach is ready the moment the athlete opts in.
     if (e.type === 'cue-previewing') {
-      this.prepared.set(e.cue.id, comboPhraseAssets(e.cue.tokens))
+      const assets = comboPhraseAssets(e.cue.tokens)
+      this.prepared.set(e.cue.id, assets)
+      // M39-V2 Phase 4-vi: warm BOTH vocabularies for this cue's combo
+      // assets so a mid-cue vocab swap (Kyle's live radio toggle) is
+      // free — the pending track is already resident. The port method
+      // is optional; a V1c backend no-ops.
+      if (typeof this.output.preloadBothVocabsFor === 'function') {
+        for (const asset of assets) {
+          this.output.preloadBothVocabsFor(asset, 'combo')
+        }
+      }
       return
     }
 
@@ -566,6 +627,10 @@ export class CueAnnouncer {
         this.prepared.delete(e.cue.id)
         // Map events for this cue that have not dispatched yet die with it.
         this.endedCues.add(e.cue.id)
+        // M39-V2 Phase 4-vi: unarm the coach lane so the next cue's arm
+        // isn't shadowed by a stale ArmedCoachEvent from THIS cue.
+        // The port method is optional; a V1c backend no-ops.
+        this.clearArmForCue()
         // A burst that ends well before its window — target reached early,
         // or skipped — leaves its remaining re-calls scheduled, and they
         // would fire over whatever comes next. Drop them. Only on a
@@ -771,6 +836,7 @@ export class CueAnnouncer {
       const combination = formatCombo(cue.tokens)
       const clip = this.comboAnnounceFor(combination, this.vocabulary)
       if (clip) {
+        this.armFor(cue.id, 'combo-announce')
         this.output.playComboAnnounce(clip)
         return
       }
@@ -817,6 +883,7 @@ export class CueAnnouncer {
     if (assets.length > 0) {
       const plan = this.planPhrase(cue, assets)
       const startAt = plan.startAt + clockOffsetMs
+      this.armFor(cue.id, 'phrase-announce')
       if (this.output.playPhrase) {
         this.output.playPhrase(assets, startAt, plan.tightness)
       } else {
@@ -867,6 +934,7 @@ export class CueAnnouncer {
       startAt = cue.previewAt
     }
 
+    this.armFor(cue.id, 'phrase-announce')
     return play.call(this.output, combination, this.cadence, startAt + clockOffsetMs, voice)
   }
 

@@ -52,6 +52,13 @@ class RecordingPort implements VoiceOutputPort {
   readonly calls: Call[] = []
   /** Test seam: raise to simulate an ongoing chime-in that blocks new coach lines. */
   audibleUntilValue = 0
+  /** M39-V2 Phase 4-vi arm log — one entry per armCoachEvent call, in order. */
+  readonly armEvents: string[] = []
+  /** M39-V2 Phase 4-vi preload log — (assetId, form) pairs the announcer warmed. */
+  readonly preloads: Array<{ id: string; form: 'combo' | 'standalone' | undefined }> = []
+  /** M39-V2 Phase 4-vi clear log — count of clearCoachRunId calls (idempotent). */
+  clears = 0
+  private armCounter = 0
 
   playAsset(id: VoiceAssetId, atMs?: number): void {
     this.calls.push(atMs === undefined ? { kind: 'asset', id } : { kind: 'asset', id, atMs })
@@ -79,6 +86,27 @@ class RecordingPort implements VoiceOutputPort {
     return this.audibleUntilValue
   }
 
+  // M39-V2 Phase 4 primitives — surfaced so tests can pin the arm wire.
+  armCoachEvent(spec: { eventId: string }): {
+    eventId: string
+    runId: string
+    lockedVocabulary: 'numbers' | 'names'
+  } {
+    this.armCounter += 1
+    this.armEvents.push(spec.eventId)
+    return {
+      eventId: spec.eventId,
+      runId: `coach-${this.armCounter}`,
+      lockedVocabulary: 'numbers',
+    }
+  }
+  clearCoachRunId(): void {
+    this.clears += 1
+  }
+  preloadBothVocabsFor(id: VoiceAssetId, form?: 'combo' | 'standalone'): void {
+    this.preloads.push({ id, form })
+  }
+
   assets(): VoiceAssetId[] {
     return this.calls.flatMap((c) => (c.kind === 'asset' ? [c.id] : []))
   }
@@ -87,6 +115,10 @@ class RecordingPort implements VoiceOutputPort {
   }
   reset(): void {
     this.calls.length = 0
+    this.armEvents.length = 0
+    this.preloads.length = 0
+    this.clears = 0
+    this.armCounter = 0
   }
 }
 
@@ -1426,5 +1458,69 @@ describe('block-level instruction dispatch (WS4 / A23)', () => {
       announcer.onTick(instructionEvent.atMs + 10, instructionEvent.atMs + 10),
     ).not.toThrow()
     expect(port.calls.find((k) => k.kind === 'instruction')).toBeUndefined()
+  })
+})
+
+describe('coach-lane arm wire (M39-V2 Phase 4-vi-c)', () => {
+  // Kyle plan §Phase 4 wiring: every coach dispatch site arms the
+  // exclusive lane via `armCoachEvent` before firing. A cue's
+  // lifecycle-end events (window-closed / completed / expired /
+  // cancelled) unarm the lane via `clearCoachRunId` so the next
+  // cue's arm isn't shadowed by a stale ArmedCoachEvent.
+  //
+  // The eventId shape is `${cueId}:${kind}:${counter}` — the counter
+  // guarantees uniqueness across the announcer's lifetime (a cue that
+  // arms twice does not reuse the same eventId).
+  it('arms on the phrase-announce dispatch path (announce → playPhrase)', () => {
+    const h = harness()
+    runCue(h)
+    // The default cue triggers `announce`, which lands on the per-word
+    // phrase-announce path (no combo-announce clip is registered).
+    expect(h.port.armEvents.length).toBeGreaterThanOrEqual(1)
+    expect(h.port.armEvents.some((id) => id.startsWith('cue-1:phrase-announce:'))).toBe(true)
+  })
+
+  it('arms once per dispatch — the eventId counter is monotonic', () => {
+    const h = harness()
+    runCue(h, cue({ id: 'cue-A' }))
+    runCue(h, cue({ id: 'cue-B' }))
+    // Two cues, at least one arm each. Every eventId's counter differs.
+    const counters = h.port.armEvents.map((id) => Number(id.split(':').pop()))
+    expect(new Set(counters).size).toBe(counters.length)
+  })
+
+  it('clears the coach lane at cue-window-closed', () => {
+    const h = harness()
+    runCue(h)
+    // runCue fires cue-window-closed at the end; clearArmForCue runs
+    // once per lifecycle-end event.
+    expect(h.port.clears).toBeGreaterThanOrEqual(1)
+  })
+
+  it('warms both vocabularies at cue-previewing (preloadBothVocabsFor)', () => {
+    const h = harness()
+    const c = cue({ tokens: [punch(1), punch(2), punch(3)] })
+    h.announcer.onCueEvent(cueEvent('cue-previewing', c))
+    // One preload call per phrase-asset (three tokens → three assets).
+    expect(h.port.preloads.length).toBe(3)
+    for (const p of h.port.preloads) {
+      expect(p.form).toBe('combo')
+    }
+    // The three tokens are '1', '2', '3'.
+    expect(h.port.preloads.map((p) => p.id).sort()).toEqual(['1', '2', '3'])
+  })
+
+  it('does not preload for a coach-only cue (empty phrase asset list)', () => {
+    // A coach command (`double-up`, `breathe`, etc.) produces zero
+    // phrase assets per `comboPhraseAssets` — the coach commands
+    // section of the vocab has no clip. Defense/footwork tokens DO
+    // produce assets and would preload; a coach-only cue is the only
+    // shape that skips.
+    const h = harness()
+    const c = cue({
+      tokens: [{ kind: 'coach', command: 'breathe', beatOffset: 0 }],
+    })
+    h.announcer.onCueEvent(cueEvent('cue-previewing', c))
+    expect(h.port.preloads.length).toBe(0)
   })
 })
