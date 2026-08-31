@@ -50,7 +50,6 @@ import {
   type PhraseForm,
   type VoiceAssetManifest,
 } from './voiceAssets/manifest'
-import { findPhraseAsset } from './voiceAssets/phraseManifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 import { MetronomePlayer } from './MetronomePlayer'
 
@@ -833,11 +832,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * at render time by the synthesizer itself.
    */
   combinationDurationMs(
-    combination: string,
-    cadence: string,
-    voice?: CombinationVoice,
+    _combination: string,
+    _cadence: string,
+    _voice?: CombinationVoice,
   ): number | undefined {
-    return findPhraseAsset(combination, cadence, voice?.vocabulary, voice?.performance)?.durationMs
+    // Phase 5-iv retired the per-punch phrase corpus. Combination-length
+    // lookups on this port now always return undefined — the announcer
+    // falls through to the announce clip path (comboAnnounceManifest)
+    // or leaves the block silent when no announce clip is rendered.
+    return undefined
   }
 
   /**
@@ -848,64 +851,19 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * combination uncalled.
    */
   playCombination(
-    combination: string,
-    cadence: string,
-    atMs?: number,
-    voice?: CombinationVoice,
+    _combination: string,
+    _cadence: string,
+    _atMs?: number,
+    _voice?: CombinationVoice,
   ): boolean {
-    if (this.failed) return false
-    const asset = findPhraseAsset(combination, cadence, voice?.vocabulary, voice?.performance)
-    if (!asset) return false
-
-    const start = (): void => {
-      this.requestFocus()
-      try {
-        this.phrasePlayer?.remove()
-      } catch {
-        // Already gone.
-      }
-      try {
-        const player = this.makePlayer(asset.module)
-        this.phrasePlayer = player
-        // Born silent inside a chime-in's mute window; the window's
-        // restore timer brings this same player back to voice volume.
-        player.volume = this.callsMuted() ? 0 : this.volumes.voice
-        player.play()
-        // A15: the sidecar already carries the measured length, so the
-        // busy window advances even without a loaded runtime duration.
-        this.markBusy(asset.durationMs)
-        // Success-path record: the QA loop aligns mic recordings of a session
-        // against these lines (LogRecord carries both clocks), and a silent
-        // round with no .play entries means nothing was even attempted.
-        // `launchLateMs` (2026-08-28, cadence lab): how late we actually
-        // fired vs. when the announcer wanted us to. RN starvation, focus
-        // loss and scheduling drift all show up here; the mic-side analyzer
-        // subtracts it from measured offsets so per-clip drift is separable
-        // from platform jitter.
-        const launchLateMs = atMs === undefined ? 0 : Math.round(this.clock() - atMs)
-        logger.info('puncheokie.voice.play', 'combination phrase playing', {
-          cueId: safe(asset.cueId),
-          combination: safe(combination),
-          cadence: safe(cadence),
-          durationMs: safe(asset.durationMs),
-          launchLateMs: safe(launchLateMs),
-        })
-      } catch (err) {
-        logger.warn('puncheokie.voice.phraseFailed', 'combination phrase did not play', {
-          combination: safe(combination),
-          cadence: safe(cadence),
-          error: safe(String(err)),
-        })
-      }
-    }
-
-    const delay = atMs === undefined ? 0 : atMs - this.clock()
-    if (delay <= 0) {
-      start()
-      return true
-    }
-    this.scheduledPhrases.push({ at: atMs as number, run: start })
-    return true
+    // Phase 5-iv retired the per-punch phrase corpus. Announces now come
+    // through `playComboAnnounce` (comboAnnounceManifest) or the
+    // announcer's per-word fallback (playAsset per token). This method
+    // always returns false so the announcer knows to take one of those
+    // paths; the old body — including its phrase-player lifecycle,
+    // launch-late telemetry, and delayed-start scheduling — is gone
+    // with the corpus that fed it.
+    return false
   }
 
   /**
