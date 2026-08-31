@@ -450,6 +450,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   private metronomeLoopCount = 0
   private metronomeLastWrappedSec = 0
+  /**
+   * Monotonic stamp of the previous position report. v5 counts wraps from
+   * the gap BETWEEN callbacks, so it needs the previous sample time; zero
+   * means "no baseline yet" (fresh start, or after stop).
+   */
+  private metronomeLastSampleMs = 0
 
   metronome = {
     start: (
@@ -464,6 +470,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         this.metronomeStartMonotonicMs = this.clock()
         this.metronomeLoopCount = 0
         this.metronomeLastWrappedSec = 0
+        this.metronomeLastSampleMs = 0
         this.metronomeTransport.start(baseBpm)
       }
       const observer: MetronomePlayerObserver | undefined =
@@ -503,28 +510,66 @@ export class VoiceOutputExpo implements VoiceOutputPort {
                 // longer than one loop): detect via wall time — if
                 // wall elapsed since last callback > 1.5 loops, add
                 // the extra loops beyond the single wrap.
-                const backwardsBy = this.metronomeLastWrappedSec - report.wrappedPositionSec
-                const wrapThreshold = report.loopDurationSec * 0.5
-                if (backwardsBy > wrapThreshold) {
-                  // Real wrap — position went backwards by more than
-                  // half a loop.
-                  this.metronomeLoopCount += 1
-                } else if (backwardsBy > 0) {
-                  // Small backwards jump — JS scheduling glitch
-                  // (callbacks arriving out of order). Skip this
-                  // report; wait for the next in-order one.
+                // v5 — wall-time DELTA wrap counting.
+                //
+                // Four previous attempts failed:
+                //   v1 absolute wall time      → 650 re-anchors (worse)
+                //   v2 position + wall floor   → 340
+                //   v3 pure position           → 332
+                //   v4 threshold 0.1 + hold    → 1954 (reverted)
+                //
+                // v1 and v2 both used wall time measured from
+                // `metronome.start`, which is poisoned by audio-startup
+                // latency: wall time crosses a loop boundary before audio
+                // does, so the count runs ahead. v3/v4 used position
+                // deltas alone, which the ~500 ms callback cadence on a
+                // 1000 ms loop fools — a wrap observed exactly half a loop
+                // backwards is ambiguous.
+                //
+                // The DELTA form dodges both traps. It trusts only the gap
+                // BETWEEN two consecutive callbacks, never elapsed time
+                // since start, so startup latency cancels out:
+                //
+                //   a wrap turns a forward advance A into (A − loop), so
+                //   wraps = round((expectedAdvance − observedAdvance) / loop)
+                //
+                // `round()` gives ±half-loop tolerance — far wider than any
+                // real audio-vs-wall drift — and multi-loop JS stalls fall
+                // out of the same formula instead of needing a special case.
+                if (this.metronomeLastSampleMs === 0) {
+                  // First report of this run: establish the baseline. No
+                  // delta exists yet, so no wrap can be inferred.
+                  this.metronomeLastWrappedSec = report.wrappedPositionSec
+                  this.metronomeLastSampleMs = report.sampleMonotonicMs
                   return
                 }
-                // NOTE: no wall-time catch-up. v1 tried that and
-                // over-counted loops because audio startup lag makes
-                // wall time cross loop boundaries before audio does;
-                // v2's first attempt used wall-time as a floor which
-                // also over-counted for the same reason. Pure
-                // position-based counting is the ONLY reliable
-                // source: audio player IS the ground truth for what
-                // it's playing. A rare JS-stall multi-loop skip is
-                // acceptable — the next callback will hard re-anchor
-                // once, then things stabilize.
+                const gapMs = report.sampleMonotonicMs - this.metronomeLastSampleMs
+                // Duplicate or out-of-order callback — nothing to measure.
+                if (gapMs <= 0) return
+                const expectedAdvanceSec = gapMs / 1000
+                const observedAdvanceSec =
+                  report.wrappedPositionSec - this.metronomeLastWrappedSec
+                // Guard against counting a wrap on ordinary jitter: only
+                // consider one when the position actually went BACKWARDS,
+                // or when more than a full loop of wall time has passed
+                // (which forces at least one wrap regardless of position).
+                // Without this, float noise on a forward step would round
+                // to 1 and over-count — the failure mode that sank v1/v2.
+                const wraps =
+                  observedAdvanceSec < 0 || expectedAdvanceSec > report.loopDurationSec
+                    ? Math.round(
+                        (expectedAdvanceSec - observedAdvanceSec) / report.loopDurationSec,
+                      )
+                    : 0
+                if (wraps > 0) {
+                  this.metronomeLoopCount += wraps
+                } else if (wraps < 0) {
+                  // Audio ran backwards past a whole loop — impossible for
+                  // a looping playlist. Treat as a stale callback and drop
+                  // it rather than corrupt the counter.
+                  return
+                }
+                this.metronomeLastSampleMs = report.sampleMonotonicMs
                 this.metronomeLastWrappedSec = report.wrappedPositionSec
                 const absoluteSec =
                   this.metronomeLoopCount * report.loopDurationSec + report.wrappedPositionSec
@@ -544,6 +589,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.metronomeStartMonotonicMs = 0
       this.metronomeLoopCount = 0
       this.metronomeLastWrappedSec = 0
+      this.metronomeLastSampleMs = 0
     },
     setVolume: (volume: number): void => {
       this.metronomePlayer.setVolume(volume)

@@ -232,11 +232,19 @@ describe('metronome position observer → transport.correct (W0-c-ii)', () => {
     const listener = playlistListeners.at(-1)!
     const genBefore = output.metronome.transport!.snapshot().generation
 
+    // v5 (wall-time DELTA wrap counting) infers wraps from the gap
+    // BETWEEN two consecutive reports, so the FIRST report of a run can
+    // only establish a baseline — there is no delta to measure yet. Seed
+    // it here; the assertion below is about the second report.
+    setClock(1_050)
+    listener.fire({ currentTime: 0.05, duration: 1.0 })
+
     // Set JS elapsed to 100 ms — JS predicts tick ~96. Then have
     // audio report it's at wrapped 0.4 s (well past where JS
-    // thinks). The translator picks integer loops = round(0.1 -
-    // 0.4) = round(-0.3) = 0 clamped, absolute = 0.4 s = 384
-    // ticks. Error = 384 - 96 = 288 ticks — well INSIDE the LARGE
+    // thinks). Delta: gap 50 ms → expectedAdvance 0.05 s,
+    // observedAdvance 0.35 s. Position moved FORWARD and less than a
+    // loop of wall time passed, so wraps = 0 and absolute = 0.4 s =
+    // 384 ticks. Error = 384 - 96 = 288 ticks — well INSIDE the LARGE
     // threshold (500), so the correct primitive slews forward by
     // the step cap (20).
     setClock(1_100)
@@ -267,6 +275,142 @@ describe('metronome position observer → transport.correct (W0-c-ii)', () => {
 
     // Transport still stopped; no re-anchor happened, no throw.
     expect(output.metronome.transport!.snapshot().state).toBe('stopped')
+  })
+
+// ---------------------------------------------------------------------------
+// Wall-time DELTA wrap counting (v5, 2026-08-31).
+//
+// Four earlier attempts failed. v1 and v2 measured wall time from
+// `metronome.start`, which audio-startup latency poisons: wall time crosses
+// a loop boundary before audio does, so the count runs ahead (v1 made the
+// storm WORSE — 650 re-anchors vs 371). v3/v4 used position deltas alone,
+// which the ~500 ms callback cadence on a 1000 ms loop fools, because a wrap
+// observed exactly half a loop backwards is ambiguous.
+//
+// v5 trusts only the gap BETWEEN two consecutive callbacks, so startup
+// latency cancels. These tests pin the arithmetic and both guard rails.
+// ---------------------------------------------------------------------------
+
+describe('metronome loop counting — wall-time delta (v5)', () => {
+  /**
+   * Drive a sequence of position reports and report how many times the
+   * transport HARD RE-ANCHORED (generation bumps past the one `start()`
+   * spends).
+   *
+   * Generation bumps are the right assertion, not the derived tick: when
+   * the loop count is correct the derived absolute tracks wall time, so
+   * `correct()` stays on its small-error slew branch and never snaps. A
+   * miscount of even one loop puts the observation ~960 ticks away from
+   * the JS estimate, which is far past PHASE_CORRECTION_LARGE_TICKS (500)
+   * and forces a re-anchor. So "zero bumps" is precisely "no storm", and
+   * it catches BOTH failure directions — a missed wrap (v3/v4) and an
+   * over-counted one (v1/v2).
+   */
+  function reAnchorsDuring(reports: { atMs: number; currentTime: number }[]): number {
+    const { output, setClock } = buildOutputWithControlledClock()
+    setClock(1_000)
+    output.metronome.start(FAKE_LOOP, 0.6, 60)
+    const listener = playlistListeners.at(-1)!
+    const genAfterStart = output.metronome.transport!.snapshot().generation
+    for (const r of reports) {
+      setClock(r.atMs)
+      listener.fire({ currentTime: r.currentTime, duration: 1.0 })
+    }
+    return output.metronome.transport!.snapshot().generation - genAfterStart
+  }
+
+  /**
+   * The realistic case, and the one that reproduces the storm: a metronome
+   * whose 1000 ms loop is sampled every 500 ms. Audio position is exactly
+   * `(elapsed % loop)`, so the reports alternate 0.5 → 0.0 → 0.5 → 0.0,
+   * and every other one is a true wrap sitting exactly half a loop
+   * backwards.
+   */
+  function steadyCadenceReports(count: number) {
+    return Array.from({ length: count }, (_, i) => {
+      const elapsedMs = (i + 1) * 500
+      return { atMs: 1_000 + elapsedMs, currentTime: (elapsedMs % 1_000) / 1_000 }
+    })
+  }
+
+  it('never re-anchors across a steady 500 ms cadence — the storm regression', () => {
+    // v3 fails here on the third report: the wrap at exactly half a loop
+    // fails its STRICT `backwardsBy > 0.5 * loop`, the callback returns
+    // without updating the reference, and the next in-order report is then
+    // a full loop adrift → hard re-anchor. Repeat forever = the storm.
+    expect(reAnchorsDuring(steadyCadenceReports(12))).toBe(0)
+  })
+
+  it('never re-anchors across a multi-loop JS stall', () => {
+    // A 2.5 s gap spans two whole loops. The delta formula resolves it
+    // with the same arithmetic as a single wrap — no special case.
+    expect(
+      reAnchorsDuring([
+        { atMs: 1_500, currentTime: 0.5 },
+        { atMs: 4_000, currentTime: 0.0 },
+        { atMs: 4_500, currentTime: 0.5 },
+      ]),
+    ).toBe(0)
+  })
+
+  it('never re-anchors on ordinary forward progress', () => {
+    // The v1/v2 failure direction: a plain forward step must not round up
+    // to a wrap. An over-count would put the estimate a full loop ahead
+    // and force a re-anchor.
+    expect(
+      reAnchorsDuring([
+        { atMs: 1_200, currentTime: 0.2 },
+        { atMs: 1_400, currentTime: 0.4 },
+        { atMs: 1_600, currentTime: 0.6 },
+        { atMs: 1_800, currentTime: 0.8 },
+      ]),
+    ).toBe(0)
+  })
+
+  it('ignores a duplicate callback at the same instant', () => {
+    // gap === 0 leaves no delta to measure; the stale report must be
+    // dropped rather than counted as a wrap.
+    expect(
+      reAnchorsDuring([
+        { atMs: 1_500, currentTime: 0.5 },
+        { atMs: 2_000, currentTime: 0.0 },
+        { atMs: 2_000, currentTime: 0.0 },
+        { atMs: 2_500, currentTime: 0.5 },
+      ]),
+    ).toBe(0)
+  })
+
+  it('treats the first report of a run as a baseline only', () => {
+    // No delta exists yet, so nothing is corrected; the transport is still
+    // running on its own JS estimate at 100 ms elapsed = 96 ticks. Were
+    // the first report acted on, the 0.4 s position would drag the anchor.
+    const { output, setClock } = buildOutputWithControlledClock()
+    setClock(1_000)
+    output.metronome.start(FAKE_LOOP, 0.6, 60)
+    const listener = playlistListeners.at(-1)!
+    setClock(1_100)
+    listener.fire({ currentTime: 0.4, duration: 1.0 })
+    expect(output.metronome.transport!.currentTick()).toBeCloseTo(96, 0)
+  })
+
+  it('re-seeds the baseline after stop/start so a stale sample cannot leak', () => {
+    const { output, setClock } = buildOutputWithControlledClock()
+    setClock(1_000)
+    output.metronome.start(FAKE_LOOP, 0.6, 60)
+    const first = playlistListeners.at(-1)!
+    setClock(1_500)
+    first.fire({ currentTime: 0.5, duration: 1.0 })
+
+    output.metronome.stop()
+    setClock(10_000)
+    output.metronome.start(FAKE_LOOP, 0.6, 60)
+    const second = playlistListeners.at(-1)!
+    // First report of the NEW run: baseline only, no correction, so the
+    // huge wall gap across the restart cannot be read as thousands of wraps.
+    setClock(10_100)
+    second.fire({ currentTime: 0.4, duration: 1.0 })
+    expect(output.metronome.transport!.currentTick()).toBeCloseTo(96, 0)
+  })
   })
 })
 
