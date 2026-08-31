@@ -256,11 +256,19 @@ export function PunchAvatarCard(props: {
 
   if (!shown) return null
   // No art for defense, footwork or coach tokens: the figure holds guard.
+  //
+  // `step2` IS the guard (see punchAvatarManifest: step1 → `-s2.png`, the
+  // STRIKE; step2 → `-s1.png`, the RETRACTED guard). This branch used to
+  // return `step1`, which pinned the figure EXTENDED for the whole span —
+  // exactly the "he's stuck in position extended" Kyle saw on-glass
+  // 2026-08-31, because `shown` is never cleared, so any cue whose active
+  // token is defense/footwork/coach (or has no lit punch) froze the card
+  // mid-strike with no path back.
   const holdingGuard = requested === null
   const visible: AvatarStep = reducedMotion
     ? 'step2'
     : holdingGuard
-      ? 'step1'
+      ? 'step2'
       : step
 
   return (

@@ -139,21 +139,55 @@ export class LiveCueMatcher {
     }
   }
 
-  /** Consumes the CueEngine's window lifecycle. Other events are ignored. */
+  /**
+   * Consumes the CueEngine's window lifecycle. Other events are ignored.
+   *
+   * ## Cue identity (2026-08-31 forensics fix)
+   *
+   * Acceptance windows OVERLAP by `DEFAULT_GRACE_BEFORE_MS` (200 ms) for
+   * every consecutive cue pair: `truncateWindowsAtNextCue` ends cue P at
+   * `next.scheduledStartMs` while cue N's window already opened at
+   * `scheduledStartMs - graceBefore`. So the engine emits
+   * `cue-window-opened(N)` BEFORE `cue-window-closed(P)`.
+   *
+   * The previous code held one unkeyed `open` slot:
+   *   - opening N silently DISCARDED P (never settled — no score, no
+   *     `cue-settled`, no completed marks for the athlete's row), and
+   *   - closing P then settled N and nulled the slot. `windowOpened` is
+   *     latched per runtime, so N never re-opened: every later punch fell
+   *     to the `!open` branch and was published as `extra`.
+   *
+   * Net effect on-glass: after the first cue of a round the matcher was
+   * orphaned — no cue ever completed, the ring row ran on the beat cursor
+   * alone, and combos "started well then went wrong" (Kyle, 2026-08-31).
+   *
+   * Both transitions are now cue-id-keyed: opening a different cue settles
+   * the outgoing one first, and a close only settles the cue it names.
+   */
   onCueEvent(event: CueEvent): void {
     if (event.type === 'cue-window-opened') {
+      // A new window while another is still open = the 200 ms overlap.
+      // Settle the outgoing cue rather than dropping it on the floor.
+      if (this.open && this.open.cue.id !== event.cue.id) this.settle()
       this.open = { cue: event.cue, events: [], provisional: [], filled: new Set() }
       return
     }
 
     if (event.type === 'cue-window-closed') {
+      // Only settle the cue this close names. A late close for a cue that
+      // already settled (via the overlap path above) must not consume the
+      // cue that is currently open.
+      if (this.open && this.open.cue.id !== event.cue.id) return
       this.settle()
       return
     }
 
     // A cancelled cue never settles into a score — the athlete was told to
-    // stop, so there is nothing to grade.
-    if (event.type === 'cue-cancelled') this.open = null
+    // stop, so there is nothing to grade. Same identity rule.
+    if (event.type === 'cue-cancelled') {
+      if (this.open && this.open.cue.id !== event.cue.id) return
+      this.open = null
+    }
   }
 
   onPunchEvent(event: TrackerPunchEvent): void {

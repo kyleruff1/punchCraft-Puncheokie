@@ -606,9 +606,36 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           monotonicTimeMs: safe(event.nowMs),
         })
         if (ordinal > beatCursorRef.current) {
+          // 2026-08-31 token-order forensics — DO NOT sync/push here.
+          //
+          // This used to call `syncFromEngine()` + `pushStore(true)` per
+          // token-due event. When the runner's 50 ms interval stalls (JS
+          // churn: ~330 transport re-anchors/round each logging + notifying,
+          // store pushes, render churn) the engine's `fireDueTokens` finds
+          // several tokens overdue and publishes them all inside ONE
+          // `engine.tick(...)` call — measured on a TRF drive: 74 token-due
+          // events across only 63 distinct `workElapsedMs` values, worst
+          // tick firing FIVE tokens microseconds apart.
+          //
+          // Each of those events then forced its own immediate, throttle-
+          // bypassing store push and re-render, so the row strobed 0→1→2→3→4
+          // in ~1 ms instead of walking the beat. On-glass: rings lighting
+          // "spastically and out of order", repeating nodes mid-combo, and
+          // the avatar (which follows the active token index) jumping in
+          // lockstep with them — exactly what Kyle reported.
+          //
+          // The cursor is monotonic, so simply advancing it and letting the
+          // runner's own tick loop render is correct AND adds no latency:
+          // `syncFromEngine()` runs a few statements after `engine.tick(...)`
+          // inside the SAME interval callback. A burst therefore collapses
+          // into ONE render at the final cursor position — the visual jumps
+          // to where the beat actually is rather than replaying history
+          // (M39-V2 principle #3: a stall may skip an event that is already
+          // over; missed events are recorded diagnostically, never replayed).
+          //
+          // The per-token `cue.tokenDue` log above still fires for every
+          // token, so the cadence-lab analyzer keeps full resolution.
           beatCursorRef.current = ordinal
-          syncFromEngine()
-          pushStore(true)
         }
         return
       }
@@ -721,7 +748,31 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               event.match.eventTimeMs,
             )
           }
-          countsRef.current.inCue = event.match.expectedIndex + 1
+          // 2026-08-31 forensics fix — cue identity + monotonicity.
+          //
+          // `inCue` feeds `syncFromEngine`'s lit-token cursor as
+          // `Math.max(credited, beatCursorRef.current)`. Two bugs lived on
+          // the old unguarded assignment:
+          //
+          //   1. NO CUE CHECK. Acceptance windows overlap by 200 ms
+          //      (`DEFAULT_GRACE_BEFORE_MS`), so while the stage still shows
+          //      cue P the matcher's open cue is already N. A punch in that
+          //      window matched N's expectedIndex 0 and wrote `inCue = 1`,
+          //      which flipped P's completed tokens back to `upcoming` and
+          //      re-lit a token in the MIDDLE of the combo. This is the
+          //      "repeating nodes mid-combo" Kyle saw on-glass.
+          //   2. ASSIGNMENT, NOT MAX. Even within one cue, an out-of-order
+          //      or lower-index match rewound the cursor, backtracking the
+          //      row right-to-left.
+          //
+          // Credit only matches belonging to the cue currently on stage, and
+          // never let the credited count move backwards.
+          if (event.match.cueId === currentRef.current?.cue.id) {
+            countsRef.current.inCue = Math.max(
+              countsRef.current.inCue,
+              event.match.expectedIndex + 1,
+            )
+          }
           const expected = currentRef.current?.cue.expectedPunches[event.match.expectedIndex]
           // Reward only: nothing is recorded when the byte disagrees.
           if (event.match.affirmed && expected) {

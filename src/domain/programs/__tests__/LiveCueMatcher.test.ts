@@ -323,3 +323,93 @@ describe('unsubscribe', () => {
     expect(seen).toHaveLength(1)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Overlapping acceptance windows (2026-08-31 token-order forensics).
+//
+// Consecutive cues overlap by DEFAULT_GRACE_BEFORE_MS (200 ms):
+// `truncateWindowsAtNextCue` ends cue P at `next.scheduledStartMs` while
+// cue N's window already opened at `scheduledStartMs - graceBefore`. The
+// engine therefore emits opened(N) BEFORE closed(P).
+//
+// The pre-fix matcher held one unkeyed `open` slot, so opened(N) silently
+// discarded P (never settled) and closed(P) then consumed N. Because
+// `windowOpened` is latched per runtime, N never re-opened and every later
+// punch was published as `extra` — the matcher was orphaned for the rest of
+// the round.
+// ---------------------------------------------------------------------------
+
+describe('overlapping windows keep cue identity (forensics 2026-08-31)', () => {
+  const ROUND = expandTimeline(threeRoundFundamentals, 'orthodox', STEADY_BPM)[0]!
+  const CUE_P = ROUND.cues[1]!
+  const CUE_N = ROUND.cues.find((c) => c.id !== CUE_P.id)!
+
+  const openedFor = (cue: CueInstance): CueEvent =>
+    ({
+      type: 'cue-window-opened',
+      cue,
+      status: 'active',
+      timestamps: {} as never,
+      workElapsedMs: 0,
+      nowMs: 0,
+    }) as CueEvent
+  const closedFor = (cue: CueInstance): CueEvent =>
+    ({
+      type: 'cue-window-closed',
+      cue,
+      status: 'accepting',
+      timestamps: {} as never,
+      workElapsedMs: 0,
+      nowMs: 0,
+    }) as CueEvent
+
+  it('settles the outgoing cue when the next window opens over it', () => {
+    const h = harness()
+    h.matcher.onCueEvent(openedFor(CUE_P))
+    // The overlap: N opens while P is still open.
+    h.matcher.onCueEvent(openedFor(CUE_N))
+
+    // P must have been settled rather than silently dropped.
+    expect(h.settled()).toHaveLength(1)
+    expect(h.settled()[0]?.result.cueId).toBe(CUE_P.id)
+  })
+
+  it('keeps the newly opened cue live — punches are matched, not orphaned as extras', () => {
+    const h = harness()
+    h.matcher.onCueEvent(openedFor(CUE_P))
+    h.matcher.onCueEvent(openedFor(CUE_N))
+    // P's close arrives AFTER N opened — it must not consume N.
+    h.matcher.onCueEvent(closedFor(CUE_P))
+
+    // N is still the open cue: a punch belongs to it, not to the extras bin.
+    const expected = CUE_N.expectedPunches[0]
+    if (!expected) return // defensive: a cue with no punches proves nothing here
+    h.matcher.onPunchEvent(
+      event({
+        hand: expected.hand,
+        receivedMonotonicTimeMs:
+          CUE_N.scheduledStartMs + (CUE_N.tokenOffsetsMs[expected.tokenIndex] ?? 0),
+      }),
+    )
+
+    expect(h.matches().map((m) => m.cueId)).toContain(CUE_N.id)
+    // Pre-fix this punch was published as an `extra` because `open` was null.
+    expect(h.extras()).toHaveLength(0)
+  })
+
+  it('a stale close for an already-settled cue does not consume the open one', () => {
+    const h = harness()
+    h.matcher.onCueEvent(openedFor(CUE_P))
+    h.matcher.onCueEvent(openedFor(CUE_N))
+    const settledAfterOverlap = h.settled().length
+    // Late/duplicate close for P.
+    h.matcher.onCueEvent(closedFor(CUE_P))
+    // No new settle — N is still open and untouched.
+    expect(h.settled()).toHaveLength(settledAfterOverlap)
+
+    // Closing N settles exactly N.
+    h.matcher.onCueEvent(closedFor(CUE_N))
+    expect(h.settled()).toHaveLength(settledAfterOverlap + 1)
+    expect(h.settled().at(-1)?.result.cueId).toBe(CUE_N.id)
+  })
+})
