@@ -5,6 +5,17 @@
  * art (a missing render is a Jest failure here, not a blank card mid-round),
  * and the card is a HUD layer the reactive backdrop cannot reach.
  */
+// PunchAvatarCard's frame-clock hook imports Reanimated (M39-V2
+// Phase W0-b-iii). Reanimated's native runtime crashes in node; a
+// minimal stub of the hooks the module names is enough — the
+// tests below never pass an `anchor`, so the setInterval
+// fallback path is what actually runs.
+jest.mock('react-native-reanimated', () => ({
+  runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
+  useSharedValue: <T,>(init: T) => ({ value: init }),
+  useFrameCallback: () => ({ setActive: () => {} }),
+}))
+
 import React from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 

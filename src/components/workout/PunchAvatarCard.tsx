@@ -19,9 +19,12 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
+import type { SharedValue } from 'react-native-reanimated'
 
 import { findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
+import { useAvatarFrameClock } from './useAvatarFrameClock'
 import type { CueInstance } from '@domain/programs/CueTimeline'
+import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
 import {
   avatarFrameAt,
   avatarWindowMs,
@@ -115,8 +118,17 @@ export function PunchAvatarCard(props: {
   /** Index into `cue.tokens` of the token currently lit, or -1. */
   activeTokenIndex: number
   reducedMotion?: boolean
+  /**
+   * Optional shared transport anchor (M39-V2 Phase W0-b-iii, Kyle
+   * 2026-08-30). When provided, the card's flip derives from the
+   * transport tick via a `useFrameCallback` worklet; when absent
+   * the original 30 ms `setInterval` path runs instead (test doubles
+   * and any screen predating W0 keep working unchanged). See
+   * `useAvatarFrameClock.ts`.
+   */
+  anchor?: SharedValue<SharedTransportAnchor>
 }): React.JSX.Element | null {
-  const { cue, activeTokenIndex, reducedMotion = false } = props
+  const { cue, activeTokenIndex, reducedMotion = false, anchor } = props
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions()
 
   // Every punch in the combination, in order. The card walks these.
@@ -211,7 +223,14 @@ export function PunchAvatarCard(props: {
   // scheduled chain can be cancelled by the screen's re-render churn and
   // wedge the figure on one frame (it did); this cannot, because the worst
   // a lost tick costs is one frame of lag before the clock corrects it.
+  //
+  // Two paths, mutually exclusive: when an `anchor` is provided (M39-V2
+  // Phase W0-b-iii), the frame-clock worklet below owns the flip and
+  // this `setInterval` is skipped. Absent an anchor — test doubles, any
+  // screen that predates W0, `reducedMotion` renders — the setInterval
+  // path stays authoritative.
   useEffect(() => {
+    if (anchor) return
     if (!shown || reducedMotion) return
     const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs, shown.isLast))
     const tick = (): void => {
@@ -221,7 +240,19 @@ export function PunchAvatarCard(props: {
     tick()
     const id = setInterval(tick, FLIP_TICK_MS)
     return () => clearInterval(id)
-  }, [shown, reducedMotion])
+  }, [shown, reducedMotion, anchor])
+
+  // Frame-clock path (M39-V2 Phase W0-b-iii). No-op when `anchor` is
+  // undefined; when present, drives the flip from the shared transport
+  // tick on the UI thread. `setStep` receives a `runOnJS` from the
+  // worklet only when the computed frame changes — same lazy cadence
+  // as the setInterval path above.
+  useAvatarFrameClock(
+    shown ? { key: shown.key, windowMs: shown.windowMs, isLast: shown.isLast } : null,
+    reducedMotion,
+    anchor,
+    setStep,
+  )
 
   if (!shown) return null
   // No art for defense, footwork or coach tokens: the figure holds guard.

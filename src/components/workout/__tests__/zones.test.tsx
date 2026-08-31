@@ -6,6 +6,17 @@
  * measure velocity, and that a hand-pattern score is never called
  * technique accuracy.
  */
+// CueStage renders PunchAvatarCard, whose frame-clock hook
+// imports Reanimated (M39-V2 Phase W0-b-iii). Reanimated's
+// native runtime crashes in node; the tests below never pass
+// an `anchor`, so the setInterval fallback path is what runs
+// and this minimal stub is enough to let the modules load.
+jest.mock('react-native-reanimated', () => ({
+  runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
+  useSharedValue: <T,>(init: T) => ({ value: init }),
+  useFrameCallback: () => ({ setActive: () => {} }),
+}))
+
 import React from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 
