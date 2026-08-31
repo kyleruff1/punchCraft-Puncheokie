@@ -373,12 +373,27 @@ export function compileRoundRhythmMap(
         ? (railStartAt as number)
         : Math.max(cue.previewAt, finishBy - lengthMs - phraseShift)
       callStartAt = startAt
-      // V1c stamped per-token ring times on `cue.phraseTokenTimesMs` here
-      // so downstream visual consumers could pick the rail over the beat
-      // grid. Phase 5-ii retired the transitional field: the compiled
-      // `SpineSchedule.compiled[cueId]` now carries strike-time authoring.
-      // The rail placement itself (startAt above) still respects the
-      // envelope math; only the per-token override write is gone.
+      // Stamp per-token ring times on the cue when the rail is active.
+      // Ring N fires (word[N] end wall time) + RAIL_K_MS, expressed as an
+      // offset from cue.scheduledStartMs (same reference as tokenOffsetsMs).
+      if (railMarks && railStartFits) {
+        const railStart = railStartAt as number
+        const times: number[] = []
+        for (let i = 0; i < railMarks.length; i += 1) {
+          const mark = railMarks[i]
+          const end = mark?.endOffsetMs
+          if (end === undefined) {
+            // Should be unreachable per the `railMarks` guard, but be
+            // defensive: if any token is missing an end, fall back to
+            // the beat grid rather than stamping a partial override.
+            cue.phraseTokenTimesMs = undefined
+            break
+          }
+          const wordEndWall = railStart + end
+          times.push(Math.round(wordEndWall + RAIL_K_MS - cue.scheduledStartMs))
+        }
+        if (times.length === railMarks.length) cue.phraseTokenTimesMs = times
+      }
       // Repeat thinning: a same-combination rep that lands while the
       // previous phrase is still sounding is NOT re-called. Ceremony
       // cues are exempt — their placement anchors on this call.

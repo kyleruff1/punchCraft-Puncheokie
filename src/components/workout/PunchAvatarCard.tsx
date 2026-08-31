@@ -93,12 +93,9 @@ export function requestedFor(
   if (!token || token.kind !== 'punch') return null
   const frames = findPunchAvatar(token.number, token.body)
   if (!frames) return null
-  // The same due times the rings fire on. Phase 5-ii retired the V1c
-  // `phraseTokenTimesMs` rail override; only the beat grid remains.
-  // (Engine-authored per-strike ticks live on
-  // `SpineSchedule.compiled[cueId]` — a follow-up Phase 5 pass wires
-  // the avatar to that shared authority.)
-  const dueTimes = cue.tokenOffsetsMs
+  // The same due times the rings fire on: the clip rail when a phrase drives
+  // the cue, the beat grid otherwise.
+  const dueTimes = cue.phraseTokenTimesMs ?? cue.tokenOffsetsMs
   const windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
   const isLast = tokenIndex === lastPunchIndex
   // Per-occurrence identity — the two `1`s in `1-1-2` produce the same

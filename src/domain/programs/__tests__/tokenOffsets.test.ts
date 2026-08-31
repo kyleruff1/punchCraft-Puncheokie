@@ -1,11 +1,8 @@
 /**
- * Beat-grid token offset lookup — the V1c fallback (M39-V2 Phase 5-ii).
- *
- * V1c had a THREE-source fallback chain
- * (`visualOffsetsMs ?? phraseTokenTimesMs ?? tokenOffsetsMs`). Phase
- * 5-ii retired the first two — engine authoring lives on
- * `SpineSchedule.compiled[cueId]` now. What survives here is just the
- * beat-grid path; the module is one step from being inlined.
+ * The shared token-offset authority chain (M39-V1c ring/avatar sync fix,
+ * Kyle 2026-08-30). Pins the priority order every visual consumer must
+ * follow — the ring engine and the avatar spine both walk this helper,
+ * so they cannot disagree.
  */
 import type { CueInstance } from '../CueTimeline'
 import { tokenOffsetFor, tokenOffsetsFor } from '../tokenOffsets'
@@ -36,21 +33,62 @@ function cue(over: Partial<CueInstance> = {}): CueInstance {
   }
 }
 
-describe('tokenOffsetsFor — beat-grid list', () => {
-  it('returns tokenOffsetsMs by reference (no copy)', () => {
+// ---------------------------------------------------------------------------
+
+describe('tokenOffsetsFor — whole-array chain', () => {
+  it('returns tokenOffsetsMs when nothing else is populated (pre-M39 default)', () => {
     const c = cue()
     expect(tokenOffsetsFor(c)).toBe(c.tokenOffsetsMs)
   })
+
+  it('returns phraseTokenTimesMs when the rail is present, no engine', () => {
+    const c = cue({ phraseTokenTimesMs: [50, 550] })
+    expect(tokenOffsetsFor(c)).toEqual([50, 550])
+  })
+
+  it('returns visualOffsetsMs when the engine is present (wins over rail)', () => {
+    const c = cue({
+      visualOffsetsMs: [0, 250],
+      phraseTokenTimesMs: [50, 550],
+    })
+    expect(tokenOffsetsFor(c)).toEqual([0, 250])
+  })
 })
 
-describe('tokenOffsetFor — per-token beat-grid lookup', () => {
-  it('returns the beat-grid offset at the given index', () => {
+describe('tokenOffsetFor — per-token chain (partial fills)', () => {
+  it('falls to beat-grid per token when engine and rail are absent', () => {
     const c = cue()
     expect(tokenOffsetFor(c, 0)).toBe(0)
     expect(tokenOffsetFor(c, 1)).toBe(500)
   })
 
-  it('returns 0 for an index beyond the beat grid (defensive)', () => {
+  it('rail wins per token when engine is absent', () => {
+    const c = cue({ phraseTokenTimesMs: [50, 550] })
+    expect(tokenOffsetFor(c, 0)).toBe(50)
+    expect(tokenOffsetFor(c, 1)).toBe(550)
+  })
+
+  it('engine wins per token over rail and beat-grid', () => {
+    const c = cue({
+      visualOffsetsMs: [0, 250],
+      phraseTokenTimesMs: [50, 550],
+    })
+    expect(tokenOffsetFor(c, 0)).toBe(0)
+    expect(tokenOffsetFor(c, 1)).toBe(250)
+  })
+
+  it('per-token fallback — engine has token 0, rail has token 1, beat has both', () => {
+    // Partial fill during migration: engine authored token 0 only,
+    // rail authored token 1 only. Each token gets its highest source.
+    const c = cue({
+      visualOffsetsMs: [100], // only index 0 populated
+      phraseTokenTimesMs: [50, 550],
+    })
+    expect(tokenOffsetFor(c, 0)).toBe(100) // engine wins for token 0
+    expect(tokenOffsetFor(c, 1)).toBe(550) // rail wins for token 1 (engine absent)
+  })
+
+  it('returns 0 for an index beyond every array (defensive)', () => {
     const c = cue({ tokens: [{ kind: 'punch', number: 1, body: false, beatOffset: 0 }] })
     expect(tokenOffsetFor(c, 42)).toBe(0)
   })

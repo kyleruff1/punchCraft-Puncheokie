@@ -202,15 +202,18 @@ export class CueMatcher {
    * used for the signed match offset).
    *
    * M39-V1c plumbing (2026-08-30): engine mode returns the authored
-   * expected-strike time. The V1c `expectedStrikeOffsetsMs` override
-   * retired in Phase 5-ii — engine authoring now lives on
-   * `SpineSchedule.compiled[cueId].strikes[i].targetStrikeTick`, and
-   * consumers that want the engine grid read that field directly.
-   * Legacy cues use the beat-grid offset (identical to the pre-M39
-   * scheduledMomentMs).
+   * expected-strike time (visualAtMs + `EXPECTED_STRIKE_DELAY_MS`) so
+   * scoring measures against "when the strike should land" rather than
+   * "when the coach said the token." For legacy cues (no
+   * `expectedStrikeOffsetsMs`) the moment is `scheduledStartMs +
+   * tokenOffsetsMs[i]` — the identical value produced by the pre-M39
+   * scheduledMomentMs.
    */
   private scheduledMomentMs(cue: CueInstance, expected: ExpectedPunch): number {
-    const offset = cue.tokenOffsetsMs[expected.tokenIndex] ?? 0
+    const offset =
+      cue.expectedStrikeOffsetsMs?.[expected.tokenIndex] ??
+      cue.tokenOffsetsMs[expected.tokenIndex] ??
+      0
     return cue.scheduledStartMs + offset
   }
 
