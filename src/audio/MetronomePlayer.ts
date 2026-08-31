@@ -41,6 +41,37 @@ import { logger, safe } from '@/diagnostics/logger'
 
 import type { MetronomeLoop } from './voiceAssets/metronomeAssets'
 
+/**
+ * A single position sample from the underlying playlist's status
+ * update (M39-V2 Phase W0-c-ii). The observer receives one of
+ * these per native callback (~500 ms cadence per Expo Audio
+ * defaults); it is expected to translate the wrapped position
+ * into an absolute tick and feed it into
+ * `MetronomeTransport.correct`.
+ */
+export interface MetronomePositionReport {
+  /** From `AudioPlaylistStatus.currentTime`, in seconds (wraps per loop). */
+  wrappedPositionSec: number
+  /** From `AudioPlaylistStatus.duration`, in seconds. Zero while unloaded. */
+  loopDurationSec: number
+  /** MonotonicClock timestamp at which the status was received. */
+  sampleMonotonicMs: number
+}
+
+/** Optional observer wired at start-time. */
+export interface MetronomePlayerObserver {
+  /** MonotonicClock — the observer supplies its own clock so the report timestamp matches the transport's domain. */
+  now(): number
+  /** Called on every playlist status update while the loop is playing. */
+  onPositionReport(report: MetronomePositionReport): void
+}
+
+/** Minimal shape of `AudioPlaylistStatus` we consume. */
+interface PlaylistStatusLike {
+  currentTime: number
+  duration: number
+}
+
 export class MetronomePlayer {
   private playlist: AudioPlaylist | null = null
   /** Kept for logging / debug — the loop currently loaded. */
@@ -48,18 +79,41 @@ export class MetronomePlayer {
   /** `false` when the platform refused to build a playlist. Every method is a no-op after that. */
   private available = true
   private volume = 0
+  /**
+   * Set at start-time when the caller passes an observer; used to
+   * translate playlist status updates into position reports.
+   */
+  private observer: MetronomePlayerObserver | null = null
+  /**
+   * Unsubscribe returned by `playlist.addListener('playlistStatusUpdate', ...)`.
+   * Called on stop and before re-adding on a new-loop rebuild so we
+   * never leak listeners across playlist rebuilds.
+   */
+  private unsubscribeStatus: (() => void) | null = null
 
   /**
    * Start (or restart) the click at `loop`, `volume`. Idempotent when
    * called with the same loop; a different loop reloads the playlist
    * and starts from the top so the click always begins on the
    * downbeat.
+   *
+   * Optional `observer` (M39-V2 Phase W0-c-ii) receives a position
+   * report on every `playlistStatusUpdate` from the underlying
+   * playlist — used by VoiceOutputExpo to feed
+   * `MetronomeTransport.correct` so the JS-side tick stays in sync
+   * with the native audio backend.
    */
-  start(loop: MetronomeLoop, volume: number): void {
+  start(loop: MetronomeLoop, volume: number, observer?: MetronomePlayerObserver): void {
     if (!this.available) return
     this.volume = clampVolume(volume)
+    // Rebind the observer every start — a new caller (or a
+    // no-observer test double) replaces the previous one. The
+    // subscription itself is bound to `this.playlist` and re-added
+    // whenever we build a new playlist, below.
+    this.observer = observer ?? null
     if (this.loaded && this.loaded.module === loop.module) {
       // Same loop: seek to zero and resume — nothing to rebuild.
+      // The status listener stays attached to the existing playlist.
       try {
         this.playlist?.seekTo(0)
         this.playlist?.play()
@@ -72,6 +126,7 @@ export class MetronomePlayer {
     }
     // New loop (first start of the workout, or a division change).
     if (this.playlist !== null) {
+      this.detachStatusListener()
       try {
         this.playlist.pause()
         this.playlist.destroy()
@@ -89,6 +144,7 @@ export class MetronomePlayer {
       this.playlist.volume = this.volume
       this.playlist.play()
       this.loaded = loop
+      this.attachStatusListener(this.playlist)
       logger.info('puncheokie.metronome', 'loop started', {
         division: safe(loop.division),
         swing: safe(loop.swing),
@@ -105,12 +161,71 @@ export class MetronomePlayer {
   }
 
   /**
+   * Attach the `playlistStatusUpdate` listener to a fresh playlist.
+   * Wrapped in try/catch — `addListener` throws on native platforms
+   * that don't expose the API; a throw disables the observer for
+   * this playlist but keeps audio playback working.
+   */
+  private attachStatusListener(playlist: AudioPlaylist): void {
+    if (!this.observer) return
+    const obs = this.observer
+    try {
+      const rawSub = (
+        playlist as unknown as {
+          addListener?: (
+            event: 'playlistStatusUpdate',
+            cb: (status: PlaylistStatusLike) => void,
+          ) => { remove?: () => void } | (() => void)
+        }
+      ).addListener?.('playlistStatusUpdate', (status: PlaylistStatusLike) => {
+        try {
+          obs.onPositionReport({
+            wrappedPositionSec: status.currentTime,
+            loopDurationSec: status.duration,
+            sampleMonotonicMs: obs.now(),
+          })
+        } catch (error) {
+          logger.warn('puncheokie.metronome', 'position observer threw', {
+            error: safe(String(error)),
+          })
+        }
+      })
+      if (typeof rawSub === 'function') {
+        this.unsubscribeStatus = rawSub
+      } else if (rawSub && typeof rawSub.remove === 'function') {
+        this.unsubscribeStatus = () => rawSub.remove?.()
+      } else {
+        this.unsubscribeStatus = null
+      }
+    } catch (error) {
+      logger.warn('puncheokie.metronome', 'addListener unsupported — position reports disabled', {
+        error: safe(String(error)),
+      })
+      this.unsubscribeStatus = null
+    }
+  }
+
+  /** Remove the status listener if one is attached. Idempotent. */
+  private detachStatusListener(): void {
+    if (this.unsubscribeStatus) {
+      try {
+        this.unsubscribeStatus()
+      } catch {
+        // Already detached.
+      }
+      this.unsubscribeStatus = null
+    }
+  }
+
+  /**
    * Stop the click. The playlist is TORN DOWN, not paused — the next
    * `work-entered` restarts fresh on the downbeat so drift cannot
    * accumulate across a rest.
    */
   stop(): void {
     if (!this.available) return
+    this.detachStatusListener()
+    this.observer = null
     if (this.playlist !== null) {
       try {
         this.playlist.pause()

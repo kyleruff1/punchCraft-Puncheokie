@@ -51,8 +51,9 @@ import {
   type VoiceAssetManifest,
 } from './voiceAssets/manifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
-import { MetronomePlayer } from './MetronomePlayer'
+import { MetronomePlayer, type MetronomePlayerObserver } from './MetronomePlayer'
 import { MetronomeTransport } from './MetronomeTransport'
+import { wrappedPositionToAbsoluteTick } from './wrappedPositionToAbsoluteTick'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
   ready: 'tone-ready',
@@ -402,8 +403,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * metronomePlayer: they can only affect their own player pool.
    * Isolation is preserved by construction (principle #20 of the
    * amended Timing Engine v2 plan).
+   *
+   * Shares the same injected clock as the rest of `VoiceOutputExpo`
+   * (M39-V2 Phase W0-c-ii) so audio-position observations and the
+   * transport's own `absoluteTickAt` interpretation live in one
+   * time domain — the position-observer wire relies on this. The
+   * transport ignores the clock's `schedule` field.
+   *
+   * The lambda in the constructor uses a late-bound `this.clock`
+   * so the transport reads the current clock value at each call
+   * rather than a snapshot from construction time — matters because
+   * `this.clock` is set in the constructor body before this field
+   * gets touched via the `metronome` port below.
    */
-  private readonly metronomeTransport = new MetronomeTransport()
+  private readonly metronomeTransport: MetronomeTransport = new MetronomeTransport({
+    now: () => this.clock(),
+    schedule: () => () => {},
+  })
 
   /**
    * Port hook for the metronome track (M39-V1b, transport added
@@ -416,18 +432,59 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * to `Volumes.metronome` at start, and `setVolume` carries slider
    * changes without restarting the loop OR the transport.
    */
+  /**
+   * Monotonic timestamp at which the metronome transport last
+   * started (M39-V2 Phase W0-c-ii). Passed as `startMonotonicMs`
+   * to `wrappedPositionToAbsoluteTick` when translating a
+   * playlist status update into an absolute tick observation.
+   * Zero while stopped.
+   */
+  private metronomeStartMonotonicMs = 0
+
   metronome = {
     start: (
       loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number },
       volume: number,
       baseBpm?: number,
     ): void => {
-      this.metronomePlayer.start(loop, volume)
-      if (baseBpm !== undefined) this.metronomeTransport.start(baseBpm)
+      // Start the transport FIRST so a status callback firing during
+      // playlist creation (unlikely but possible) sees the fresh
+      // generation and non-zero ticksPerSecond.
+      if (baseBpm !== undefined) {
+        this.metronomeStartMonotonicMs = this.clock()
+        this.metronomeTransport.start(baseBpm)
+      }
+      const observer: MetronomePlayerObserver | undefined =
+        baseBpm === undefined
+          ? undefined
+          : {
+              now: () => this.clock(),
+              onPositionReport: (report) => {
+                // Translate wrapped position → absolute tick, then
+                // hand it to the transport with the current
+                // generation (which may have already bumped via a
+                // prior large-error re-anchor).
+                const snap = this.metronomeTransport.snapshot()
+                if (snap.state !== 'running' || snap.ticksPerSecond <= 0) return
+                const observedAbsoluteTick = wrappedPositionToAbsoluteTick(
+                  report,
+                  this.metronomeStartMonotonicMs,
+                  snap.ticksPerSecond,
+                )
+                if (observedAbsoluteTick <= 0) return
+                this.metronomeTransport.correct({
+                  observedAbsoluteTick,
+                  observedAtMonotonicMs: report.sampleMonotonicMs,
+                  observedGeneration: snap.generation,
+                })
+              },
+            }
+      this.metronomePlayer.start(loop, volume, observer)
     },
     stop: (): void => {
       this.metronomePlayer.stop()
       this.metronomeTransport.stop()
+      this.metronomeStartMonotonicMs = 0
     },
     setVolume: (volume: number): void => {
       this.metronomePlayer.setVolume(volume)
