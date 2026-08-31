@@ -158,3 +158,85 @@ describe('MetronomeTransport', () => {
     expect(t.snapshot().state).toBe('stopped')
   })
 })
+
+describe('MetronomeTransport.subscribe (W0-b-ii)', () => {
+  it('fires synchronously on start with a running snapshot', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    const seen: string[] = []
+    t.subscribe((snap) => {
+      seen.push(`${snap.state}:${snap.generation}:${snap.baseBpm}`)
+    })
+    t.start(60)
+    expect(seen).toEqual(['running:1:60'])
+  })
+
+  it('fires on stop / pause / resume, skipping no-op transitions', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    const seen: string[] = []
+    t.subscribe((snap) => {
+      seen.push(snap.state)
+    })
+    t.start(60)
+    t.pause()
+    t.resume()
+    t.pause()
+    t.pause() // no-op: already paused
+    t.stop()
+    t.stop() // no-op: already stopped
+    expect(seen).toEqual(['running', 'paused', 'running', 'paused', 'stopped'])
+  })
+
+  it('does NOT fire on subscribe itself (publish-on-change)', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    t.start(60)
+    const seen: number[] = []
+    t.subscribe((snap) => {
+      seen.push(snap.generation)
+    })
+    // Subscribe after start: no initial fire.
+    expect(seen).toEqual([])
+    t.stop()
+    expect(seen).toEqual([1])
+  })
+
+  it('returns an unsubscribe function that removes the listener', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    const seen: string[] = []
+    const unsubscribe = t.subscribe((snap) => {
+      seen.push(snap.state)
+    })
+    t.start(60)
+    expect(seen).toEqual(['running'])
+    unsubscribe()
+    t.stop()
+    expect(seen).toEqual(['running']) // no second entry
+  })
+
+  it('a throwing subscriber does not break others or corrupt transport state', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    const seen: string[] = []
+    t.subscribe(() => {
+      throw new Error('rogue listener')
+    })
+    t.subscribe((snap) => {
+      seen.push(snap.state)
+    })
+    t.start(60)
+    expect(seen).toEqual(['running'])
+    // Transport state uncorrupted:
+    expect(t.snapshot().state).toBe('running')
+    expect(t.snapshot().baseBpm).toBe(60)
+  })
+
+  it('multiple subscribers all receive every event', () => {
+    const t = new MetronomeTransport(createFakeClock())
+    const a: string[] = []
+    const b: string[] = []
+    t.subscribe((snap) => a.push(snap.state))
+    t.subscribe((snap) => b.push(snap.state))
+    t.start(60)
+    t.stop()
+    expect(a).toEqual(['running', 'stopped'])
+    expect(b).toEqual(['running', 'stopped'])
+  })
+})

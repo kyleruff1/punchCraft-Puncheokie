@@ -87,6 +87,16 @@ export class MetronomeTransport implements MetronomeTransportPort {
   private anchorAbsoluteTick = 0
   private ticksPerSecond = 0
   private baseBpm = 0
+  /**
+   * Subscribers notified on every state transition (start / stop /
+   * pause / resume). Used by the SharedTransportAnchor publisher
+   * (W0-b-ii) to keep the Reanimated shared value in sync with the
+   * transport. Notification is synchronous — the publisher writes
+   * the new anchor before the transition call returns, so a
+   * consumer that reads immediately after a transport call sees
+   * consistent state.
+   */
+  private readonly subscribers = new Set<(snapshot: MetronomeTransportSnapshot) => void>()
 
   constructor(clock?: MonotonicClock) {
     this.clock = clock ?? systemMonotonicClock()
@@ -117,6 +127,7 @@ export class MetronomeTransport implements MetronomeTransportPort {
       baseBpm: safe(baseBpm),
       ticksPerSecond: safe(this.ticksPerSecond),
     })
+    this.notify()
   }
 
   /**
@@ -133,6 +144,7 @@ export class MetronomeTransport implements MetronomeTransportPort {
     logger.info('puncheokie.transport', 'transport stopped', {
       generation: safe(this.generation),
     })
+    this.notify()
   }
 
   /**
@@ -144,6 +156,7 @@ export class MetronomeTransport implements MetronomeTransportPort {
     if (this.state !== 'running') return
     this.anchorAbsoluteTick = this.absoluteTickAt(this.clock.now())
     this.state = 'paused'
+    this.notify()
   }
 
   /**
@@ -155,6 +168,44 @@ export class MetronomeTransport implements MetronomeTransportPort {
     if (this.state !== 'paused') return
     this.anchorMonotonicMs = this.clock.now()
     this.state = 'running'
+    this.notify()
+  }
+
+  /**
+   * Subscribe to state transitions (M39-V2 Phase W0-b-ii). The
+   * callback fires synchronously on every `start` / `stop` /
+   * `pause` / `resume` with a fresh snapshot; use it to keep a
+   * derived value (e.g., the SharedTransportAnchor Reanimated
+   * shared value) in sync with the transport. Returns an
+   * unsubscribe function — call it on unmount to avoid leaking
+   * the callback across component lifetimes.
+   *
+   * Subscribers are NOT called for the initial state — a consumer
+   * that needs it should read `snapshot()` immediately after
+   * subscribing. This matches the "publish-on-change" contract
+   * and avoids a synchronous side-effect during subscribe.
+   */
+  subscribe(cb: (snapshot: MetronomeTransportSnapshot) => void): () => void {
+    this.subscribers.add(cb)
+    return () => {
+      this.subscribers.delete(cb)
+    }
+  }
+
+  private notify(): void {
+    if (this.subscribers.size === 0) return
+    const snap = this.snapshot()
+    for (const cb of this.subscribers) {
+      try {
+        cb(snap)
+      } catch (error) {
+        // Swallow: a rogue subscriber must not corrupt the
+        // transport's own state or block other subscribers.
+        logger.warn('puncheokie.transport', 'subscriber threw', {
+          error: safe(String(error)),
+        })
+      }
+    }
   }
 
   /**

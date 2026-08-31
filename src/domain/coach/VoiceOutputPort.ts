@@ -376,6 +376,14 @@ export const DEFAULT_VOLUMES: Volumes = { voice: 1, bells: 1, haptics: 1, metron
 export interface MetronomeTransportPort {
   snapshot(): MetronomeTransportSnapshot
   currentTick(nowMs?: number): number
+  /**
+   * Subscribe to state transitions (start / stop / pause / resume).
+   * Fires synchronously on each transition with a fresh snapshot.
+   * Returns an unsubscribe function. Used by the
+   * SharedTransportAnchor publisher (W0-b-ii) so the Reanimated
+   * shared value stays in sync with the transport.
+   */
+  subscribe(cb: (snapshot: MetronomeTransportSnapshot) => void): () => void
 }
 
 export type MetronomeTransportState = 'stopped' | 'running' | 'paused'
