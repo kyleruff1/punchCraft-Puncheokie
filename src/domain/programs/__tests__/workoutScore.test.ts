@@ -73,6 +73,7 @@ describe('compileWorkoutScore — shape + identity', () => {
       stance: 'orthodox',
       bpm: 120,
       revision: 1,
+      preloadMarginTicks: 300, // default from workoutScore.ts
     })
   })
 })
@@ -251,14 +252,201 @@ describe('compileWorkoutScore — identity + determinism', () => {
 // Slice boundary — coach + ceremonies NOT in slice 1
 // ---------------------------------------------------------------------------
 
-describe('compileWorkoutScore — slice 1 scope (coach slots + ceremonies intentionally absent)', () => {
-  it('does NOT expose coachSlots on the score yet (slice 2)', () => {
+describe('compileWorkoutScore — slice boundary (ceremonies still intentionally absent)', () => {
+  it('exposes coachSlots on the score (slice 2 shipped)', () => {
     const score = compileWorkoutScore(threeRoundFundamentals, baseConfig())
-    expect((score as unknown as { coachSlots?: unknown }).coachSlots).toBeUndefined()
+    expect(Array.isArray(score.coachSlots)).toBe(true)
   })
 
   it('does NOT expose ceremonies on the score yet (slice 6)', () => {
     const score = compileWorkoutScore(threeRoundFundamentals, baseConfig())
     expect((score as unknown as { ceremonies?: unknown }).ceremonies).toBeUndefined()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Slice 2 — coachSlots
+// ---------------------------------------------------------------------------
+
+/**
+ * A CoachAssetResolver stub that returns fixed asset ids for
+ * both vocabularies. Duration proportional to vocabulary to
+ * exercise the CONSERVATIVE reservation window (technique is
+ * always longer here so the slot's end matches technique.end).
+ */
+const stubCoachAssets = (
+  contentKind: string,
+  vocabulary: 'numeric' | 'technique',
+) => ({
+  assetId: `stub:${contentKind}:${vocabulary}`,
+  mappedDurationTicks: vocabulary === 'numeric' ? 240 : 480,
+})
+
+describe('compileWorkoutScore — coach slots (slice 2)', () => {
+  it('emits ZERO coachSlots when the resolver is the default NULL resolver', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, baseConfig())
+    expect(score.coachSlots.length).toBe(0)
+  })
+
+  it('emits coachSlots when a resolver returns non-null asset refs', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    expect(score.coachSlots.length).toBeGreaterThan(0)
+    for (const slot of score.coachSlots) {
+      expect(typeof slot.slotId).toBe('string')
+      expect(typeof slot.cueId).toBe('string')
+      expect(typeof slot.roundIndex).toBe('number')
+      expect(typeof slot.contentKind).toBe('string')
+      expect(typeof slot.relation).toBe('string')
+      expect(Array.isArray(slot.strikeEventIds)).toBe(true)
+      expect(typeof slot.desiredAudibleEndTick).toBe('number')
+      expect(typeof slot.reservationStartTick).toBe('number')
+      expect(typeof slot.reservationEndTick).toBe('number')
+      expect(typeof slot.vocabLockAtTick).toBe('number')
+    }
+  })
+
+  it('every slot carries BOTH numeric + technique variants when both vocabs resolve', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    for (const slot of score.coachSlots) {
+      expect(slot.variants.numeric).toBeDefined()
+      expect(slot.variants.technique).toBeDefined()
+      expect(slot.variants.numeric!.vocabulary).toBe('numeric')
+      expect(slot.variants.technique!.vocabulary).toBe('technique')
+    }
+  })
+
+  it('each variant carries assetId, measuredDurationTicks, capabilities, absolute ticks', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    const slot = score.coachSlots[0]!
+    for (const variant of [slot.variants.numeric!, slot.variants.technique!]) {
+      expect(typeof variant.assetId).toBe('string')
+      expect(variant.measuredDurationTicks).toBeGreaterThanOrEqual(0)
+      // audibleStartTick CAN be negative — a precall for the very
+      // first strike of the workout begins before round-start
+      // (tick 0). The runtime dispatcher clamps to 0 or drops
+      // events that start before the transport is running; the
+      // score simply records the authored intent.
+      expect(Number.isFinite(variant.audibleStartTick)).toBe(true)
+      expect(variant.audibleEndTick).toBeGreaterThan(variant.audibleStartTick)
+      expect(Array.isArray(variant.taughtStrikeAnchors)).toBe(true)
+      expect(Array.isArray(variant.capabilities.allowedRelations)).toBe(true)
+    }
+  })
+
+  it('reservation window is the CONSERVATIVE union — end = max of variants, start = min (principle #4)', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    for (const slot of score.coachSlots) {
+      const numEnd = slot.variants.numeric?.audibleEndTick
+      const techEnd = slot.variants.technique?.audibleEndTick
+      const ends = [numEnd, techEnd].filter((x): x is number => x !== undefined)
+      expect(slot.desiredAudibleEndTick).toBe(Math.max(...ends))
+      const numStart = slot.variants.numeric?.audibleStartTick
+      const techStart = slot.variants.technique?.audibleStartTick
+      const starts = [numStart, techStart].filter((x): x is number => x !== undefined)
+      expect(slot.reservationStartTick).toBe(Math.min(...starts))
+      expect(slot.reservationEndTick).toBe(slot.desiredAudibleEndTick)
+    }
+  })
+
+  it('vocabLockAtTick is reservationStart minus the configured preload margin (principle #8)', () => {
+    const preloadMarginTicks = 500
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+      preloadMarginTicks,
+    })
+    for (const slot of score.coachSlots) {
+      expect(slot.vocabLockAtTick).toBe(slot.reservationStartTick - preloadMarginTicks)
+    }
+    expect(score.config.preloadMarginTicks).toBe(preloadMarginTicks)
+  })
+
+  it('capabilities default to permissive (all three relations allowed)', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    for (const slot of score.coachSlots) {
+      for (const variant of [slot.variants.numeric, slot.variants.technique]) {
+        if (!variant) continue
+        expect(variant.capabilities.allowedRelations).toEqual(
+          expect.arrayContaining(['precall', 'synchronized', 'shared-block']),
+        )
+      }
+    }
+  })
+
+  it('accepts a caller override for capabilities and stamps them on the variant', () => {
+    const strictCapabilities = {
+      allowedRelations: ['precall'] as const,
+      minimumSynchronizedSlotTicks: 500,
+    }
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+      coachCapabilitiesFor: () => strictCapabilities,
+    })
+    for (const slot of score.coachSlots) {
+      for (const variant of [slot.variants.numeric, slot.variants.technique]) {
+        if (!variant) continue
+        expect(variant.capabilities.allowedRelations).toEqual(['precall'])
+        expect(variant.capabilities.minimumSynchronizedSlotTicks).toBe(500)
+      }
+    }
+  })
+
+  it('emits a single-variant slot when the resolver returns undefined for one vocab', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: (contentKind, vocabulary) =>
+        vocabulary === 'numeric' ? stubCoachAssets(contentKind, vocabulary) : undefined,
+    })
+    expect(score.coachSlots.length).toBeGreaterThan(0)
+    for (const slot of score.coachSlots) {
+      expect(slot.variants.numeric).toBeDefined()
+      expect(slot.variants.technique).toBeUndefined()
+    }
+  })
+
+  it('slotIds are unique across the entire score', () => {
+    const score = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    const ids = new Set(score.coachSlots.map((s) => s.slotId))
+    expect(ids.size).toBe(score.coachSlots.length)
+  })
+
+  it('coachSlots shift the timelineHash — hash depends on coach content', () => {
+    const withCoach = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    const withoutCoach = compileWorkoutScore(threeRoundFundamentals, baseConfig())
+    expect(withCoach.identity.timelineHash).not.toBe(withoutCoach.identity.timelineHash)
+  })
+
+  it('is fully deterministic — identical inputs (config + resolver) → deep-equal output including slots', () => {
+    const a = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    const b = compileWorkoutScore(threeRoundFundamentals, {
+      ...baseConfig(),
+      coachAssets: stubCoachAssets,
+    })
+    expect(a).toEqual(b)
   })
 })
