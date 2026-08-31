@@ -97,6 +97,21 @@ export const FLUSH_BATCH = 64
  */
 export const MAX_BUFFERED = 512
 
+/**
+ * Minimum wall-clock spacing between emitted batches.
+ *
+ * The runner calls `flush()` on its 50 ms tick. Emitting there every
+ * time means ~20 log lines/second, each carrying a serialized batch —
+ * and that cost lands INSIDE the interval whose lateness we are trying
+ * to measure. A first forensic drive wired that way reported 574 stalls
+ * totalling 215.9 s in a 240 s round, which is self-inflicted: the
+ * observer became the disturbance (M39-V2 principle #18).
+ *
+ * 500 ms keeps the buffer well inside MAX_BUFFERED at realistic
+ * transition rates while cutting emit cost by 10x.
+ */
+export const FLUSH_INTERVAL_MS = 500
+
 export interface VizForensicsOptions {
   /** Emit a batch. Wired to the structured logger by the caller. */
   emit: (batch: readonly VizRecord[]) => void
@@ -104,6 +119,8 @@ export interface VizForensicsOptions {
   now: () => number
   /** Master switch — dev builds / forensic drives only. */
   enabled: boolean
+  /** Override the emit cadence. Defaults to `FLUSH_INTERVAL_MS`. */
+  flushIntervalMs?: number
 }
 
 /**
@@ -114,7 +131,9 @@ export class VizForensics {
   private readonly emit: VizForensicsOptions['emit']
   private readonly now: VizForensicsOptions['now']
   private readonly enabled: boolean
+  private readonly flushIntervalMs: number
   private buffer: VizRecord[] = []
+  private lastFlushMs: number | null = null
   private lastTickWorkMs: number | null = null
   private lastTickMonotonicMs: number | null = null
   /** Dropped because the buffer was full — surfaced so a gap is never silent. */
@@ -124,6 +143,7 @@ export class VizForensics {
     this.emit = opts.emit
     this.now = opts.now
     this.enabled = opts.enabled
+    this.flushIntervalMs = opts.flushIntervalMs ?? FLUSH_INTERVAL_MS
   }
 
   get isEnabled(): boolean {
@@ -188,12 +208,24 @@ export class VizForensics {
   }
 
   /**
-   * Flush buffered records in batches. Safe to call every tick: it
-   * returns immediately when the buffer is empty, so the steady-state
-   * cost is one length check.
+   * Flush buffered records in batches.
+   *
+   * Safe to call every tick: it returns immediately when the buffer is
+   * empty OR when less than `flushIntervalMs` has elapsed since the last
+   * emit, so the steady-state cost is a length check and a subtraction.
+   * Rate-limiting here (rather than at the call site) keeps the guarantee
+   * with the thing being guarded.
+   *
+   * `force` bypasses the interval — used on teardown so a stall at the
+   * very end of a round is not lost, and by tests.
    */
-  flush(): void {
+  flush(force = false): void {
     if (!this.enabled || this.buffer.length === 0) return
+    const now = this.now()
+    if (!force && this.lastFlushMs !== null && now - this.lastFlushMs < this.flushIntervalMs) {
+      return
+    }
+    this.lastFlushMs = now
     while (this.buffer.length > 0) {
       const batch = this.buffer.splice(0, FLUSH_BATCH)
       this.emit(batch)
@@ -203,6 +235,7 @@ export class VizForensics {
   /** Drop everything without emitting — used on teardown. */
   reset(): void {
     this.buffer = []
+    this.lastFlushMs = null
     this.lastTickWorkMs = null
     this.lastTickMonotonicMs = null
     this.dropped = 0

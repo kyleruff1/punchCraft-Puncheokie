@@ -9,18 +9,22 @@
 import {
   CLOCK_ANOMALY_MS,
   FLUSH_BATCH,
+  FLUSH_INTERVAL_MS,
   MAX_BUFFERED,
   VizForensics,
   type VizRecord,
 } from '../vizForensics'
 
-function harness(enabled = true) {
+function harness(enabled = true, flushIntervalMs = 0) {
   const batches: VizRecord[][] = []
   const clock = { now: 1_000 }
   const viz = new VizForensics({
     emit: (batch) => batches.push([...batch]),
     now: () => clock.now,
     enabled,
+    // Most tests exercise buffering, not pacing, so they opt out of the
+    // rate limit. The rate-limit suite below sets it explicitly.
+    flushIntervalMs,
   })
   return { viz, batches, clock, flat: () => batches.flat() }
 }
@@ -151,6 +155,55 @@ describe('VizForensics when disabled', () => {
     expect(h.viz.pending).toBe(0)
     expect(h.batches).toHaveLength(0)
     expect(h.viz.isEnabled).toBe(false)
+  })
+})
+
+describe('VizForensics flush rate limit', () => {
+  // The runner calls flush() on its 50 ms tick. Emitting every time puts
+  // ~20 serialized log lines/second INSIDE the interval whose lateness we
+  // are measuring — a first forensic drive wired that way reported 574
+  // stalls totalling 215.9 s in a 240 s round, which was self-inflicted.
+  it('emits at most once per interval no matter how often flush is called', () => {
+    const h = harness(true, FLUSH_INTERVAL_MS)
+    h.viz.token(tokenInput())
+    h.viz.flush() // first flush establishes the baseline and emits
+    expect(h.batches).toHaveLength(1)
+
+    // Eight 50 ms ticks = 400 ms, still inside the 500 ms interval:
+    // buffered, not emitted.
+    for (let i = 0; i < 8; i += 1) {
+      h.clock.now += 50
+      h.viz.token(tokenInput({ tokenIndex: i }))
+      h.viz.flush()
+    }
+    expect(h.batches).toHaveLength(1)
+    expect(h.viz.pending).toBeGreaterThan(0)
+
+    // Crossing the interval releases everything buffered.
+    h.clock.now += FLUSH_INTERVAL_MS
+    h.viz.flush()
+    expect(h.batches).toHaveLength(2)
+    expect(h.viz.pending).toBe(0)
+  })
+
+  it('force bypasses the interval so teardown never loses records', () => {
+    const h = harness(true, FLUSH_INTERVAL_MS)
+    h.viz.token(tokenInput())
+    h.viz.flush()
+    h.clock.now += 10
+    h.viz.token(tokenInput({ tokenIndex: 1 }))
+    h.viz.flush() // rate-limited
+    expect(h.batches).toHaveLength(1)
+
+    h.viz.flush(true)
+    expect(h.batches).toHaveLength(2)
+    expect(h.viz.pending).toBe(0)
+  })
+
+  it('an empty buffer never emits, even when forced', () => {
+    const h = harness(true, FLUSH_INTERVAL_MS)
+    h.viz.flush(true)
+    expect(h.batches).toHaveLength(0)
   })
 })
 

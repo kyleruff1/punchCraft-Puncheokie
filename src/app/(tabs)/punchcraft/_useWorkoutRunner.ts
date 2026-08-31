@@ -1369,9 +1369,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       slotDispatcher?.clear()
       announcer?.setScoreOwnsCombos(false)
       slotDispatcherRef.current = null
-      // Flush whatever the last tick recorded before dropping the buffer,
-      // so a stall at the very end of a round is not lost.
-      vizRef.current?.flush()
+      // Force-flush whatever the last tick recorded before dropping the
+      // buffer, so a stall at the very end of a round is not lost to the
+      // rate limit.
+      vizRef.current?.flush(true)
       vizRef.current = null
       engineRef.current = null
       sessionRef.current = null
