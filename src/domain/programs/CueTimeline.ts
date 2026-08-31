@@ -143,40 +143,16 @@ export interface CueInstance {
    */
   setupCallout?: SetupCallout
   /**
-   * Scalable cadence rail (2026-08-28): when a phrase clip drives this
-   * cue's timing, the compiler stamps per-token ring-fire offsets here so
-   * ring N lights up in the same rhythm as the coach's spoken words —
-   * ring N fires K ms after word N's audible envelope ends. Offsets are
-   * relative to `scheduledStartMs`, same reference as `tokenOffsetsMs`.
-   * Absent means the cue falls back to the beat-grid `tokenOffsetsMs`
-   * (per-word calls, missing wordMarks, or non-phrase mode).
-   */
-  phraseTokenTimesMs?: number[]
-  /**
-   * M39-V1c plumbing (2026-08-30): engine-authored per-token ring-fire
-   * times, relative to `scheduledStartMs` (same reference as
-   * `tokenOffsetsMs`). Populated only when the recipe has
-   * `metronome.enabled: true` AND the block was authored with an engine
-   * rhythm (a follow-up chunk of V1c adds `BlockSpec.rhythm`). Absent
-   * means the cue falls back to `phraseTokenTimesMs` (the rail), then
-   * `tokenOffsetsMs` (the beat grid) — the pre-M39 order is preserved
-   * verbatim for every legacy cue.
-   */
-  visualOffsetsMs?: number[]
-  /**
-   * M39-V1c plumbing (2026-08-30): engine-authored expected-strike times
-   * (visualAtMs + `EXPECTED_STRIKE_DELAY_MS`, from `acceptance.ts`),
-   * relative to `scheduledStartMs`. Used by `CueMatcher.scheduledMomentMs`
-   * to compute the signed match offset. Populated in the same conditions
-   * as `visualOffsetsMs`; absent falls back to `tokenOffsetsMs`.
-   */
-  expectedStrikeOffsetsMs?: number[]
-  /**
    * How the coach voices this cue's block (M39-V1c, Kyle 2026-08-30).
    * Threaded through from `WorkoutBlock.voicePolicy` at expansion time;
    * absent means `per-punch` (the pre-M39 default). See
    * `CueAnnouncer.onCueEvent` for how `announce-then-work` is consumed
    * (one announce at repeatIndex 0; silent on interior reps).
+   *
+   * The V2 successor lives on `SpineSchedule.compiled[cueId]` — this
+   * V1c string tag stays only until Phase 5's `CueAnnouncer` refactor
+   * routes coach decisions through the compiled `VoicePolicy` object
+   * (contentKind × timing × frequency).
    */
   voicePolicy?: VoicePolicy
 }
@@ -372,73 +348,10 @@ interface BlockContext {
   graceAfterMs: number
 }
 
-/**
- * When the caller's `bpm` is a whole-slot multiple of the 60 BPM master
- * pulse (Kyle's spec), the workout is in engine mode and rings can be
- * snapped to the engine grid. Ratio 1..4 → BeatDivision 1..4;
- * anything else → not engine mode.
- */
-function engineDivision(bpm: number): 1 | 2 | 3 | 4 | undefined {
-  const ratio = bpm / 60
-  if (ratio === 1 || ratio === 2 || ratio === 3 || ratio === 4) {
-    return ratio as 1 | 2 | 3 | 4
-  }
-  return undefined
-}
-
-/**
- * Snap each token's authored beatOffset to the nearest engine slot
- * (Kyle 2026-08-30, Pass 5 verdict: "visual cues should disperse
- * logically into metronome beat invisible backtrack").
- *
- * At engine mode, `bpm` is already the SLOT rate (baseBpm × division),
- * so one bpm-beat is one engine slot. Snap by rounding the authored
- * beatOffset to the nearest whole slot, preserving relative order via
- * a monotonic collision-bump.
- *
- * Preserves both the "density 1.0" tight-pack case (a 3-token combo
- * with offsets [0, 0.55, 1.15] → slots [0, 1, 2]) AND authored
- * syncopation (a 2-token combo at [0, 2] → slots [0, 2] with a gap).
- *
- * Pass 5 rerun caught the earlier `round(beatOffset × division)`
- * formula: it multiplied span by `division`, pushing 3-token combos
- * past the beat-grid rep stride and `truncateWindowsAtNextCue` clipped
- * the last token. "Never gets to the last one" — Kyle 2026-08-30.
- */
-function engineVisualOffsetsMs(
-  tokens: readonly WorkoutToken[],
-  bpm: number,
-): number[] {
-  const slotMs = beatsToMs(1, bpm)
-  const out: number[] = []
-  let prevSlot = -1
-  for (const t of tokens) {
-    let slot = Math.round(t.beatOffset)
-    if (slot <= prevSlot) slot = prevSlot + 1
-    out.push(slot * slotMs)
-    prevSlot = slot
-  }
-  return out
-}
-
 function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
   const offsets = tokenOffsetsMs(block.tokens, ctx.bpm)
   const comboSpanMs = beatsToMs(maxBeatOffset(block.tokens), ctx.bpm)
   const gapMs = beatsToMs(block.gapBeats, ctx.bpm)
-  // M39-V1c ring smoothing: engine-mode blocks with the
-  // announce-then-work voice policy get visualOffsetsMs stamped from
-  // the engine grid. Legacy blocks and non-engine cadences leave the
-  // field undefined and rings ride the beat-grid path unchanged.
-  // NOTE: block layout (scheduledEndMs, windowEndMs, cursor stride)
-  // stays on the beat grid — extending it here would push cues past
-  // the next block's start and truncateWindowsAtNextCue clips them.
-  // Instead `CueEngine.fireDueTokens` allows visualOffsetsMs-driven
-  // ring fires to exceed windowEndMs (engine authors know the grid).
-  const division = engineDivision(ctx.bpm)
-  const visualOffsetsMs =
-    division !== undefined && block.voicePolicy === 'announce-then-work'
-      ? engineVisualOffsetsMs(block.tokens, ctx.bpm)
-      : undefined
 
   // A repeat of 1 and no repeat are the same thing; treating them alike
   // keeps `exact-combo` and `repeated-combo` on one code path.
@@ -502,16 +415,13 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
       ),
       // Engine-mode ring times can land past the beat-grid comboSpan;
       // extend windowEndMs to include the last visualOffset so
-      // fireDueTokens can reach it. truncateWindowsAtNextCue still
-      // caps at next.scheduledStartMs — engine-mode reps typically
-      // fit inside the beat-grid rep stride, so this widening is a
-      // no-op when the stride is generous.
+      // A cue's window ends at scheduledEndMs plus the grace tail;
+      // per-token engine widening is gone (M39-V2 Phase 5-ii: the
+      // compiled `SpineSchedule.compiled[cueId]` carries the
+      // engine-authoring surface now).
       windowEndMs: Math.min(
         ctx.workDurationMs,
-        Math.max(
-          scheduledEndMs + ctx.graceAfterMs,
-          scheduledStartMs + (visualOffsetsMs?.[visualOffsetsMs.length - 1] ?? 0),
-        ),
+        scheduledEndMs + ctx.graceAfterMs,
       ),
       ...(block.spokenPhrase === undefined ? {} : { spokenPhrase: block.spokenPhrase }),
       ...(block.instruction === undefined ? {} : { instruction: block.instruction }),
@@ -520,7 +430,6 @@ function expandBlock(block: WorkoutBlock, ctx: BlockContext): CueInstance[] {
         ? {}
         : { setupCallout: block.setupCallout }),
       ...(block.voicePolicy === undefined ? {} : { voicePolicy: block.voicePolicy }),
-      ...(visualOffsetsMs === undefined ? {} : { visualOffsetsMs }),
     })
   }
 
