@@ -475,19 +475,35 @@ export class VoiceOutputExpo implements VoiceOutputPort {
                 const snap = this.metronomeTransport.snapshot()
                 if (snap.state !== 'running' || snap.ticksPerSecond <= 0) return
                 if (!Number.isFinite(report.loopDurationSec) || report.loopDurationSec <= 0) return
-                // Monotonic loop count. Wrap detection: currentTime
-                // must drop by more than half a loop AND land near
-                // the start of a new loop. Callback cadence is
-                // ~500 ms for a ~1 s loop, so between callbacks
-                // currentTime steps by 0.5 forward under normal
-                // running — a backwards step of > 0.5 s is a wrap.
-                const wrapThreshold = report.loopDurationSec * 0.4
-                if (
-                  report.wrappedPositionSec < wrapThreshold &&
-                  this.metronomeLastWrappedSec > report.loopDurationSec - wrapThreshold
-                ) {
-                  this.metronomeLoopCount += 1
-                }
+                // Anchor-storm fix (2026-08-31, per
+                // .claude/plans/anchor-storm-notes.md).
+                //
+                // The previous position-based wrap detector required
+                // BOTH a small current position AND a large previous
+                // position to increment metronomeLoopCount. Under any
+                // JS-scheduling glitch (React re-render burst, GC
+                // pause, native bridge congestion) the ~500 ms
+                // callback cadence became irregular; a callback
+                // landing mid-loop-after-wrap (e.g. lastWrapped=0.8,
+                // current=0.55) DIDN'T satisfy the < 0.4 threshold,
+                // so the loop counter fell behind. absoluteSec then
+                // reported ~1 s short of wall time; the transport
+                // hard-re-anchored (>500 tick error). Compounded:
+                // 371 re-anchors in one 4-min TRF drive.
+                //
+                // Fix: use wall-time elapsed since metronome.start
+                // as ground truth for loop count. Wrap-position
+                // still supplies sub-loop precision (which we need
+                // for absoluteSec inside the current loop) but the
+                // whole-loop count is derived from monotonic time,
+                // immune to callback jitter.
+                const wallElapsedSec = Math.max(
+                  0,
+                  (report.sampleMonotonicMs - this.metronomeStartMonotonicMs) / 1000,
+                )
+                this.metronomeLoopCount = Math.floor(
+                  wallElapsedSec / report.loopDurationSec,
+                )
                 this.metronomeLastWrappedSec = report.wrappedPositionSec
                 const absoluteSec =
                   this.metronomeLoopCount * report.loopDurationSec + report.wrappedPositionSec
