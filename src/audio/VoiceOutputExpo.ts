@@ -1148,13 +1148,34 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    */
   private playSequence(steps: SequenceStep[]): void {
     if (steps.length === 0) return
-    // A6 (#260): kill an in-flight sequence before starting a new one.
-    // Without this, `advanceSequence` at :636+ overwrites
-    // `sequenceHandle` while the previous timer is still armed, and
-    // both timers then shift() the same array — clips fire at roughly
-    // double rate, and the leaked handle is unreachable so both
-    // clearSequence() and cancel() can never cancel it.
-    this.clearSequence()
+    // 2026-08-31 anchor-storm loop, TRF audio-doubling fix.
+    //
+    // Old behaviour: `clearSequence()` unconditionally, then seed +
+    // start. That killed IN-FLIGHT clips from the OWNING cue's own
+    // phrase whenever a next-cue's `playPhrase(...)` fired. TRF's
+    // `1-2` opening was heard as `1, 1` (r1-b1 rep 0 fired `'1'`,
+    // scheduled `'2'`; r1-b1 rep 1 or the next cue fired
+    // `playPhrase(...)` → clearSequence dropped pending `'2'`).
+    // r1-b2 `slip-2-3-2` heard only `slip` for the same reason —
+    // r1-b3's phrase call clearSequence'd the pending `2/3/2`.
+    //
+    // A6 (#260) worried about a DOUBLE-TIMER bug — two shift()s
+    // racing on the shared sequence array producing double clip
+    // rate. That risk is real IF two `advanceSequence()` calls
+    // are ever concurrently active on the same array. We prevent
+    // it by construction here: only start a new advanceSequence()
+    // when NO timer is currently armed. If a timer is running, the
+    // new steps just get appended to the queue; the running timer
+    // will pick them up naturally when it next advances.
+    const timerActive = this.sequenceHandle !== null
+    const queueEmpty = this.sequence.length === 0
+    if (timerActive || !queueEmpty) {
+      // A sequence is running — append. Existing timer walks the
+      // enlarged queue.
+      this.sequence.push(...steps)
+      return
+    }
+    // Idle state — seed the queue and start advancing.
     this.sequence = [...steps]
     this.advanceSequence()
   }
