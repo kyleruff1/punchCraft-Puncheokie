@@ -67,6 +67,41 @@ import { TRANSPORT_TICKS_PER_PULSE } from '@/domain/timing/TimingEngine'
 export type { MetronomeTransportSnapshot, MetronomeTransportState }
 
 /**
+ * Bounded-phase-correction thresholds (M39-V2 Phase W0-c). The
+ * transport's tick is a JS-side estimate — it drifts against the
+ * native audio backend the metronome loop actually plays from.
+ * `correct()` accepts an observation from the audio layer (see
+ * `AudioPositionObservation`) and either slews the anchor
+ * gradually toward observation (small error) or hard re-anchors +
+ * bumps generation (large error).
+ *
+ * Kyle's amended plan, principle #4 — never snap the visual clock
+ * BACKWARDS to match a late status callback; when the observation
+ * suggests the transport ran slower than JS estimated, hold at
+ * the JS estimate and let the audio catch up.
+ *
+ * Constants exposed so tests can reference the exact thresholds
+ * and callers can gate their observation cadence appropriately.
+ */
+export const PHASE_CORRECTION_LARGE_TICKS = 500 // ~520 ms at 60 BPM
+export const PHASE_CORRECTION_MAX_STEP_TICKS = 20 // ~20 ms slew cap per observation
+
+export interface AudioPositionObservation {
+  /** Unwrapped absolute tick the audio backend was at when sampled. */
+  observedAbsoluteTick: number
+  /** MonotonicClock timestamp at which the observation was made. */
+  observedAtMonotonicMs: number
+  /**
+   * The transport generation this observation belongs to. Consumers
+   * MUST cache the transport's generation at subscribe time and
+   * pass it verbatim — a stale generation means the transport
+   * restarted between observation + delivery, and the observation
+   * is discarded rather than corrupting the new run.
+   */
+  observedGeneration: number
+}
+
+/**
  * `snapshot()`:
  *   - `absoluteTick`: unwrapped, monotonic while `running`, frozen
  *     while `paused`, resets to 0 on the next `start()`.
@@ -169,6 +204,74 @@ export class MetronomeTransport implements MetronomeTransportPort {
     this.anchorMonotonicMs = this.clock.now()
     this.state = 'running'
     this.notify()
+  }
+
+  /**
+   * Absorb an audio-position observation and apply bounded phase
+   * correction (M39-V2 Phase W0-c, Kyle amended plan 2026-08-30,
+   * principle #4). The transport's JS-side tick estimate drifts
+   * against the native audio backend; this method reconciles
+   * them without letting the visual clock jump backwards.
+   *
+   * Behavior:
+   *   - Dropped if `state !== 'running'` (paused/stopped: nothing
+   *     to correct — the JS anchor is authoritative).
+   *   - Dropped if `observedGeneration !== this.generation`
+   *     (stale observation from a prior run).
+   *   - Dropped if the observation is timestamped IN THE FUTURE
+   *     (clock-source mismatch; better to no-op than corrupt).
+   *   - Otherwise:
+   *     - Project the observation forward from its own timestamp
+   *       to `now` at the current `ticksPerSecond`.
+   *     - Compute `error = observedTickNow - predictedTickNow`.
+   *     - `|error| < PHASE_CORRECTION_LARGE_TICKS` (small):
+   *       - `error > 0` (audio ahead of JS): shift `anchorAbsoluteTick`
+   *         forward by `min(error, PHASE_CORRECTION_MAX_STEP_TICKS)`.
+   *         No `notify()` — inside-generation smoothing is invisible
+   *         to subscribers.
+   *       - `error < 0` (JS ahead of audio): NO CORRECTION. Snapping
+   *         backwards would flicker the visual clock; hold the
+   *         estimate and let audio catch up.
+   *     - `|error| >= PHASE_CORRECTION_LARGE_TICKS`: hard
+   *       re-anchor — bump generation, seed the anchor at
+   *       `observedTickNow`, notify subscribers so downstream
+   *       score dispatch can re-arm.
+   *
+   * Not called by the transport itself — the caller (typically a
+   * MetronomePlayer status listener) samples the audio position,
+   * builds an `AudioPositionObservation`, and invokes this.
+   */
+  correct(obs: AudioPositionObservation): void {
+    if (this.state !== 'running') return
+    if (obs.observedGeneration !== this.generation) return
+    if (this.ticksPerSecond <= 0) return
+    const now = this.clock.now()
+    const observationAgeMs = now - obs.observedAtMonotonicMs
+    if (observationAgeMs < 0) return // observation from the future — discard
+    const predictedTickNow = this.absoluteTickAt(now)
+    const observedTickNow =
+      obs.observedAbsoluteTick + (observationAgeMs / 1_000) * this.ticksPerSecond
+    const errorTicks = observedTickNow - predictedTickNow
+    const errorAbs = Math.abs(errorTicks)
+
+    if (errorAbs >= PHASE_CORRECTION_LARGE_TICKS) {
+      this.generation += 1
+      this.anchorMonotonicMs = now
+      this.anchorAbsoluteTick = observedTickNow
+      logger.info('puncheokie.transport', 'transport re-anchored on audio observation', {
+        generation: safe(this.generation),
+        errorTicks: safe(errorTicks),
+      })
+      this.notify()
+      return
+    }
+
+    // Small error, audio ahead of JS: slew forward, capped.
+    // Small error, JS ahead of audio: hold — visual monotonicity wins.
+    if (errorTicks > 0) {
+      const step = Math.min(errorTicks, PHASE_CORRECTION_MAX_STEP_TICKS)
+      this.anchorAbsoluteTick += step
+    }
   }
 
   /**

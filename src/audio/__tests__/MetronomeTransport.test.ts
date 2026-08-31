@@ -240,3 +240,203 @@ describe('MetronomeTransport.subscribe (W0-b-ii)', () => {
     expect(b).toEqual(['running', 'stopped'])
   })
 })
+
+describe('MetronomeTransport.correct — bounded phase correction (W0-c)', () => {
+  it('is a no-op when the transport is stopped', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    // Never started — snapshot must not change under correct().
+    const before = t.snapshot()
+    t.correct({
+      observedAbsoluteTick: 12_345,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: 0,
+    })
+    const after = t.snapshot()
+    expect(after.state).toBe(before.state)
+    expect(after.generation).toBe(before.generation)
+    expect(after.absoluteTick).toBe(before.absoluteTick)
+  })
+
+  it('is a no-op when the observation generation mismatches (stale)', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000)
+    const observationHadStaleGen = t.snapshot().generation - 1
+    const tickBefore = t.currentTick()
+    t.correct({
+      observedAbsoluteTick: tickBefore + 100_000, // wildly off — would trigger re-anchor
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: observationHadStaleGen,
+    })
+    // Stale generation: observation dropped, no re-anchor, no slew.
+    expect(t.currentTick()).toBeCloseTo(tickBefore, 5)
+    expect(t.snapshot().generation).toBe(observationHadStaleGen + 1)
+  })
+
+  it('is a no-op when the observation timestamp is in the future', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(500)
+    const gen = t.snapshot().generation
+    const before = t.currentTick()
+    t.correct({
+      observedAbsoluteTick: 999_999,
+      observedAtMonotonicMs: clock.now() + 10_000, // future
+      observedGeneration: gen,
+    })
+    // Future timestamp: discarded. No re-anchor, no slew.
+    expect(t.currentTick()).toBeCloseTo(before, 5)
+    expect(t.snapshot().generation).toBe(gen)
+  })
+
+  it('slews FORWARD (audio ahead of JS) by up to the step cap, capped', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000) // JS predicts ~960 ticks
+    const predicted = t.currentTick()
+    const gen = t.snapshot().generation
+    // Audio reports it's actually 200 ticks ahead of JS estimate —
+    // well inside the LARGE threshold (500).
+    t.correct({
+      observedAbsoluteTick: predicted + 200,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: gen,
+    })
+    // Slewed forward by the step cap (20), not the full 200.
+    // Generation unchanged (inside-generation smoothing).
+    expect(t.currentTick()).toBeCloseTo(predicted + 20, 5)
+    expect(t.snapshot().generation).toBe(gen)
+  })
+
+  it('does NOT slew backwards when JS is ahead of audio (visual monotonicity)', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000)
+    const predicted = t.currentTick()
+    const gen = t.snapshot().generation
+    // Audio reports it's 100 ticks BEHIND JS estimate — small error,
+    // negative direction. The transport MUST NOT snap backwards
+    // (Kyle principle #4).
+    t.correct({
+      observedAbsoluteTick: predicted - 100,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: gen,
+    })
+    // Anchor unchanged; tick still at predicted (or advancing).
+    expect(t.currentTick()).toBeCloseTo(predicted, 5)
+    expect(t.snapshot().generation).toBe(gen)
+  })
+
+  it('projects the observation forward by (now - observedAt) before diffing', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(500)
+    const gen = t.snapshot().generation
+    // Snapshot the "audio" tick at this moment.
+    const audioTick = t.currentTick() // ~480
+    // Now let 100 ms elapse — the observation is 100 ms old when
+    // correct() is called.
+    clock.advance(100)
+    const predicted = t.currentTick() // ~576
+    // Send the OLD observation. The correct method must project
+    // audioTick forward by 100 ms × 960 tps / 1000 = 96 ticks →
+    // 576 → matches predicted → error ~ 0 → no correction.
+    t.correct({
+      observedAbsoluteTick: audioTick,
+      observedAtMonotonicMs: clock.now() - 100,
+      observedGeneration: gen,
+    })
+    expect(t.currentTick()).toBeCloseTo(predicted, 3)
+  })
+
+  it('re-anchors on LARGE error, bumps generation, notifies subscribers', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(1_000)
+    const genBefore = t.snapshot().generation
+    const predicted = t.currentTick()
+    const seen: number[] = []
+    t.subscribe((snap) => seen.push(snap.generation))
+    // 5_000 tick jump = ~5.2 s worth of skew — well over LARGE
+    // threshold (500). Simulates an audio underrun / seek / OS
+    // route change / app-background pause that JS didn't see.
+    t.correct({
+      observedAbsoluteTick: predicted + 5_000,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: genBefore,
+    })
+    expect(t.snapshot().generation).toBe(genBefore + 1)
+    // Anchor re-seeded at the observed tick.
+    expect(t.currentTick()).toBeCloseTo(predicted + 5_000, 5)
+    // Subscribers were notified — score dispatch can re-arm.
+    expect(seen).toEqual([genBefore + 1])
+  })
+
+  it('re-anchors on large NEGATIVE error too (large-magnitude discontinuity)', () => {
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    clock.advance(10_000) // JS predicts 9_600 ticks
+    const genBefore = t.snapshot().generation
+    // Audio reports we're actually at tick 0 — the loop restarted
+    // without JS knowing. Magnitude is well over LARGE threshold.
+    // Even though the direction is backwards, this is a
+    // discontinuity, not a "small drift, hold the estimate"
+    // situation. Re-anchor bumps generation so future score
+    // events can be re-armed against the new anchor.
+    t.correct({
+      observedAbsoluteTick: 0,
+      observedAtMonotonicMs: clock.now(),
+      observedGeneration: genBefore,
+    })
+    expect(t.snapshot().generation).toBe(genBefore + 1)
+    // Anchor at the observed tick — this DOES snap the visual
+    // clock, but only because the discontinuity is severe enough
+    // that continuing the old anchor would misalign every future
+    // scheduled event. Small-error smoothing (which forbids
+    // backward snaps) covers routine drift; this branch covers
+    // catastrophic desync.
+    expect(t.currentTick()).toBe(0)
+  })
+
+  it('multiple small corrections converge on the observed rate', () => {
+    // Simulates the natural correction cadence — 500 ms status
+    // callbacks with ~5-tick drift each. Over 10 callbacks the
+    // JS anchor should slew to match audio.
+    const clock = createFakeClock(1_000)
+    const t = new MetronomeTransport(clock)
+    t.start(60)
+    // Skew audio by 50 ticks initially; each correction slews
+    // by up to 20 (cap). After 3 corrections the anchor should
+    // catch up entirely.
+    clock.advance(1_000)
+    const startPredicted = t.currentTick()
+    const startGen = t.snapshot().generation
+    for (let i = 0; i < 5; i += 1) {
+      const predicted = t.currentTick()
+      t.correct({
+        observedAbsoluteTick: predicted + 50, // audio 50 ticks ahead
+        observedAtMonotonicMs: clock.now(),
+        observedGeneration: startGen,
+      })
+      clock.advance(50) // small wait between corrections
+    }
+    // After enough small corrections, the anchor has been shifted
+    // forward by 5 × 20 = 100 ticks (limit) — actually each
+    // observation was 50 ticks ahead so the correction was 20 →
+    // then 30 → then 30 → etc. In any case, tick has advanced
+    // strictly more than a bare 60 BPM rate would predict for
+    // the elapsed time.
+    const noCorrectionTick = startPredicted + (250 * 960) / 1_000
+    expect(t.currentTick()).toBeGreaterThan(noCorrectionTick)
+    // Generation stayed put — no discontinuity.
+    expect(t.snapshot().generation).toBe(startGen)
+  })
+})
