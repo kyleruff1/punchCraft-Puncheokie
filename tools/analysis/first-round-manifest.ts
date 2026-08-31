@@ -29,6 +29,7 @@ import {
 } from '../../src/domain/workout/samples'
 import { findComboAnnounceById } from '../../src/audio/voiceAssets/comboAnnounceManifest'
 import { TRANSPORT_TICKS_PER_PULSE } from '../../src/domain/timing/TimingEngine'
+import { expandTimeline } from '../../src/domain/programs/CueTimeline'
 import type {
   CompiledCoachSlot,
   CompiledScoreStrike,
@@ -66,6 +67,16 @@ type ExpectedCoachEvent =
       expectedEndTick: number
       expectedEndMs: number
       source: 'score.coachSlot'
+    }
+  | {
+      kind: 'per-word'
+      cueId: string
+      repId: string
+      strikeIndex: number
+      assetId: string
+      expectedStartTick: number
+      expectedStartMs: number
+      source: 'announcer.per-word'
     }
 
 interface FirstRoundManifest {
@@ -146,13 +157,51 @@ export function buildFirstRoundManifest(
     .filter((s) => s.roundIndex === 0)
     .slice()
     .sort((a, b) => a.startTick - b.startTick)
-  const roundOneSlots = compiled.coachSlots
-    .filter((s) => s.roundIndex === 0)
+
+  // Runtime plays combos two different ways depending on the cue's V1c
+  // voicePolicy:
+  //   - `announce-then-work` cues → SlotDispatcher fires a single
+  //     combo-announce clip via score.coachSlots (per Slice 3-a-ii's
+  //     hotfix filter, only ATW cues are enqueued).
+  //   - `per-punch` and default cues → announcer's per-word path
+  //     fires one standalone clip per token at the strike's beat.
+  //
+  // Both must appear in the expected manifest so the correlator can
+  // match either dispatch path.
+  const timeline = expandTimeline(workout, 'orthodox', bpm)
+  const round0 = timeline[0]
+  const atwCueIds = new Set<string>()
+  const cuesById = new Map<string, (typeof round0.cues)[number]>()
+  if (round0) {
+    for (const cue of round0.cues) {
+      cuesById.set(cue.id, cue)
+      if (cue.voicePolicy === 'announce-then-work') atwCueIds.add(cue.id)
+    }
+  }
+
+  const roundOneAtwSlots = compiled.coachSlots
+    .filter((s) => s.roundIndex === 0 && atwCueIds.has(s.cueId))
     .slice()
     .sort((a, b) => a.reservationStartTick - b.reservationStartTick)
-  const coachEvents = roundOneSlots
-    .map(toExpectedCoachEvent)
-    .filter((e): e is ExpectedCoachEvent => e !== null)
+  const coachEvents: ExpectedCoachEvent[] = []
+  for (const slot of roundOneAtwSlots) {
+    const ev = toExpectedCoachEvent(slot)
+    if (ev) coachEvents.push(ev)
+  }
+  for (const strike of roundOneStrikes) {
+    if (atwCueIds.has(strike.cueId)) continue
+    coachEvents.push({
+      kind: 'per-word',
+      cueId: strike.cueId,
+      repId: strike.repId,
+      strikeIndex: strike.strikeIndex,
+      assetId: strike.token.toLowerCase(),
+      expectedStartTick: strike.targetStrikeTick,
+      expectedStartMs: tickToMs(strike.targetStrikeTick),
+      source: 'announcer.per-word',
+    })
+  }
+  coachEvents.sort((a, b) => a.expectedStartTick - b.expectedStartTick)
   const notes: string[] = []
   if (workoutId === 'pump-and-coast') {
     notes.push(

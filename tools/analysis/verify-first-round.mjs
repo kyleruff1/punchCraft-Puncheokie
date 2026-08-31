@@ -42,7 +42,7 @@ const RE_ANCHOR_BUDGET = 20 // per round; > 20 = soft warn
  * Match a logcat line prefix + puncheokie event.
  * `adb logcat -v time` format: `MM-DD HH:MM:SS.mmm I/ReactNativeJS(pid): 'msg', ...'`
  */
-const LOG_PREFIX = /^(\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}\.\d{3})\s+\w\/\w+\(\d+\):\s*(.*)$/
+const LOG_PREFIX = /^(\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}\.\d{3})\s+\w\/\w+\(\s*\d+\):\s*(.*)$/
 
 function parseTimestampMs(dateStr, timeStr) {
   // Return an absolute epoch-like ms — we only care about DIFFERENCES,
@@ -172,23 +172,37 @@ function findT0(events) {
 }
 
 /**
- * For each expected combo-announce event, look for a matching observed
- * combo-announce play by TEXT within ±MATCH_WINDOW_MS of the expected
- * moment (log emits text but not assetId today — Stage 3a-fu can enhance
- * the log to include assetId for stricter matching).
+ * Correlate observed audio events against expected coach events. Handles
+ * two expected kinds:
+ *   - `combo-announce`: matched to `voice.combo-announce` observed
+ *     events by TEXT (log emits text but not assetId today).
+ *   - `per-word`: matched to `voice.clip` observed events by ASSET id
+ *     (log fields the asset name for clip plays).
+ *
+ * Categories per expected event: matched / late / missing.
+ * Categories per unmatched observed event: extra / duplicated.
  */
 function correlateCoachEvents(expected, observed) {
   const observedByText = new Map()
+  const observedByAsset = new Map()
   for (const e of observed) {
-    if (e.type !== 'voice.combo-announce' || !e.text) continue
-    if (!observedByText.has(e.text)) observedByText.set(e.text, [])
-    observedByText.get(e.text).push(e)
+    if (e.type === 'voice.combo-announce' && e.text) {
+      if (!observedByText.has(e.text)) observedByText.set(e.text, [])
+      observedByText.get(e.text).push(e)
+    } else if (e.type === 'voice.clip' && e.asset) {
+      if (!observedByAsset.has(e.asset)) observedByAsset.set(e.asset, [])
+      observedByAsset.get(e.asset).push(e)
+    }
   }
   const usedObservedIndex = new Set()
   const verdicts = []
   for (const exp of expected) {
-    if (exp.kind !== 'combo-announce') continue
-    const candidates = observedByText.get(exp.text ?? '') ?? []
+    let candidates = []
+    if (exp.kind === 'combo-announce') {
+      candidates = observedByText.get(exp.text ?? '') ?? []
+    } else if (exp.kind === 'per-word') {
+      candidates = observedByAsset.get(exp.assetId) ?? []
+    }
     let bestIdx = -1
     let bestDelta = Number.POSITIVE_INFINITY
     for (let i = 0; i < candidates.length; i += 1) {
@@ -200,7 +214,7 @@ function correlateCoachEvents(expected, observed) {
         bestIdx = globalIdx
       }
     }
-    if (bestIdx === -1) {
+    if (bestIdx === -1 || Math.abs(bestDelta) > LATE_WINDOW_MS) {
       verdicts.push({
         expected: exp,
         verdict: 'missing',
@@ -215,7 +229,7 @@ function correlateCoachEvents(expected, observed) {
         observed: observed[bestIdx],
         deltaMs: bestDelta,
       })
-    } else if (Math.abs(bestDelta) <= LATE_WINDOW_MS) {
+    } else {
       usedObservedIndex.add(bestIdx)
       verdicts.push({
         expected: exp,
@@ -223,36 +237,28 @@ function correlateCoachEvents(expected, observed) {
         observed: observed[bestIdx],
         deltaMs: bestDelta,
       })
-    } else {
-      verdicts.push({
-        expected: exp,
-        verdict: 'missing',
-        observed: null,
-        deltaMs: null,
-      })
     }
   }
-  // Anything observed that didn't get claimed by an expected event =
-  // 'extra' — a stray combo-announce not authored for this workout.
+  // Anything observed that didn't get claimed = 'extra' initially, then
+  // reclassify as 'duplicated' if it matches an expected event's identity
+  // within the late window.
   const extras = []
-  const observedComboAnnounces = observed.filter((e, i) => {
-    if (e.type !== 'voice.combo-announce') return false
-    return !usedObservedIndex.has(i)
-  })
-  for (const e of observedComboAnnounces) {
+  observed.forEach((e, i) => {
+    if (usedObservedIndex.has(i)) return
+    if (e.type !== 'voice.combo-announce' && e.type !== 'voice.clip') return
     extras.push({ observed: e, verdict: 'extra' })
-  }
-  // Detect duplicated — two observed events matched the same expected slot
-  // WOULD have shown as one "matched" + one "extra". If the extra's text
-  // matches an expected text within LATE_WINDOW_MS of that expected slot,
-  // reclassify as 'duplicated'.
+  })
   for (const ex of extras) {
-    const nearby = expected.find(
-      (exp) =>
-        exp.kind === 'combo-announce' &&
-        exp.text === ex.observed.text &&
-        Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS,
-    )
+    const isCombo = ex.observed.type === 'voice.combo-announce'
+    const nearby = expected.find((exp) => {
+      if (isCombo && exp.kind === 'combo-announce' && exp.text === ex.observed.text) {
+        return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
+      }
+      if (!isCombo && exp.kind === 'per-word' && exp.assetId === ex.observed.asset) {
+        return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
+      }
+      return false
+    })
     if (nearby) {
       ex.verdict = 'duplicated'
       ex.expected = nearby
