@@ -254,6 +254,59 @@ describe('PunchAvatarCard — the flip repeats', () => {
   })
 })
 
+describe('requestedFor — count-scored pump window (GH #305)', () => {
+  it('caps a single-token pump at the PULSE stride, not the whole cue window', () => {
+    // A jab pump ('1', count-scored, targetPunches 8) has no next due
+    // time, so the window fell back to the entire cue span — tens of
+    // seconds — and isLast's strict thirds held one frame for a third of
+    // the block. Kyle: "avatar is stationary during the extended jab
+    // segment." The rings pump on pulsesFor's stride (window / cycles);
+    // the avatar must throw with that same pulse.
+    const tokens: WorkoutToken[] = [{ kind: 'punch', number: 1, body: false, beatOffset: 0 }]
+    const pump = cue(tokens, {
+      scoring: 'count',
+      countScored: { targetPunches: 8 },
+      scheduledStartMs: 10_000,
+      scheduledEndMs: 26_000, // 16s block
+      windowEndMs: 26_400,
+      tokenOffsetsMs: [0],
+    } as Partial<CueInstance>)
+    const req = requestedFor(pump, 0, 0)
+    expect(req).not.toBeNull()
+    // 16_000 / 8 cycles = 2_000ms stride — a pump, not a 16s statue.
+    expect(req!.windowMs).toBe(2_000)
+  })
+
+  it('leaves multi-token count cues alone when their per-token gap is tighter', () => {
+    const tokens: WorkoutToken[] = [
+      { kind: 'punch', number: 1, body: false, beatOffset: 0 },
+      { kind: 'punch', number: 2, body: false, beatOffset: 1 },
+    ]
+    const c = cue(tokens, {
+      scoring: 'count',
+      countScored: { targetPunches: 8 },
+      scheduledStartMs: 10_000,
+      scheduledEndMs: 26_000,
+      windowEndMs: 26_400,
+      tokenOffsetsMs: [0, 500],
+    } as Partial<CueInstance>)
+    // Per-token gap (500ms) is tighter than the 4_000ms cycle stride —
+    // the cap must not WIDEN a window.
+    expect(requestedFor(c, 0, 1)!.windowMs).toBe(500)
+  })
+
+  it('sequence-scored cues are untouched by the cap', () => {
+    const tokens: WorkoutToken[] = [{ kind: 'punch', number: 1, body: false, beatOffset: 0 }]
+    const c = cue(tokens, {
+      scheduledStartMs: 10_000,
+      scheduledEndMs: 11_000,
+      windowEndMs: 12_000,
+      tokenOffsetsMs: [0],
+    })
+    expect(requestedFor(c, 0, 0)!.windowMs).toBe(2_000) // windowEnd - start
+  })
+})
+
 describe('requestedFor — per-occurrence key (M39-V2 Phase 3c anti-collapse)', () => {
   // The bug the plan calls out: `1-1-2` uses `punchAvatarKey('1', false)`
   // for BOTH `1`s, which collapses to `'1'`. The adoption guard at

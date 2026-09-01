@@ -102,7 +102,27 @@ export function requestedFor(
   // `SpineSchedule.compiled[cueId]` — a follow-up Phase 5 pass wires
   // the avatar to that shared authority.)
   const dueTimes = cue.tokenOffsetsMs
-  const windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
+  let windowMs = avatarWindowMs(dueTimes, tokenIndex, cue.windowEndMs - cue.scheduledStartMs)
+  // COUNT-SCORED cues pump the same motif for the whole block, and a
+  // single-token pump has no "next due time" — so `avatarWindowMs` fell
+  // back to the ENTIRE cue window. A jab pad runs tens of seconds, and a
+  // lone token is also `isLast` (strict thirds), so the figure held one
+  // frame for a third of the block: Kyle's "avatar is stationary during
+  // the extended jab segment" (GH #305). The rings already pump on
+  // per-punch pulses (`pulsesFor`: window / cycles); cap the flip window
+  // at that same stride so the avatar throws WITH the pulse. Same
+  // formula as `pulsesFor`, cited rather than imported — this module is
+  // presentational and must not pull the spine in.
+  if (cue.scoring === 'count') {
+    const target = cue.countScored?.targetPunches ?? 0
+    const punchCount = cue.tokens.filter((t) => t.kind === 'punch').length
+    const cycles = Math.max(1, Math.round(target / Math.max(1, punchCount)))
+    const pumpWindowMs = cue.scheduledEndMs - cue.scheduledStartMs
+    if (pumpWindowMs > 0) {
+      const strideMs = pumpWindowMs / cycles
+      windowMs = Math.min(windowMs, strideMs)
+    }
+  }
   const isLast = tokenIndex === lastPunchIndex
   // Per-occurrence identity — the two `1`s in `1-1-2` produce the same
   // `punchAvatarKey('1', false)` and would short-circuit each other at
