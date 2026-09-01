@@ -64,6 +64,13 @@ export const SHARED_WORK_CLOCK_STOPPED: SharedWorkClock = Object.freeze({
  * real worklet the `'worklet'` directive lives at the call site.
  */
 export function sharedWorkElapsedMs(clock: SharedWorkClock, frameTimestampMs: number): number {
+  // The directive is LOAD-BEARING, not decoration: without it the Babel
+  // workletizer leaves this as a JS-thread function, and the frame
+  // callback's call becomes "[Worklets] Tried to synchronously call a
+  // Remote Function on the UI Runtime" — an instant red screen on
+  // device, invisible to jest (which runs everything on one thread).
+  // Same placement as `sharedAnchorCurrentTick`, the proven pattern.
+  'worklet'
   if (!clock.running) return clock.workElapsedAtPublishMs
   return clock.workElapsedAtPublishMs + (frameTimestampMs - clock.publishFrameTimestampMs)
 }
