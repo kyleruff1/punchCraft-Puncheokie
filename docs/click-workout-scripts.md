@@ -28,7 +28,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s1>>
-"Pump: ones only, straight time — 10 bars. Go with the click."
+"Pump: ones only, straight time — ten bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -40,7 +40,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s2>>
-"One, two, one, two — straight time, 15 bars."
+"One, two, one, two — straight time, fifteen bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
@@ -52,7 +52,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s3>>
-"One, one, two — straight time, 10 bars."
+"One, one, two — straight time, ten bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -64,7 +64,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s4>>
-"One, two, one, two — double-time, 20 bars."
+"One, two, one, two — double-time, twenty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -76,7 +76,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s5>>
-"One, two, three — time-and-a-half, 15 bars."
+"One, two, three — time-and-a-half, fifteen bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 1 1/3 beats
@@ -88,7 +88,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s6>>
-"Three, two, three, two — straight time, 5 bars."
+"Three, two, three, two — straight time, five bars."
 
   [ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 5   (4 punches/bar -> 20 punches)
   breath after every bar: 4 beats
@@ -100,7 +100,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s7>>
-"Two, three, two — time-and-a-half, 5 bars."
+"Two, three, two — time-and-a-half, five bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1.5x   x 5   (3 punches/bar -> 15 punches)
   breath after every bar: 1 1/3 beats
@@ -123,7 +123,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s1>>
-"Big phrase — two pages: one, two, one, two, three, two, three, two. straight time, 10 times through."
+"Big phrase — two pages: one, two, one, two, three, two, three, two. straight time, ten times through."
 
   [ 1 ][ 2 ][ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 10   (8 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -135,7 +135,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s2>>
-"Pump: ones only, double-time — 10 bars. Go with the click."
+"Pump: ones only, double-time — ten bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 2 beats
@@ -147,7 +147,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s3>>
-"Two, three, two — straight time, 15 bars."
+"Two, three, two — straight time, fifteen bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 4 beats
@@ -159,7 +159,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s4>>
-"One, two, three, two — time-and-a-half, 20 bars."
+"One, two, three, two — time-and-a-half, twenty bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats
@@ -171,7 +171,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s5>>
-"One, four, three, two — straight time, 10 bars."
+"One, four, three, two — straight time, ten bars."
 
   [ 1 ][ 4 ][ 3 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -183,7 +183,7 @@ Good round. Breathe — hands stay up. Next: stack the pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s6>>
-"Pump: ones only, time-and-a-half — 10 bars. Go with the click."
+"Pump: ones only, time-and-a-half — ten bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 1 1/3 beats
@@ -206,7 +206,7 @@ Good round. Breathe — hands stay up. Next: put it together. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s1>>
-"One, two, one, two — straight time, 20 bars."
+"One, two, one, two — straight time, twenty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -218,7 +218,7 @@ Good round. Breathe — hands stay up. Next: put it together. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s2>>
-"Five, two, five, two — straight time, 11 bars."
+"Five, two, five, two — straight time, eleven bars."
 
   [ 5 ][ 2 ][ 5 ][ 2 ]  @1x   x 11   (4 punches/bar -> 44 punches)
   breath after every bar: 4 beats
@@ -230,7 +230,7 @@ Good round. Breathe — hands stay up. Next: put it together. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s3>>
-"Long set: ones only, double-time — 20 bars. Go with the click."
+"Long set: ones only, double-time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -242,7 +242,7 @@ Good round. Breathe — hands stay up. Next: put it together. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s4>>
-"One, two, three — time-and-a-half, 20 bars."
+"One, two, three — time-and-a-half, twenty bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -254,7 +254,7 @@ Good round. Breathe — hands stay up. Next: put it together. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s5>>
-"Big phrase — two pages: one, one, two, three, two, three, two. straight time, 6 times through."
+"Big phrase — two pages: one, one, two, three, two, three, two. straight time, six times through."
 
   [ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ][ . ]  @1x   x 6   (7 punches/bar -> 42 punches)
   breath after every bar: 4 beats
@@ -283,7 +283,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s1>>
-"Pump: ones only, straight time — 15 bars. Go with the click."
+"Pump: ones only, straight time — fifteen bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
@@ -295,7 +295,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s2>>
-"One, one, two — straight time, 10 bars."
+"One, one, two — straight time, ten bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -307,7 +307,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s3>>
-"Long set: ones only, double-time — 20 bars. Go with the click."
+"Long set: ones only, double-time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -319,7 +319,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s4>>
-"One, two, one, one — time-and-a-half, 15 bars."
+"One, two, one, one — time-and-a-half, fifteen bars."
 
   [ 1 ][ 2 ][ 1 ][ 1 ]  @1.5x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -331,7 +331,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s5>>
-"Pump: ones only, time-and-a-half — 15 bars. Go with the click."
+"Pump: ones only, time-and-a-half — fifteen bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -354,7 +354,7 @@ Good round. Breathe — hands stay up. Next: doubling up. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s1>>
-"One, two, one, two — straight time, 10 bars."
+"One, two, one, two — straight time, ten bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -366,7 +366,7 @@ Good round. Breathe — hands stay up. Next: doubling up. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s2>>
-"Long set: ones only, double-time — 20 bars. Go with the click."
+"Long set: ones only, double-time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -378,7 +378,7 @@ Good round. Breathe — hands stay up. Next: doubling up. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s3>>
-"One, one, two — straight time, 15 bars."
+"One, one, two — straight time, fifteen bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 4 beats
@@ -390,7 +390,7 @@ Good round. Breathe — hands stay up. Next: doubling up. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s4>>
-"One, one, one, two — time-and-a-half, 30 bars."
+"One, one, one, two — time-and-a-half, thirty bars."
 
   [ 1 ][ 1 ][ 1 ][ 2 ]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -413,7 +413,7 @@ Good round. Breathe — hands stay up. Next: jab into the cross. First up when w
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s1>>
-"Big phrase — two pages: one, one, one, one, one, one, two. straight time, 10 times through."
+"Big phrase — two pages: one, one, one, one, one, one, two. straight time, ten times through."
 
   [ 1 ][ 1 ][ 1 ][ 1 ][ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (7 punches/bar -> 70 punches)
   breath after every bar: 4 beats
@@ -425,7 +425,7 @@ Good round. Breathe — hands stay up. Next: jab into the cross. First up when w
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s2>>
-"Long set: ones only, double-time — 30 bars. Go with the click."
+"Long set: ones only, double-time — thirty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 2 beats
@@ -437,7 +437,7 @@ Good round. Breathe — hands stay up. Next: jab into the cross. First up when w
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s3>>
-"One, two, one, one — straight time, 10 bars."
+"One, two, one, one — straight time, ten bars."
 
   [ 1 ][ 2 ][ 1 ][ 1 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -449,7 +449,7 @@ Good round. Breathe — hands stay up. Next: jab into the cross. First up when w
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s4>>
-"One, one, two — time-and-a-half, 20 bars."
+"One, one, two — time-and-a-half, twenty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -472,7 +472,7 @@ Good round. Breathe — hands stay up. Next: own the range. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r4s1>>
-"Long set: ones only, straight time — 20 bars. Go with the click."
+"Long set: ones only, straight time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -484,7 +484,7 @@ Good round. Breathe — hands stay up. Next: own the range. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r4s2>>
-"Long set: ones only, double-time — 40 bars. Go with the click."
+"Long set: ones only, double-time — forty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 2 beats
@@ -496,7 +496,7 @@ Good round. Breathe — hands stay up. Next: own the range. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r4s3>>
-"One, one, two — time-and-a-half, 20 bars."
+"One, one, two — time-and-a-half, twenty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -525,7 +525,7 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s1>>
-"One, two, one, two — straight time, 16 bars."
+"One, two, one, two — straight time, sixteen bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 4 beats
@@ -537,7 +537,7 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s2>>
-"Two, three, two — straight time, 10 bars."
+"Two, three, two — straight time, ten bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -549,7 +549,7 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s3>>
-"One, two, one, two — double-time, 16 bars."
+"One, two, one, two — double-time, sixteen bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 2 beats
@@ -561,7 +561,7 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s4>>
-"One, two, three — time-and-a-half, 17 bars."
+"One, two, three — time-and-a-half, seventeen bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 17   (3 punches/bar -> 51 punches)
   breath after every bar: 1 1/3 beats
@@ -584,7 +584,7 @@ Good round. Breathe — hands stay up. Next: southpaw mirror. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s1>>
-"Three, two, three, two — straight time, 14 bars."
+"Three, two, three, two — straight time, fourteen bars."
 
   [ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 4 beats
@@ -596,7 +596,7 @@ Good round. Breathe — hands stay up. Next: southpaw mirror. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s2>>
-"One, two, one, two — time-and-a-half, 20 bars."
+"One, two, one, two — time-and-a-half, twenty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats
@@ -608,7 +608,7 @@ Good round. Breathe — hands stay up. Next: southpaw mirror. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s3>>
-"One, one, two — straight time, 10 bars."
+"One, one, two — straight time, ten bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -620,7 +620,7 @@ Good round. Breathe — hands stay up. Next: southpaw mirror. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s4>>
-"Two, one, two, one — double-time, 17 bars."
+"Two, one, two, one — double-time, seventeen bars."
 
   [ 2 ][ 1 ][ 2 ][ 1 ]  @2x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 2 beats
@@ -643,7 +643,7 @@ Good round. Breathe — hands stay up. Next: orthodox pressure. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s1>>
-"Big phrase — two pages: one, two, one, two, two, three, two. straight time, 9 times through."
+"Big phrase — two pages: one, two, one, two, two, three, two. straight time, nine times through."
 
   [ 1 ][ 2 ][ 1 ][ 2 ][ 2 ][ 3 ][ 2 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
   breath after every bar: 4 beats
@@ -655,7 +655,7 @@ Good round. Breathe — hands stay up. Next: orthodox pressure. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s2>>
-"One, two, one, two — double-time, 18 bars."
+"One, two, one, two — double-time, eighteen bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 2 beats
@@ -667,7 +667,7 @@ Good round. Breathe — hands stay up. Next: orthodox pressure. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s3>>
-"Two, three, two — straight time, 10 bars."
+"Two, three, two — straight time, ten bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -679,7 +679,7 @@ Good round. Breathe — hands stay up. Next: orthodox pressure. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s4>>
-"Three, two, three — time-and-a-half, 20 bars."
+"Three, two, three — time-and-a-half, twenty bars."
 
   [ 3 ][ 2 ][ 3 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -702,7 +702,7 @@ Good round. Breathe — hands stay up. Next: southpaw finish. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s1>>
-"One, two, three, two — straight time, 16 bars."
+"One, two, three, two — straight time, sixteen bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 4 beats
@@ -714,7 +714,7 @@ Good round. Breathe — hands stay up. Next: southpaw finish. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s2>>
-"Two, three, two, three — time-and-a-half, 16 bars."
+"Two, three, two, three — time-and-a-half, sixteen bars."
 
   [ 2 ][ 3 ][ 2 ][ 3 ]  @1.5x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 1 1/3 beats
@@ -726,7 +726,7 @@ Good round. Breathe — hands stay up. Next: southpaw finish. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s3>>
-"One, two, one, two — straight time, 8 bars."
+"One, two, one, two — straight time, eight bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 8   (4 punches/bar -> 32 punches)
   breath after every bar: 4 beats
@@ -738,7 +738,7 @@ Good round. Breathe — hands stay up. Next: southpaw finish. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s4>>
-"One, one, two — double-time, 21 bars."
+"One, one, two — double-time, twenty-one bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 21   (3 punches/bar -> 63 punches)
   breath after every bar: 2 beats
@@ -767,7 +767,7 @@ Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s1>>
-"One, two, one, two — straight time, 25 bars."
+"One, two, one, two — straight time, twenty-five bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 25   (4 punches/bar -> 100 punches)
   breath after every bar: 4 beats
@@ -779,7 +779,7 @@ Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s2>>
-"Three, two, three, two — straight time, 20 bars."
+"Three, two, three, two — straight time, twenty bars."
 
   [ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -791,7 +791,7 @@ Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s3>>
-"Two, three, two — time-and-a-half, 30 bars."
+"Two, three, two — time-and-a-half, thirty bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1.5x   x 30   (3 punches/bar -> 90 punches)
   breath after every bar: 1 1/3 beats
@@ -803,7 +803,7 @@ Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s4>>
-"One, two, one, two — double-time, 40 bars."
+"One, two, one, two — double-time, forty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 2 beats
@@ -815,7 +815,7 @@ Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s5>>
-"One, one, two — straight time, 10 bars."
+"One, one, two — straight time, ten bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -838,7 +838,7 @@ Good round. Breathe — hands stay up. Next: hooks off the cross. First up when 
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s1>>
-"Big phrase — two pages: one, two, three, two, three, two, three, two. straight time, 15 times through."
+"Big phrase — two pages: one, two, three, two, three, two, three, two. straight time, fifteen times through."
 
   [ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 15   (8 punches/bar -> 120 punches)
   breath after every bar: 4 beats
@@ -850,7 +850,7 @@ Good round. Breathe — hands stay up. Next: hooks off the cross. First up when 
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s2>>
-"Two, three, two, three — time-and-a-half, 25 bars."
+"Two, three, two, three — time-and-a-half, twenty-five bars."
 
   [ 2 ][ 3 ][ 2 ][ 3 ]  @1.5x   x 25   (4 punches/bar -> 100 punches)
   breath after every bar: 1 1/3 beats
@@ -862,7 +862,7 @@ Good round. Breathe — hands stay up. Next: hooks off the cross. First up when 
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s3>>
-"One, two, one, two — double-time, 35 bars."
+"One, two, one, two — double-time, thirty-five bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 35   (4 punches/bar -> 140 punches)
   breath after every bar: 2 beats
@@ -874,7 +874,7 @@ Good round. Breathe — hands stay up. Next: hooks off the cross. First up when 
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s4>>
-"Three, two, three — straight time, 20 bars."
+"Three, two, three — straight time, twenty bars."
 
   [ 3 ][ 2 ][ 3 ][ . ]  @1x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 4 beats
@@ -886,7 +886,7 @@ Good round. Breathe — hands stay up. Next: hooks off the cross. First up when 
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s5>>
-"Long set: ones only, time-and-a-half — 35 bars. Go with the click."
+"Long set: ones only, time-and-a-half — thirty-five bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 35   (4 punches/bar -> 140 punches)
   breath after every bar: 1 1/3 beats
@@ -909,7 +909,7 @@ Good round. Breathe — hands stay up. Next: double up. First up when we come ba
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s1>>
-"One, two, three, two — straight time, 30 bars."
+"One, two, three, two — straight time, thirty bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 4 beats
@@ -921,7 +921,7 @@ Good round. Breathe — hands stay up. Next: double up. First up when we come ba
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s2>>
-"Three, two, three, two — double-time, 30 bars."
+"Three, two, three, two — double-time, thirty bars."
 
   [ 3 ][ 2 ][ 3 ][ 2 ]  @2x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 2 beats
@@ -933,7 +933,7 @@ Good round. Breathe — hands stay up. Next: double up. First up when we come ba
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s3>>
-"Two, three, two — straight time, 30 bars."
+"Two, three, two — straight time, thirty bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 30   (3 punches/bar -> 90 punches)
   breath after every bar: 4 beats
@@ -945,7 +945,7 @@ Good round. Breathe — hands stay up. Next: double up. First up when we come ba
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s4>>
-"One, two, one, two — time-and-a-half, 30 bars."
+"One, two, one, two — time-and-a-half, thirty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -968,7 +968,7 @@ Good round. Breathe — hands stay up. Next: heavy finish. First up when we come
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s1>>
-"Big phrase — two pages: one, one, two, three, two, three, two. straight time, 20 times through."
+"Big phrase — two pages: one, one, two, three, two, three, two. straight time, twenty times through."
 
   [ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ][ . ]  @1x   x 20   (7 punches/bar -> 140 punches)
   breath after every bar: 4 beats
@@ -980,7 +980,7 @@ Good round. Breathe — hands stay up. Next: heavy finish. First up when we come
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s2>>
-"One, two, one, two — double-time, 40 bars."
+"One, two, one, two — double-time, forty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 2 beats
@@ -992,7 +992,7 @@ Good round. Breathe — hands stay up. Next: heavy finish. First up when we come
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s3>>
-"Three, two, three, two — straight time, 20 bars."
+"Three, two, three, two — straight time, twenty bars."
 
   [ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -1004,7 +1004,7 @@ Good round. Breathe — hands stay up. Next: heavy finish. First up when we come
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s4>>
-"Two, three, two — time-and-a-half, 40 bars."
+"Two, three, two — time-and-a-half, forty bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1.5x   x 40   (3 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1033,7 +1033,7 @@ Speed Combos. Four rounds at two-forty — the fastest click we own. Short combi
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s1>>
-"One, two, one, two — straight time, 30 bars."
+"One, two, one, two — straight time, thirty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 4 beats
@@ -1045,7 +1045,7 @@ Speed Combos. Four rounds at two-forty — the fastest click we own. Short combi
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s2>>
-"One, one, two — time-and-a-half, 40 bars."
+"One, one, two — time-and-a-half, forty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 40   (3 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1057,7 +1057,7 @@ Speed Combos. Four rounds at two-forty — the fastest click we own. Short combi
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s3>>
-"One, two, one, two — double-time, 60 bars."
+"One, two, one, two — double-time, sixty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 60   (4 punches/bar -> 240 punches)
   breath after every bar: 2 beats
@@ -1069,7 +1069,7 @@ Speed Combos. Four rounds at two-forty — the fastest click we own. Short combi
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s4>>
-"Two, three, two — double-time, 40 bars."
+"Two, three, two — double-time, forty bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 40   (3 punches/bar -> 120 punches)
   breath after every bar: 2 beats
@@ -1081,7 +1081,7 @@ Speed Combos. Four rounds at two-forty — the fastest click we own. Short combi
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s5>>
-"Long set: ones only, straight time — 20 bars. Go with the click."
+"Long set: ones only, straight time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -1104,7 +1104,7 @@ Good round. Breathe — hands stay up. Next: doubles at pace. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s1>>
-"Big phrase — two pages: one, two, one, two, one, one, two. straight time, 20 times through."
+"Big phrase — two pages: one, two, one, two, one, one, two. straight time, twenty times through."
 
   [ 1 ][ 2 ][ 1 ][ 2 ][ 1 ][ 1 ][ 2 ][ . ]  @1x   x 20   (7 punches/bar -> 140 punches)
   breath after every bar: 4 beats
@@ -1116,7 +1116,7 @@ Good round. Breathe — hands stay up. Next: doubles at pace. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s2>>
-"One, two, one, two — double-time, 80 bars."
+"One, two, one, two — double-time, eighty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 80   (4 punches/bar -> 320 punches)
   breath after every bar: 2 beats
@@ -1128,7 +1128,7 @@ Good round. Breathe — hands stay up. Next: doubles at pace. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s3>>
-"Long set: ones only, time-and-a-half — 40 bars. Go with the click."
+"Long set: ones only, time-and-a-half — forty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 1 1/3 beats
@@ -1140,7 +1140,7 @@ Good round. Breathe — hands stay up. Next: doubles at pace. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s4>>
-"Two, one, two, one — straight time, 30 bars."
+"Two, one, two, one — straight time, thirty bars."
 
   [ 2 ][ 1 ][ 2 ][ 1 ]  @1x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 4 beats
@@ -1163,7 +1163,7 @@ Good round. Breathe — hands stay up. Next: pages at speed. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s1>>
-"Long set: ones only, double-time — 40 bars. Go with the click."
+"Long set: ones only, double-time — forty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 2 beats
@@ -1175,7 +1175,7 @@ Good round. Breathe — hands stay up. Next: pages at speed. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s2>>
-"One, two, one, two — straight time, 40 bars."
+"One, two, one, two — straight time, forty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 4 beats
@@ -1187,7 +1187,7 @@ Good round. Breathe — hands stay up. Next: pages at speed. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s3>>
-"One, two, three — time-and-a-half, 60 bars."
+"One, two, three — time-and-a-half, sixty bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 60   (3 punches/bar -> 180 punches)
   breath after every bar: 1 1/3 beats
@@ -1199,7 +1199,7 @@ Good round. Breathe — hands stay up. Next: pages at speed. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s4>>
-"Big phrase — two pages: one, two, one, two, two, three, two. double-time, 20 times through."
+"Big phrase — two pages: one, two, one, two, two, three, two. double-time, twenty times through."
 
   [ 1 ][ 2 ][ 1 ][ 2 ][ 2 ][ 3 ][ 2 ][ . ]  @2x   x 20   (7 punches/bar -> 140 punches)
   breath after every bar: 2 beats
@@ -1211,7 +1211,7 @@ Good round. Breathe — hands stay up. Next: pages at speed. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s5>>
-"One, one, two — double-time, 30 bars."
+"One, one, two — double-time, thirty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 30   (3 punches/bar -> 90 punches)
   breath after every bar: 2 beats
@@ -1234,7 +1234,7 @@ Good round. Breathe — hands stay up. Next: empty the tank. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s1>>
-"One, two, one, two — double-time, 50 bars."
+"One, two, one, two — double-time, fifty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 50   (4 punches/bar -> 200 punches)
   breath after every bar: 2 beats
@@ -1246,7 +1246,7 @@ Good round. Breathe — hands stay up. Next: empty the tank. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s2>>
-"One, one, two — time-and-a-half, 50 bars."
+"One, one, two — time-and-a-half, fifty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 50   (3 punches/bar -> 150 punches)
   breath after every bar: 1 1/3 beats
@@ -1258,7 +1258,7 @@ Good round. Breathe — hands stay up. Next: empty the tank. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s3>>
-"One, two, one, two — straight time, 35 bars."
+"One, two, one, two — straight time, thirty-five bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 35   (4 punches/bar -> 140 punches)
   breath after every bar: 4 beats
@@ -1270,7 +1270,7 @@ Good round. Breathe — hands stay up. Next: empty the tank. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s4>>
-"Two, three, two — double-time, 70 bars."
+"Two, three, two — double-time, seventy bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 70   (3 punches/bar -> 210 punches)
   breath after every bar: 2 beats
@@ -1299,7 +1299,7 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s1>>
-"Five, two, five, two — straight time, 16 bars."
+"Five, two, five, two — straight time, sixteen bars."
 
   [ 5 ][ 2 ][ 5 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 4 beats
@@ -1311,7 +1311,7 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s2>>
-"One, six, one, six — straight time, 10 bars."
+"One, six, one, six — straight time, ten bars."
 
   [ 1 ][ 6 ][ 1 ][ 6 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -1323,7 +1323,7 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s3>>
-"Six, five, six — time-and-a-half, 16 bars."
+"Six, five, six — time-and-a-half, sixteen bars."
 
   [ 6 ][ 5 ][ 6 ][ . ]  @1.5x   x 16   (3 punches/bar -> 48 punches)
   breath after every bar: 1 1/3 beats
@@ -1335,7 +1335,7 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s4>>
-"Five, two, five, two — double-time, 17 bars."
+"Five, two, five, two — double-time, seventeen bars."
 
   [ 5 ][ 2 ][ 5 ][ 2 ]  @2x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 2 beats
@@ -1358,7 +1358,7 @@ Good round. Breathe — hands stay up. Next: uppercut off the jab. First up when
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s1>>
-"One, two, five, two — straight time, 14 bars."
+"One, two, five, two — straight time, fourteen bars."
 
   [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 4 beats
@@ -1370,7 +1370,7 @@ Good round. Breathe — hands stay up. Next: uppercut off the jab. First up when
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s2>>
-"Five, six, five, six — time-and-a-half, 20 bars."
+"Five, six, five, six — time-and-a-half, twenty bars."
 
   [ 5 ][ 6 ][ 5 ][ 6 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats
@@ -1382,7 +1382,7 @@ Good round. Breathe — hands stay up. Next: uppercut off the jab. First up when
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s3>>
-"Two, five, two — straight time, 10 bars."
+"Two, five, two — straight time, ten bars."
 
   [ 2 ][ 5 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -1394,7 +1394,7 @@ Good round. Breathe — hands stay up. Next: uppercut off the jab. First up when
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s4>>
-"One, six, one, six — double-time, 17 bars."
+"One, six, one, six — double-time, seventeen bars."
 
   [ 1 ][ 6 ][ 1 ][ 6 ]  @2x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 2 beats
@@ -1417,7 +1417,7 @@ Good round. Breathe — hands stay up. Next: pairs and pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s1>>
-"Big phrase — two pages: five, two, five, two, six, five, six. straight time, 9 times through."
+"Big phrase — two pages: five, two, five, two, six, five, six. straight time, nine times through."
 
   [ 5 ][ 2 ][ 5 ][ 2 ][ 6 ][ 5 ][ 6 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
   breath after every bar: 4 beats
@@ -1429,7 +1429,7 @@ Good round. Breathe — hands stay up. Next: pairs and pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s2>>
-"Five, six, five, six — double-time, 18 bars."
+"Five, six, five, six — double-time, eighteen bars."
 
   [ 5 ][ 6 ][ 5 ][ 6 ]  @2x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 2 beats
@@ -1441,7 +1441,7 @@ Good round. Breathe — hands stay up. Next: pairs and pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s3>>
-"One, six, three, two — straight time, 10 bars."
+"One, six, three, two — straight time, ten bars."
 
   [ 1 ][ 6 ][ 3 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -1453,7 +1453,7 @@ Good round. Breathe — hands stay up. Next: pairs and pages. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s4>>
-"Six, five, six — time-and-a-half, 20 bars."
+"Six, five, six — time-and-a-half, twenty bars."
 
   [ 6 ][ 5 ][ 6 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
@@ -1476,7 +1476,7 @@ Good round. Breathe — hands stay up. Next: clinic finish. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s1>>
-"Five, six, five, six — straight time, 16 bars."
+"Five, six, five, six — straight time, sixteen bars."
 
   [ 5 ][ 6 ][ 5 ][ 6 ]  @1x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 4 beats
@@ -1488,7 +1488,7 @@ Good round. Breathe — hands stay up. Next: clinic finish. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s2>>
-"One, two, five, six — time-and-a-half, 16 bars."
+"One, two, five, six — time-and-a-half, sixteen bars."
 
   [ 1 ][ 2 ][ 5 ][ 6 ]  @1.5x   x 16   (4 punches/bar -> 64 punches)
   breath after every bar: 1 1/3 beats
@@ -1500,7 +1500,7 @@ Good round. Breathe — hands stay up. Next: clinic finish. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s3>>
-"Six, five, two — straight time, 8 bars."
+"Six, five, two — straight time, eight bars."
 
   [ 6 ][ 5 ][ 2 ][ . ]  @1x   x 8   (3 punches/bar -> 24 punches)
   breath after every bar: 4 beats
@@ -1512,7 +1512,7 @@ Good round. Breathe — hands stay up. Next: clinic finish. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s4>>
-"Five, two, five, two — double-time, 21 bars."
+"Five, two, five, two — double-time, twenty-one bars."
 
   [ 5 ][ 2 ][ 5 ][ 2 ]  @2x   x 21   (4 punches/bar -> 84 punches)
   breath after every bar: 2 beats
@@ -1541,7 +1541,7 @@ Progressive Buildup. Four rounds at one hundred. We build it one punch at a time
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r1s1>>
-"Long set: ones only, straight time — 25 bars. Go with the click."
+"Long set: ones only, straight time — twenty-five bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 25   (4 punches/bar -> 100 punches)
   breath after every bar: 4 beats
@@ -1553,7 +1553,7 @@ Progressive Buildup. Four rounds at one hundred. We build it one punch at a time
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r1s2>>
-"Long set: ones only, time-and-a-half — 30 bars. Go with the click."
+"Long set: ones only, time-and-a-half — thirty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1565,7 +1565,7 @@ Progressive Buildup. Four rounds at one hundred. We build it one punch at a time
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r1s3>>
-"Long set: ones only, double-time — 20 bars. Go with the click."
+"Long set: ones only, double-time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -1588,7 +1588,7 @@ Good round. Breathe — hands stay up. Next: one-two. First up when we come back
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r2s1>>
-"One, two, one, two — straight time, 20 bars."
+"One, two, one, two — straight time, twenty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -1612,7 +1612,7 @@ Good round. Breathe — hands stay up. Next: one-two. First up when we come back
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r2s3>>
-"One, two, one, two — time-and-a-half, 30 bars."
+"One, two, one, two — time-and-a-half, thirty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1635,7 +1635,7 @@ Good round. Breathe — hands stay up. Next: one-two-three. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r3s1>>
-"One, two, three — straight time, 25 bars."
+"One, two, three — straight time, twenty-five bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 25   (3 punches/bar -> 75 punches)
   breath after every bar: 4 beats
@@ -1647,7 +1647,7 @@ Good round. Breathe — hands stay up. Next: one-two-three. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r3s2>>
-"One, two, three, two — time-and-a-half, 30 bars."
+"One, two, three, two — time-and-a-half, thirty bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1659,7 +1659,7 @@ Good round. Breathe — hands stay up. Next: one-two-three. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r3s3>>
-"One, two, three — double-time, 20 bars."
+"One, two, three — double-time, twenty bars."
 
   [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 2 beats
@@ -1682,7 +1682,7 @@ Good round. Breathe — hands stay up. Next: the whole phrase. First up when we 
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r4s1>>
-"Big phrase — two pages: one, two, three, two, one, two, three. straight time, 10 times through."
+"Big phrase — two pages: one, two, three, two, one, two, three. straight time, ten times through."
 
   [ 1 ][ 2 ][ 3 ][ 2 ][ 1 ][ 2 ][ 3 ][ . ]  @1x   x 10   (7 punches/bar -> 70 punches)
   breath after every bar: 4 beats
@@ -1694,7 +1694,7 @@ Good round. Breathe — hands stay up. Next: the whole phrase. First up when we 
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r4s2>>
-"One, two, three, two — straight time, 20 bars."
+"One, two, three, two — straight time, twenty bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -1706,7 +1706,7 @@ Good round. Breathe — hands stay up. Next: the whole phrase. First up when we 
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r4s3>>
-"Big phrase — two pages: one, two, three, two, one, two, three. double-time, 20 times through."
+"Big phrase — two pages: one, two, three, two, one, two, three. double-time, twenty times through."
 
   [ 1 ][ 2 ][ 3 ][ 2 ][ 1 ][ 2 ][ 3 ][ . ]  @2x   x 20   (7 punches/bar -> 140 punches)
   breath after every bar: 2 beats
@@ -1735,7 +1735,7 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r1s1>>
-"One, two-bee, one, two-bee — straight time, 15 bars."
+"One, two-bee, one, two-bee — straight time, fifteen bars."
 
   [ 1 ][ 2b][ 1 ][ 2b]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
@@ -1759,7 +1759,7 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r1s3>>
-"One, two-bee, one, two-bee — time-and-a-half, 30 bars."
+"One, two-bee, one, two-bee — time-and-a-half, thirty bars."
 
   [ 1 ][ 2b][ 1 ][ 2b]  @1.5x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 1 1/3 beats
@@ -1771,7 +1771,7 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r1s4>>
-"One, one-bee, two — double-time, 20 bars."
+"One, one-bee, two — double-time, twenty bars."
 
   [ 1 ][ 1b][ 2 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
   breath after every bar: 2 beats
@@ -1794,7 +1794,7 @@ Good round. Breathe — hands stay up. Next: dig to the body. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s1>>
-"Two-bee, three-bee, two-bee — straight time, 15 bars."
+"Two-bee, three-bee, two-bee — straight time, fifteen bars."
 
   [ 2b][ 3b][ 2b][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 4 beats
@@ -1806,7 +1806,7 @@ Good round. Breathe — hands stay up. Next: dig to the body. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s2>>
-"One, two, three-bee — time-and-a-half, 30 bars."
+"One, two, three-bee — time-and-a-half, thirty bars."
 
   [ 1 ][ 2 ][ 3b][ . ]  @1.5x   x 30   (3 punches/bar -> 90 punches)
   breath after every bar: 1 1/3 beats
@@ -1818,7 +1818,7 @@ Good round. Breathe — hands stay up. Next: dig to the body. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s3>>
-"One-bee, two-bee, one-bee, two-bee — double-time, 20 bars."
+"One-bee, two-bee, one-bee, two-bee — double-time, twenty bars."
 
   [ 1b][ 2b][ 1b][ 2b]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -1830,7 +1830,7 @@ Good round. Breathe — hands stay up. Next: dig to the body. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s4>>
-"One, two-bee, three — straight time, 10 bars."
+"One, two-bee, three — straight time, ten bars."
 
   [ 1 ][ 2b][ 3 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -1853,7 +1853,7 @@ Good round. Breathe — hands stay up. Next: mixing floors. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s1>>
-"Big phrase — two pages: one, two-bee, one, two-bee, three, two-bee, three. straight time, 10 times through."
+"Big phrase — two pages: one, two-bee, one, two-bee, three, two-bee, three. straight time, ten times through."
 
   [ 1 ][ 2b][ 1 ][ 2b][ 3 ][ 2b][ 3 ][ . ]  @1x   x 10   (7 punches/bar -> 70 punches)
   breath after every bar: 4 beats
@@ -1865,7 +1865,7 @@ Good round. Breathe — hands stay up. Next: mixing floors. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s2>>
-"Two, three-bee, two — straight time, 15 bars."
+"Two, three-bee, two — straight time, fifteen bars."
 
   [ 2 ][ 3b][ 2 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 4 beats
@@ -1877,7 +1877,7 @@ Good round. Breathe — hands stay up. Next: mixing floors. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s3>>
-"One, two-bee, one, two-bee — time-and-a-half, 20 bars."
+"One, two-bee, one, two-bee — time-and-a-half, twenty bars."
 
   [ 1 ][ 2b][ 1 ][ 2b]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats
@@ -1889,7 +1889,7 @@ Good round. Breathe — hands stay up. Next: mixing floors. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s4>>
-"Long set: two-bees only, double-time — 20 bars. Go with the click."
+"Long set: two-bees only, double-time — twenty bars. Go with the click."
 
   [ 2b][ 2b][ 2b][ 2b]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -1912,7 +1912,7 @@ Good round. Breathe — hands stay up. Next: body finish. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r4s1>>
-"One, two-bee, three, two-bee — straight time, 20 bars."
+"One, two-bee, three, two-bee — straight time, twenty bars."
 
   [ 1 ][ 2b][ 3 ][ 2b]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -1936,7 +1936,7 @@ Good round. Breathe — hands stay up. Next: body finish. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r4s3>>
-"One, six, three-bee — straight time, 10 bars."
+"One, six, three-bee — straight time, ten bars."
 
   [ 1 ][ 6 ][ 3b][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
   breath after every bar: 4 beats
@@ -1948,7 +1948,7 @@ Good round. Breathe — hands stay up. Next: body finish. First up when we come 
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r4s4>>
-"One, two-bee, one, two-bee — double-time, 20 bars."
+"One, two-bee, one, two-bee — double-time, twenty bars."
 
   [ 1 ][ 2b][ 1 ][ 2b]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -1977,7 +1977,7 @@ Pace Pusher. Four rounds, one-eighty on the click. Same combination, three speed
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s1>>
-"One, two, one, two — straight time, 30 bars."
+"One, two, one, two — straight time, thirty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 4 beats
@@ -1989,7 +1989,7 @@ Pace Pusher. Four rounds, one-eighty on the click. Same combination, three speed
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s2>>
-"One, two, one, two — time-and-a-half, 60 bars."
+"One, two, one, two — time-and-a-half, sixty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1.5x   x 60   (4 punches/bar -> 240 punches)
   breath after every bar: 1 1/3 beats
@@ -2001,7 +2001,7 @@ Pace Pusher. Four rounds, one-eighty on the click. Same combination, three speed
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s3>>
-"One, two, one, two — double-time, 60 bars."
+"One, two, one, two — double-time, sixty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @2x   x 60   (4 punches/bar -> 240 punches)
   breath after every bar: 2 beats
@@ -2024,7 +2024,7 @@ Good round. Breathe — hands stay up. Next: ladder the jab. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s1>>
-"One, one, two — straight time, 25 bars."
+"One, one, two — straight time, twenty-five bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 25   (3 punches/bar -> 75 punches)
   breath after every bar: 4 beats
@@ -2036,7 +2036,7 @@ Good round. Breathe — hands stay up. Next: ladder the jab. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s2>>
-"One, one, two — time-and-a-half, 50 bars."
+"One, one, two — time-and-a-half, fifty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 50   (3 punches/bar -> 150 punches)
   breath after every bar: 1 1/3 beats
@@ -2048,7 +2048,7 @@ Good round. Breathe — hands stay up. Next: ladder the jab. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s3>>
-"One, one, two — double-time, 50 bars."
+"One, one, two — double-time, fifty bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 50   (3 punches/bar -> 150 punches)
   breath after every bar: 2 beats
@@ -2060,7 +2060,7 @@ Good round. Breathe — hands stay up. Next: ladder the jab. First up when we co
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s4>>
-"Pump: ones only, straight time — 15 bars. Go with the click."
+"Pump: ones only, straight time — fifteen bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
@@ -2083,7 +2083,7 @@ Good round. Breathe — hands stay up. Next: ladder the hook. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s1>>
-"Two, three, two — straight time, 30 bars."
+"Two, three, two — straight time, thirty bars."
 
   [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 30   (3 punches/bar -> 90 punches)
   breath after every bar: 4 beats
@@ -2095,7 +2095,7 @@ Good round. Breathe — hands stay up. Next: ladder the hook. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s2>>
-"Two, three, two, three — time-and-a-half, 40 bars."
+"Two, three, two, three — time-and-a-half, forty bars."
 
   [ 2 ][ 3 ][ 2 ][ 3 ]  @1.5x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 1 1/3 beats
@@ -2107,7 +2107,7 @@ Good round. Breathe — hands stay up. Next: ladder the hook. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s3>>
-"Two, three, two, three — double-time, 40 bars."
+"Two, three, two, three — double-time, forty bars."
 
   [ 2 ][ 3 ][ 2 ][ 3 ]  @2x   x 40   (4 punches/bar -> 160 punches)
   breath after every bar: 2 beats
@@ -2119,7 +2119,7 @@ Good round. Breathe — hands stay up. Next: ladder the hook. First up when we c
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s4>>
-"One, two, one, two — straight time, 20 bars."
+"One, two, one, two — straight time, twenty bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -2142,7 +2142,7 @@ Good round. Breathe — hands stay up. Next: all rates at once. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s1>>
-"Big phrase — two pages: one, two, three, two, three, two, three, two. straight time, 12 times through."
+"Big phrase — two pages: one, two, three, two, three, two, three, two. straight time, twelve times through."
 
   [ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 12   (8 punches/bar -> 96 punches)
   breath after every bar: 4 beats
@@ -2154,7 +2154,7 @@ Good round. Breathe — hands stay up. Next: all rates at once. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s2>>
-"One, two, three, two — time-and-a-half, 36 bars."
+"One, two, three, two — time-and-a-half, thirty-six bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 36   (4 punches/bar -> 144 punches)
   breath after every bar: 1 1/3 beats
@@ -2166,7 +2166,7 @@ Good round. Breathe — hands stay up. Next: all rates at once. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s3>>
-"One, two, three, two — double-time, 36 bars."
+"One, two, three, two — double-time, thirty-six bars."
 
   [ 1 ][ 2 ][ 3 ][ 2 ]  @2x   x 36   (4 punches/bar -> 144 punches)
   breath after every bar: 2 beats
@@ -2178,7 +2178,7 @@ Good round. Breathe — hands stay up. Next: all rates at once. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s4>>
-"One, two, one, two — time-and-a-half, 36 bars."
+"One, two, one, two — time-and-a-half, thirty-six bars."
 
   [ 1 ][ 2 ][ 1 ][ 2 ]  @1.5x   x 36   (4 punches/bar -> 144 punches)
   breath after every bar: 1 1/3 beats
@@ -2190,7 +2190,7 @@ Good round. Breathe — hands stay up. Next: all rates at once. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s5>>
-"Long set: ones only, double-time — 36 bars. Go with the click."
+"Long set: ones only, double-time — thirty-six bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 36   (4 punches/bar -> 144 punches)
   breath after every bar: 2 beats
@@ -2219,7 +2219,7 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s1>>
-"Pump: ones only, straight time — 10 bars. Go with the click."
+"Pump: ones only, straight time — ten bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -2243,7 +2243,7 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s3>>
-"Pump: twos only, double-time — 10 bars. Go with the click."
+"Pump: twos only, double-time — ten bars. Go with the click."
 
   [ 2 ][ 2 ][ 2 ][ 2 ]  @2x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 2 beats
@@ -2267,7 +2267,7 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s5>>
-"Long set: ones only, time-and-a-half — 20 bars. Go with the click."
+"Long set: ones only, time-and-a-half — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats
@@ -2290,7 +2290,7 @@ Good round. Breathe — hands stay up. Next: coast is a choice. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s1>>
-"Pump: ones only, double-time — 15 bars. Go with the click."
+"Pump: ones only, double-time — fifteen bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 2 beats
@@ -2314,7 +2314,7 @@ Good round. Breathe — hands stay up. Next: coast is a choice. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s3>>
-"Pump: twos only, straight time — 10 bars. Go with the click."
+"Pump: twos only, straight time — ten bars. Go with the click."
 
   [ 2 ][ 2 ][ 2 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
@@ -2338,7 +2338,7 @@ Good round. Breathe — hands stay up. Next: coast is a choice. First up when we
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s5>>
-"One, one, two — time-and-a-half, 15 bars."
+"One, one, two — time-and-a-half, fifteen bars."
 
   [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 1 1/3 beats
@@ -2361,7 +2361,7 @@ Good round. Breathe — hands stay up. Next: two-page pump. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r3s1>>
-"Big phrase — two pages: one, one, one, one, two, two, two, two. straight time, 10 times through."
+"Big phrase — two pages: one, one, one, one, two, two, two, two. straight time, ten times through."
 
   [ 1 ][ 1 ][ 1 ][ 1 ][ 2 ][ 2 ][ 2 ][ 2 ]  @1x   x 10   (8 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -2385,7 +2385,7 @@ Good round. Breathe — hands stay up. Next: two-page pump. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r3s3>>
-"Long set: ones only, double-time — 30 bars. Go with the click."
+"Long set: ones only, double-time — thirty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 30   (4 punches/bar -> 120 punches)
   breath after every bar: 2 beats
@@ -2420,7 +2420,7 @@ Good round. Breathe — hands stay up. Next: big pump home. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r4s1>>
-"Long set: ones only, straight time — 20 bars. Go with the click."
+"Long set: ones only, straight time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 4 beats
@@ -2444,7 +2444,7 @@ Good round. Breathe — hands stay up. Next: big pump home. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r4s3>>
-"Long set: ones only, double-time — 20 bars. Go with the click."
+"Long set: ones only, double-time — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @2x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 2 beats
@@ -2456,7 +2456,7 @@ Good round. Breathe — hands stay up. Next: big pump home. First up when we com
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r4s4>>
-"Long set: ones only, time-and-a-half — 20 bars. Go with the click."
+"Long set: ones only, time-and-a-half — twenty bars. Go with the click."
 
   [ 1 ][ 1 ][ 1 ][ 1 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
   breath after every bar: 1 1/3 beats

@@ -77,16 +77,28 @@ function motifWords(motif: string): string {
 }
 const rateWord = (r: number): string => (r === 1 ? 'straight time' : r === 1.5 ? 'time-and-a-half' : 'double-time')
 
+/** Spell a rep count (1..99) so the doc text IS the rendered clip text. */
+function numberWord(n: number): string {
+  const ones = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
+  if (n < 20) return ones[n]!
+  const t = Math.floor(n / 10)
+  const r = n % 10
+  return r === 0 ? tens[t]! : `${tens[t]}-${ones[r]}`
+}
+
 function leadIn(row: ClickRow, kind: string): string {
   const w = motifWords(row.motif)
+  const reps = numberWord(row.reps)
   if (kind.startsWith('PUMP')) {
     const one = w.split(', ')[0]
-    return `${row.reps >= 20 ? 'Long set' : 'Pump'}: ${one}s only, ${rateWord(row.rate)} — ${row.reps} bars. Go with the click.`
+    return `${row.reps >= 20 ? 'Long set' : 'Pump'}: ${one}s only, ${rateWord(row.rate)} — ${reps} bars. Go with the click.`
   }
-  if (kind.startsWith('TWO-PAGE')) return `Big phrase — two pages: ${w}. ${rateWord(row.rate)}, ${row.reps} times through.`
+  if (kind.startsWith('TWO-PAGE')) return `Big phrase — two pages: ${w}. ${rateWord(row.rate)}, ${reps} times through.`
   if (kind.startsWith('COAST')) return `Coast bar — ${w}, then breathe the empty beats. Stay moving.`
   const cap = w.charAt(0).toUpperCase() + w.slice(1)
-  return `${cap} — ${rateWord(row.rate)}, ${row.reps} bars.`
+  return `${cap} — ${rateWord(row.rate)}, ${reps} bars.`
 }
 
 /** Render fractional beats cleanly (4/3 → "1 1/3"). */
@@ -105,6 +117,10 @@ function barAscii(motif: string, rate: number): string {
 
 const restScript = (nextTheme: string, nextFirst: string): string =>
   `Good round. Breathe — hands stay up. Next: ${nextTheme.toLowerCase()}. First up when we come back: ${nextFirst}. Water if you need it. Ready on the bell.`
+
+/** Spoken corpus rows collected during the walk — `--corpus` emits these as JSON. */
+const corpusLeadIns: Array<{ slot: string; text: string }> = []
+const corpusRests: Array<{ slot: string; text: string }> = []
 
 const out: string[] = []
 out.push('# punchCraft — Click-Track Workout Scripts (all 10 predetermined sets)')
@@ -144,9 +160,11 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       punchTotal += perBar * row.reps
       out.push(`**§${ri + 1}.${i + 1} ${kind}** — ${rowMeasures(row)} measures`)
       out.push('')
+      const leadText = leadIn(row, kind)
+      corpusLeadIns.push({ slot: `lead-in/${key}/r${ri + 1}s${i + 1}`, text: leadText })
       out.push('```text')
       out.push(`<<SINGLE CLIP  lead-in/${key}/r${ri + 1}s${i + 1}>>`)
-      out.push(`"${leadIn(row, kind)}"`)
+      out.push(`"${leadText}"`)
       out.push('')
       out.push(`  ${barAscii(row.motif, row.rate)}   x ${row.reps}   (${perBar} punches/bar -> ${perBar * row.reps} punches)`)
       out.push(`  breath after every bar: ${beatsWord(breathBeats(row.motif.split('-').length, row.rate))} beats`)
@@ -159,12 +177,14 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
     out.push('')
     if (ri < map.rounds.length - 1) {
       const next = map.rounds[ri + 1]!
-      const nf = leadIn(next.rows[0]!, sectionKind(next.rows[0]!.motif)).split(' — ')[0]
+      const nf = motifWords(next.rows[0]!.motif)
       out.push(`### Rest ${ri + 1} → ${ri + 2}  (1:00)`)
       out.push('')
+      const restText = restScript(next.theme, nf!)
+      corpusRests.push({ slot: `rest/${key}/r${ri + 1}`, text: restText })
       out.push('```text')
       out.push(`<<SINGLE CLIP  rest/${key}/r${ri + 1}>>`)
-      out.push(restScript(next.theme, nf!))
+      out.push(restText)
       out.push('```')
       out.push('')
     }
@@ -192,4 +212,10 @@ out.push('| token components (1-6, fused 1b-6b) | 12 (+ silence) | `[[COMPONENT 
 out.push('')
 out.push('Fused-body rule rides along: every `-bee` component renders from hyphenated text (`"Two-bee"`), never spaced, per the settled A/B/C.')
 
-console.log(out.join('\n'))
+if (process.argv.includes('--corpus')) {
+  // Machine-readable spoken corpus for the render run — same strings the
+  // markdown shows, so the script bible and the clips can never drift.
+  console.log(JSON.stringify({ leadIns: corpusLeadIns, rests: corpusRests }, null, 2))
+} else {
+  console.log(out.join('\n'))
+}
