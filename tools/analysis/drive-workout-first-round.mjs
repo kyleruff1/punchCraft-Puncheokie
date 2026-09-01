@@ -350,6 +350,19 @@ async function drive(args) {
     //    open. Five BACK keyevents defensively unwind whatever's on
     //    screen, then HOME lands on the launcher, and finally the
     //    monkey intent brings up punchCraft.
+    // WAKE FIRST (GH #305): an unattended tablet dozes, and a dozing
+    // screen renders nothing — a whole sweep failed with "tile did not
+    // appear within 120s" because `mWakefulness=Dozing` and the lockscreen
+    // was up. Neither BACK nor HOME wakes a sleeping device; WAKEUP does,
+    // and `wm dismiss-keyguard` clears the (insecure) lockscreen. Idempotent
+    // when already awake.
+    log('WAKEUP + dismiss-keyguard (tablet may be dozing)')
+    adbShell('input keyevent KEYCODE_WAKEUP', deviceId)
+    await sleep(1200)
+    try {
+      adbShell('wm dismiss-keyguard', deviceId)
+    } catch {}
+    await sleep(800)
     log('BACK x5 + HOME to unwind any foreground activity')
     for (let i = 0; i < 5; i += 1) {
       adbShell('input keyevent KEYCODE_BACK', deviceId)
