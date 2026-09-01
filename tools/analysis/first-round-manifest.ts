@@ -309,15 +309,28 @@ export function buildFirstRoundManifest(
   coachEvents.sort((a, b) => a.expectedStartTick - b.expectedStartTick)
   // Per-bar loop calls (Kyle, 2026-09-01): counted, not itemized — ~70
   // near-identical expectations per round would bury the report. The
-  // verifier prints dispatched/skipped against this denominator.
+  // denominator mirrors the runner's BUILD-TIME pruning exactly: bars
+  // whose call window overlaps a mid-round lead-in's (padded) window are
+  // dropped by design — the coach is announcing the next section, not
+  // calling this one — so they must not count as expected (first honest
+  // run read 75/90 "LOW" when ~15 of the gap was this pruning).
   let expectedCallBars = 0
   if (round0) {
+    const CALL_PAD_MS = 100
+    const leadWindows = coachEvents
+      .filter((e) => e.kind === 'lead-in')
+      .map((e) => ({ start: e.expectedStartMs - 500, end: e.expectedStartMs + e.durationMs }))
     for (const cue of round0.cues) {
       if (cue.repeatIndex === 0) continue
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
-      if (findClickScript(`call/${motif}`)) expectedCallBars += 1
+      const clip = findClickScript(`call/${motif}`)
+      if (!clip) continue
+      const dispatchAt = Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS)
+      const end = dispatchAt + clip.durationMs
+      const pruned = leadWindows.some((w) => dispatchAt < w.end && end > w.start)
+      if (!pruned) expectedCallBars += 1
     }
   }
   const notes: string[] = []

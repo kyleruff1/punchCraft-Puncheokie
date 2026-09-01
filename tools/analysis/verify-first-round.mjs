@@ -558,6 +558,10 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
     // (2026-09-01). Lead-in problems still surface on the expectation
     // side as missing/late.
     if (e.type !== 'voice.combo-announce' && e.type !== 'voice.clip') return
+    // The bell is deliberately double-typed ('bell' + 'voice.clip'); on a
+    // click set there are no per-word expectations to claim its clip copy,
+    // so both round bells landed in extras and every clean run read WARN.
+    if (e.type === 'voice.clip' && e.asset === 'bell') return
     extras.push({ observed: e, verdict: 'extra' })
   })
   for (const ex of extras) {

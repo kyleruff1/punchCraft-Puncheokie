@@ -2454,7 +2454,7 @@
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 60,
+  "expectedCallBars": 53,
   "silentByDesign": [],
   "notes": [
     "Pump & Coast pump / coast blocks are DELIBERATELY coach-silent — sustained + coast runtime consumers not yet wired. silentByDesign is TBD until the manifest generator learns to detect those block spans (Slice 6)."
