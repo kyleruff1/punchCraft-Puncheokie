@@ -58,7 +58,7 @@ import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { TrackerPunchEvent } from '@domain/punch/PunchEvent'
 import type { BackdropImpulsePort } from '@domain/effects/BackdropImpulsePort'
-import type { Stance } from '@domain/workout/WorkoutTokens'
+import { formatCombo, type Stance } from '@domain/workout/WorkoutTokens'
 import type { CueEvent, SessionPhaseEvent } from '@domain/programs/CueState'
 import type { TokenVisualState } from '@components/workout/tokenVisuals'
 import type { CueView } from '@components/workout/CueStage'
@@ -635,7 +635,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         logger.info('puncheokie.cue.tokenDue', 'ring token fired', {
           roundIndex: safe(sessionRef.current?.snapshot()?.roundIndex ?? -1),
           cueId: safe(event.cue.id),
-          combination: safe(event.cue.tokens.join('-')),
+          // `formatCombo`, NOT `tokens.join('-')`: tokens are objects, so
+          // join stringified them to '[object Object]-[object Object]' in
+          // every record ever captured. This is the ring-side signal any
+          // audio/visual correlation joins on, so it was unusable (GH #305).
+          combination: safe(formatCombo(event.cue.tokens)),
           tokenIndex: safe(event.tokenIndex),
           ordinal: safe(ordinal),
           workElapsedMs: safe(event.workElapsedMs),

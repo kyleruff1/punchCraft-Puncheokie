@@ -23,7 +23,7 @@ import type { SharedValue } from 'react-native-reanimated'
 import { PunchAvatarCard } from './PunchAvatarCard'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
 import { PunchToken } from './PunchToken'
-import type { TokenVisualState } from './tokenVisuals'
+import { visibleBar, type TokenVisualState } from './tokenVisuals'
 import { colors } from '@/theme/colors'
 import { fonts, sizes, weights } from '@/theme/typography'
 import type { CueInstance } from '@domain/programs/CueTimeline'
@@ -192,7 +192,7 @@ function CueRow(props: {
         />
       ) : null}
       <View style={styles.tokens}>
-        {cue.tokens.map((token, index) =>
+        {visibleBar(cue.tokens, view.tokenStates).map(({ token, index }) =>
           renderToken(
             token,
             index,
@@ -288,7 +288,12 @@ const styles = StyleSheet.create({
   nextDim: { opacity: 0.55 },
   currentZone: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cueRow: { alignItems: 'center', gap: 8 },
-  tokens: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' },
+  // `nowrap`, deliberately. A bar that wraps onto a second line stops being
+  // a bar — the whole point is that four slots sit in the same four places
+  // every time. Paging keeps the row at BAR_SLOTS or fewer, so at stage size
+  // this is ~464dp: comfortable on the tablet, tight on a phone, where the
+  // node diameter is the knob to turn rather than wrapping (GH #305).
+  tokens: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'nowrap' },
   repeat: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   repeatLabel: {
     fontSize: sizes.subtitle,

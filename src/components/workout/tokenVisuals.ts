@@ -15,9 +15,25 @@
  */
 
 import { colors } from '@/theme/colors'
+import type { WorkoutToken } from '@domain/workout/WorkoutTokens'
 
 export type TokenVisualState = 'upcoming' | 'active' | 'completed' | 'empty'
 export type TokenSize = 'stage' | 'preview'
+
+/**
+ * Slots in one BAR — the fixed unit the row displays (GH #305).
+ *
+ * Kyle, 2026-08-31: *"filling everything with 4 nodes and spaces to make
+ * combos and single hits easier to predict."* Every block reads the same
+ * width, so the eye lands in the same four places instead of re-scanning a
+ * variable-length row each time.
+ *
+ * A block LONGER than one bar is not shown all at once — the row pages to
+ * the bar in progress, which is what lets alternating bars compose longer
+ * combinations (`[1][2][1][2]` then `[3][2][3][2]` = an 8-punch combo)
+ * without shrinking the nodes to fit.
+ */
+export const BAR_SLOTS = 4
 
 /**
  * Glove-friendly stage sizing (doc §25). 96dp is comfortably above the
@@ -145,4 +161,43 @@ export const COACH_LABEL: Record<string, string> = {
  */
 export function isRingFootwork(command: string): boolean {
   return command === 'circle' || command === 'cut-off-ring'
+}
+
+/**
+ * The slice of tokens the row should show right now — one BAR.
+ *
+ * A block of four slots or fewer is shown whole; that is every block today.
+ * A longer block (alternating bars composing an 8-punch combination) pages
+ * to the bar in progress rather than shrinking nodes to fit, so the four
+ * positions stay in the same place on screen (GH #305).
+ *
+ * REAL token indices are carried through. `tokenStates`,
+ * `affirmedTokenIndexes`, `handHintFor` and `PunchAvatarCard`'s
+ * `activeTokenIndex` are all keyed on the index within `cue.tokens`, so a
+ * paged view that renumbered from zero would silently mis-address every one
+ * of them — the hand hint would point the wrong way and the avatar would
+ * track the wrong punch.
+ */
+export function visibleBar(
+  tokens: readonly WorkoutToken[],
+  tokenStates: readonly TokenVisualState[],
+): Array<{ token: WorkoutToken; index: number }> {
+  const all = tokens.map((token, index) => ({ token, index }))
+  if (tokens.length <= BAR_SLOTS) return all
+  const start = currentBarStart(tokenStates)
+  return all.slice(start, start + BAR_SLOTS)
+}
+
+/** First index of the bar in progress, rounded down to a bar boundary. */
+function currentBarStart(tokenStates: readonly TokenVisualState[]): number {
+  const active = tokenStates.findIndex((state) => state === 'active')
+  if (active >= 0) return Math.floor(active / BAR_SLOTS) * BAR_SLOTS
+  // Nothing active: before the cue opens show the first bar; after the last
+  // punch lands hold the bar that just finished rather than snapping back.
+  let lastCompleted = -1
+  for (let i = 0; i < tokenStates.length; i += 1) {
+    if (tokenStates[i] === 'completed') lastCompleted = i
+  }
+  if (lastCompleted < 0) return 0
+  return Math.floor(lastCompleted / BAR_SLOTS) * BAR_SLOTS
 }
