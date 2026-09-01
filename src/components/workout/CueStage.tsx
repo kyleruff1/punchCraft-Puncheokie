@@ -21,7 +21,7 @@ import { RestSlot } from './RestSlot'
 import { useSharedValue, type SharedValue } from 'react-native-reanimated'
 
 import { PunchAvatarCard } from './PunchAvatarCard'
-import { useRingBeatClock, type RingBeatCue } from './useRingBeatClock'
+import { useRingBeatClock, type RoundWalkPlan } from './useRingBeatClock'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
 import type { SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { PunchToken } from './PunchToken'
@@ -91,13 +91,13 @@ export interface CueStageProps {
    */
   workClock?: SharedValue<SharedWorkClock>
   /**
-   * Unsuppressed engine-next for the WALK's staging (GH #305). The `next`
-   * prop is nulled between same-block reps (a preview-zone aesthetic);
-   * staging from it starved the worklet on every click-set bar and
-   * promotes ran 119ms-late p50. This channel carries the queued next
-   * raw and feeds only useRingBeatClock — never the preview zone.
+   * The current round's FULL walk plan (GH #305 v3). Staged onto the UI
+   * thread once per round; the worklet iterates bars by clock, so there
+   * is no per-rep handoff left to race (the single-successor design let
+   * the engine's early completions clobber un-promoted bars — whole bars
+   * were swallowed on glass).
    */
-  walkNext?: CueView
+  walkPlan?: RoundWalkPlan
 }
 
 /** Hand letter for a punch token, taken from the resolved expectations. */
@@ -258,7 +258,7 @@ function CueRow(props: {
  */
 function useWalkedView(
   current: CueView | undefined,
-  next: CueView | undefined,
+  plan: RoundWalkPlan | null,
   workClock: SharedValue<SharedWorkClock> | undefined,
 ): { view: CueView | undefined; walkOrdinal: SharedValue<number> } {
   // Stage 3 (GH #305): the worklet writes this UI-thread-synchronously;
@@ -268,64 +268,23 @@ function useWalkedView(
   const walkOrdinal = useSharedValue(-1)
   const [walk, setWalk] = React.useState<{ epoch: string; ordinal: number } | null>(null)
   const cue = current?.cue
-  const ringCue = React.useMemo<RingBeatCue | null>(() => {
-    if (!cue || cue.scoring !== 'sequence') return null
-    return {
-      epoch: cue.id,
-      scheduledStartMs: cue.scheduledStartMs,
-      tokenOffsetsMs: cue.tokenOffsetsMs,
-      expectedTokenIndexes: cue.expectedPunches.map((p) => p.tokenIndex),
-    }
-    // Occurrence identity only — a re-render with the same cue must not
-    // rebuild (and thereby restage/reset) the worklet's clamp.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cue?.id])
   const onOrdinal = React.useCallback((epoch: string, ordinal: number) => {
     setWalk({ epoch, ordinal })
-    // Click-lock v2 ground truth (A6): the DISPLAYED walk, not the engine
-    // event. ~3-4 lines/sec — production-safe, and the only way to measure
-    // what the athlete actually saw against the beat grid.
     logger.info('puncheokie.ring.visual', 'walk advanced', {
       cueId: safe(epoch),
       ordinal: safe(ordinal),
     })
   }, [])
-  const nextRingCue = React.useMemo<RingBeatCue | null>(() => {
-    const nc = next?.cue
-    // Tracer (GH #305): does the successor survive the prop hop?
-    logger.info('puncheokie.walk.propNext', 'stage sees next', {
-      id: safe(nc?.id ?? 'none'),
-      scoring: safe(nc?.scoring ?? '-'),
-    })
-    if (!nc || nc.scoring !== 'sequence') return null
-    return {
-      epoch: nc.id,
-      scheduledStartMs: nc.scheduledStartMs,
-      tokenOffsetsMs: nc.tokenOffsetsMs,
-      expectedTokenIndexes: nc.expectedPunches.map((p) => p.tokenIndex),
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [next?.cue?.id])
-  useRingBeatClock(ringCue, nextRingCue, workClock, onOrdinal, walkOrdinal)
+  useRingBeatClock(plan, workClock, onOrdinal, walkOrdinal)
 
   const view = React.useMemo(() => {
     if (!current || !cue) return current
-    // Only clocked SEQUENCE cues are walked; everything else renders the
-    // props-states untouched.
     if (!workClock || cue.scoring !== 'sequence') return current
-    // THE WORKLET OWNS THE ROW — sole source, no merge (GH #305).
-    //
-    // The first wiring blended two async sources per frame:
-    // `max(matcherCredit, walkOrdinal)`, with credit arriving on the
-    // ~341 ms JS tick and the walk on UI frames. Every disagreement
-    // rendered as a bounce — on-glass: "stutters between 1 and 3,
-    // bouncing both directions" — and between cue switch and the first
-    // emission the fallback flashed the PREVIOUS cue's stale states.
-    // Two clocks, one row: the exact defect class this MVP exists to
-    // kill. Matcher credit still drives SCORING; it no longer touches
-    // the walk. Before the first emission of a new occurrence the row
-    // is all-upcoming — the page-turn clear, which is what the breath
-    // looks like.
+    // THE WORKLET OWNS THE ROW — sole source, no merge (GH #305): the
+    // walk's ordinal for the bar the CLOCK is in. When the worklet is a
+    // hair ahead of JS's `current` at a boundary, epoch mismatch renders
+    // all-upcoming for a frame or two — the page-turn, not a flash of the
+    // previous bar.
     const ordinal = walk && walk.epoch === cue.id ? walk.ordinal : -1
     const tokenStates = cue.tokens.map((t, i): TokenVisualState => {
       if (t.kind === 'rest') return 'empty'
@@ -345,7 +304,7 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
   const { next, reducedMotion = false, idleLabel, avatarAnchor, workClock } = props
   const { view: current, walkOrdinal } = useWalkedView(
     props.current,
-    props.walkNext ?? props.next,
+    props.walkPlan ?? null,
     workClock,
   )
   const walked = workClock !== undefined

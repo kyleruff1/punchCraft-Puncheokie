@@ -43,6 +43,7 @@ import { runtimeCoachAssetResolver } from '@audio/coachAssetResolvers'
 import { SlotDispatcher } from '@audio/SlotDispatcher'
 import { compileWorkoutScore } from '@domain/programs/workoutScore'
 import { roundStartTicksFrom, scoreTickAt } from '@domain/programs/scoreClock'
+import type { RoundWalkPlan } from '@/components/workout/useRingBeatClock'
 import { type SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
@@ -168,7 +169,7 @@ export interface WorkoutRunner {
   /** Live vocabulary switch (numbers ⇄ techniques) — next call speaks it. */
   setVocabulary(vocabulary: 'numbers' | 'techniques'): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
-  readCues(): { current?: CueView; next?: CueView; walkNext?: CueView; freeWork?: boolean }
+  readCues(): { current?: CueView; next?: CueView; walkPlan?: RoundWalkPlan; freeWork?: boolean }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
   readResults(): WorkoutRunnerResults
 }
@@ -427,9 +428,27 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    * reached must not appear as though it did.
    */
   const realizedBlocksRef = useRef(new Set<string>())
-  /** Unsuppressed next for the ring worklet's staging — see syncFromEngine. */
-  const walkNextRef = useRef<CueView | null>(null)
-  const lastReadCuesWalkNextIdRef = useRef('none')
+  /**
+   * Round-scoped walk plan for the UI-thread walk (GH #305 v3): every
+   * sequence bar of the current round, in order. Built once per round —
+   * the whole plan crosses to the worklet in one staging, so no per-rep
+   * handoff exists to race the engine's early completions.
+   */
+  const walkPlanRef = useRef<{ roundIndex: number; bars: Array<{ epoch: string; scheduledStartMs: number; tokenOffsetsMs: readonly number[]; expectedTokenIndexes: number[] }> } | null>(null)
+  const buildWalkPlan = useCallback((roundIndex: number): void => {
+    const cues = timelineRef.current[roundIndex]?.cues ?? []
+    walkPlanRef.current = {
+      roundIndex,
+      bars: cues
+        .filter((c) => c.scoring === 'sequence')
+        .map((c) => ({
+          epoch: c.id,
+          scheduledStartMs: c.scheduledStartMs,
+          tokenOffsetsMs: c.tokenOffsetsMs,
+          expectedTokenIndexes: c.expectedPunches.map((p) => p.tokenIndex),
+        })),
+    }
+  }, [])
   const announcerRef = useRef<CueAnnouncer | null>(null)
   /**
    * D1 third-party-playback state, mirrored out of the detector so the
@@ -626,35 +645,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const nextIsSameBlock =
       snap.next !== undefined && snap.next.blockId === snap.current?.blockId
     nextRef.current = nextIsSameBlock ? null : renderStateFor(snap.next)
-    // The WALK's staging channel (GH #305), v2 — FROM THE TIMELINE, not
-    // the engine. Instrumentation showed the engine's `snapshot.next`
-    // simply does not exist between same-block reps (2 stage events per
-    // round, both at block transitions, margins +1.5s/+3.5s — perfect
-    // when present, absent for 144/146 bars). The runner's suppression
-    // was never the gate; runtime discovery was. But the timeline is
-    // fully AUTHORED and known at arm time — the walk's successor is a
-    // deterministic lookup, no engine involvement. One-clock doctrine,
-    // completed: the schedule is the source, the engine only scores.
-    const roundIdx = sessionRef.current?.snapshot()?.roundIndex ?? -1
-    const roundCues = roundIdx >= 0 ? timelineRef.current[roundIdx]?.cues : undefined
-    if (snap.current && roundCues) {
-      const i = roundCues.findIndex((c) => c.id === snap.current!.id)
-      const successor = i >= 0 ? roundCues[i + 1] : undefined
-      // Tracer (GH #305): two rounds of instrumentation say the hook
-      // stages only 2x/round — some hop between here and the worklet
-      // drops the successor. Log every CHANGE of successor id so the
-      // capture shows whether this ref is even being fed.
-      if ((successor?.id ?? null) !== (walkNextRef.current?.cue.id ?? null)) {
-        logger.info('puncheokie.walk.successor', 'runner staged successor', {
-          from: safe(snap.current.id),
-          to: safe(successor?.id ?? 'none'),
-          foundIndex: safe(i),
-        })
-      }
-      walkNextRef.current = successor ? renderStateFor(successor) : null
-    } else {
-      walkNextRef.current = snap.next ? renderStateFor(snap.next) : null
-    }
+    // GH #305 v3: the walk plan is round-scoped and consumed whole by
+    // the UI thread (see useRingBeatClock). Nothing per-rep remains here.
   }, [renderStateFor])
 
   // -------------------------------------------------------------------------
@@ -1067,6 +1059,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // A new round opens fresh tallies, and the previous round's frozen
           // result leaves the store rather than lingering behind the cues.
           freezeRef.current.beginRound(transition.roundIndex)
+          buildWalkPlan(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
 
           // Install the round's compiled rhythm map (M2): from here the map
@@ -1659,15 +1652,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       readCues: () => ({
         ...(currentRef.current ? { current: currentRef.current } : {}),
         ...(nextRef.current ? { next: nextRef.current } : {}),
-        // THE LINE THE WHOLE STAGING SAGA WAS MISSING (GH #305). The
-        // runner computed timeline successors 150x/round; two prior
-        // patches meant to expose them here silently no-opped on an
-        // indentation-mismatched anchor while the interface change
-        // compiled — so `cues.walkNext` was undefined at the live screen
-        // all night and the worklet promoted every bar off the JS-late
-        // fallback. Chain-of-custody tracers (sets:150, readCues:0)
-        // caught the missing hop.
-        ...(walkNextRef.current ? { walkNext: walkNextRef.current } : {}),
+        ...(walkPlanRef.current ? { walkPlan: walkPlanRef.current } : {}),
         ...(freeWorkRef.current ? { freeWork: true } : {}),
       }),
       readResults: () => ({
