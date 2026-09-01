@@ -72,7 +72,12 @@ export const pacePusher: GeneratedWorkout = {
     // MVP v2: the click IS the audio. Minimal caps the coach at bells +
     // stance + countdown; punch calls belong to the visuals.
     voiceMode: 'minimal',
-    coachTempo: { baseBpm: MAP.bpm, division: 1, swing: 0.5 },
+    // Loop-asset contract (metronomeAssets.ts): every wav is 1000ms = one
+    // 60-BPM base pulse; TEMPO SCALES BY DIVISION, never baseBpm. Getting
+    // this wrong told the transport 180 BPM against a 1s loop — a
+    // permanent ~3s error observed ~500x/sec (the red-screen flood).
+    coachTempo: { baseBpm: 60, division: 3, swing: 0.5 },
+
     metronome: { enabled: true, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'pace-pusher-2026-08-29',

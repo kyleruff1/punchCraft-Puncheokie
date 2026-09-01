@@ -241,6 +241,10 @@ export class MetronomeTransport implements MetronomeTransportPort {
    * MetronomePlayer status listener) samples the audio position,
    * builds an `AudioPositionObservation`, and invokes this.
    */
+  private heldCount = 0
+  private heldWorstTicks = 0
+  private lastHeldLogMs = 0
+
   correct(obs: AudioPositionObservation): void {
     if (this.state !== 'running') return
     if (obs.observedGeneration !== this.generation) return
@@ -268,10 +272,24 @@ export class MetronomeTransport implements MetronomeTransportPort {
       // branch does: no anchor change, no generation bump, no notify —
       // nothing observable moved. Audio catches up on its own.
       if (errorTicks < 0) {
-        logger.info('puncheokie.transport', 'transport held on backwards observation', {
-          generation: safe(this.generation),
-          errorTicks: safe(errorTicks),
-        })
+        // SUMMARIZED, never per-observation: a broken observation source
+        // can call correct() hundreds of times a second (measured: a
+        // baseBpm/loop mismatch produced ~500 holds/sec), and logging
+        // each one floods the JS thread into a red screen. One line a
+        // second carries the same forensic signal.
+        this.heldCount += 1
+        if (this.heldWorstTicks > errorTicks) this.heldWorstTicks = errorTicks
+        const now2 = this.clock.now()
+        if (now2 - this.lastHeldLogMs >= 1_000) {
+          logger.info('puncheokie.transport', 'transport held on backwards observations', {
+            generation: safe(this.generation),
+            held: safe(this.heldCount),
+            worstErrorTicks: safe(this.heldWorstTicks),
+          })
+          this.lastHeldLogMs = now2
+          this.heldCount = 0
+          this.heldWorstTicks = 0
+        }
         return
       }
       this.generation += 1
