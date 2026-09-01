@@ -450,6 +450,18 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
   }
   const usedObservedIndex = new Set()
   const verdicts = []
+  // A PRECALL is authored BEFORE the bell (expectedStartMs < 0), but the
+  // runner only advances the dispatcher during `work` — the earliest a
+  // precall can physically fire is the first work tick. Judging it
+  // against its authored pre-bell moment scored a perfectly good opener
+  // (played at +1108ms, over the bell tail) as missing-plus-extra, with
+  // the play 3.4s "off" a target the system is structurally unable to
+  // hit. Floor the comparison point at round start; the authored value
+  // stays in the manifest as intent. Firing precalls during the
+  // countdown for real is a runtime follow-up, at which point this floor
+  // becomes a no-op.
+  const comparisonStartMs = (exp) =>
+    exp.kind === 'combo-announce' ? Math.max(0, exp.expectedStartMs) : exp.expectedStartMs
   for (const exp of expected) {
     let candidates = []
     if (exp.kind === 'combo-announce') {
@@ -462,7 +474,7 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
     for (let i = 0; i < candidates.length; i += 1) {
       const globalIdx = observed.indexOf(candidates[i])
       if (usedObservedIndex.has(globalIdx)) continue
-      const delta = candidates[i].elapsedMs - exp.expectedStartMs
+      const delta = candidates[i].elapsedMs - comparisonStartMs(exp)
       if (Math.abs(delta) < Math.abs(bestDelta)) {
         bestDelta = delta
         bestIdx = globalIdx
@@ -516,7 +528,7 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
     const isCombo = ex.observed.type === 'voice.combo-announce'
     const nearby = expected.find((exp) => {
       if (isCombo && exp.kind === 'combo-announce' && exp.text === ex.observed.text) {
-        return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
+        return Math.abs(ex.observed.elapsedMs - comparisonStartMs(exp)) <= LATE_WINDOW_MS
       }
       if (!isCombo && exp.kind === 'per-word' && exp.assetId === ex.observed.asset) {
         return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
