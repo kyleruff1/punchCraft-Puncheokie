@@ -39,6 +39,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated'
 
+import { logger, safe } from '@/diagnostics/logger'
 import {
   sharedWorkElapsedMs,
   type SharedWorkClock,
@@ -85,6 +86,12 @@ export function useRingBeatClock(
    */
   displayOrdinal?: SharedValue<number>,
 ): void {
+  const onPromote = (epochV: string, lateMs: number): void => {
+    logger.info('puncheokie.ring.promote', 'bar promoted', {
+      cueId: safe(epochV),
+      lateMs: safe(Math.round(lateMs * 10) / 10),
+    })
+  }
   // TWO slots — the cue being WALKED and the cue STAGED behind it — and
   // the WORKLET moves between them on its own clock (GH #305).
   //
@@ -162,6 +169,11 @@ export function useRingBeatClock(
     // Promote the staged cue once the clock reaches it — the boundary is
     // a clock fact, not a JS-event fact.
     if (nextEpoch.value !== '' && elapsed >= nextScheduledStartMs.value) {
+      // How late the promote actually fired vs the authored boundary —
+      // THE number for the residual "opens on node 2 ~1 in 11" (Kyle).
+      // Preview staging should make this <= one frame (~16ms); a rep
+      // whose lateMs exceeds a beat opens mid-bar by clock honesty.
+      const lateMs = elapsed - nextScheduledStartMs.value
       epoch.value = nextEpoch.value
       scheduledStartMs.value = nextScheduledStartMs.value
       offsets.value = nextOffsets.value
@@ -169,6 +181,7 @@ export function useRingBeatClock(
       lastOrdinal.value = -1
       nextEpoch.value = ''
       if (displayOrdinal) displayOrdinal.value = -1
+      runOnJS(onPromote)(epoch.value, lateMs)
       runOnJS(onOrdinal)(epoch.value, -1) // page-turn clear at the boundary
     }
     const target = beatOrdinalAtMsWorklet(
