@@ -1671,10 +1671,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             if (!voiceAllowed(voice.policy, playbackActiveRef.current)) continue
             const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
             if (audibleUntilMs > 0) {
-              // Lead-ins RETRY (defer until giveUp); a call just yields —
-              // its moment is now or never, and piling deferred calls is
-              // exactly the overlap Pillar 2 forbids.
-              if (entry.kind === 'call') entry.state = 'skipped'
+              // Busy lane: EVERYTHING retries until its giveUp. Calls
+              // originally yielded on first contact, but at 2s strides a
+              // single tick-late call left the lane busy at the next
+              // call's dispatch instant and the skips CASCADED — measured
+              // 21/90 bars lost on-glass (2026-09-01). The giveUp bound
+              // (bar start + 500ms) is what prevents deferred calls from
+              // piling; the busy check itself prevents overlap.
               continue
             }
             entry.state = 'played'
