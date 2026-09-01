@@ -292,6 +292,11 @@ function useWalkedView(
   }, [])
   const nextRingCue = React.useMemo<RingBeatCue | null>(() => {
     const nc = next?.cue
+    // Tracer (GH #305): does the successor survive the prop hop?
+    logger.info('puncheokie.walk.propNext', 'stage sees next', {
+      id: safe(nc?.id ?? 'none'),
+      scoring: safe(nc?.scoring ?? '-'),
+    })
     if (!nc || nc.scoring !== 'sequence') return null
     return {
       epoch: nc.id,

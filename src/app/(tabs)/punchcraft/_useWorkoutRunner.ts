@@ -639,6 +639,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     if (snap.current && roundCues) {
       const i = roundCues.findIndex((c) => c.id === snap.current!.id)
       const successor = i >= 0 ? roundCues[i + 1] : undefined
+      // Tracer (GH #305): two rounds of instrumentation say the hook
+      // stages only 2x/round — some hop between here and the worklet
+      // drops the successor. Log every CHANGE of successor id so the
+      // capture shows whether this ref is even being fed.
+      if ((successor?.id ?? null) !== (walkNextRef.current?.cue.id ?? null)) {
+        logger.info('puncheokie.walk.successor', 'runner staged successor', {
+          from: safe(snap.current.id),
+          to: safe(successor?.id ?? 'none'),
+          foundIndex: safe(i),
+        })
+      }
       walkNextRef.current = successor ? renderStateFor(successor) : null
     } else {
       walkNextRef.current = snap.next ? renderStateFor(snap.next) : null
