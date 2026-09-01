@@ -8,7 +8,7 @@
   "identity": {
     "workoutId": "three-round-fundamentals",
     "revision": 1,
-    "timelineHash": "v2:366f3c5d"
+    "timelineHash": "v2:d67d1a74"
   },
   "strikes": [
     {
@@ -1608,18 +1608,6 @@
       "targetStrikeMs": 123125
     },
     {
-      "eventId": "trf1-b4#0:rep-0:3",
-      "cueId": "trf1-b4#0",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 118320,
-      "startMs": 123250,
-      "targetStrikeTick": 118440,
-      "targetStrikeMs": 123375
-    },
-    {
       "eventId": "trf1-b4#1:rep-0:0",
       "cueId": "trf1-b4#1",
       "repId": "rep-0",
@@ -1654,18 +1642,6 @@
       "startMs": 124750,
       "targetStrikeTick": 119880,
       "targetStrikeMs": 124875
-    },
-    {
-      "eventId": "trf1-b4#1:rep-0:3",
-      "cueId": "trf1-b4#1",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 120000,
-      "startMs": 125000,
-      "targetStrikeTick": 120120,
-      "targetStrikeMs": 125125
     },
     {
       "eventId": "trf1-b4#2:rep-0:0",
@@ -1704,18 +1680,6 @@
       "targetStrikeMs": 126625
     },
     {
-      "eventId": "trf1-b4#2:rep-0:3",
-      "cueId": "trf1-b4#2",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 121680,
-      "startMs": 126750,
-      "targetStrikeTick": 121800,
-      "targetStrikeMs": 126875
-    },
-    {
       "eventId": "trf1-b4#3:rep-0:0",
       "cueId": "trf1-b4#3",
       "repId": "rep-0",
@@ -1750,18 +1714,6 @@
       "startMs": 128250,
       "targetStrikeTick": 123240,
       "targetStrikeMs": 128375
-    },
-    {
-      "eventId": "trf1-b4#3:rep-0:3",
-      "cueId": "trf1-b4#3",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 123360,
-      "startMs": 128500,
-      "targetStrikeTick": 123480,
-      "targetStrikeMs": 128625
     },
     {
       "eventId": "trf1-b4#4:rep-0:0",
@@ -1800,18 +1752,6 @@
       "targetStrikeMs": 130125
     },
     {
-      "eventId": "trf1-b4#4:rep-0:3",
-      "cueId": "trf1-b4#4",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 125040,
-      "startMs": 130250,
-      "targetStrikeTick": 125160,
-      "targetStrikeMs": 130375
-    },
-    {
       "eventId": "trf1-b4#5:rep-0:0",
       "cueId": "trf1-b4#5",
       "repId": "rep-0",
@@ -1846,18 +1786,6 @@
       "startMs": 131750,
       "targetStrikeTick": 126600,
       "targetStrikeMs": 131875
-    },
-    {
-      "eventId": "trf1-b4#5:rep-0:3",
-      "cueId": "trf1-b4#5",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 126720,
-      "startMs": 132000,
-      "targetStrikeTick": 126840,
-      "targetStrikeMs": 132125
     },
     {
       "eventId": "trf1-b4#6:rep-0:0",
@@ -1896,18 +1824,6 @@
       "targetStrikeMs": 133625
     },
     {
-      "eventId": "trf1-b4#6:rep-0:3",
-      "cueId": "trf1-b4#6",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 128400,
-      "startMs": 133750,
-      "targetStrikeTick": 128520,
-      "targetStrikeMs": 133875
-    },
-    {
       "eventId": "trf1-b4#7:rep-0:0",
       "cueId": "trf1-b4#7",
       "repId": "rep-0",
@@ -1942,18 +1858,6 @@
       "startMs": 135250,
       "targetStrikeTick": 129960,
       "targetStrikeMs": 135375
-    },
-    {
-      "eventId": "trf1-b4#7:rep-0:3",
-      "cueId": "trf1-b4#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 130080,
-      "startMs": 135500,
-      "targetStrikeTick": 130200,
-      "targetStrikeMs": 135625
     },
     {
       "eventId": "trf1-b4#8:rep-0:0",
@@ -1992,18 +1896,6 @@
       "targetStrikeMs": 137125
     },
     {
-      "eventId": "trf1-b4#8:rep-0:3",
-      "cueId": "trf1-b4#8",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 131760,
-      "startMs": 137250,
-      "targetStrikeTick": 131880,
-      "targetStrikeMs": 137375
-    },
-    {
       "eventId": "trf1-b4#9:rep-0:0",
       "cueId": "trf1-b4#9",
       "repId": "rep-0",
@@ -2038,18 +1930,6 @@
       "startMs": 138750,
       "targetStrikeTick": 133320,
       "targetStrikeMs": 138875
-    },
-    {
-      "eventId": "trf1-b4#9:rep-0:3",
-      "cueId": "trf1-b4#9",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 133440,
-      "startMs": 139000,
-      "targetStrikeTick": 133560,
-      "targetStrikeMs": 139125
     },
     {
       "eventId": "trf1-b4#10:rep-0:0",
@@ -2088,18 +1968,6 @@
       "targetStrikeMs": 140625
     },
     {
-      "eventId": "trf1-b4#10:rep-0:3",
-      "cueId": "trf1-b4#10",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 135120,
-      "startMs": 140750,
-      "targetStrikeTick": 135240,
-      "targetStrikeMs": 140875
-    },
-    {
       "eventId": "trf1-b4#11:rep-0:0",
       "cueId": "trf1-b4#11",
       "repId": "rep-0",
@@ -2134,18 +2002,6 @@
       "startMs": 142250,
       "targetStrikeTick": 136680,
       "targetStrikeMs": 142375
-    },
-    {
-      "eventId": "trf1-b4#11:rep-0:3",
-      "cueId": "trf1-b4#11",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 136800,
-      "startMs": 142500,
-      "targetStrikeTick": 136920,
-      "targetStrikeMs": 142625
     },
     {
       "eventId": "trf1-b4#12:rep-0:0",
@@ -2184,18 +2040,6 @@
       "targetStrikeMs": 144125
     },
     {
-      "eventId": "trf1-b4#12:rep-0:3",
-      "cueId": "trf1-b4#12",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 138480,
-      "startMs": 144250,
-      "targetStrikeTick": 138600,
-      "targetStrikeMs": 144375
-    },
-    {
       "eventId": "trf1-b4#13:rep-0:0",
       "cueId": "trf1-b4#13",
       "repId": "rep-0",
@@ -2230,18 +2074,6 @@
       "startMs": 145750,
       "targetStrikeTick": 140040,
       "targetStrikeMs": 145875
-    },
-    {
-      "eventId": "trf1-b4#13:rep-0:3",
-      "cueId": "trf1-b4#13",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 140160,
-      "startMs": 146000,
-      "targetStrikeTick": 140280,
-      "targetStrikeMs": 146125
     },
     {
       "eventId": "trf1-b4#14:rep-0:0",
@@ -2280,18 +2112,6 @@
       "targetStrikeMs": 147625
     },
     {
-      "eventId": "trf1-b4#14:rep-0:3",
-      "cueId": "trf1-b4#14",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 141840,
-      "startMs": 147750,
-      "targetStrikeTick": 141960,
-      "targetStrikeMs": 147875
-    },
-    {
       "eventId": "trf1-b4#15:rep-0:0",
       "cueId": "trf1-b4#15",
       "repId": "rep-0",
@@ -2326,18 +2146,6 @@
       "startMs": 149250,
       "targetStrikeTick": 143400,
       "targetStrikeMs": 149375
-    },
-    {
-      "eventId": "trf1-b4#15:rep-0:3",
-      "cueId": "trf1-b4#15",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 143520,
-      "startMs": 149500,
-      "targetStrikeTick": 143640,
-      "targetStrikeMs": 149625
     },
     {
       "eventId": "trf1-b4#16:rep-0:0",
@@ -2376,18 +2184,6 @@
       "targetStrikeMs": 151125
     },
     {
-      "eventId": "trf1-b4#16:rep-0:3",
-      "cueId": "trf1-b4#16",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 145200,
-      "startMs": 151250,
-      "targetStrikeTick": 145320,
-      "targetStrikeMs": 151375
-    },
-    {
       "eventId": "trf1-b4#17:rep-0:0",
       "cueId": "trf1-b4#17",
       "repId": "rep-0",
@@ -2422,18 +2218,6 @@
       "startMs": 152750,
       "targetStrikeTick": 146760,
       "targetStrikeMs": 152875
-    },
-    {
-      "eventId": "trf1-b4#17:rep-0:3",
-      "cueId": "trf1-b4#17",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 146880,
-      "startMs": 153000,
-      "targetStrikeTick": 147000,
-      "targetStrikeMs": 153125
     },
     {
       "eventId": "trf1-b4#18:rep-0:0",
@@ -2472,18 +2256,6 @@
       "targetStrikeMs": 154625
     },
     {
-      "eventId": "trf1-b4#18:rep-0:3",
-      "cueId": "trf1-b4#18",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 148560,
-      "startMs": 154750,
-      "targetStrikeTick": 148680,
-      "targetStrikeMs": 154875
-    },
-    {
       "eventId": "trf1-b4#19:rep-0:0",
       "cueId": "trf1-b4#19",
       "repId": "rep-0",
@@ -2518,18 +2290,6 @@
       "startMs": 156250,
       "targetStrikeTick": 150120,
       "targetStrikeMs": 156375
-    },
-    {
-      "eventId": "trf1-b4#19:rep-0:3",
-      "cueId": "trf1-b4#19",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "2",
-      "startTick": 150240,
-      "startMs": 156500,
-      "targetStrikeTick": 150360,
-      "targetStrikeMs": 156625
     },
     {
       "eventId": "trf1-b5#0:rep-0:0",
@@ -3317,7 +3077,7 @@
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
-      "token": "2",
+      "token": "1",
       "startTick": 192000,
       "startMs": 200000,
       "targetStrikeTick": 192160,
@@ -3353,7 +3113,7 @@
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
-      "token": "2",
+      "token": "1",
       "startTick": 193600,
       "startMs": 201667,
       "targetStrikeTick": 193760,
@@ -3389,7 +3149,7 @@
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
-      "token": "2",
+      "token": "1",
       "startTick": 195200,
       "startMs": 203333,
       "targetStrikeTick": 195360,
@@ -3425,7 +3185,7 @@
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
-      "token": "2",
+      "token": "1",
       "startTick": 196800,
       "startMs": 205000,
       "targetStrikeTick": 196960,
@@ -3461,7 +3221,7 @@
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
-      "token": "2",
+      "token": "1",
       "startTick": 198400,
       "startMs": 206667,
       "targetStrikeTick": 198560,
@@ -3492,7 +3252,78 @@
       "targetStrikeMs": 207500
     }
   ],
-  "coachEvents": [],
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s1",
+      "clipId": "li-9bbe0da7",
+      "text": "Pump: ones only, straight time — ten bars. Set the range. Every one comes home.",
+      "durationMs": 5293,
+      "expectedStartTick": 0,
+      "expectedStartMs": 0,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s2",
+      "clipId": "li-637300cd",
+      "text": "One, two, one, two — straight time, fifteen bars. Loose shoulders. Let the two arrive behind the one.",
+      "durationMs": 6613,
+      "expectedStartTick": 27012,
+      "expectedStartMs": 28137,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s3",
+      "clipId": "li-e972201e",
+      "text": "One, one, two — straight time, ten bars. Leave the fourth slot open. Reset there.",
+      "durationMs": 5893,
+      "expectedStartTick": 78103,
+      "expectedStartMs": 81357,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s4",
+      "clipId": "li-b6a509b3",
+      "text": "One, two, one — double-time, twenty bars. Three quick shots, then clear the page.",
+      "durationMs": 6213,
+      "expectedStartTick": 111396,
+      "expectedStartMs": 116037,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s5",
+      "clipId": "li-00436e9b",
+      "text": "One, two, three — time-and-a-half, fifteen bars. Turn the three and take the empty slot.",
+      "durationMs": 5573,
+      "expectedStartTick": 145610,
+      "expectedStartMs": 151677,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s6",
+      "clipId": "li-8f8a4870",
+      "text": "Three, two, three, two — straight time, five bars. Short and balanced. Finish each pair back in guard.",
+      "durationMs": 7052,
+      "expectedStartTick": 168190,
+      "expectedStartMs": 175198,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/three-round-fundamentals/r1s7",
+      "clipId": "li-c2b5619e",
+      "text": "One, three, two — time-and-a-half, five bars. One, three, two. Let the last two land together.",
+      "durationMs": 6133,
+      "expectedStartTick": 185872,
+      "expectedStartMs": 193617,
+      "source": "clickScript.schedule"
+    }
+  ],
   "silentByDesign": [],
   "notes": []
 }
