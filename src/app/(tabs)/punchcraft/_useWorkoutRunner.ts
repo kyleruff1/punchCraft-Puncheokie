@@ -429,6 +429,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const realizedBlocksRef = useRef(new Set<string>())
   /** Unsuppressed next for the ring worklet's staging — see syncFromEngine. */
   const walkNextRef = useRef<CueView | null>(null)
+  const lastReadCuesWalkNextIdRef = useRef('none')
   const announcerRef = useRef<CueAnnouncer | null>(null)
   /**
    * D1 third-party-playback state, mirrored out of the detector so the
