@@ -625,14 +625,24 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const nextIsSameBlock =
       snap.next !== undefined && snap.next.blockId === snap.current?.blockId
     nextRef.current = nextIsSameBlock ? null : renderStateFor(snap.next)
-    // The WALK's staging channel (GH #305): the suppression above is a
-    // preview-ZONE aesthetic — but the ring worklet stages its next bar
-    // from `next`, and suppressing same-block reps starved it for every
-    // click-set bar. Measured: only 4 of 69 promotes boundary-exact,
-    // p50 +119ms, 13 a full beat late — Kyle's "opens on the 2, ~1 in
-    // 11". The walk gets the engine's queued next RAW; the visual Next
-    // zone keeps its suppression untouched.
-    walkNextRef.current = snap.next ? renderStateFor(snap.next) : null
+    // The WALK's staging channel (GH #305), v2 — FROM THE TIMELINE, not
+    // the engine. Instrumentation showed the engine's `snapshot.next`
+    // simply does not exist between same-block reps (2 stage events per
+    // round, both at block transitions, margins +1.5s/+3.5s — perfect
+    // when present, absent for 144/146 bars). The runner's suppression
+    // was never the gate; runtime discovery was. But the timeline is
+    // fully AUTHORED and known at arm time — the walk's successor is a
+    // deterministic lookup, no engine involvement. One-clock doctrine,
+    // completed: the schedule is the source, the engine only scores.
+    const roundIdx = sessionRef.current?.snapshot()?.roundIndex ?? -1
+    const roundCues = roundIdx >= 0 ? timelineRef.current[roundIdx]?.cues : undefined
+    if (snap.current && roundCues) {
+      const i = roundCues.findIndex((c) => c.id === snap.current!.id)
+      const successor = i >= 0 ? roundCues[i + 1] : undefined
+      walkNextRef.current = successor ? renderStateFor(successor) : null
+    } else {
+      walkNextRef.current = snap.next ? renderStateFor(snap.next) : null
+    }
   }, [renderStateFor])
 
   // -------------------------------------------------------------------------
