@@ -12,6 +12,7 @@
  */
 import React from 'react'
 import { StyleSheet, Text, View } from 'react-native'
+import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated'
 
 import { ACTIVE_RING_INSET, ActiveRing } from './ActiveRing'
 import { AffirmationRing } from './AffirmationRing'
@@ -41,6 +42,17 @@ export interface PunchTokenProps {
   affirmed?: boolean
   /** Changing this re-fires the affirmation, so repeat hits each get one. */
   affirmKey?: string | number
+  /**
+   * Stage 3 (GH #305): the worklet-owned walk cursor. When provided with
+   * `punchOrdinal`, ACTIVE and COMPLETED are painted by Reanimated styles
+   * reading this shared value directly — zero JS between the clock and the
+   * pixels. The `state` prop then only supplies the base (upcoming) look;
+   * JS-computed active/completed for this node are ignored, because a
+   * second writer is exactly the bounce machine we removed.
+   */
+  walkOrdinal?: SharedValue<number>
+  /** This node's punch ordinal within the cue (position in expectedPunches). */
+  punchOrdinal?: number
 }
 
 export function PunchToken(props: PunchTokenProps): React.JSX.Element {
@@ -53,8 +65,20 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
     reducedMotion = false,
     affirmed = false,
   } = props
-  const visual = STATE_VISUALS[state]
+  const walked = props.walkOrdinal !== undefined && props.punchOrdinal !== undefined
+  // Under worklet paint the base is always 'upcoming'; the overlays carry
+  // active/completed. Without the SV, behaviour is byte-identical to before.
+  const visual = STATE_VISUALS[walked ? 'upcoming' : state]
   const diameter = TOKEN_DIAMETER[size]
+
+  const po = props.punchOrdinal ?? -2
+  const ord = props.walkOrdinal
+  const activeOverlay = useAnimatedStyle(() => ({
+    opacity: ord !== undefined && po >= 0 && ord.value === po ? 1 : 0,
+  }))
+  const doneOverlay = useAnimatedStyle(() => ({
+    opacity: ord !== undefined && po >= 0 && ord.value > po ? 1 : 0,
+  }))
 
   const accessibilityLabel = [
     `Punch ${number}`,
@@ -89,8 +113,47 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
           },
         ]}
       >
-        {state === 'active' ? (
+        {!walked && state === 'active' ? (
           <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
+        ) : null}
+        {walked ? (
+          <>
+            {/* ACTIVE — heaviest border + fill, painted UI-thread-side. The
+                pulse (ActiveRing) is deliberately absent here: a static
+                strong ring keeps the overlay pure-style, and the walk's
+                motion IS the animation. */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.walkOverlay,
+                activeOverlay,
+                {
+                  width: diameter,
+                  height: diameter,
+                  borderRadius: diameter / 2,
+                  borderWidth: STATE_VISUALS.active.borderWidth,
+                  borderColor: STATE_VISUALS.active.borderColor,
+                  backgroundColor: STATE_VISUALS.active.backgroundColor,
+                },
+              ]}
+            />
+            {/* COMPLETED — subdued fill behind the glyph. */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.walkOverlay,
+                doneOverlay,
+                {
+                  width: diameter,
+                  height: diameter,
+                  borderRadius: diameter / 2,
+                  borderWidth: STATE_VISUALS.completed.borderWidth,
+                  borderColor: STATE_VISUALS.completed.borderColor,
+                  backgroundColor: STATE_VISUALS.completed.backgroundColor,
+                },
+              ]}
+            />
+          </>
         ) : null}
 
         <AffirmationRing
@@ -154,6 +217,9 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  walkOverlay: {
+    position: 'absolute',
+  },
   root: { alignItems: 'center', justifyContent: 'center', padding: 8 },
   /** Body shots sit lower on screen — the placement cue from doc §13. */
   bodyPlacement: { paddingTop: 24 },

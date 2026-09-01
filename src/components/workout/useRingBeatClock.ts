@@ -67,6 +67,15 @@ export function useRingBeatClock(
   cue: RingBeatCue | null,
   clock: SharedValue<SharedWorkClock> | undefined,
   onOrdinal: (epoch: string, ordinal: number) => void,
+  /**
+   * Worklet-side mirror of the displayed ordinal (Stage 3, GH #305).
+   * Written UI-thread-synchronously on every advance/clear so
+   * Reanimated styles can paint the nodes with ZERO JS in the path —
+   * the runOnJS emission above proved insufficient on glass: at 1.5x
+   * the 222ms step-dwell sits under React's commit latency, so tail
+   * steps coalesced into the next clear and never painted.
+   */
+  displayOrdinal?: SharedValue<number>,
 ): void {
   // TWO slots — the cue being WALKED and the cue STAGED behind it — and
   // the WORKLET moves between them on its own clock (GH #305).
@@ -108,6 +117,7 @@ export function useRingBeatClock(
       expected.value = [...cue.expectedTokenIndexes]
       lastOrdinal.value = -1
       nextEpoch.value = ''
+      if (displayOrdinal) displayOrdinal.value = -1
     } else if (cue.epoch !== epoch.value) {
       // STAGE ONLY — the worklet promotes on its own clock.
       nextEpoch.value = cue.epoch
@@ -137,6 +147,7 @@ export function useRingBeatClock(
       expected.value = nextExpected.value
       lastOrdinal.value = -1
       nextEpoch.value = ''
+      if (displayOrdinal) displayOrdinal.value = -1
       runOnJS(onOrdinal)(epoch.value, -1) // page-turn clear at the boundary
     }
     const target = beatOrdinalAtMsWorklet(
@@ -151,6 +162,7 @@ export function useRingBeatClock(
     if (target <= lastOrdinal.value) return
     const next = lastOrdinal.value + 1
     lastOrdinal.value = next
+    if (displayOrdinal) displayOrdinal.value = next
     runOnJS(onOrdinal)(epoch.value, next)
   })
 

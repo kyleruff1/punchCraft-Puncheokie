@@ -18,7 +18,7 @@ import { ComboFlourish } from './ComboFlourish'
 import { DefenseToken } from './DefenseToken'
 import { FootworkToken } from './FootworkToken'
 import { RestSlot } from './RestSlot'
-import type { SharedValue } from 'react-native-reanimated'
+import { useSharedValue, type SharedValue } from 'react-native-reanimated'
 
 import { PunchAvatarCard } from './PunchAvatarCard'
 import { useRingBeatClock, type RingBeatCue } from './useRingBeatClock'
@@ -108,6 +108,7 @@ function renderToken(
   reducedMotion: boolean,
   affirmed: boolean,
   presentationKey: string,
+  walkOrdinal?: SharedValue<number>,
 ): React.JSX.Element | null {
   // React identity is block-stable so a repeated combo does not remount each
   // rep; the affirmation re-trigger stays rep-varying (`cue.id` changes per
@@ -121,6 +122,12 @@ function renderToken(
           number={token.number}
           body={token.body}
           state={state}
+          {...(walkOrdinal !== undefined
+            ? {
+                walkOrdinal,
+                punchOrdinal: cue.expectedPunches.findIndex((p) => p.tokenIndex === index),
+              }
+            : {})}
           {...(handHintFor(cue, index) ? { handHint: handHintFor(cue, index)! } : {})}
           size={size}
           reducedMotion={reducedMotion}
@@ -187,8 +194,10 @@ function CueRow(props: {
   size: 'stage' | 'preview'
   reducedMotion: boolean
   testID: string
+  /** Stage 3: worklet walk cursor — nodes paint from it directly. */
+  walkOrdinal?: SharedValue<number>
 }): React.JSX.Element {
-  const { view, size, reducedMotion, testID } = props
+  const { view, size, reducedMotion, testID, walkOrdinal } = props
   const { cue } = view
   const presentationKey = view.presentationKey ?? cue.id
   const coachTokens = cue.tokens.filter((t) => t.kind === 'coach')
@@ -212,6 +221,7 @@ function CueRow(props: {
             reducedMotion,
             view.affirmedTokenIndexes?.includes(index) ?? false,
             presentationKey,
+            walkOrdinal,
           ),
         )}
       </View>
@@ -241,7 +251,12 @@ function CueRow(props: {
 function useWalkedView(
   current: CueView | undefined,
   workClock: SharedValue<SharedWorkClock> | undefined,
-): CueView | undefined {
+): { view: CueView | undefined; walkOrdinal: SharedValue<number> } {
+  // Stage 3 (GH #305): the worklet writes this UI-thread-synchronously;
+  // PunchToken paints from it via Reanimated styles. The setWalk/JS copy
+  // below survives for the avatar's adoption index and the ring.visual
+  // click-lock log — it no longer touches node pixels.
+  const walkOrdinal = useSharedValue(-1)
   const [walk, setWalk] = React.useState<{ epoch: string; ordinal: number } | null>(null)
   const cue = current?.cue
   const ringCue = React.useMemo<RingBeatCue | null>(() => {
@@ -266,9 +281,9 @@ function useWalkedView(
       ordinal: safe(ordinal),
     })
   }, [])
-  useRingBeatClock(ringCue, workClock, onOrdinal)
+  useRingBeatClock(ringCue, workClock, onOrdinal, walkOrdinal)
 
-  return React.useMemo(() => {
+  const view = React.useMemo(() => {
     if (!current || !cue) return current
     // Only clocked SEQUENCE cues are walked; everything else renders the
     // props-states untouched.
@@ -298,11 +313,13 @@ function useWalkedView(
     })
     return { ...current, tokenStates }
   }, [current, cue, walk, workClock])
+  return { view, walkOrdinal }
 }
 
 function CueStageInner(props: CueStageProps): React.JSX.Element {
   const { next, reducedMotion = false, idleLabel, avatarAnchor, workClock } = props
-  const current = useWalkedView(props.current, workClock)
+  const { view: current, walkOrdinal } = useWalkedView(props.current, workClock)
+  const walked = workClock !== undefined
 
   return (
     <View style={styles.root} testID="cue-stage">
@@ -342,6 +359,9 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
               size="stage"
               reducedMotion={reducedMotion}
               testID="cue-stage-current"
+              {...(walked && current.cue.scoring === 'sequence'
+                ? { walkOrdinal }
+                : {})}
             />
           </>
         ) : (
