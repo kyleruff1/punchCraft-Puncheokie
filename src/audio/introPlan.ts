@@ -35,6 +35,7 @@ import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import { tierFor } from '@domain/workout/WorkoutRecipe'
 
 import { INTRO_SEGMENTS, type IntroSegment } from './voiceAssets/introManifest'
+import { findClickScript } from './voiceAssets/clickScriptManifest'
 
 /** Breath between plain sentences. */
 export const INTRO_SEGMENT_GAP_MS = 350
@@ -79,6 +80,21 @@ export function planIntro(
     .map((id) => manifest[id])
     .filter((s): s is IntroSegment => s !== undefined)
     .map((s, index) => ({ ...s, gapBeforeMs: index === 0 ? 0 : INTRO_SEGMENT_GAP_MS }))
+
+  // Script Bible v2 pre-bell opener (Kyle, 2026-09-01): on a click set the
+  // round-1 section-1 lead-in plays INSIDE the walkout — program sentence,
+  // then the opening combo call, then the send-off — so the bell releases
+  // straight into punches. The runner's in-round scheduler skips s1 to
+  // match. Workouts without click-script clips are untouched.
+  const opener = findClickScript(`lead-in/${workout.id}/r1s1`)
+  if (opener) {
+    segments.push({
+      id: opener.id,
+      module: opener.module,
+      durationMs: opener.durationMs,
+      gapBeforeMs: segments.length === 0 ? 0 : INTRO_SEGMENT_GAP_MS,
+    })
+  }
 
   const sendOff = manifest['intro-letsgo']
   if (sendOff) {

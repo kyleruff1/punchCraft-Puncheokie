@@ -287,6 +287,7 @@ export function parseLogcat(logcatText) {
       events.push({
         type: 'clickScript.dispatch',
         ts,
+        kind: extractField(body, 'kind'),
         slot: extractField(body, 'slot'),
         dispatchAtMs: numField(body, 'dispatchAtMs'),
         lateMs: numField(body, 'lateMs'),
@@ -732,6 +733,12 @@ function renderReport(
   lines.push(`| Deferred (coach lane busy — DROPPED) | ${health.deferred} |`)
   lines.push(`| Duplicated | ${health.duplicated} |`)
   lines.push(`| Extra (stray) | ${health.extra} |`)
+  if (dispatcher.expectedCallBars > 0) {
+    const pct = Math.round((dispatcher.callsDispatched / dispatcher.expectedCallBars) * 100)
+    lines.push(
+      `| Loop calls dispatched (round 1) | ${dispatcher.callsDispatched} / ${dispatcher.expectedCallBars} bars (${pct}%${pct < 90 ? ' — LOW' : ''}) |`,
+    )
+  }
   const windowSec = Math.round((health.observedWindowMs ?? 0) / 1000)
   const rate =
     health.observedWindowMs > 0
@@ -857,7 +864,16 @@ export function verify(manifest, logcatText) {
     truncated: window.truncated,
     bounded: window.bounded,
   }
+  // Per-bar loop calls (2026-09-01): counted against the manifest's
+  // expectedCallBars denominator, not itemized — ~70 near-identical
+  // per-event verdicts would bury the report.
+  const callsDispatched = events
+    .filter((e) => e.type === 'clickScript.dispatch' && e.kind === 'call')
+    .map((e) => ({ ...e, elapsedMs: elapsed(e) }))
+    .filter(inWindow).length
   const dispatcher = {
+    callsDispatched,
+    expectedCallBars: manifest.expectedCallBars ?? 0,
     armed: events.some((e) => e.type === 'slotDispatcher.armed'),
     deferredCount: deferrals.length,
     assetMissingCount: events.filter((e) => e.type === 'slotDispatcher.assetMissing').length,

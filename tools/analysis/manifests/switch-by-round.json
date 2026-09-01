@@ -2331,16 +2331,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/switch-by-round/r1s1",
-      "clipId": "li-e75e97fa",
-      "text": "One, two, three, two — straight time, sixteen bars. Build it from the lead side and finish behind the rear hand.",
-      "durationMs": 6173,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/switch-by-round/r1s2",
       "clipId": "li-95457b24",
       "text": "One, one, two — straight time, ten bars. Double one, two. Fourth slot is your stance check.",
@@ -2370,6 +2360,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 55,
   "silentByDesign": [],
   "notes": []
 }

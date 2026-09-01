@@ -2451,16 +2451,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/uppercut-clinic/r1s1",
-      "clipId": "li-eace306f",
-      "text": "One, two, five, two — straight time, sixteen bars. One, two, five, two. Keep the five short.",
-      "durationMs": 6973,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/uppercut-clinic/r1s2",
       "clipId": "li-a4af2335",
       "text": "One, six, three, two — straight time, ten bars. One, six, three, two. Rise through the six, turn the three.",
@@ -2490,6 +2480,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 55,
   "silentByDesign": [],
   "notes": []
 }

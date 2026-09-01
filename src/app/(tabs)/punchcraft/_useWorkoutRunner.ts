@@ -96,6 +96,9 @@ export const TICK_INTERVAL_MS = 50
  * the block starts; the 50 ms tick granularity eats into it, never past it.
  */
 export const LEAD_IN_PAD_MS = 250
+
+/** Per-bar loop calls land tighter — finish ~100ms before the bar's first strike. */
+export const CALL_PAD_MS = 100
 /**
  * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
  * found Pressables dead DURING work while fine in idle: the 10Hz
@@ -469,13 +472,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const leadInScheduleRef = useRef<{
     roundIndex: number
     entries: Array<{
+      kind: 'lead-in' | 'call'
       slot: string
       text: string
       module: number
       durationMs: number
       /** Fire when workElapsedMs reaches this. */
       dispatchAtMs: number
-      /** Past this, the lead-in is no longer useful — skip loudly. */
+      /** Past this, the clip is no longer useful — skip. */
       giveUpAtMs: number
       state: 'pending' | 'played' | 'skipped'
     }>
@@ -483,25 +487,70 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
-    const entries: NonNullable<typeof leadInScheduleRef.current>['entries'] = []
+    type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
+    const leadIns: Entry[] = []
+    const calls: Entry[] = []
     for (const cue of cues) {
-      if (cue.repeatIndex !== 0 || seenBlocks.has(cue.blockId)) continue
-      seenBlocks.add(cue.blockId)
-      // Section index is the block's ORDER in the round, not its id —
-      // blockId prefixes ('jab1-b2') do not match workout ids.
-      const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
-      const clip = findClickScript(slot)
+      if (cue.scoring !== 'sequence') continue
+      if (cue.repeatIndex === 0 && !seenBlocks.has(cue.blockId)) {
+        seenBlocks.add(cue.blockId)
+        // Section index is the block's ORDER in the round, not its id —
+        // blockId prefixes ('jab1-b2') do not match workout ids. Section 1
+        // is SKIPPED: every round's opener is called PRE-BELL (round 1 in
+        // the intro sequence, rounds 2+ in the warn playlist), so the bell
+        // releases straight into punches (Kyle, 2026-09-01).
+        if (seenBlocks.size > 1) {
+          const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
+          const clip = findClickScript(slot)
+          if (clip) {
+            leadIns.push({
+              kind: 'lead-in',
+              slot,
+              text: clip.text,
+              module: clip.module,
+              durationMs: clip.durationMs,
+              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS),
+              giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
+              state: 'pending',
+            })
+          }
+        }
+        continue
+      }
+      // Per-bar loop call (Kyle, 2026-09-01: "call every bar"): every rep
+      // after the block's first gets its motif called so it FINISHES as
+      // the bar starts. Rep 0 is named by the lead-in / pre-bell opener.
+      const motif = cue.tokens
+        .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
+        .join('-')
+      const clip = findClickScript(`call/${motif}`)
       if (!clip) continue
-      entries.push({
-        slot,
+      calls.push({
+        kind: 'call',
+        slot: `call/${motif}`,
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS),
-        giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
+        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS),
+        // A call that could not start by the bar's first beats is noise —
+        // the next bar's call is seconds away.
+        giveUpAtMs: cue.scheduledStartMs + 500,
         state: 'pending',
       })
     }
+    // Deterministic collision resolution: a call whose window overlaps a
+    // lead-in's (padded) window is dropped at BUILD time, so the coach
+    // lane is guaranteed free when the lead-in comes due — lead-ins must
+    // never starve behind call-saturated busy checks.
+    const survivors = calls.filter((call) => {
+      const callEnd = call.dispatchAtMs + call.durationMs
+      return !leadIns.some((li) => {
+        const liStart = li.dispatchAtMs - 500
+        const liEnd = li.dispatchAtMs + li.durationMs
+        return call.dispatchAtMs < liEnd && callEnd > liStart
+      })
+    })
+    const entries = [...leadIns, ...survivors].sort((a, b) => a.dispatchAtMs - b.dispatchAtMs)
     leadInScheduleRef.current = { roundIndex, entries }
   }, [workout.id])
   const announcerRef = useRef<CueAnnouncer | null>(null)
@@ -1606,10 +1655,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             if (entry.state !== 'pending' || snapshot.workElapsedMs < entry.dispatchAtMs) continue
             if (snapshot.workElapsedMs > entry.giveUpAtMs) {
               entry.state = 'skipped'
-              logger.warn('puncheokie.clickScript.skipped', 'lead-in window expired before the lane freed', {
-                slot: safe(entry.slot),
-                workElapsedMs: safe(snapshot.workElapsedMs),
-              })
+              // A skipped CALL is routine (busy lane, next call seconds
+              // away); a skipped LEAD-IN lost real coaching — warn.
+              if (entry.kind === 'lead-in') {
+                logger.warn('puncheokie.clickScript.skipped', 'lead-in window expired before the lane freed', {
+                  slot: safe(entry.slot),
+                  workElapsedMs: safe(snapshot.workElapsedMs),
+                })
+              }
               continue
             }
             // D1 (coach off / third-party music without opt-in): the whole
@@ -1617,14 +1670,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             // so a mid-round playback change is honoured.
             if (!voiceAllowed(voice.policy, playbackActiveRef.current)) continue
             const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
-            if (audibleUntilMs > 0) continue // lane busy — retry next tick
+            if (audibleUntilMs > 0) {
+              // Lead-ins RETRY (defer until giveUp); a call just yields —
+              // its moment is now or never, and piling deferred calls is
+              // exactly the overlap Pillar 2 forbids.
+              if (entry.kind === 'call') entry.state = 'skipped'
+              continue
+            }
             entry.state = 'played'
             voice.output.playClickScript?.({
               text: entry.text,
               module: entry.module,
               durationMs: entry.durationMs,
             })
-            logger.info('puncheokie.clickScript.dispatch', 'section lead-in dispatched', {
+            logger.info('puncheokie.clickScript.dispatch', 'click script dispatched', {
+              kind: safe(entry.kind),
               slot: safe(entry.slot),
               dispatchAtMs: safe(entry.dispatchAtMs),
               lateMs: safe(Math.round(snapshot.workElapsedMs - entry.dispatchAtMs)),

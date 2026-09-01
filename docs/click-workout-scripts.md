@@ -5,7 +5,7 @@
 > Every spoken element is bracket-tagged for the corpus bank:
 >
 > - `<<SINGLE CLIP>>` — one unique full utterance: render as ONE clip (walkouts, section lead-ins, rest scripts).
-> - `[[COMPONENT HITS]]` — audio built from the token component bank (numbers / fused-bees), one clip per token, for if/when per-hit calling ships (these rows are the future per-hit script). Lead-ins and rest scripts are WIRED: the coach speaks each one at its slot; the click carries the hits.
+> - `[[COMPONENT HITS]]` — the per-bar layer, REALIZED as loop calls: after a section's first bar, the coach calls the motif every bar ("One, two, one, two!"), fitted under the bar's stride. Pump bars call the single punch. Lead-ins and rest scripts are wired; each round's FIRST lead-in is voiced PRE-BELL (walkout for round one, warn ceremony for the rest), so the bell releases straight into punches.
 >
 > Bar notation: `[ n ]` = punch slot, `[ . ]` = rest slot. Slot width: `@1x` = 1 beat · `@1.5x` = 2/3 beat · `@2x` = 1/2 beat (double-time under the same click). Stride: 4-slot @1x = 2 measures/rep · @1.5x/@2x = 1 m/rep · 8-slot @1x = 3 m/rep · 8-slot @2x = 1.5 m/rep. The breath after each bar is part of the stride and doubles as the visual page-clear.
 

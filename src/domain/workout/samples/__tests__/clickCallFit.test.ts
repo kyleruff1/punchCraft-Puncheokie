@@ -1,0 +1,53 @@
+/**
+ * Per-bar loop calls fit their strides (Script Bible v2, Kyle 2026-09-01).
+ *
+ * A call that outlasts the stride of a bar it names WILL pile onto the
+ * next bar's call — the overlap Pillar 2 forbids — so the fit is proven
+ * here, against measured clip durations, not hoped for at runtime. Every
+ * unique motif in the maps must have a rendered call clip, and that clip
+ * must fit the TIGHTEST stride any occurrence of the motif runs at.
+ */
+import { CLICK_MAPS, measuresPerRep, type ClickRate } from '../clickMaps'
+import { findClickScript } from '../../../../audio/voiceAssets/clickScriptManifest'
+
+/** Tightest stride (ms) per motif across every map occurrence. */
+function minStrides(): Map<string, number> {
+  const strides = new Map<string, number>()
+  for (const map of Object.values(CLICK_MAPS)) {
+    for (const round of map.rounds) {
+      for (const row of round.rows) {
+        const slots = row.motif.split('-').length
+        const strideMs =
+          measuresPerRep(slots, row.rate as ClickRate) * 4 * (60_000 / map.bpm)
+        const existing = strides.get(row.motif)
+        if (existing === undefined || strideMs < existing) {
+          strides.set(row.motif, strideMs)
+        }
+      }
+    }
+  }
+  return strides
+}
+
+describe('loop-call fit', () => {
+  const strides = minStrides()
+
+  it('every map motif has a rendered call clip', () => {
+    const missing = [...strides.keys()].filter(
+      (motif) => findClickScript(`call/${motif}`) === undefined,
+    )
+    expect(missing).toEqual([])
+  })
+
+  it('every call clip fits the tightest stride its motif runs at', () => {
+    const overruns: string[] = []
+    for (const [motif, strideMs] of strides) {
+      const clip = findClickScript(`call/${motif}`)
+      if (!clip) continue // reported by the presence test above
+      if (clip.durationMs > strideMs - 100) {
+        overruns.push(`${motif}: ${clip.durationMs}ms > stride ${strideMs}ms − 100`)
+      }
+    }
+    expect(overruns).toEqual([])
+  })
+})

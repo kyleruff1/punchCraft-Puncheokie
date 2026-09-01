@@ -353,9 +353,18 @@ export default function LiveScreen(): React.JSX.Element {
     // athlete is being readied for the NEXT one (1-based: index + 2).
     // The next round's theme ("Coming up — the Square Builder!") joins
     // the ceremony when a clip exists for it.
-    warnRef.current.prepare(live.roundIndex + 2, workout.schedule[live.roundIndex + 1]?.theme)
+    // Pre-bell opener (Script Bible v2): the next round's first lead-in
+    // joins the warn ceremony — theme, then the opening combo call, then
+    // "get ready… three, two, one" onto the bell. The runner's in-round
+    // scheduler skips s1 to match.
+    const nextLead = findClickScript(`lead-in/${workout.id}/r${live.roundIndex + 2}s1`)
+    warnRef.current.prepare(
+      live.roundIndex + 2,
+      workout.schedule[live.roundIndex + 1]?.theme,
+      nextLead ? { module: nextLead.module, durationMs: nextLead.durationMs } : undefined,
+    )
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
-  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.schedule])
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
   // Inter-round recovery walkthrough — the cornerman works the corner
@@ -385,8 +394,15 @@ export default function LiveScreen(): React.JSX.Element {
       // same walkthrough, with the other twelve scripts unreachable.
       const themeMs =
         upcoming?.theme === undefined ? 0 : themeClipFor(upcoming.theme)?.durationMs ?? 0
-      // openerMax + 350 breath + theme + 350 breath + core + 400 slack + 500 margin.
-      const warnWorstMs = openerMax + 350 + themeMs + 350 + coreMs + 400 + 500
+      // The ACTUAL pre-bell opener clip for this rest's next round (same
+      // known-at-plan-time reasoning as the theme above) — the warn
+      // playlist now carries it between theme and countdown core.
+      const leadMs =
+        findClickScript(`lead-in/${workout.id}/r${restIndex + 2}s1`)?.durationMs ?? 0
+      // openerMax + 350 breath + theme + 350 breath + lead(+350 when
+      // present) + core + 400 slack + 500 margin.
+      const warnWorstMs =
+        openerMax + 350 + themeMs + 350 + (leadMs > 0 ? leadMs + 350 : 0) + coreMs + 400 + 500
       const restMs = upcoming ? workout.schedule[restIndex]?.restAfterMs ?? 0 : 0
       return Math.max(0, restMs - 1_000 - warnWorstMs)
     }
@@ -396,7 +412,28 @@ export default function LiveScreen(): React.JSX.Element {
       workout.recipe.seed,
       { maxTotalMsFor },
     )
-  }, [workout.recipe.seed, workout.schedule])
+  }, [workout.id, workout.recipe.seed, workout.schedule])
+
+  // Pre-bell hold indicator (Script Bible v2): HOW a round starts — its
+  // opening bar's slots + rate — shown while the coach calls it out
+  // (countdown for round 1, the rest header for rounds 2+).
+  const holdForRound = React.useCallback(
+    (roundIndex: number): { tokens: string[]; rateWord: string } | undefined => {
+      const block = workout.schedule[roundIndex]?.blocks[0]
+      if (!block || block.tokens.length === 0) return undefined
+      const tokens = block.tokens.map((t) =>
+        t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.',
+      )
+      const first = block.tokens[0]?.beatOffset ?? 0
+      const second = block.tokens[1]?.beatOffset
+      const step = second === undefined ? 1 : second - first
+      const rateWord =
+        step <= 0.55 ? 'double-time' : step <= 0.75 ? 'time-and-a-half' : 'straight time'
+      return { tokens, rateWord }
+    },
+    [workout.schedule],
+  )
+  const upNextHold = React.useMemo(() => holdForRound(0), [holdForRound])
 
   const recoveryRef = useRef<RecoveryPlayer | null>(null)
   React.useEffect(() => {
@@ -599,6 +636,10 @@ export default function LiveScreen(): React.JSX.Element {
             <RestPhases
               frozen={frozen}
               {...(preview ? { nextRound: preview } : {})}
+              {...(() => {
+                const hold = holdForRound(live.roundIndex + 1)
+                return hold ? { upNext: hold } : {}
+              })()}
               restElapsedMs={restElapsedMs}
               restDurationMs={restDurationMs}
               onSkipRest={runner.skipRest}
@@ -608,6 +649,7 @@ export default function LiveScreen(): React.JSX.Element {
             <CueStage
               {...(cues.current ? { current: cues.current } : {})}
               {...(cues.next ? { next: cues.next } : {})}
+              {...(live.phase === 'countdown' && upNextHold ? { upNext: upNextHold } : {})}
               {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
               reducedMotion={reducedMotion}
               avatarAnchor={avatarAnchor}

@@ -2415,16 +2415,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/pace-pusher/r1s1",
-      "clipId": "li-99240129",
-      "text": "Coast bar — one, two, empty, empty, straight time, twenty bars. One, two, then space. Learn the pair before you accelerate it.",
-      "durationMs": 7013,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/pace-pusher/r1s2",
       "clipId": "li-6e215265",
       "text": "Coast bar — one, two, empty, empty, time-and-a-half, forty bars. Same one-two, quicker slots, same empty finish.",
@@ -2444,6 +2434,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 97,
   "silentByDesign": [],
   "notes": []
 }

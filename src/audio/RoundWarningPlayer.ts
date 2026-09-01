@@ -48,7 +48,18 @@ export class RoundWarningPlayer {
    * native side buffers while the athlete breathes. Re-preparing the same
    * round is a no-op; a new round frees the previous playlist.
    */
-  prepare(roundNumber: number, theme?: string): void {
+  prepare(
+    roundNumber: number,
+    theme?: string,
+    /**
+     * Script Bible v2 pre-bell opener (Kyle, 2026-09-01): the next
+     * round's first-section lead-in, voiced between the theme and the
+     * countdown core so the bell releases straight into punches. The
+     * playlist total grows, so `playIfDue`'s window widens and the
+     * countdown still lands on the ding.
+     */
+    lead?: { module: number; durationMs: number },
+  ): void {
     if (this.preparedRound === roundNumber) return
     this.dispose()
     this.preparedRound = roundNumber
@@ -78,6 +89,7 @@ export class RoundWarningPlayer {
     }
     if (opener) pushWithBreath(opener.module, opener.durationMs)
     if (themeClip) pushWithBreath(themeClip.module, themeClip.durationMs)
+    if (lead) pushWithBreath(lead.module, lead.durationMs)
     pushWithBreath(core.module, core.durationMs)
 
     try {

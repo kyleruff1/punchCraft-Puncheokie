@@ -3375,16 +3375,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/speed-combos/r1s1",
-      "clipId": "li-7bfd8e1a",
-      "text": "One, two, one, two — straight time, fifteen bars. Fast does not mean wild. Four straight slots and back to guard.",
-      "durationMs": 8293,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/speed-combos/r1s2",
       "clipId": "li-3b5face1",
       "text": "One, one, two — time-and-a-half, twenty bars. Double one, two, empty fourth slot. Let the reset stay visible.",
@@ -3424,6 +3414,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 90,
   "silentByDesign": [],
   "notes": []
 }

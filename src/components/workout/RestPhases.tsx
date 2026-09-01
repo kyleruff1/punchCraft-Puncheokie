@@ -88,6 +88,13 @@ export interface RestPhasesProps {
   reducedMotion?: boolean
   /** Voice Coach port hook. Silent until M34-05. */
   onAnnounce?: (announcement: RestAnnouncement) => void
+  /**
+   * Pre-bell hold indicator (Script Bible v2, Kyle 2026-09-01): the next
+   * round's opening bar, visible through ALL rest sub-phases (the preview
+   * sub-phase alone left the athlete guessing until the last quarter).
+   * Notation strings — '1', '2b', '.' for a rest slot.
+   */
+  upNext?: { tokens: readonly string[]; rateWord?: string }
 }
 
 const STANCE_LABEL: Record<Stance, string> = {
@@ -446,6 +453,22 @@ export function RestPhases(props: RestPhasesProps): React.JSX.Element {
         </Text>
       </View>
 
+      {props.upNext ? (
+        <View style={styles.upNextRow} testID="rest-upnext">
+          <Text style={styles.upNextLabel}>Up next</Text>
+          {props.upNext.tokens.map((t, i) => (
+            <View key={i} style={[styles.upNextPill, t === '.' && styles.upNextRest]}>
+              <Text style={[styles.upNextPillText, t === '.' && styles.upNextRestText]}>
+                {t === '.' ? '·' : t}
+              </Text>
+            </View>
+          ))}
+          {props.upNext.rateWord ? (
+            <Text style={styles.upNextRate}>{props.upNext.rateWord}</Text>
+          ) : null}
+        </View>
+      ) : null}
+
       {phase === 'result' ? <ResultView frozen={frozen} /> : null}
       {phase === 'recovery' ? (
         <RecoveryView frozen={frozen} reducedMotion={reducedMotion} />
@@ -479,6 +502,35 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  upNextRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'nowrap' },
+  upNextLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    marginRight: 4,
+  },
+  upNextPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upNextRest: { borderColor: colors.borderStrong, borderStyle: 'dashed' },
+  upNextPillText: { fontSize: 15, fontWeight: '800', color: colors.textPrimary },
+  upNextRestText: { color: colors.textMuted },
+  upNextRate: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    marginLeft: 4,
+  },
   stepMarker: { fontSize: 14, letterSpacing: 3, color: colors.textMuted },
   glyph: { fontSize: 18, fontWeight: '700', color: colors.textSecondary },
   heading: {

@@ -119,6 +119,8 @@ interface FirstRoundManifest {
   }
   strikes: readonly ExpectedStrike[]
   coachEvents: readonly ExpectedCoachEvent[]
+  /** Round-1 bars that should receive a per-bar loop call (counted, not itemized). */
+  expectedCallBars: number
   silentByDesign: readonly {
     reason: string
     cueId: string
@@ -284,6 +286,10 @@ export function buildFirstRoundManifest(
     for (const cue of round0.cues) {
       if (cue.repeatIndex !== 0 || seenBlocks.has(cue.blockId)) continue
       seenBlocks.add(cue.blockId)
+      // Section 1 is voiced PRE-BELL (in the walkout / warn ceremony,
+      // Kyle 2026-09-01) — the runner never dispatches it in-round, so
+      // expecting it here would report a designed silence as missing.
+      if (seenBlocks.size === 1) continue
       const slot = `lead-in/${workout.id}/r1s${seenBlocks.size}`
       const clip = findClickScript(slot)
       if (!clip) continue
@@ -301,6 +307,19 @@ export function buildFirstRoundManifest(
     }
   }
   coachEvents.sort((a, b) => a.expectedStartTick - b.expectedStartTick)
+  // Per-bar loop calls (Kyle, 2026-09-01): counted, not itemized — ~70
+  // near-identical expectations per round would bury the report. The
+  // verifier prints dispatched/skipped against this denominator.
+  let expectedCallBars = 0
+  if (round0) {
+    for (const cue of round0.cues) {
+      if (cue.repeatIndex === 0) continue
+      const motif = cue.tokens
+        .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
+        .join('-')
+      if (findClickScript(`call/${motif}`)) expectedCallBars += 1
+    }
+  }
   const notes: string[] = []
   if (workoutId === 'pump-and-coast') {
     notes.push(
@@ -321,6 +340,7 @@ export function buildFirstRoundManifest(
     },
     strikes: roundOneStrikes.map(toExpectedStrike),
     coachEvents,
+    expectedCallBars,
     silentByDesign: [],
     notes,
   }

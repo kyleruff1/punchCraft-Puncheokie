@@ -3135,16 +3135,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/body-work/r1s1",
-      "clipId": "li-aa879986",
-      "text": "One, two-bee, one, two-bee — straight time, fifteen bars. One, two-bee, one, two-bee. Change level without reaching.",
-      "durationMs": 7573,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/body-work/r1s2",
       "clipId": "li-93c6d961",
       "text": "Coast bar — one-bee, two-bee, empty, empty, straight time, ten bars. One-bee, two-bee, then two empty slots. Come back tall and balanced.",
@@ -3174,6 +3164,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 71,
   "silentByDesign": [],
   "notes": []
 }

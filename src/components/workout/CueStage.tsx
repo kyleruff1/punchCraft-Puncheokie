@@ -76,6 +76,13 @@ export interface CueStageProps {
    */
   idleLabel?: string
   /**
+   * Pre-bell hold indicator (Script Bible v2, Kyle 2026-09-01): when the
+   * stage is empty during the countdown, show HOW the round starts —
+   * the opening bar's slots — while the coach calls it out. `tokens` are
+   * notation strings ('1', '2b', '.'); `rateWord` is the spoken rate.
+   */
+  upNext?: { tokens: readonly string[]; rateWord?: string }
+  /**
    * Optional shared transport anchor (M39-V2 Phase W0-b-iii, Kyle
    * 2026-08-30). Passed through to `PunchAvatarCard`, which uses it
    * to drive its flip from a `useFrameCallback` worklet instead of
@@ -352,6 +359,26 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
                 : {})}
             />
           </>
+        ) : props.upNext ? (
+          <View style={styles.upNext} testID="cue-stage-upnext">
+            <Text style={styles.nextLabel}>Starting with</Text>
+            <View style={styles.upNextRow}>
+              {props.upNext.tokens.map((t, i) => (
+                <View
+                  key={i}
+                  style={[styles.upNextPill, t === '.' && styles.upNextRest]}
+                  testID={`cue-stage-upnext-${i}`}
+                >
+                  <Text style={[styles.upNextPillText, t === '.' && styles.upNextRestText]}>
+                    {t === '.' ? '·' : t}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            {props.upNext.rateWord ? (
+              <Text style={styles.upNextRate}>{props.upNext.rateWord}</Text>
+            ) : null}
+          </View>
         ) : (
           <Text style={styles.idle} testID="cue-stage-idle">
             {idleLabel ?? 'Ready'}
@@ -400,6 +427,33 @@ const styles = StyleSheet.create({
     fontFamily: fonts.heading,
     fontWeight: weights.bold,
     color: colors.textMuted,
+  },
+  upNext: { alignItems: 'center', gap: 14 },
+  upNextRow: { flexDirection: 'row', gap: 14, flexWrap: 'nowrap' },
+  upNextPill: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upNextRest: { borderColor: colors.borderStrong, borderStyle: 'dashed' },
+  upNextPillText: {
+    fontSize: sizes.title,
+    fontFamily: fonts.display,
+    fontWeight: weights.black,
+    color: colors.textPrimary,
+  },
+  upNextRestText: { color: colors.textMuted },
+  upNextRate: {
+    fontSize: sizes.subtitle,
+    fontFamily: fonts.label,
+    fontWeight: weights.bold,
+    letterSpacing: 1.2,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
   },
 })
 

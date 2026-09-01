@@ -96,13 +96,17 @@ function hash8(text) {
   return createHash('sha1').update(text, 'utf8').digest('hex').slice(0, 8)
 }
 
-/** kind: 'lead-in' | 'rest'. Dedupe by exact text; carry every slot. */
+/** kind: 'lead-in' | 'rest' | 'call'. Dedupe by exact text; carry every slot. */
 function assemble(kind, rows, prefix, plan) {
   const byText = new Map()
   for (const row of rows) {
     const existing = byText.get(row.text)
     if (existing) {
       existing.slots.push(row.slot)
+      // A shared text keeps the TIGHTEST window any of its slots demands.
+      if (row.windowMs !== undefined) {
+        existing.maxDurationMs = Math.min(existing.maxDurationMs, row.windowMs)
+      }
       continue
     }
     byText.set(row.text, {
@@ -110,16 +114,20 @@ function assemble(kind, rows, prefix, plan) {
       kind,
       text: row.text,
       slots: [row.slot],
-      ...plan(row.text),
+      ...plan(row),
     })
   }
   return [...byText.values()]
 }
 
+// Loop calls fit UNDER the tightest stride any occurrence runs at, so
+// call N+1 can never pile on call N (Pillar 2 by construction).
+const CALL_WINDOW_PAD_MS = 150
+
 const allJobs = [
-  ...assemble('lead-in', corpus.leadIns, 'li', (text) => ({
+  ...assemble('lead-in', corpus.leadIns, 'li', (row) => ({
     performance: 'work',
-    plan: compileAdlib(text, {
+    plan: compileAdlib(row.text, {
       performance: 'work',
       expression: PRODUCTION_EXPRESSION,
       finish: 'land',
@@ -127,9 +135,9 @@ const allJobs = [
     minDurationMs: 800,
     maxDurationMs: 9_000,
   })),
-  ...assemble('rest', corpus.rests, 'rr', (text) => ({
+  ...assemble('rest', corpus.rests, 'rr', (row) => ({
     performance: 'teach',
-    plan: compileAdlib(text, {
+    plan: compileAdlib(row.text, {
       performance: 'teach',
       expression: PRODUCTION_EXPRESSION,
       finish: 'land',
@@ -137,6 +145,25 @@ const allJobs = [
     minDurationMs: 3_000,
     maxDurationMs: 16_000,
   })),
+  ...assemble(
+    'call',
+    (corpus.calls ?? []).map((c) => ({
+      slot: `call/${c.motif}`,
+      text: c.text,
+      windowMs: c.minStrideMs - CALL_WINDOW_PAD_MS,
+    })),
+    'cc',
+    (row) => ({
+      performance: 'push',
+      plan: compileAdlib(row.text, {
+        performance: 'push',
+        expression: PRODUCTION_EXPRESSION,
+        finish: 'shout',
+      }),
+      minDurationMs: 250,
+      maxDurationMs: row.windowMs,
+    }),
+  ),
 ].map((job) => ({ ...job, wav: join(process.cwd(), OUT_ROOT, `${job.id}.wav`) }))
 
 if (process.argv.includes('--list')) {
@@ -178,7 +205,11 @@ if (!manifestOnly) {
   console.log(`Rendering ${jobs.length} click-script clips — ${RENDERER}…`)
   const renderOut = execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
     input: JSON.stringify({
-      reference: REFERENCE_VOICE,
+      // PERSONA.reference, not the flat REFERENCE_VOICE export — the flat
+      // constant is the ACTIVE persona's reference and silently ignored
+      // `--persona=` (caught 2026-09-01: the first cornerman2 batch
+      // actually cloned from the original cornerman reference).
+      reference: PERSONA.reference,
       attempts: 8,
       jobs: jobs.map((j) => ({
         path: j.wav,
@@ -211,6 +242,28 @@ if (!manifestOnly) {
       { stdio: 'ignore' },
     )
     if (existsSync(temp)) renameWithRetry(temp, job.wav)
+    // Fit safety for calls: a take the renderer could not land inside the
+    // stride window gets the make-phrase-clips rubberband pass (formant-
+    // preserved). Capped at 1.3× — beyond that the delivery smears (the
+    // documented b-syllable crush), so we flag rather than push harder.
+    if (job.kind === 'call') {
+      const measured = measureDuration(job.wav)
+      if (measured > job.maxDurationMs) {
+        const rate = Math.min(1.3, measured / job.maxDurationMs)
+        const fitTemp = `${job.wav}.f.wav`
+        execFileSync(
+          FFMPEG,
+          ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav,
+            '-af', `rubberband=tempo=${rate.toFixed(4)}:formant=preserved:pitchq=quality`,
+            '-ar', '24000', '-ac', '1', fitTemp],
+          { stdio: 'ignore' },
+        )
+        if (existsSync(fitTemp)) renameWithRetry(fitTemp, job.wav)
+        job.fitted = rate
+        const after = measureDuration(job.wav)
+        console.log(`  FIT ${job.id} ${measured}ms -> ${after}ms (x${rate.toFixed(2)}, window ${job.maxDurationMs}ms)${after > job.maxDurationMs ? ' STILL-OVER' : ''}`)
+      }
+    }
   }
 }
 
@@ -240,6 +293,8 @@ if (!manifestOnly) {
         text: j.text,
         slots: j.slots,
         durationMs: measureDuration(j.wav),
+        ...(j.kind === 'call' ? { windowMs: j.maxDurationMs } : {}),
+        ...(j.fitted ? { fittedRate: j.fitted } : {}),
       })),
     }, null, 2)}\n`,
   )
@@ -268,7 +323,7 @@ function writeManifest() {
     '',
     'export interface ClickScriptClip {',
     '  id: string',
-    "  kind: 'lead-in' | 'rest'",
+    "  kind: 'lead-in' | 'rest' | 'call'",
     '  /** The exact rendered text — what the ASR gate scored against. */',
     '  text: string',
     '  /** Every script-bible slot this clip covers. */',

@@ -16,7 +16,7 @@
  *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
  *        tools/analysis/gen-workout-scripts.ts > docs/click-workout-scripts.md
  */
-import { CLICK_MAPS, breathBeats, rowMeasures } from '../../src/domain/workout/samples/clickMaps'
+import { CLICK_MAPS, breathBeats, measuresPerRep, rowMeasures, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
 import { parseCombo, punchTokens } from '../../src/domain/workout/WorkoutTokens'
 
 const NAMES: Record<string, string> = {
@@ -91,6 +91,40 @@ function barAscii(motif: string, rate: number): string {
 /** Spoken corpus rows collected during the walk — `--corpus` emits these as JSON. */
 const corpusLeadIns: Array<{ slot: string; text: string }> = []
 const corpusRests: Array<{ slot: string; text: string }> = []
+/**
+ * Loop-call corpus: one entry per unique motif across every map — the
+ * [[COMPONENT HITS]] rows realized as per-bar calls ("One, two, one,
+ * two!"). `minStrideMs` is the tightest stride any occurrence runs at;
+ * the render tool fits the clip under it so call N+1 can never pile on
+ * call N.
+ */
+const corpusCalls = new Map<string, { motif: string; text: string; minStrideMs: number }>()
+
+/** The per-bar call text for a motif — punches only, urgent, no "go!". */
+function callText(motif: string): string {
+  const tokens = motif.split('-')
+  const punches = tokens.filter((t) => t !== '.')
+  const uniq = new Set(punches)
+  // PUMP bar (Kyle, decision 6): the call is the single punch — "One!"
+  // per rep — never the full four crammed into a 2 s stride.
+  const words =
+    uniq.size === 1 && punches.length === tokens.length
+      ? [WORDS[punches[0]!] ?? punches[0]!]
+      : punches.map((t) => WORDS[t] ?? t)
+  const joined = words.join(', ')
+  return `${joined.charAt(0).toUpperCase()}${joined.slice(1)}!`
+}
+
+function noteCall(motif: string, rate: ClickRate, bpm: number): void {
+  const slots = motif.split('-').length
+  const strideMs = measuresPerRep(slots, rate) * 4 * (60_000 / bpm)
+  const existing = corpusCalls.get(motif)
+  if (existing) {
+    existing.minStrideMs = Math.min(existing.minStrideMs, strideMs)
+    return
+  }
+  corpusCalls.set(motif, { motif, text: callText(motif), minStrideMs: strideMs })
+}
 
 const out: string[] = []
 out.push('# punchCraft — Click-Track Workout Scripts (all 10 predetermined sets)')
@@ -100,7 +134,7 @@ out.push('>')
 out.push('> Every spoken element is bracket-tagged for the corpus bank:')
 out.push('>')
 out.push('> - `<<SINGLE CLIP>>` — one unique full utterance: render as ONE clip (walkouts, section lead-ins, rest scripts).')
-out.push('> - `[[COMPONENT HITS]]` — audio built from the token component bank (numbers / fused-bees), one clip per token, for if/when per-hit calling ships (these rows are the future per-hit script). Lead-ins and rest scripts are WIRED: the coach speaks each one at its slot; the click carries the hits.')
+out.push("> - `[[COMPONENT HITS]]` — the per-bar layer, REALIZED as loop calls: after a section's first bar, the coach calls the motif every bar (\"One, two, one, two!\"), fitted under the bar's stride. Pump bars call the single punch. Lead-ins and rest scripts are wired; each round's FIRST lead-in is voiced PRE-BELL (walkout for round one, warn ceremony for the rest), so the bell releases straight into punches.")
 out.push('>')
 out.push('> Bar notation: `[ n ]` = punch slot, `[ . ]` = rest slot. Slot width: `@1x` = 1 beat · `@1.5x` = 2/3 beat · `@2x` = 1/2 beat (double-time under the same click). Stride: 4-slot @1x = 2 measures/rep · @1.5x/@2x = 1 m/rep · 8-slot @1x = 3 m/rep · 8-slot @2x = 1.5 m/rep. The breath after each bar is part of the stride and doubles as the visual page-clear.')
 out.push('')
@@ -132,6 +166,7 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       out.push('')
       const leadText = row.leadIn
       corpusLeadIns.push({ slot: `lead-in/${key}/r${ri + 1}s${i + 1}`, text: leadText })
+      noteCall(row.motif, row.rate, map.bpm)
       out.push('```text')
       out.push(`<<SINGLE CLIP  lead-in/${key}/r${ri + 1}s${i + 1}>>`)
       out.push(`"${leadText}"`)
@@ -183,7 +218,20 @@ out.push('Fused-body rule rides along: every `-bee` component renders from hyphe
 if (process.argv.includes('--corpus')) {
   // Machine-readable spoken corpus for the render run — same strings the
   // markdown shows, so the script bible and the clips can never drift.
-  console.log(JSON.stringify({ leadIns: corpusLeadIns, rests: corpusRests }, null, 2))
+  console.log(
+    JSON.stringify(
+      {
+        leadIns: corpusLeadIns,
+        rests: corpusRests,
+        calls: [...corpusCalls.values()].map((c) => ({
+          ...c,
+          minStrideMs: Math.round(c.minStrideMs),
+        })),
+      },
+      null,
+      2,
+    ),
+  )
 } else {
   console.log(out.join('\n'))
 }

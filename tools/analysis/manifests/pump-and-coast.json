@@ -2415,16 +2415,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/pump-and-coast/r1s1",
-      "clipId": "li-00bc2c4a",
-      "text": "Pump: ones only, straight time — ten bars. Pump the ones. Stay long and keep them coming.",
-      "durationMs": 6093,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/pump-and-coast/r1s2",
       "clipId": "li-4bd43eae",
       "text": "Coast bar — one, empty, empty, empty, straight time, ten bars. One touch, three empty slots. Move, breathe, stay ready.",
@@ -2464,6 +2454,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 60,
   "silentByDesign": [],
   "notes": [
     "Pump & Coast pump / coast blocks are DELIBERATELY coach-silent — sustained + coast runtime consumers not yet wired. silentByDesign is TBD until the manifest generator learns to detect those block spans (Slice 6)."

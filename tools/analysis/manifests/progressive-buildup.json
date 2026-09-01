@@ -3255,16 +3255,6 @@
   "coachEvents": [
     {
       "kind": "lead-in",
-      "slot": "lead-in/progressive-buildup/r1s1",
-      "clipId": "li-df534a4a",
-      "text": "Long set: ones only, straight time — twenty-five bars. Start with the one and make every rep look the same.",
-      "durationMs": 5973,
-      "expectedStartTick": 0,
-      "expectedStartMs": 0,
-      "source": "clickScript.schedule"
-    },
-    {
-      "kind": "lead-in",
       "slot": "lead-in/progressive-buildup/r1s2",
       "clipId": "li-b7e925f0",
       "text": "One, one, two — time-and-a-half, thirty bars. Now double the one and add the two. Fourth slot stays open.",
@@ -3284,6 +3274,7 @@
       "source": "clickScript.schedule"
     }
   ],
+  "expectedCallBars": 72,
   "silentByDesign": [],
   "notes": []
 }
