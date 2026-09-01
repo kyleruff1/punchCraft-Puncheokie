@@ -152,6 +152,15 @@ export function useRingBeatClock(
       nextScheduledStartMs.value = nextCue.scheduledStartMs
       nextOffsets.value = [...nextCue.tokenOffsetsMs]
       nextExpected.value = [...nextCue.expectedTokenIndexes]
+      // Stage-time telemetry (GH #305): promotes measured late (p50
+      // +128ms) even WITH this channel — this log, joined offline
+      // against the bar's authored start, shows exactly how early each
+      // stage landed and whether the engine, the render, or the effect
+      // is the laggard.
+      logger.info('puncheokie.ring.stage', 'bar staged', {
+        cueId: safe(nextCue.epoch),
+        schedMs: safe(nextCue.scheduledStartMs),
+      })
     }
     active.value = true
     // Primitive-keyed on the occurrence: a re-render must not restage

@@ -144,7 +144,9 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
               <Text
                 style={[
                   styles.number,
-                  { fontSize: TOKEN_FONT_SIZE[size], color: colors.background },
+                  // Pure black by Kyle's call — the inversion must read as a
+                  // hard swap, and theme background is charcoal-adjacent.
+                  { fontSize: TOKEN_FONT_SIZE[size], color: '#000000', fontWeight: '900' },
                 ]}
               >
                 {number}
