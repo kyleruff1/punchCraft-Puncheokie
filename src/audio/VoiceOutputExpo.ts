@@ -294,8 +294,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * the very AudioTrack budget the pool exists to protect.
    */
   private phrasePlayer: AudioPlayer | null = null
-  /** The sounding click-script (lead-in / rest script), tracked so a safety cancel can silence it (A10). */
+  /** The sounding click-script (lead-in / rest script / call), tracked so a safety cancel can silence it (A10). */
   private clickScriptPlayer: AudioPlayer | null = null
+  /** Cached click-script players by Metro module — reused via seekTo(0) so a call starts with no load latency. */
+  private readonly clickScriptPlayers = new Map<number, AudioPlayer>()
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -990,14 +992,19 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     if (this.failed) return
     this.requestFocus()
     try {
-      // A new script replaces a finished (or somehow still-sounding)
-      // predecessor — never two scripts at once.
-      try {
-        this.clickScriptPlayer?.remove()
-      } catch {
-        // Already gone.
+      // Players are CACHED per module and reused via seekTo(0). The
+      // original fresh-player-per-call design put ~100-200ms of load
+      // latency on every call's start, which pushed real audio past the
+      // markBusy window — the next call's cleanup then cut a still-
+      // sounding tail (Kyle on-glass 2026-09-01: "there is a pause, but
+      // the clip is truncated"). A cached player starts near-instantly
+      // and is never removed mid-corpus; replaying the SAME motif simply
+      // restarts its clip, which is the per-bar cycling by definition.
+      let player = this.clickScriptPlayers.get(clip.module)
+      if (!player) {
+        player = this.makePlayer(clip.module)
+        this.clickScriptPlayers.set(clip.module, player)
       }
-      const player = this.makePlayer(clip.module)
       this.clickScriptPlayer = player
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
@@ -1335,9 +1342,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       }
       this.phrasePlayer = null
       // Same A10 contract for a sounding click-script: a paused workout
-      // must not keep a 14 s rest script (or a lead-in) talking.
+      // must not keep a 14 s rest script (or a lead-in) talking. PAUSE,
+      // not remove — the player is cached for reuse.
       try {
-        this.clickScriptPlayer?.remove()
+        this.clickScriptPlayer?.pause()
       } catch {
         // Already gone.
       }
@@ -1378,6 +1386,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       }
     }
     this.players.clear()
+    for (const player of this.clickScriptPlayers.values()) {
+      try {
+        player.remove()
+      } catch {
+        // Already gone; nothing to do.
+      }
+    }
+    this.clickScriptPlayers.clear()
+    this.clickScriptPlayer = null
     // Tear the metronome loop down alongside every other native
     // handle — a stranded loop after `release()` would keep clicking
     // over the summary screen.

@@ -100,17 +100,17 @@ const corpusRests: Array<{ slot: string; text: string }> = []
  */
 const corpusCalls = new Map<string, { motif: string; text: string; minStrideMs: number }>()
 
-/** The per-bar call text for a motif — punches only, urgent, no "go!". */
+/**
+ * The per-bar call text for a motif — punches only, urgent, no "go!".
+ * Pump bars read the FULL bar too — "One, one, one, one!" — not the
+ * single punch (Kyle, on-glass 2026-09-01, reversing the earlier
+ * single-word reading).
+ */
 function callText(motif: string): string {
-  const tokens = motif.split('-')
-  const punches = tokens.filter((t) => t !== '.')
-  const uniq = new Set(punches)
-  // PUMP bar (Kyle, decision 6): the call is the single punch — "One!"
-  // per rep — never the full four crammed into a 2 s stride.
-  const words =
-    uniq.size === 1 && punches.length === tokens.length
-      ? [WORDS[punches[0]!] ?? punches[0]!]
-      : punches.map((t) => WORDS[t] ?? t)
+  const words = motif
+    .split('-')
+    .filter((t) => t !== '.')
+    .map((t) => WORDS[t] ?? t)
   const joined = words.join(', ')
   return `${joined.charAt(0).toUpperCase()}${joined.slice(1)}!`
 }

@@ -49,8 +49,10 @@ const ffmpeg = spawn(
 )
 
 // --- logs ----------------------------------------------------------------
-execFile('adb', ['logcat', '-c'], () => {
-  const logcat = spawn('adb', ['logcat', '-v', 'epoch', '-s', 'ReactNativeJS:I'])
+const DEVICE = arg('device') ?? process.env.ANDROID_SERIAL
+const adbArgs = (rest) => (DEVICE ? ['-s', DEVICE, ...rest] : rest)
+execFile('adb', adbArgs(['logcat', '-c']), () => {
+  const logcat = spawn('adb', adbArgs(['logcat', '-v', 'epoch', '-s', 'ReactNativeJS:I']))
   logcat.stdout.pipe(createWriteStream(join(outDir, 'log.txt')))
   cleanupFns.push(() => logcat.kill())
 })
@@ -63,7 +65,7 @@ const shotTimer = setInterval(() => {
   shotBusy = true
   const epoch = Date.now()
   const file = join(shotsDir, `${epoch}.png`)
-  const proc = spawn('adb', ['exec-out', 'screencap', '-p'])
+  const proc = spawn('adb', adbArgs(['exec-out', 'screencap', '-p']))
   const chunks = []
   proc.stdout.on('data', (c) => chunks.push(c))
   proc.on('close', (code) => {

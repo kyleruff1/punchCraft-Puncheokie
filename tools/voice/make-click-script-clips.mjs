@@ -162,6 +162,10 @@ const allJobs = [
       }),
       minDurationMs: 250,
       maxDurationMs: row.windowMs,
+      // Token-exact ASR: a call that loses a word ("Six, five, two" heard
+      // as "the 652") is worse than a slower take — the athlete throws
+      // what they hear (caught on-glass 2026-09-01).
+      asrExact: true,
     }),
   ),
 ].map((job) => ({ ...job, wav: join(process.cwd(), OUT_ROOT, `${job.id}.wav`) }))
@@ -219,6 +223,7 @@ if (!manifestOnly) {
         maxDurationMs: j.maxDurationMs,
         expectText: j.plan.renderedText,
         asrMinScore: 0.8,
+        ...(j.asrExact ? { asrExact: true } : {}),
       })),
     }),
     encoding: 'utf8',
