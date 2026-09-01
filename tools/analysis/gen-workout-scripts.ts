@@ -16,7 +16,7 @@
  *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
  *        tools/analysis/gen-workout-scripts.ts > docs/click-workout-scripts.md
  */
-import { CLICK_MAPS, breathBeats, rowMeasures, type ClickRow } from '../../src/domain/workout/samples/clickMaps'
+import { CLICK_MAPS, breathBeats, rowMeasures } from '../../src/domain/workout/samples/clickMaps'
 import { parseCombo, punchTokens } from '../../src/domain/workout/WorkoutTokens'
 
 const NAMES: Record<string, string> = {
@@ -72,35 +72,6 @@ function sectionKind(motif: string): string {
   return 'COMBO BAR'
 }
 
-function motifWords(motif: string): string {
-  return motif.split('-').filter((t) => t !== '.').map((t) => WORDS[t] ?? t).join(', ')
-}
-const rateWord = (r: number): string => (r === 1 ? 'straight time' : r === 1.5 ? 'time-and-a-half' : 'double-time')
-
-/** Spell a rep count (1..99) so the doc text IS the rendered clip text. */
-function numberWord(n: number): string {
-  const ones = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen']
-  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety']
-  if (n < 20) return ones[n]!
-  const t = Math.floor(n / 10)
-  const r = n % 10
-  return r === 0 ? tens[t]! : `${tens[t]}-${ones[r]}`
-}
-
-function leadIn(row: ClickRow, kind: string): string {
-  const w = motifWords(row.motif)
-  const reps = numberWord(row.reps)
-  if (kind.startsWith('PUMP')) {
-    const one = w.split(', ')[0]
-    return `${row.reps >= 20 ? 'Long set' : 'Pump'}: ${one}s only, ${rateWord(row.rate)} — ${reps} bars. Go with the click.`
-  }
-  if (kind.startsWith('TWO-PAGE')) return `Big phrase — two pages: ${w}. ${rateWord(row.rate)}, ${reps} times through.`
-  if (kind.startsWith('COAST')) return `Coast bar — ${w}, then breathe the empty beats. Stay moving.`
-  const cap = w.charAt(0).toUpperCase() + w.slice(1)
-  return `${cap} — ${rateWord(row.rate)}, ${reps} bars.`
-}
-
 /** Render fractional beats cleanly (4/3 → "1 1/3"). */
 function beatsWord(b: number): string {
   if (Number.isInteger(b)) return String(b)
@@ -115,9 +86,6 @@ function barAscii(motif: string, rate: number): string {
   return `${cells}  @${rate}x`
 }
 
-const restScript = (nextTheme: string, nextFirst: string): string =>
-  `Good round. Breathe — hands stay up. Next: ${nextTheme.toLowerCase()}. First up when we come back: ${nextFirst}. Water if you need it. Ready on the bell.`
-
 /** Spoken corpus rows collected during the walk — `--corpus` emits these as JSON. */
 const corpusLeadIns: Array<{ slot: string; text: string }> = []
 const corpusRests: Array<{ slot: string; text: string }> = []
@@ -130,7 +98,7 @@ out.push('>')
 out.push('> Every spoken element is bracket-tagged for the corpus bank:')
 out.push('>')
 out.push('> - `<<SINGLE CLIP>>` — one unique full utterance: render as ONE clip (walkouts, section lead-ins, rest scripts).')
-out.push('> - `[[COMPONENT HITS]]` — audio built from the token component bank (numbers / fused-bees), one clip per token, for if/when per-hit calling ships. Click sets currently run coach-minimal: **the click is the audio**; these rows are the future per-hit script.')
+out.push('> - `[[COMPONENT HITS]]` — audio built from the token component bank (numbers / fused-bees), one clip per token, for if/when per-hit calling ships (these rows are the future per-hit script). Lead-ins and rest scripts are WIRED: the coach speaks each one at its slot; the click carries the hits.')
 out.push('>')
 out.push('> Bar notation: `[ n ]` = punch slot, `[ . ]` = rest slot. Slot width: `@1x` = 1 beat · `@1.5x` = 2/3 beat · `@2x` = 1/2 beat (double-time under the same click). Stride: 4-slot @1x = 2 measures/rep · @1.5x/@2x = 1 m/rep · 8-slot @1x = 3 m/rep · 8-slot @2x = 1.5 m/rep. The breath after each bar is part of the stride and doubles as the visual page-clear.')
 out.push('')
@@ -140,7 +108,7 @@ out.push('')
 for (const [key, map] of Object.entries(CLICK_MAPS)) {
   out.push(`## ${NAMES[key]}  \`${key}\``)
   out.push('')
-  out.push(`**${map.bpm} BPM · ${map.rounds.length} rounds × 4:00 work · ${map.bpm} measures/round · click audible, coach minimal**`)
+  out.push(`**${map.bpm} BPM · ${map.rounds.length} rounds × 4:00 work · ${map.bpm} measures/round · click audible, coach-guided**`)
   out.push('')
   out.push('### Walkout — name + details, quickly, before the bell')
   out.push('')
@@ -160,7 +128,7 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       punchTotal += perBar * row.reps
       out.push(`**§${ri + 1}.${i + 1} ${kind}** — ${rowMeasures(row)} measures`)
       out.push('')
-      const leadText = leadIn(row, kind)
+      const leadText = row.leadIn
       corpusLeadIns.push({ slot: `lead-in/${key}/r${ri + 1}s${i + 1}`, text: leadText })
       out.push('```text')
       out.push(`<<SINGLE CLIP  lead-in/${key}/r${ri + 1}s${i + 1}>>`)
@@ -175,12 +143,10 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
     })
     out.push(`_Round ${ri + 1} totals: ${round.rows.reduce((a, r) => a + rowMeasures(r), 0)} measures · **${punchTotal} punches**_`)
     out.push('')
-    if (ri < map.rounds.length - 1) {
-      const next = map.rounds[ri + 1]!
-      const nf = motifWords(next.rows[0]!.motif)
+    if (round.rest) {
       out.push(`### Rest ${ri + 1} → ${ri + 2}  (1:00)`)
       out.push('')
-      const restText = restScript(next.theme, nf!)
+      const restText = round.rest
       corpusRests.push({ slot: `rest/${key}/r${ri + 1}`, text: restText })
       out.push('```text')
       out.push(`<<SINGLE CLIP  rest/${key}/r${ri + 1}>>`)

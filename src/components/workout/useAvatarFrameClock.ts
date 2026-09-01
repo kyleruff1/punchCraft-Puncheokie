@@ -57,7 +57,6 @@ import {
 /** Copied constants from `@domain/workout/punchAvatar`. Kept in sync by test. */
 const MIN_FRAME_MS = 90
 const MAX_FRAME_MS = 220
-const RESET_MS = 130
 
 /**
  * Worklet-safe port of `flipFrameMs` from
@@ -68,13 +67,6 @@ function flipFrameMsWorklet(windowMs: number): number {
   'worklet'
   const quarter = Math.max(0, windowMs) * 0.25
   return Math.max(MIN_FRAME_MS, Math.min(MAX_FRAME_MS, quarter))
-}
-
-/** Worklet-safe port of `avatarResetAtMs`. */
-function avatarResetAtMsWorklet(windowMs: number): number {
-  'worklet'
-  const frame = flipFrameMsWorklet(windowMs)
-  return Math.max(frame * 2, windowMs - RESET_MS)
 }
 
 /** Worklet-safe port of `minHoldMs`. */

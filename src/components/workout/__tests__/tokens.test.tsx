@@ -13,6 +13,7 @@
 // props-driven states render exactly as before.
 jest.mock('react-native-reanimated', () => ({
   __esModule: true,
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest factory cannot use top-level imports
   default: { View: require('react-native').View },
   runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
   useSharedValue: <T,>(init: T) => ({ value: init }),
