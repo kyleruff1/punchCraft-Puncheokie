@@ -248,10 +248,21 @@ export function PunchAvatarCard(props: {
   // screen that predates W0, `reducedMotion` renders — the setInterval
   // path stays authoritative.
   useEffect(() => {
-    if (anchor) return
+    // Gate on the anchor RUNNING, not merely existing (GH #305). The live
+    // screen ALWAYS supplies an anchor SharedValue, but the transport only
+    // starts on workouts with `metronome.enabled` — 4 of 11 samples. On
+    // the other 7 the anchor stays STOPPED (`ticksPerMillisecond: 0`),
+    // the worklet freezes at its bail-out, and gating this fallback on
+    // mere existence left the figure unable to flip AT ALL — Kyle's
+    // "avatar frozen in extended / no movement" QA reports.
+    const anchorRunning = anchor !== undefined && anchor.value.ticksPerMillisecond > 0
+    if (anchorRunning) return
     if (!shown || reducedMotion) return
     const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs, shown.isLast))
     const tick = (): void => {
+      // Deterministic handoff: if the transport starts mid-adoption the
+      // worklet takes over; two writers on `step` would fight.
+      if (anchor !== undefined && anchor.value.ticksPerMillisecond > 0) return
       const elapsed = (Date.now() - shown.startedAt) % beat
       setStep(avatarFrameAt(elapsed, shown.windowMs, shown.isLast))
     }
@@ -265,12 +276,21 @@ export function PunchAvatarCard(props: {
   // tick on the UI thread. `setStep` receives a `runOnJS` from the
   // worklet only when the computed frame changes — same lazy cadence
   // as the setInterval path above.
-  useAvatarFrameClock(
-    shown ? { key: shown.key, windowMs: shown.windowMs, isLast: shown.isLast } : null,
-    reducedMotion,
-    anchor,
-    setStep,
+  // MEMOIZED, and the memo is load-bearing (GH #305): an inline object
+  // literal here sat in the hook's effect deps, so EVERY re-render of the
+  // card re-ran the effect, re-sampled `startedAtTick` and reset the flip
+  // cycle to step1. The live screen re-renders on every tracker punch
+  // (`pushStore(true)` bypasses the throttle) and every 50 ms tick — the
+  // flip phase was being re-zeroed several times a second during a flurry.
+  // THE dominant avatar jank, and it was React, not the transport.
+  const clockShown = useMemo(
+    () => (shown ? { key: shown.key, windowMs: shown.windowMs, isLast: shown.isLast } : null),
+    // Keyed on the three primitives the clock consumes; `shown` itself is
+    // a fresh object per adoption and would defeat the memo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shown?.key, shown?.windowMs, shown?.isLast],
   )
+  useAvatarFrameClock(clockShown, reducedMotion, anchor, setStep)
 
   if (!shown) return null
   // No art for defense, footwork or coach tokens: the figure holds guard.
@@ -303,17 +323,24 @@ export function PunchAvatarCard(props: {
         ]}
       >
         {/* Both frames stay mounted and toggle opacity — swapping a single
-            source would risk a decode hitch mid-combination. */}
+            source would risk a decode hitch mid-combination.
+            fadeDuration={0} (GH #305): RN Android defaults to a 300 ms
+            fade-in on a freshly decoded image. `shown.frames` swaps both
+            sources on every new punch adoption, so each first appearance
+            GHOSTED in over 300 ms — on top of a 90-220 ms stop-motion
+            frame. The flip must be a hard cut. */}
         <Image
           source={shown.frames.step1}
           style={[styles.frame, visible === 'step1' ? styles.frameOn : styles.frameOff]}
           resizeMode="contain"
+          fadeDuration={0}
           testID="punch-avatar-step1"
         />
         <Image
           source={shown.frames.step2}
           style={[styles.frame, visible === 'step2' ? styles.frameOn : styles.frameOff]}
           resizeMode="contain"
+          fadeDuration={0}
           testID="punch-avatar-step2"
         />
       </View>

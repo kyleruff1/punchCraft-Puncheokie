@@ -156,7 +156,14 @@ export function useAvatarFrameClock(
     isLast.value = shown.isLast
     lastStep.value = 'step1'
     active.value = true
-  }, [shownKey, shown, anchor, active, startedAtTick, windowMs, isLast, lastStep, nowFrameTimestampMs])
+    // Deps are the PRIMITIVES, deliberately not `shown` (GH #305): this
+    // effect re-samples `startedAtTick` and resets the cycle to step1, so
+    // depending on an object identity meant every caller re-render
+    // re-zeroed the flip phase — several times a second under the live
+    // screen's store churn. A new adoption is a new `shownKey`; a
+    // re-render is not.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shownKey, shown?.windowMs, shown?.isLast, anchor, active, startedAtTick, windowMs, isLast, lastStep, nowFrameTimestampMs])
 
   const cb = useFrameCallback(({ timestamp }) => {
     'worklet'
@@ -176,8 +183,10 @@ export function useAvatarFrameClock(
   })
 
   useEffect(() => {
-    cb.setActive(!reducedMotion && !!anchor && !!shown)
-  }, [cb, reducedMotion, anchor, shown])
+    cb.setActive(!reducedMotion && !!anchor && shownKey !== null)
+    // `shownKey`, not `shown`: presence is what matters, and the object's
+    // identity churns per render (see the adoption effect above).
+  }, [cb, reducedMotion, anchor, shownKey])
 }
 
 function defaultNow(): number {

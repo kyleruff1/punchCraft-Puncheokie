@@ -255,6 +255,25 @@ export class MetronomeTransport implements MetronomeTransportPort {
     const errorAbs = Math.abs(errorTicks)
 
     if (errorAbs >= PHASE_CORRECTION_LARGE_TICKS) {
+      // NEVER snap the visual clock backwards — the contract stated at
+      // the top of this file, which this branch used to violate while
+      // the small-error branch honoured it (GH #305). A large NEGATIVE
+      // error means JS ran ahead of audio (typically a JS stall being
+      // caught up); seeding the anchor at `observedTickNow` rewound the
+      // clock ~250-380 ms, and the avatar worklet wraps elapsed time
+      // modulo the beat, so every rewind re-entered the flip cycle at an
+      // arbitrary phase — a spurious re-strike. ~Half of all storm
+      // events carry negative error, so this halves the storm's visual
+      // impact by construction. Hold instead, exactly as the small
+      // branch does: no anchor change, no generation bump, no notify —
+      // nothing observable moved. Audio catches up on its own.
+      if (errorTicks < 0) {
+        logger.info('puncheokie.transport', 'transport held on backwards observation', {
+          generation: safe(this.generation),
+          errorTicks: safe(errorTicks),
+        })
+        return
+      }
       this.generation += 1
       this.anchorMonotonicMs = now
       this.anchorAbsoluteTick = observedTickNow
