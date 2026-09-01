@@ -116,6 +116,50 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
         {!walked && state === 'active' ? (
           <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
         ) : null}
+        <AffirmationRing
+          diameter={diameter}
+          active={affirmed}
+          reducedMotion={reducedMotion}
+          {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
+        />
+
+        <View
+          style={[
+            styles.circle,
+            {
+              width: diameter,
+              height: diameter,
+              borderRadius: diameter / 2,
+              borderWidth: visual.borderWidth,
+              borderColor: visual.borderColor,
+              backgroundColor: visual.backgroundColor,
+            },
+            // The glow rides on top of whatever state the token is in, so a
+            // completed token keeps its check and gains the gold.
+            affirmed && styles.affirmedCircle,
+          ]}
+        >
+          <Text
+            style={[styles.number, { fontSize: TOKEN_FONT_SIZE[size], color: visual.textColor }]}
+          >
+            {number}
+          </Text>
+
+          {body ? (
+            <View style={styles.bodyBadge} testID="body-badge">
+              {/* Uppercase B is the on-screen badge only; serialized notation
+                  stays lowercase `b` (D10). */}
+              <Text style={styles.bodyBadgeText}>B</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Z-ORDER IS LOAD-BEARING (GH #305): later siblings paint ON TOP.
+            These overlays originally sat BEFORE the base circle, so the
+            base — transparent center, chrome numeral — rendered over them:
+            on-glass the "inversion" was overlay fill bleeding through a
+            transparent base with the chrome number still on top ("numbers
+            still not black"). They must be the LAST children of the slot. */}
         {walked ? (
           <>
             {/* ACTIVE — INVERTED interior (Kyle, on-glass sign-off of the
@@ -180,44 +224,6 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
             </Animated.View>
           </>
         ) : null}
-
-        <AffirmationRing
-          diameter={diameter}
-          active={affirmed}
-          reducedMotion={reducedMotion}
-          {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
-        />
-
-        <View
-          style={[
-            styles.circle,
-            {
-              width: diameter,
-              height: diameter,
-              borderRadius: diameter / 2,
-              borderWidth: visual.borderWidth,
-              borderColor: visual.borderColor,
-              backgroundColor: visual.backgroundColor,
-            },
-            // The glow rides on top of whatever state the token is in, so a
-            // completed token keeps its check and gains the gold.
-            affirmed && styles.affirmedCircle,
-          ]}
-        >
-          <Text
-            style={[styles.number, { fontSize: TOKEN_FONT_SIZE[size], color: visual.textColor }]}
-          >
-            {number}
-          </Text>
-
-          {body ? (
-            <View style={styles.bodyBadge} testID="body-badge">
-              {/* Uppercase B is the on-screen badge only; serialized notation
-                  stays lowercase `b` (D10). */}
-              <Text style={styles.bodyBadgeText}>B</Text>
-            </View>
-          ) : null}
-        </View>
       </View>
 
       {/* Colour is never the only signal: the glow always comes with a
