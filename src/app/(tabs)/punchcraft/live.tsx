@@ -525,12 +525,21 @@ export default function LiveScreen(): React.JSX.Element {
         />
         {/* The reactive layer draws OVER the art and UNDER the scrim, so
             the §31.3 contrast floor caps everything it can ever do. */}
-        <BackdropRenderer
-          bus={backdropBus}
-          quality={backdropQuality}
-          calm={backdropCalm}
-          reducedMotion={reducedMotion}
-        />
+        {/* EXPERIMENT (GH #305): the walk census shows ~20 UI-thread frame
+            gaps per round (max ~0.9s) swallowing walk steps, and the Skia
+            membrane repaints every frame on that same thread. Click sets
+            (voiceMode minimal — the walk IS the product) run without the
+            reactive layer for one verdict round: multi-jumps -> ~0
+            convicts the backdrop; unchanged exonerates it. Static art +
+            scrim remain either way. */}
+        {workout.recipe.voiceMode === 'minimal' ? null : (
+          <BackdropRenderer
+            bus={backdropBus}
+            quality={backdropQuality}
+            calm={backdropCalm}
+            reducedMotion={reducedMotion}
+          />
+        )}
         <View style={styles.backdropScrim} />
       </View>
 
