@@ -161,7 +161,13 @@ const allJobs = [
         finish: 'shout',
       }),
       minDurationMs: 250,
-      maxDurationMs: row.windowMs,
+      // A wide stride window lets Chatterbox improvise a preamble around
+      // a short call ("One!" came back as "Go again! One!"), so the cap
+      // is also bounded by the word count — a call is TIGHT by genre.
+      maxDurationMs: Math.min(
+        row.windowMs,
+        600 + row.text.split(/[ ,]+/).filter(Boolean).length * 700,
+      ),
       // Token-exact ASR: a call that loses a word ("Six, five, two" heard
       // as "the 652") is worse than a slower take — the athlete throws
       // what they hear (caught on-glass 2026-09-01).
