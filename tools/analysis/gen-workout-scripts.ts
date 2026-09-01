@@ -39,10 +39,12 @@ const WALKOUTS: Record<string, string> = {
     'Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home — everything starts there, everything comes back there. Own the range. On the bell.',
   'switch-by-round':
     'Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, orthodox, southpaw. Same hands, opposite world. Stay honest in both. On the bell.',
+  // Tempo words track the 2026-09-01 pace sweep (180/240 → 120): the copy
+  // must never name a click the workout no longer runs.
   'heavy-hands':
-    'Heavy Hands. Four rounds, one-eighty on the click. Hooks and crosses with weight behind them — sit down on every shot. On the bell.',
+    'Heavy Hands. Four rounds, one-twenty on the click. Hooks and crosses with weight behind them — sit down on every shot. On the bell.',
   'speed-combos':
-    'Speed Combos. Four rounds at two-forty — the fastest click we own. Short combinations, quick hands, no wasted motion. Breathe between bars. On the bell.',
+    'Speed Combos. Four rounds at one-twenty on the click. Short combinations, quick hands, no wasted motion. Breathe between bars. On the bell.',
   'uppercut-clinic':
     'Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the middle — bend the knees, rip them short. On the bell.',
   'progressive-buildup':
@@ -50,7 +52,7 @@ const WALKOUTS: Record<string, string> = {
   'body-work':
     'Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body crosses, dig to the ribs. Elbows in. On the bell.',
   'pace-pusher':
-    'Pace Pusher. Four rounds, one-eighty on the click. Same combination, three speeds — straight time, time-and-a-half, then double-time on the same beat. The ladder never lies. On the bell.',
+    'Pace Pusher. Four rounds, one-twenty on the click. Same combination, three speeds — straight time, time-and-a-half, then double-time on the same beat. The ladder never lies. On the bell.',
   'pump-and-coast':
     'Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pump, you empty it; when we coast, you recover on your feet. On the bell.',
 }

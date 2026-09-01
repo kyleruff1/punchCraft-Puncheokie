@@ -76,7 +76,7 @@ export const speedCombos: GeneratedWorkout = {
     // 60-BPM base pulse; TEMPO SCALES BY DIVISION, never baseBpm. Getting
     // this wrong told the transport 240 BPM against a 1s loop — a
     // permanent ~3s error observed ~500x/sec (the red-screen flood).
-    coachTempo: { baseBpm: 60, division: 4, swing: 0.5 },
+    coachTempo: { baseBpm: 60, division: 2, swing: 0.5 },
 
     metronome: { enabled: true, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,

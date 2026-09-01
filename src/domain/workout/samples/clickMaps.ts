@@ -104,10 +104,21 @@ export function clickSpecs(prefix: string, roundIndex: number, round: ClickRound
 }
 
 /**
+ * Achievability ceilings (Kyle, on-glass 2026-09-01: speed-combos at 240
+ * was "double an achievable pace"). BURST caps the instantaneous rate of
+ * adjacent punches (interval ≥ 250 ms); SUSTAINED caps a full rep
+ * averaged over its stride, breath included. Beginner-to-intermediate
+ * bag work — the bible's stated audience.
+ */
+export const MAX_BURST_PUNCHES_PER_SEC = 4
+export const MAX_SUSTAINED_PUNCHES_PER_SEC = 2.5
+
+/**
  * Recompute every round's measure sum against its budget. Returns a list
  * of violations (empty = every denominator resolves). Also validates the
  * notation parses, 8-slot rows at 2x author even reps, every row carries
- * authored spoken copy, and every non-final round carries a rest script.
+ * authored spoken copy, every non-final round carries a rest script, and
+ * every row sits under the achievability ceilings above.
  */
 export function clickMapsSelfCheck(): string[] {
   const problems: string[] = []
@@ -143,6 +154,31 @@ export function clickMapsSelfCheck(): string[] {
           parseCombo(row.motif)
         } catch (e) {
           problems.push(`${key} R${r + 1} '${row.motif}': ${(e as Error).message}`)
+        }
+        // Pace lint. Slot duration = 60/(bpm×rate) s; burst rate between
+        // consecutive punches g slots apart = bpm×rate/(60×g).
+        const tokens = row.motif.split('-')
+        const punchSlots = tokens
+          .map((t, idx) => (t === '.' ? -1 : idx))
+          .filter((idx) => idx >= 0)
+        let minGapSlots = Infinity
+        for (let p = 1; p < punchSlots.length; p += 1) {
+          minGapSlots = Math.min(minGapSlots, punchSlots[p]! - punchSlots[p - 1]!)
+        }
+        if (Number.isFinite(minGapSlots)) {
+          const burstPerSec = (map.bpm * row.rate) / (60 * minGapSlots)
+          if (burstPerSec > MAX_BURST_PUNCHES_PER_SEC + 1e-9) {
+            problems.push(
+              `${key} R${r + 1} '${row.motif}' @${row.rate}x: burst ${burstPerSec.toFixed(2)}/s > ${MAX_BURST_PUNCHES_PER_SEC}/s at ${map.bpm} BPM`,
+            )
+          }
+        }
+        const strideSec = (measuresPerRep(slots, row.rate) * 4 * 60) / map.bpm
+        const sustainedPerSec = punchSlots.length / strideSec
+        if (sustainedPerSec > MAX_SUSTAINED_PUNCHES_PER_SEC + 1e-9) {
+          problems.push(
+            `${key} R${r + 1} '${row.motif}' @${row.rate}x: sustained ${sustainedPerSec.toFixed(2)}/s > ${MAX_SUSTAINED_PUNCHES_PER_SEC}/s at ${map.bpm} BPM`,
+          )
         }
         sum += rowMeasures(row)
       }
@@ -252,64 +288,71 @@ export const CLICK_MAPS: Record<string, ClickMap> = {
     ],
   },
   'heavy-hands': {
-    bpm: 180,
+    // 180 → 120 (Kyle, 2026-09-01 pace sweep): 180 put double-time bursts at
+    // 6 punches/s — heavy shots at sprint spacing is a contradiction. At 120
+    // the same rows sit down: 2/s straight, 4/s short bursts.
+    bpm: 120,
     rounds: [
       { theme: 'Build the power line', rows: [
-        { motif: '1-2-3-.', rate: 1, reps: 25, leadIn: 'One, two, three — straight time, twenty-five bars. One, two, three. Give the power room to land, then reset.' },
-        { motif: '1-2-3-2', rate: 1, reps: 20, leadIn: 'One, two, three, two — straight time, twenty bars. One, two, three, two. Stay heavy without getting slow.' },
-        { motif: '2-3-2-.', rate: 1.5, reps: 30, leadIn: 'Two, three, two — time-and-a-half, thirty bars. Two, three, two. Sit down, then get back under yourself.' },
-        { motif: '1-2-3-.', rate: 2, reps: 40, leadIn: 'One, two, three — double-time, forty bars. Three fast power shots, one empty slot. Do not chase the bag.' },
-        { motif: '1-1-2-.', rate: 1, reps: 10, leadIn: 'One, one, two — straight time, ten bars. Double one, two. Finish the round behind the straight shot.' },
+        { motif: '1-2-3-.', rate: 1, reps: 17, leadIn: 'One, two, three — straight time, seventeen bars. One, two, three. Give the power room to land, then reset.' },
+        { motif: '1-2-3-2', rate: 1, reps: 13, leadIn: 'One, two, three, two — straight time, thirteen bars. One, two, three, two. Stay heavy without getting slow.' },
+        { motif: '2-3-2-.', rate: 1.5, reps: 20, leadIn: 'Two, three, two — time-and-a-half, twenty bars. Two, three, two. Sit down, then get back under yourself.' },
+        { motif: '1-2-3-.', rate: 2, reps: 26, leadIn: 'One, two, three — double-time, twenty-six bars. Three fast power shots, one empty slot. Do not chase the bag.' },
+        { motif: '1-1-2-.', rate: 1, reps: 7, leadIn: 'One, one, two — straight time, seven bars. Double one, two. Finish the round behind the straight shot.' },
       ], rest: 'Good power round. Heavy does not mean tight — open the hands inside the gloves and breathe. Next is hooks off the straight line. First set is two pages: one, two, three, two; then one, four, three, two.' },
       { theme: 'Hooks off the line', rows: [
-        { motif: '1-2-3-2-1-4-3-2', rate: 1, reps: 15, leadIn: 'Big phrase — two pages: one, two, three, two, one, four, three, two. Straight time, fifteen times through. Page one finishes three, two. Page two brings the four before the three-two.' },
-        { motif: '1-4-3-2', rate: 1.5, reps: 25, leadIn: 'One, four, three, two — time-and-a-half, twenty-five bars. One, four, three, two. Turn the threes and fours; do not swing them.' },
-        { motif: '1-2-3-.', rate: 2, reps: 35, leadIn: 'One, two, three — double-time, thirty-five bars. Fast one, two, three, then space. Power stays organized.' },
-        { motif: '3-2-3-.', rate: 1, reps: 20, leadIn: 'Three, two, three — straight time, twenty bars. Three, two, three. Keep the threes short and bring the two straight home.' },
-        { motif: '1-3-2-.', rate: 1.5, reps: 35, leadIn: 'One, three, two — time-and-a-half, thirty-five bars. One, three, two. Turn the corner and finish through the middle.' },
+        { motif: '1-2-3-2-1-4-3-2', rate: 1, reps: 10, leadIn: 'Big phrase — two pages: one, two, three, two, one, four, three, two. Straight time, ten times through. Page one finishes three, two. Page two brings the four before the three-two.' },
+        { motif: '1-4-3-2', rate: 1.5, reps: 17, leadIn: 'One, four, three, two — time-and-a-half, seventeen bars. One, four, three, two. Turn the threes and fours; do not swing them.' },
+        { motif: '1-2-3-.', rate: 2, reps: 23, leadIn: 'One, two, three — double-time, twenty-three bars. Fast one, two, three, then space. Power stays organized.' },
+        { motif: '3-2-3-.', rate: 1, reps: 13, leadIn: 'Three, two, three — straight time, thirteen bars. Three, two, three. Keep the threes short and bring the two straight home.' },
+        { motif: '1-3-2-.', rate: 1.5, reps: 24, leadIn: 'One, three, two — time-and-a-half, twenty-four bars. One, three, two. Turn the corner and finish through the middle.' },
       ], rest: 'That was the hook round. Let the shoulders drop and breathe through the nose if you can. Round three adds uppercuts to the heavy combinations. First set stays one, two, three, two — then we bring the five into the finish.' },
       { theme: 'Power in layers', rows: [
-        { motif: '1-2-3-2', rate: 1, reps: 30, leadIn: 'One, two, three, two — straight time, thirty bars. Four strong shots, same shape every rep.' },
-        { motif: '3-2-3-.', rate: 2, reps: 30, leadIn: 'Three, two, three — double-time, thirty bars. Three, two, three. Quick power, then settle.' },
-        { motif: '2-3-2-.', rate: 1, reps: 30, leadIn: 'Two, three, two — straight time, thirty bars. Two, three, two. Keep the chin behind the shoulders.' },
-        { motif: '1-2-5-2', rate: 1.5, reps: 30, leadIn: 'One, two, five, two — time-and-a-half, thirty bars. One, two, five, two. Drive the five short and finish straight.' },
+        { motif: '1-2-3-2', rate: 1, reps: 20, leadIn: 'One, two, three, two — straight time, twenty bars. Four strong shots, same shape every rep.' },
+        { motif: '3-2-3-.', rate: 2, reps: 20, leadIn: 'Three, two, three — double-time, twenty bars. Three, two, three. Quick power, then settle.' },
+        { motif: '2-3-2-.', rate: 1, reps: 20, leadIn: 'Two, three, two — straight time, twenty bars. Two, three, two. Keep the chin behind the shoulders.' },
+        { motif: '1-2-5-2', rate: 1.5, reps: 20, leadIn: 'One, two, five, two — time-and-a-half, twenty bars. One, two, five, two. Drive the five short and finish straight.' },
       ], rest: 'Three done. Shake the arms once and let them get heavy again. Final round starts with a seven-shot two-page chain: one, one, two, three; then two, five, two, breathe. Build pressure without losing form.' },
       { theme: 'Heavy finish', rows: [
-        { motif: '1-1-2-3-2-5-2-.', rate: 1, reps: 20, leadIn: 'Big phrase — two pages: one, one, two, three, two, five, two, breathe. Straight time, twenty times through. Page one gets you in. Page two is two, five, two, then breathe.' },
-        { motif: '1-2-3-.', rate: 2, reps: 40, leadIn: 'One, two, three — double-time, forty bars. Fast one, two, three. Leave the fourth slot for balance.' },
-        { motif: '1-4-3-2', rate: 1, reps: 20, leadIn: 'One, four, three, two — straight time, twenty bars. Square it up: one, four, three, two. Heavy and compact.' },
-        { motif: '2-3-2-.', rate: 1.5, reps: 40, leadIn: 'Two, three, two — time-and-a-half, forty bars. Two, three, two. Keep landing clean until the bell.' },
+        { motif: '1-1-2-3-2-5-2-.', rate: 1, reps: 13, leadIn: 'Big phrase — two pages: one, one, two, three, two, five, two, breathe. Straight time, thirteen times through. Page one gets you in. Page two is two, five, two, then breathe.' },
+        { motif: '1-2-3-.', rate: 2, reps: 27, leadIn: 'One, two, three — double-time, twenty-seven bars. Fast one, two, three. Leave the fourth slot for balance.' },
+        { motif: '1-4-3-2', rate: 1, reps: 14, leadIn: 'One, four, three, two — straight time, fourteen bars. Square it up: one, four, three, two. Heavy and compact.' },
+        { motif: '2-3-2-.', rate: 1.5, reps: 26, leadIn: 'Two, three, two — time-and-a-half, twenty-six bars. Two, three, two. Keep landing clean until the bell.' },
       ]},
     ],
   },
   'speed-combos': {
-    bpm: 240,
+    // 240 → 120 (Kyle, on-glass 2026-09-01): "this round is incredibly fast,
+    // I think we've done double an achievable pace" — 240 @1x was 4 punches/s
+    // SUSTAINED and @2x 8/s. At 120 the same shapes run 2/s straight with
+    // 4/s double-time bursts; speed now lives in the bursts, not the grid.
+    bpm: 120,
     rounds: [
       { theme: 'Fast hands, clean stops', rows: [
-        { motif: '1-2-1-2', rate: 1, reps: 30, leadIn: 'One, two, one, two — straight time, thirty bars. Fast does not mean wild. Four straight slots and back to guard.' },
-        { motif: '1-1-2-.', rate: 1.5, reps: 40, leadIn: 'One, one, two — time-and-a-half, forty bars. Double one, two, empty fourth slot. Let the reset stay visible.' },
-        { motif: '1-2-.-.', rate: 2, reps: 60, leadIn: 'Coast bar — one, two, empty, empty, double-time, sixty bars. One, two, then two empty slots. Speed lives inside the pair.' },
-        { motif: '2-3-2-.', rate: 2, reps: 40, leadIn: 'Two, three, two — double-time, forty bars. Two, three, two. Three fast hits, then clear the page.' },
-        { motif: '1-1-1-1', rate: 1, reps: 20, leadIn: 'Long set: ones only, straight time — twenty bars. Finish with fast clean ones. No reaching.' },
+        { motif: '1-2-1-2', rate: 1, reps: 15, leadIn: 'One, two, one, two — straight time, fifteen bars. Fast does not mean wild. Four straight slots and back to guard.' },
+        { motif: '1-1-2-.', rate: 1.5, reps: 20, leadIn: 'One, one, two — time-and-a-half, twenty bars. Double one, two, empty fourth slot. Let the reset stay visible.' },
+        { motif: '1-2-.-.', rate: 2, reps: 30, leadIn: 'Coast bar — one, two, empty, empty, double-time, thirty bars. One, two, then two empty slots. Speed lives inside the pair.' },
+        { motif: '2-3-2-.', rate: 2, reps: 20, leadIn: 'Two, three, two — double-time, twenty bars. Two, three, two. Three fast hits, then clear the page.' },
+        { motif: '1-1-1-1', rate: 1, reps: 10, leadIn: 'Long set: ones only, straight time — ten bars. Finish with fast clean ones. No reaching.' },
       ], rest: 'Good speed, now let the hands loosen. Next round is doubles at pace. First set is two pages: one, one, two, one; then two, three, two, breathe. The empty slots matter just as much as the fast ones.' },
       { theme: 'Doubles at pace', rows: [
-        { motif: '1-1-2-1-2-3-2-.', rate: 1, reps: 20, leadIn: 'Big phrase — two pages: one, one, two, one, two, three, two, breathe. Straight time, twenty times through. Page one doubles the lead and reloads it. Page two finishes two, three, two, then breathe.' },
-        { motif: '1-1-2-.', rate: 2, reps: 80, leadIn: 'One, one, two — double-time, eighty bars. Double one, two. One slot off, then do it again.' },
-        { motif: '1b-1-2-.', rate: 1.5, reps: 40, leadIn: 'One-bee, one, two — time-and-a-half, forty bars. Body one, head one, two. Fast level change, clean exit.' },
-        { motif: '1-2-3-2', rate: 1, reps: 30, leadIn: 'One, two, three, two — straight time, thirty bars. One, two, three, two. Let the four-count breathe even at speed.' },
+        { motif: '1-1-2-1-2-3-2-.', rate: 1, reps: 10, leadIn: 'Big phrase — two pages: one, one, two, one, two, three, two, breathe. Straight time, ten times through. Page one doubles the lead and reloads it. Page two finishes two, three, two, then breathe.' },
+        { motif: '1-1-2-.', rate: 2, reps: 40, leadIn: 'One, one, two — double-time, forty bars. Double one, two. One slot off, then do it again.' },
+        { motif: '1b-1-2-.', rate: 1.5, reps: 20, leadIn: 'One-bee, one, two — time-and-a-half, twenty bars. Body one, head one, two. Fast level change, clean exit.' },
+        { motif: '1-2-3-2', rate: 1, reps: 15, leadIn: 'One, two, three, two — straight time, fifteen bars. One, two, three, two. Let the four-count breathe even at speed.' },
       ], rest: 'Two rounds down. Drop the shoulders and slow your breathing. Round three makes you read longer pages at speed. First up is double one, two with the fourth slot open; then the one-two-three-two comes back in straight time.' },
       { theme: 'Pages at speed', rows: [
-        { motif: '1-1-2-.', rate: 2, reps: 40, leadIn: 'One, one, two — double-time, forty bars. Quick double one, two. Stop on the empty slot.' },
-        { motif: '1-2-3-2', rate: 1, reps: 40, leadIn: 'One, two, three, two — straight time, forty bars. Four clean slots. Make speed look calm.' },
-        { motif: '1-2-3-.', rate: 1.5, reps: 60, leadIn: 'One, two, three — time-and-a-half, sixty bars. One, two, three, breathe. Keep the three compact.' },
-        { motif: '1-2-1-2-3-2-.-.', rate: 2, reps: 20, leadIn: 'Big phrase — two pages: one, two, one, two, three, two, breathe, breathe. Double-time, twenty times through. Page one is four straight slots. Page two is three, two, then two empty slots.' },
-        { motif: '1-1-2-.', rate: 2, reps: 30, leadIn: 'One, one, two — double-time, thirty bars. Double one, two, reset. Stay sharp late.' },
+        { motif: '1-1-2-.', rate: 2, reps: 20, leadIn: 'One, one, two — double-time, twenty bars. Quick double one, two. Stop on the empty slot.' },
+        { motif: '1-2-3-2', rate: 1, reps: 20, leadIn: 'One, two, three, two — straight time, twenty bars. Four clean slots. Make speed look calm.' },
+        { motif: '1-2-3-.', rate: 1.5, reps: 30, leadIn: 'One, two, three — time-and-a-half, thirty bars. One, two, three, breathe. Keep the three compact.' },
+        { motif: '1-2-1-2-3-2-.-.', rate: 2, reps: 10, leadIn: 'Big phrase — two pages: one, two, one, two, three, two, breathe, breathe. Double-time, ten times through. Page one is four straight slots. Page two is three, two, then two empty slots.' },
+        { motif: '1-1-2-.', rate: 2, reps: 15, leadIn: 'One, one, two — double-time, fifteen bars. Double one, two, reset. Stay sharp late.' },
       ], rest: 'Last round coming. You do not need to outrun the click; you need to own the openings. First set is one, two, three with the fourth slot empty at double-time. Then we change the shape without changing the discipline.' },
       { theme: 'Empty the tank cleanly', rows: [
-        { motif: '1-2-3-.', rate: 2, reps: 50, leadIn: 'One, two, three — double-time, fifty bars. One, two, three, stop. Fast burst, clean recovery.' },
-        { motif: '1-1-2-.', rate: 1.5, reps: 50, leadIn: 'One, one, two — time-and-a-half, fifty bars. Double one, two. Keep the lead hand alive.' },
-        { motif: '1-2-5-2', rate: 1, reps: 35, leadIn: 'One, two, five, two — straight time, thirty-five bars. One, two, five, two. Speed up the hands, not the posture.' },
-        { motif: '2-3-2-.', rate: 2, reps: 70, leadIn: 'Two, three, two — double-time, seventy bars. Two, three, two, empty slot. Last push — stay accurate.' },
+        { motif: '1-2-3-.', rate: 2, reps: 25, leadIn: 'One, two, three — double-time, twenty-five bars. One, two, three, stop. Fast burst, clean recovery.' },
+        { motif: '1-1-2-.', rate: 1.5, reps: 25, leadIn: 'One, one, two — time-and-a-half, twenty-five bars. Double one, two. Keep the lead hand alive.' },
+        { motif: '1-2-5-2', rate: 1, reps: 18, leadIn: 'One, two, five, two — straight time, eighteen bars. One, two, five, two. Speed up the hands, not the posture.' },
+        { motif: '2-3-2-.', rate: 2, reps: 34, leadIn: 'Two, three, two — double-time, thirty-four bars. Two, three, two, empty slot. Last push — stay accurate.' },
       ]},
     ],
   },
@@ -397,31 +440,34 @@ export const CLICK_MAPS: Record<string, ClickMap> = {
     ],
   },
   'pace-pusher': {
-    bpm: 180,
+    // 180 → 120 (Kyle, 2026-09-01 pace sweep): the ladder survives intact —
+    // at 120 the three rungs are 2/s, 3/s, 4/s, an actually climbable ladder
+    // instead of 3/s → 4.5/s → 6/s.
+    bpm: 120,
     rounds: [
       { theme: 'The one-two ladder', rows: [
-        { motif: '1-2-.-.', rate: 1, reps: 30, leadIn: 'Coast bar — one, two, empty, empty, straight time, thirty bars. One, two, then space. Learn the pair before you accelerate it.' },
-        { motif: '1-2-.-.', rate: 1.5, reps: 60, leadIn: 'Coast bar — one, two, empty, empty, time-and-a-half, sixty bars. Same one-two, quicker slots, same empty finish.' },
-        { motif: '1-2-.-.', rate: 2, reps: 60, leadIn: 'Coast bar — one, two, empty, empty, double-time, sixty bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean.' },
+        { motif: '1-2-.-.', rate: 1, reps: 20, leadIn: 'Coast bar — one, two, empty, empty, straight time, twenty bars. One, two, then space. Learn the pair before you accelerate it.' },
+        { motif: '1-2-.-.', rate: 1.5, reps: 40, leadIn: 'Coast bar — one, two, empty, empty, time-and-a-half, forty bars. Same one-two, quicker slots, same empty finish.' },
+        { motif: '1-2-.-.', rate: 2, reps: 40, leadIn: 'Coast bar — one, two, empty, empty, double-time, forty bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean.' },
       ], rest: 'First ladder is done. The next one adds a second one before the two. First set is one, one, two with the fourth slot empty in straight time; then the exact same shape climbs the rates. Breathe and keep the shoulders loose.' },
       { theme: 'Ladder the double one', rows: [
-        { motif: '1-1-2-.', rate: 1, reps: 25, leadIn: 'One, one, two — straight time, twenty-five bars. One, one, two. Establish the spacing.' },
-        { motif: '1-1-2-.', rate: 1.5, reps: 50, leadIn: 'One, one, two — time-and-a-half, fifty bars. Same three shots, time-and-a-half. Do not compress the last two together.' },
-        { motif: '1-1-2-.', rate: 2, reps: 50, leadIn: 'One, one, two — double-time, fifty bars. Same double one, two at double-time. Fast but readable.' },
-        { motif: '1b-1b-1b-1b', rate: 1, reps: 15, leadIn: 'Pump: one-bees only, straight time — fifteen bars. Close the round with body ones. Change the target, keep the clock.' },
+        { motif: '1-1-2-.', rate: 1, reps: 17, leadIn: 'One, one, two — straight time, seventeen bars. One, one, two. Establish the spacing.' },
+        { motif: '1-1-2-.', rate: 1.5, reps: 33, leadIn: 'One, one, two — time-and-a-half, thirty-three bars. Same three shots, time-and-a-half. Do not compress the last two together.' },
+        { motif: '1-1-2-.', rate: 2, reps: 33, leadIn: 'One, one, two — double-time, thirty-three bars. Same double one, two at double-time. Fast but readable.' },
+        { motif: '1b-1b-1b-1b', rate: 1, reps: 10, leadIn: 'Pump: one-bees only, straight time — ten bars. Close the round with body ones. Change the target, keep the clock.' },
       ], rest: 'Good. Round three changes the ladder shape to one, two, three, then an empty slot. Same rule: straight, time-and-a-half, double. The hook should arrive on time, not early.' },
       { theme: 'Ladder the hook', rows: [
-        { motif: '1-2-3-.', rate: 1, reps: 30, leadIn: 'One, two, three — straight time, thirty bars. One, two, three. Let the three finish the phrase.' },
-        { motif: '1-2-3-.', rate: 1.5, reps: 40, leadIn: 'One, two, three — time-and-a-half, forty bars. Same one, two, three. Quicker grid, same shape.' },
-        { motif: '1-2-3-.', rate: 2, reps: 40, leadIn: 'One, two, three — double-time, forty bars. Same three at double-time. Fast hands, empty fourth slot.' },
-        { motif: '1-2-3-2', rate: 1, reps: 20, leadIn: 'One, two, three, two — straight time, twenty bars. Add the final two and settle back into straight time.' },
+        { motif: '1-2-3-.', rate: 1, reps: 20, leadIn: 'One, two, three — straight time, twenty bars. One, two, three. Let the three finish the phrase.' },
+        { motif: '1-2-3-.', rate: 1.5, reps: 27, leadIn: 'One, two, three — time-and-a-half, twenty-seven bars. Same one, two, three. Quicker grid, same shape.' },
+        { motif: '1-2-3-.', rate: 2, reps: 27, leadIn: 'One, two, three — double-time, twenty-seven bars. Same three at double-time. Fast hands, empty fourth slot.' },
+        { motif: '1-2-3-2', rate: 1, reps: 13, leadIn: 'One, two, three, two — straight time, thirteen bars. Add the final two and settle back into straight time.' },
       ], rest: 'Final ladder mixes everything you have used. First is two pages: one, two, three, two; then one, two, five, two. After that the same four-shot ideas move through the faster grids. Hear the tempo and let it pull you, not rush you.' },
       { theme: 'All rates at once', rows: [
-        { motif: '1-2-3-2-1-2-5-2', rate: 1, reps: 12, leadIn: 'Big phrase — two pages: one, two, three, two, one, two, five, two. Straight time, twelve times through. Page one is one, two, three, two. Page two changes only the middle to five.' },
-        { motif: '1-2-3-2', rate: 1.5, reps: 36, leadIn: 'One, two, three, two — time-and-a-half, thirty-six bars. One, two, three, two at time-and-a-half. Stay smooth.' },
-        { motif: '1-2-3-.', rate: 2, reps: 36, leadIn: 'One, two, three — double-time, thirty-six bars. One, two, three at double-time, then an empty slot.' },
-        { motif: '1-2-5-2', rate: 1.5, reps: 36, leadIn: 'One, two, five, two — time-and-a-half, thirty-six bars. One, two, five, two. Same rate, different finish.' },
-        { motif: '1-1-2-.', rate: 2, reps: 36, leadIn: 'One, one, two — double-time, thirty-six bars. Double one, two at double-time. Finish the ladder clean.' },
+        { motif: '1-2-3-2-1-2-5-2', rate: 1, reps: 8, leadIn: 'Big phrase — two pages: one, two, three, two, one, two, five, two. Straight time, eight times through. Page one is one, two, three, two. Page two changes only the middle to five.' },
+        { motif: '1-2-3-2', rate: 1.5, reps: 24, leadIn: 'One, two, three, two — time-and-a-half, twenty-four bars. One, two, three, two at time-and-a-half. Stay smooth.' },
+        { motif: '1-2-3-.', rate: 2, reps: 24, leadIn: 'One, two, three — double-time, twenty-four bars. One, two, three at double-time, then an empty slot.' },
+        { motif: '1-2-5-2', rate: 1.5, reps: 24, leadIn: 'One, two, five, two — time-and-a-half, twenty-four bars. One, two, five, two. Same rate, different finish.' },
+        { motif: '1-1-2-.', rate: 2, reps: 24, leadIn: 'One, one, two — double-time, twenty-four bars. Double one, two at double-time. Finish the ladder clean.' },
       ]},
     ],
   },

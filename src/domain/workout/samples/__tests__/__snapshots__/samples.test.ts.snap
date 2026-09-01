@@ -489,7 +489,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b1",
         "kind": "repeated-combo",
-        "repeat": 25,
+        "repeat": 17,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -502,7 +502,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b2",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 13,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -515,7 +515,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b3",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -528,7 +528,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b4",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 26,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -541,7 +541,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b5",
         "kind": "repeated-combo",
-        "repeat": 10,
+        "repeat": 7,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -552,7 +552,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 395,
+    "target": 262,
     "theme": "Build the power line",
   },
   {
@@ -560,7 +560,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b1",
         "kind": "repeated-combo",
-        "repeat": 15,
+        "repeat": 10,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -577,7 +577,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b2",
         "kind": "repeated-combo",
-        "repeat": 25,
+        "repeat": 17,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -590,7 +590,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b3",
         "kind": "repeated-combo",
-        "repeat": 35,
+        "repeat": 23,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -603,7 +603,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 13,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -616,7 +616,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b5",
         "kind": "repeated-combo",
-        "repeat": 35,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -627,7 +627,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 490,
+    "target": 328,
     "theme": "Hooks off the line",
   },
   {
@@ -635,7 +635,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh3-b1",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -648,7 +648,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh3-b2",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -661,7 +661,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh3-b3",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -674,7 +674,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh3-b4",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -685,7 +685,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 420,
+    "target": 280,
     "theme": "Power in layers",
   },
   {
@@ -693,7 +693,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh4-b1",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 13,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -710,7 +710,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh4-b2",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 27,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -723,7 +723,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh4-b3",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 14,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -736,7 +736,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh4-b4",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 26,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -747,7 +747,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 460,
+    "target": 306,
     "theme": "Heavy finish",
   },
 ]
@@ -760,7 +760,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp1-b1",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -773,7 +773,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp1-b2",
         "kind": "repeated-combo",
-        "repeat": 60,
+        "repeat": 40,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -786,7 +786,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp1-b3",
         "kind": "repeated-combo",
-        "repeat": 60,
+        "repeat": 40,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -797,7 +797,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 300,
+    "target": 200,
     "theme": "The one-two ladder",
   },
   {
@@ -805,7 +805,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp2-b1",
         "kind": "repeated-combo",
-        "repeat": 25,
+        "repeat": 17,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -818,7 +818,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp2-b2",
         "kind": "repeated-combo",
-        "repeat": 50,
+        "repeat": 33,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -831,7 +831,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp2-b3",
         "kind": "repeated-combo",
-        "repeat": 50,
+        "repeat": 33,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -844,7 +844,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp2-b4",
         "kind": "repeated-combo",
-        "repeat": 15,
+        "repeat": 10,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -855,7 +855,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 435,
+    "target": 289,
     "theme": "Ladder the double one",
   },
   {
@@ -863,7 +863,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp3-b1",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -876,7 +876,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp3-b2",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 27,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -889,7 +889,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp3-b3",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 27,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -902,7 +902,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 13,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -913,7 +913,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 410,
+    "target": 274,
     "theme": "Ladder the hook",
   },
   {
@@ -921,7 +921,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b1",
         "kind": "repeated-combo",
-        "repeat": 12,
+        "repeat": 8,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -938,7 +938,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b2",
         "kind": "repeated-combo",
-        "repeat": 36,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -951,7 +951,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b3",
         "kind": "repeated-combo",
-        "repeat": 36,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -964,7 +964,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b4",
         "kind": "repeated-combo",
-        "repeat": 36,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -977,7 +977,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b5",
         "kind": "repeated-combo",
-        "repeat": 36,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -988,7 +988,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 600,
+    "target": 400,
     "theme": "All rates at once",
   },
 ]
@@ -1461,7 +1461,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b1",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 15,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1474,7 +1474,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b2",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1487,7 +1487,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b3",
         "kind": "repeated-combo",
-        "repeat": 60,
+        "repeat": 30,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1500,7 +1500,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b4",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1513,7 +1513,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b5",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 10,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1524,7 +1524,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 560,
+    "target": 280,
     "theme": "Fast hands, clean stops",
   },
   {
@@ -1532,7 +1532,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp2-b1",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 10,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1549,7 +1549,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp2-b2",
         "kind": "repeated-combo",
-        "repeat": 80,
+        "repeat": 40,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1562,7 +1562,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp2-b3",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1575,7 +1575,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp2-b4",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 15,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1586,7 +1586,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 620,
+    "target": 310,
     "theme": "Doubles at pace",
   },
   {
@@ -1594,7 +1594,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b1",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1607,7 +1607,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b2",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1620,7 +1620,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b3",
         "kind": "repeated-combo",
-        "repeat": 60,
+        "repeat": 30,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1633,7 +1633,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 10,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1650,7 +1650,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b5",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 15,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1661,7 +1661,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 670,
+    "target": 335,
     "theme": "Pages at speed",
   },
   {
@@ -1669,7 +1669,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp4-b1",
         "kind": "repeated-combo",
-        "repeat": 50,
+        "repeat": 25,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1682,7 +1682,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp4-b2",
         "kind": "repeated-combo",
-        "repeat": 50,
+        "repeat": 25,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1695,7 +1695,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp4-b3",
         "kind": "repeated-combo",
-        "repeat": 35,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1708,7 +1708,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp4-b4",
         "kind": "repeated-combo",
-        "repeat": 70,
+        "repeat": 34,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1719,7 +1719,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 650,
+    "target": 324,
     "theme": "Empty the tank cleanly",
   },
 ]

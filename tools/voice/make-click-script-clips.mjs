@@ -151,9 +151,15 @@ const onlyKeys = onlyKeysArg
   ? new Set(onlyKeysArg.split(',').map((k) => k.trim()).filter(Boolean))
   : null
 
+// `--missing-only`: render only texts with no wav yet — ids are text
+// hashes, so an unchanged text keeps its clip and a map edit re-renders
+// exactly the copy it touched.
+const missingOnly = process.argv.includes('--missing-only')
+
 const jobs = allJobs.filter((j) => {
   if (onlyKeys) return onlyKeys.has(j.id)
   if (onlyArg) return j.id.includes(onlyArg) || j.text.includes(onlyArg)
+  if (missingOnly) return !existsSync(j.wav)
   return true
 })
 
