@@ -43,6 +43,7 @@ import { runtimeCoachAssetResolver } from '@audio/coachAssetResolvers'
 import { SlotDispatcher } from '@audio/SlotDispatcher'
 import { compileWorkoutScore } from '@domain/programs/workoutScore'
 import { roundStartTicksFrom, scoreTickAt } from '@domain/programs/scoreClock'
+import { type SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
@@ -176,6 +177,15 @@ export interface UseWorkoutRunnerArgs {
   workout: GeneratedWorkout
   source: PunchEventSource
   stance: Stance
+  /**
+   * UI-thread work clock slot (MVP v2, GH #305). Plain `{value}` shape so
+   * the runner stays Reanimated-free and node-testable; the live screen
+   * passes a real `useSharedValue`. The runner publishes a NEW frozen
+   * struct at every clock discontinuity (work-entered with its overflow,
+   * paused, resumed, rest-entered, stop) and NEVER per tick — smoothness
+   * between anchors is the UI thread's job (`useRingBeatClock`).
+   */
+  workClock?: { value: SharedWorkClock }
   clock?: MonotonicClock
   /**
    * Lead-in before round 1, overriding the session clock's default. The
@@ -995,6 +1005,22 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       // 'rest-entered', which is a domain event TYPE that was never logged, so
       // every capture burned its full timeout and ran past the round it meant
       // to record (GH #305). Cheap: two lines per round, not per tick.
+      // MVP v2 (GH #305): re-anchor the UI-thread work clock at every
+      // discontinuity. Running only while an unpaused WORK phase is on —
+      // projecting through rest/pause would advance a clock the session
+      // itself holds still.
+      if (args.workClock) {
+        const s = sessionRef.current?.snapshot()
+        args.workClock.value = Object.freeze({
+          roundIndex: s?.roundIndex ?? -1,
+          workElapsedAtPublishMs: s?.workElapsedMs ?? 0,
+          publishFrameTimestampMs:
+            typeof performance !== 'undefined' && typeof performance.now === 'function'
+              ? performance.now()
+              : Date.now(),
+          running: s?.phase === 'work',
+        })
+      }
       logger.info('puncheokie.round.boundary', 'session phase boundary', {
         transition: safe(transition.type),
         roundIndex: safe(
@@ -1101,6 +1127,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           break
       }
     }
+    // args.workClock is a stable SharedValue slot (or a stable plain
+    // object in tests); its .value writes are imperative and identity
+    // never changes across renders, so it is deliberately not a dep —
+    // the same treatment the transport anchor slot gets.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clock, endSession, voice, workout])
 
   // -------------------------------------------------------------------------

@@ -32,7 +32,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
 
 import { TAB_BAR_STYLE } from '../_layout'
 import { armAutoRetry, setAutoRetrySuspended } from '@ble/autoConnectTrackers'
-import { useReducedMotion } from 'react-native-reanimated'
+import { useReducedMotion, useSharedValue } from 'react-native-reanimated'
 import { ActionButton } from '@components/branding/ActionButton'
 import { BackdropRenderer } from '@components/workout/backdrop/BackdropRenderer'
 import { createBackdropBus } from '@components/workout/backdrop/backdropBus'
@@ -52,6 +52,10 @@ import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
 import { useSharedTransportAnchor } from '@audio/useSharedTransportAnchor'
+import {
+  SHARED_WORK_CLOCK_STOPPED,
+  type SharedWorkClock,
+} from '@domain/timing/SharedWorkClock'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
@@ -170,6 +174,9 @@ export default function LiveScreen(): React.JSX.Element {
   // metronome yet on very old test doubles — the hook accepts
   // undefined and stays at SHARED_ANCHOR_STOPPED until one appears.
   const avatarAnchor = useSharedTransportAnchor(output.metronome?.transport)
+  // UI-thread work clock (MVP v2, GH #305) — the runner re-anchors it at
+  // phase boundaries; `useRingBeatClock` projects the walk from it per frame.
+  const workClock = useSharedValue<SharedWorkClock>(SHARED_WORK_CLOCK_STOPPED)
 
   const clock = useMemo(() => systemMonotonicClock(), [])
   // Real trackers when both gloves are connected, the simulator otherwise
@@ -278,6 +285,7 @@ export default function LiveScreen(): React.JSX.Element {
   const runner = useWorkoutRunner({
     workout,
     source,
+    workClock,
     stance: workout.recipe.defaultStance,
     clock,
     countdownMs: introMs,
@@ -572,6 +580,7 @@ export default function LiveScreen(): React.JSX.Element {
               {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
               reducedMotion={reducedMotion}
               avatarAnchor={avatarAnchor}
+        workClock={workClock}
             />
           )}
 

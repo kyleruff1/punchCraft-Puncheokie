@@ -21,13 +21,16 @@ import { RestSlot } from './RestSlot'
 import type { SharedValue } from 'react-native-reanimated'
 
 import { PunchAvatarCard } from './PunchAvatarCard'
+import { useRingBeatClock, type RingBeatCue } from './useRingBeatClock'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
+import type { SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { PunchToken } from './PunchToken'
 import { visibleBar, type TokenVisualState } from './tokenVisuals'
 import { colors } from '@/theme/colors'
 import { fonts, sizes, weights } from '@/theme/typography'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { WorkoutToken } from '@domain/workout/WorkoutTokens'
+import { logger, safe } from '@/diagnostics/logger'
 
 export interface CueView {
   cue: CueInstance
@@ -80,6 +83,13 @@ export interface CueStageProps {
    * W0) → the card falls back to the setInterval path.
    */
   avatarAnchor?: SharedValue<SharedTransportAnchor>
+  /**
+   * UI-thread work clock (MVP v2, GH #305). When present, the active
+   * sequence cue's beat cursor is projected per frame by
+   * `useRingBeatClock` instead of waiting on the JS tick. Absent →
+   * props-supplied tokenStates render untouched (tests, legacy screens).
+   */
+  workClock?: SharedValue<SharedWorkClock>
 }
 
 /** Hand letter for a punch token, taken from the resolved expectations. */
@@ -219,8 +229,70 @@ function CueRow(props: {
   )
 }
 
+/**
+ * The UI-thread walk (MVP v2, GH #305): worklet-projected beat cursor for
+ * the ACTIVE sequence cue, merged over the JS-delivered tokenStates. JS
+ * still owns matcher credit (`completed` ✓ marks) and everything
+ * non-sequence; the worklet owns WHEN the active node advances — the
+ * rhythm carrier that used to trail the click by a mean 209 ms on the JS
+ * tick. Without a `workClock` (tests, screens without the wiring) this is
+ * inert and the props-supplied states render exactly as before.
+ */
+function useWalkedView(
+  current: CueView | undefined,
+  workClock: SharedValue<SharedWorkClock> | undefined,
+): CueView | undefined {
+  const [walk, setWalk] = React.useState<{ epoch: string; ordinal: number } | null>(null)
+  const cue = current?.cue
+  const ringCue = React.useMemo<RingBeatCue | null>(() => {
+    if (!cue || cue.scoring !== 'sequence') return null
+    return {
+      epoch: cue.id,
+      scheduledStartMs: cue.scheduledStartMs,
+      tokenOffsetsMs: cue.tokenOffsetsMs,
+      expectedTokenIndexes: cue.expectedPunches.map((p) => p.tokenIndex),
+    }
+    // Occurrence identity only — a re-render with the same cue must not
+    // rebuild (and thereby restage/reset) the worklet's clamp.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cue?.id])
+  const onOrdinal = React.useCallback((epoch: string, ordinal: number) => {
+    setWalk({ epoch, ordinal })
+    // Click-lock v2 ground truth (A6): the DISPLAYED walk, not the engine
+    // event. ~3-4 lines/sec — production-safe, and the only way to measure
+    // what the athlete actually saw against the beat grid.
+    logger.info('puncheokie.ring.visual', 'walk advanced', {
+      cueId: safe(epoch),
+      ordinal: safe(ordinal),
+    })
+  }, [])
+  useRingBeatClock(ringCue, workClock, onOrdinal)
+
+  return React.useMemo(() => {
+    if (!current || !cue) return current
+    if (!walk || walk.epoch !== cue.id) return current
+    // Merge: cursor = max(matcher credit, worklet beat) — identical to the
+    // runner's own sequence-branch rule, just fed a fresher beat.
+    const credited = current.tokenStates.filter(
+      (s, i) => s === 'completed' && cue.tokens[i]?.kind === 'punch',
+    ).length
+    const cursor = Math.max(credited, walk.ordinal)
+    const tokenStates = cue.tokens.map((t, i): TokenVisualState => {
+      if (t.kind === 'rest') return 'empty'
+      if (t.kind !== 'punch') return current.tokenStates[i] ?? 'upcoming'
+      const po = cue.expectedPunches.findIndex((p) => p.tokenIndex === i)
+      if (po < 0) return 'upcoming'
+      if (po < credited) return 'completed'
+      if (po === cursor) return 'active'
+      return 'upcoming'
+    })
+    return { ...current, tokenStates }
+  }, [current, cue, walk])
+}
+
 function CueStageInner(props: CueStageProps): React.JSX.Element {
-  const { current, next, reducedMotion = false, idleLabel, avatarAnchor } = props
+  const { next, reducedMotion = false, idleLabel, avatarAnchor, workClock } = props
+  const current = useWalkedView(props.current, workClock)
 
   return (
     <View style={styles.root} testID="cue-stage">
