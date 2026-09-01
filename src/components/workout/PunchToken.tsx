@@ -118,14 +118,18 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
         ) : null}
         {walked ? (
           <>
-            {/* ACTIVE — heaviest border + fill, painted UI-thread-side. The
-                pulse (ActiveRing) is deliberately absent here: a static
-                strong ring keeps the overlay pure-style, and the walk's
-                motion IS the animation. */}
+            {/* ACTIVE — INVERTED interior (Kyle, on-glass sign-off of the
+                static bold ring): solid accent fill with the number in
+                background-ink, the exact colour swap of the resting node.
+                The glyph lives INSIDE the overlay so the whole inversion is
+                one UI-thread opacity flip — the base number underneath is
+                simply covered. Pulse stays deliberately absent: the walk's
+                motion is the animation. */}
             <Animated.View
               pointerEvents="none"
               style={[
                 styles.walkOverlay,
+                styles.walkOverlayCenter,
                 activeOverlay,
                 {
                   width: diameter,
@@ -133,15 +137,25 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
                   borderRadius: diameter / 2,
                   borderWidth: STATE_VISUALS.active.borderWidth,
                   borderColor: STATE_VISUALS.active.borderColor,
-                  backgroundColor: STATE_VISUALS.active.backgroundColor,
+                  backgroundColor: STATE_VISUALS.active.borderColor,
                 },
               ]}
-            />
-            {/* COMPLETED — subdued fill behind the glyph. */}
+            >
+              <Text
+                style={[
+                  styles.number,
+                  { fontSize: TOKEN_FONT_SIZE[size], color: colors.background },
+                ]}
+              >
+                {number}
+              </Text>
+            </Animated.View>
+            {/* COMPLETED — subdued fill, number kept legible in muted ink. */}
             <Animated.View
               pointerEvents="none"
               style={[
                 styles.walkOverlay,
+                styles.walkOverlayCenter,
                 doneOverlay,
                 {
                   width: diameter,
@@ -152,7 +166,16 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
                   backgroundColor: STATE_VISUALS.completed.backgroundColor,
                 },
               ]}
-            />
+            >
+              <Text
+                style={[
+                  styles.number,
+                  { fontSize: TOKEN_FONT_SIZE[size], color: STATE_VISUALS.completed.textColor },
+                ]}
+              >
+                {number}
+              </Text>
+            </Animated.View>
           </>
         ) : null}
 
@@ -219,6 +242,10 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
 const styles = StyleSheet.create({
   walkOverlay: {
     position: 'absolute',
+  },
+  walkOverlayCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   root: { alignItems: 'center', justifyContent: 'center', padding: 8 },
   /** Body shots sit lower on screen — the placement cue from doc §13. */
