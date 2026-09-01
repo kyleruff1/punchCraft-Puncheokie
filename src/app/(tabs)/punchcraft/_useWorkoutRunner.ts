@@ -46,6 +46,7 @@ import { roundStartTicksFrom, scoreTickAt } from '@domain/programs/scoreClock'
 import type { RoundWalkPlan } from '@/components/workout/useRingBeatClock'
 import { type SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
+import { findClickScript } from '@audio/voiceAssets/clickScriptManifest'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
   compileRoundSpine,
@@ -88,6 +89,13 @@ import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkou
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
 export const TICK_INTERVAL_MS = 50
+
+/**
+ * Breath between a section lead-in's last word and its section's first
+ * strike (Script Bible v2). The clip is scheduled to END this far before
+ * the block starts; the 50 ms tick granularity eats into it, never past it.
+ */
+export const LEAD_IN_PAD_MS = 250
 /**
  * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
  * found Pressables dead DURING work while fine in idle: the 10Hz
@@ -449,6 +457,53 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         })),
     }
   }, [])
+  /**
+   * Round-scoped lead-in schedule (Script Bible v2, Kyle 2026-09-01):
+   * one entry per SECTION (block) of the current round, computed from
+   * the compiled timeline at work-entered so each authored lead-in clip
+   * FINISHES as its section's first strike lands (call-then-shots — the
+   * clip talks over the previous section's tail, announce-then-work
+   * style). Data-driven gate: a workout with no rendered click-script
+   * clips builds an empty schedule and nothing here runs.
+   */
+  const leadInScheduleRef = useRef<{
+    roundIndex: number
+    entries: Array<{
+      slot: string
+      text: string
+      module: number
+      durationMs: number
+      /** Fire when workElapsedMs reaches this. */
+      dispatchAtMs: number
+      /** Past this, the lead-in is no longer useful — skip loudly. */
+      giveUpAtMs: number
+      state: 'pending' | 'played' | 'skipped'
+    }>
+  } | null>(null)
+  const buildLeadInSchedule = useCallback((roundIndex: number): void => {
+    const cues = timelineRef.current[roundIndex]?.cues ?? []
+    const seenBlocks = new Set<string>()
+    const entries: NonNullable<typeof leadInScheduleRef.current>['entries'] = []
+    for (const cue of cues) {
+      if (cue.repeatIndex !== 0 || seenBlocks.has(cue.blockId)) continue
+      seenBlocks.add(cue.blockId)
+      // Section index is the block's ORDER in the round, not its id —
+      // blockId prefixes ('jab1-b2') do not match workout ids.
+      const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
+      const clip = findClickScript(slot)
+      if (!clip) continue
+      entries.push({
+        slot,
+        text: clip.text,
+        module: clip.module,
+        durationMs: clip.durationMs,
+        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS),
+        giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
+        state: 'pending',
+      })
+    }
+    leadInScheduleRef.current = { roundIndex, entries }
+  }, [workout.id])
   const announcerRef = useRef<CueAnnouncer | null>(null)
   /**
    * D1 third-party-playback state, mirrored out of the detector so the
@@ -1060,6 +1115,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // result leaves the store rather than lingering behind the cues.
           freezeRef.current.beginRound(transition.roundIndex)
           buildWalkPlan(transition.roundIndex)
+          buildLeadInSchedule(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
 
           // Install the round's compiled rhythm map (M2): from here the map
@@ -1540,6 +1596,42 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           // for the lead-in to occupy.
           snapshot.roundIndex,
         )
+        // Script Bible v2 lead-ins: dispatch any due section lead-in
+        // against the same clock sample. Retry-on-busy (never overlap a
+        // sounding coach clip — Pillar 2), give up loudly once the clip
+        // could no longer set up its section.
+        const schedule = leadInScheduleRef.current
+        if (schedule && schedule.roundIndex === snapshot.roundIndex && voice) {
+          for (const entry of schedule.entries) {
+            if (entry.state !== 'pending' || snapshot.workElapsedMs < entry.dispatchAtMs) continue
+            if (snapshot.workElapsedMs > entry.giveUpAtMs) {
+              entry.state = 'skipped'
+              logger.warn('puncheokie.clickScript.skipped', 'lead-in window expired before the lane freed', {
+                slot: safe(entry.slot),
+                workElapsedMs: safe(snapshot.workElapsedMs),
+              })
+              continue
+            }
+            // D1 (coach off / third-party music without opt-in): the whole
+            // guided layer stays silent. Checked at dispatch, not at build,
+            // so a mid-round playback change is honoured.
+            if (!voiceAllowed(voice.policy, playbackActiveRef.current)) continue
+            const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
+            if (audibleUntilMs > 0) continue // lane busy — retry next tick
+            entry.state = 'played'
+            voice.output.playClickScript?.({
+              text: entry.text,
+              module: entry.module,
+              durationMs: entry.durationMs,
+            })
+            logger.info('puncheokie.clickScript.dispatch', 'section lead-in dispatched', {
+              slot: safe(entry.slot),
+              dispatchAtMs: safe(entry.dispatchAtMs),
+              lateMs: safe(Math.round(snapshot.workElapsedMs - entry.dispatchAtMs)),
+              durationMs: safe(entry.durationMs),
+            })
+          }
+        }
       }
       voice?.output.advance?.()
       syncFromEngine()

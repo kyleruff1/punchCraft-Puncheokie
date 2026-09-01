@@ -62,7 +62,8 @@ import { IntroPlayer } from '@audio/IntroPlayer'
 import { RecoveryPlayer } from '@audio/RecoveryPlayer'
 import { CALLOUT_CLIPS, themeClipFor } from '@audio/voiceAssets/calloutManifest'
 import { INTRO_SEGMENTS } from '@audio/voiceAssets/introManifest'
-import { RECOVERY_SCRIPTS } from '@audio/voiceAssets/recoveryManifest'
+import { RECOVERY_SCRIPTS, type RecoveryScript } from '@audio/voiceAssets/recoveryManifest'
+import { findClickScript } from '@audio/voiceAssets/clickScriptManifest'
 import { RoundWarningPlayer } from '@audio/RoundWarningPlayer'
 import { planRecoverySequence } from '@domain/coach/recoveryPlan'
 import {
@@ -410,9 +411,29 @@ export default function LiveScreen(): React.JSX.Element {
       recoveryRef.current?.stop()
       return
     }
-    const scriptId = recoveryPlan[live.roundIndex]
-    if (!scriptId) return
-    const script = RECOVERY_SCRIPTS.find((s) => s.scriptId === scriptId)
+    // Script Bible v2 (Kyle, 2026-09-01): a click workout carries its own
+    // AUTHORED rest script per rest — coach copy naming the next round's
+    // opening set. When one exists it REPLACES the generic recovery
+    // walkthrough for that rest (swap, not stack: the rest window's head
+    // belongs to exactly one voice; the warn-round countdown keeps the
+    // tail either way). Wrapped as a one-segment RecoveryScript so the
+    // whole bell-clearance / pause-in-place / playIfDue machinery is
+    // inherited rather than duplicated.
+    const clickRest = findClickScript(`rest/${workout.id}/r${live.roundIndex + 1}`)
+    const script: RecoveryScript | undefined = clickRest
+      ? {
+          scriptId: clickRest.id,
+          title: 'Round rest script',
+          category: 'click-script',
+          tags: [],
+          hydrationPrompt: false,
+          requiresStableBag: false,
+          avoidIfDizzy: false,
+          segments: [{ module: clickRest.module, durationMs: clickRest.durationMs, pauseAfterMs: 0 }],
+          measuredTotalMs: clickRest.durationMs,
+          corpusVersion: 'click-scripts',
+        }
+      : RECOVERY_SCRIPTS.find((s) => s.scriptId === recoveryPlan[live.roundIndex])
     if (!script) return
     recoveryRef.current ??= new RecoveryPlayer()
     recoveryRef.current.prepare(script)
@@ -430,6 +451,7 @@ export default function LiveScreen(): React.JSX.Element {
     policy.mode,
     volumes.voice,
     recoveryPlan,
+    workout.id,
     workout.schedule,
   ])
   React.useEffect(() => () => recoveryRef.current?.stop(), [])

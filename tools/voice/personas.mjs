@@ -78,6 +78,34 @@ export const PERSONAS = {
   },
 
   /**
+   * The self-cloned cornerman (Kyle, 2026-09-01): same recipe as
+   * `cornerman`, but the reference is 31.7s of OUR OWN shipped renders —
+   * six intro clips (intro-hello, intro-rounds-4, the three -steady
+   * program descriptions, intro-letsgo) concatenated. Cloning from the
+   * shipped output bakes the production sound into the reference, so new
+   * batches match what the athlete already hears on the tablet rather
+   * than the raw source extract. Provenance chain unchanged — the
+   * reference derives from cornerman-reference.wav renders (PROVENANCE.md).
+   */
+  cornerman2: {
+    id: 'cornerman2',
+    label: 'Cornerman (self-clone)',
+    version: 'cornerman2-1',
+    engine: 'chatterbox',
+    reference: 'tools/voice/reference/cornerman-selfref-30s.wav',
+    intensity: {
+      teach: { exaggeration: 1.0, cfgWeight: 0.3 },
+      work: { exaggeration: 1.0, cfgWeight: 0.3 },
+      push: { exaggeration: 1.0, cfgWeight: 0.3 },
+    },
+    performances: ['push'],
+    tempoCalibration: 1.35,
+    expression: 'theatrical',
+    finish: 'shout',
+    texture: 'broadcast',
+  },
+
+  /**
    * The original Kokoro voice, kept as a fallback rather than deleted.
    *
    * Needs no GPU and no separate venv, so it is the persona a machine that

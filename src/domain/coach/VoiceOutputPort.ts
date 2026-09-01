@@ -437,6 +437,24 @@ export interface VoiceOutputPort {
    */
   playComboAnnounce?(clip: { text: string; module: number; durationMs: number }): void
   /**
+   * Play a click-script clip (Script Bible v2, Kyle 2026-09-01): a
+   * section LEAD-IN spoken so it finishes as its section's first strike
+   * lands, or a REST SCRIPT spoken at the head of the rest window. The
+   * coach-guided layer of the click workouts — the click still carries
+   * every hit; these are the coach setting up what comes next.
+   *
+   * Payload shape matches `playInstruction` / `playComboAnnounce`.
+   * Kept separate because a click-script is SCHEDULED COACHING
+   * (pre-computed against the round timeline) rather than a command or
+   * an aside, and because the implementation must track its player so a
+   * pause / emergency stop can silence a sounding 8-14s script (the
+   * same A10 contract the combination phrase player honours).
+   *
+   * Optional: implementations that predate Bible v2 no-op silently —
+   * the click sets simply stay coach-minimal there.
+   */
+  playClickScript?(clip: { text: string; module: number; durationMs: number }): void
+  /**
    * The metronome track (M39-V1b / #280). The 3rd audio track — a
    * boxing-flavored one-bar loop that anchors every ring and voice
    * call to the master pulse. The runner's `applyTransitions` calls

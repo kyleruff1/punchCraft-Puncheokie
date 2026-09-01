@@ -294,6 +294,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * the very AudioTrack budget the pool exists to protect.
    */
   private phrasePlayer: AudioPlayer | null = null
+  /** The sounding click-script (lead-in / rest script), tracked so a safety cancel can silence it (A10). */
+  private clickScriptPlayer: AudioPlayer | null = null
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -975,6 +977,45 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
   }
 
+  /**
+   * Play a click-script clip (Script Bible v2 — section lead-in or rest
+   * script). Mechanically the `playComboAnnounce` shape, but the player
+   * is TRACKED: these clips run 3-14 s, and an untracked one-shot would
+   * keep talking over a paused or stopped workout (the A10 failure the
+   * phrase player already guards against). `cancel(safety)` silences it;
+   * the queue-only cancels leave a sounding script alone, same as every
+   * other sounding clip.
+   */
+  playClickScript(clip: { text: string; module: number; durationMs: number }): void {
+    if (this.failed) return
+    this.requestFocus()
+    try {
+      // A new script replaces a finished (or somehow still-sounding)
+      // predecessor — never two scripts at once.
+      try {
+        this.clickScriptPlayer?.remove()
+      } catch {
+        // Already gone.
+      }
+      const player = this.makePlayer(clip.module)
+      this.clickScriptPlayer = player
+      player.volume = this.callsMuted() ? 0 : this.volumes.voice
+      player.seekTo(0)
+      player.play()
+      this.markBusy(clip.durationMs)
+      logger.info('puncheokie.voice.play', 'click-script playing', {
+        kind: safe('click-script'),
+        text: safe(clip.text),
+        durationMs: safe(clip.durationMs),
+      })
+    } catch (err) {
+      logger.warn('puncheokie.voice.playFailed', 'click-script did not play', {
+        text: safe(clip.text),
+        error: safe(String(err)),
+      })
+    }
+  }
+
   playAsset(id: VoiceAssetId, atMs?: number): void {
     if (this.failed) return
     const priority = assetPriority(id)
@@ -1293,6 +1334,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // Already gone.
       }
       this.phrasePlayer = null
+      // Same A10 contract for a sounding click-script: a paused workout
+      // must not keep a 14 s rest script (or a lead-in) talking.
+      try {
+        this.clickScriptPlayer?.remove()
+      } catch {
+        // Already gone.
+      }
+      this.clickScriptPlayer = null
       this.busyUntilMs = 0
     }
   }

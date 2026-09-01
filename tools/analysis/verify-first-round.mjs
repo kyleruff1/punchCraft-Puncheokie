@@ -252,6 +252,15 @@ export function parseLogcat(logcatText) {
           durationMs: durationMs !== undefined ? Number(durationMs) : undefined,
           raw: body,
         })
+      } else if (body.includes("'click-script playing'")) {
+        // Script Bible v2 (2026-09-01): section lead-in or rest script.
+        events.push({
+          type: 'voice.click-script',
+          ts,
+          text: extractField(body, 'text'),
+          durationMs: numField(body, 'durationMs'),
+          raw: body,
+        })
       } else if (body.includes("'clip playing'")) {
         const asset = extractField(body, 'asset')
         // Bell tagging is ADDITIVE — the bell is still a voice.clip. Retyping
@@ -268,6 +277,21 @@ export function parseLogcat(logcatText) {
           raw: body,
         })
       }
+      continue
+    }
+    if (body.includes('puncheokie.clickScript.skipped')) {
+      events.push({ type: 'clickScript.skipped', ts, slot: extractField(body, 'slot'), raw: body })
+      continue
+    }
+    if (body.includes('puncheokie.clickScript.dispatch')) {
+      events.push({
+        type: 'clickScript.dispatch',
+        ts,
+        slot: extractField(body, 'slot'),
+        dispatchAtMs: numField(body, 'dispatchAtMs'),
+        lateMs: numField(body, 'lateMs'),
+        raw: body,
+      })
       continue
     }
     if (body.includes("puncheokie.cue.tokenDue")) {
@@ -439,8 +463,12 @@ function findDeferralFor(exp, deferrals) {
 function correlateCoachEvents(expected, observed, deferrals = []) {
   const observedByText = new Map()
   const observedByAsset = new Map()
+  const observedClickByText = new Map()
   for (const e of observed) {
-    if (e.type === 'voice.combo-announce' && e.text) {
+    if (e.type === 'voice.click-script' && e.text) {
+      if (!observedClickByText.has(e.text)) observedClickByText.set(e.text, [])
+      observedClickByText.get(e.text).push(e)
+    } else if (e.type === 'voice.combo-announce' && e.text) {
       if (!observedByText.has(e.text)) observedByText.set(e.text, [])
       observedByText.get(e.text).push(e)
     } else if (e.type === 'voice.clip' && e.asset) {
@@ -468,6 +496,8 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
       candidates = observedByText.get(exp.text ?? '') ?? []
     } else if (exp.kind === 'per-word') {
       candidates = observedByAsset.get(exp.assetId) ?? []
+    } else if (exp.kind === 'lead-in') {
+      candidates = observedClickByText.get(exp.text ?? '') ?? []
     }
     let bestIdx = -1
     let bestDelta = Number.POSITIVE_INFINITY
@@ -521,7 +551,12 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
   const extras = []
   observed.forEach((e, i) => {
     if (usedObservedIndex.has(i)) return
-    if (e.type !== 'voice.combo-announce' && e.type !== 'voice.clip') return
+    if (
+      e.type !== 'voice.combo-announce' &&
+      e.type !== 'voice.clip' &&
+      e.type !== 'voice.click-script'
+    )
+      return
     extras.push({ observed: e, verdict: 'extra' })
   })
   for (const ex of extras) {
@@ -529,6 +564,13 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
     const nearby = expected.find((exp) => {
       if (isCombo && exp.kind === 'combo-announce' && exp.text === ex.observed.text) {
         return Math.abs(ex.observed.elapsedMs - comparisonStartMs(exp)) <= LATE_WINDOW_MS
+      }
+      if (
+        ex.observed.type === 'voice.click-script' &&
+        exp.kind === 'lead-in' &&
+        exp.text === ex.observed.text
+      ) {
+        return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
       }
       if (!isCombo && exp.kind === 'per-word' && exp.assetId === ex.observed.asset) {
         return Math.abs(ex.observed.elapsedMs - exp.expectedStartMs) <= LATE_WINDOW_MS
@@ -796,7 +838,12 @@ export function verify(manifest, logcatText) {
     return ms >= -LATE_WINDOW_MS && ms <= window.endMs + LATE_WINDOW_MS
   }
   const observed = events
-    .filter((e) => e.type === 'voice.combo-announce' || e.type === 'voice.clip')
+    .filter(
+      (e) =>
+        e.type === 'voice.combo-announce' ||
+        e.type === 'voice.clip' ||
+        e.type === 'voice.click-script',
+    )
     .map((e) => ({ ...e, elapsedMs: elapsed(e) }))
     .filter(inWindow)
   const deferrals = events

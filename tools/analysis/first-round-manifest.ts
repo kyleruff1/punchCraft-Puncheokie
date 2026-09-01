@@ -28,6 +28,7 @@ import {
   type SampleWorkoutKey,
 } from '../../src/domain/workout/samples'
 import { findComboAnnounceById } from '../../src/audio/voiceAssets/comboAnnounceManifest'
+import { findClickScript } from '../../src/audio/voiceAssets/clickScriptManifest'
 import { TRANSPORT_TICKS_PER_PULSE } from '../../src/domain/timing/TimingEngine'
 import { expandTimeline } from '../../src/domain/programs/CueTimeline'
 import type {
@@ -74,6 +75,24 @@ type ExpectedCoachEvent =
       expectedEndTick: number
       expectedEndMs: number
       source: 'score.coachSlot'
+    }
+  | {
+      /**
+       * Script Bible v2 section lead-in (2026-09-01): the runner's
+       * buildLeadInSchedule dispatches `findClickScript(slot)` at
+       * `max(0, blockStartMs − durationMs − LEAD_IN_PAD_MS)` — this
+       * expectation mirrors that arithmetic exactly, so the correlator
+       * checks the DESIGN (clip finishes as the section starts), not a
+       * re-derivation of it.
+       */
+      kind: 'lead-in'
+      slot: string
+      clipId: string
+      text: string
+      durationMs: number
+      expectedStartTick: number
+      expectedStartMs: number
+      source: 'clickScript.schedule'
     }
   | {
       kind: 'per-word'
@@ -250,6 +269,35 @@ export function buildFirstRoundManifest(
           source: 'announcer.per-word',
         })
       }
+    }
+  }
+  // Script Bible v2 lead-ins (2026-09-01): one expectation per SECTION of
+  // round 1, mirroring the runner's buildLeadInSchedule — first cue of
+  // each block, clip resolved by slot key, dispatch scheduled so the clip
+  // FINISHES ~LEAD_IN_PAD_MS before the section's first strike. The pad
+  // constant is duplicated (the runner module is React Native and cannot
+  // be imported here); the correlator's window absorbs small drift, and a
+  // pad change without a manifest regen shows up as a uniform offset.
+  const LEAD_IN_PAD_MS = 250
+  if (round0) {
+    const seenBlocks = new Set<string>()
+    for (const cue of round0.cues) {
+      if (cue.repeatIndex !== 0 || seenBlocks.has(cue.blockId)) continue
+      seenBlocks.add(cue.blockId)
+      const slot = `lead-in/${workout.id}/r1s${seenBlocks.size}`
+      const clip = findClickScript(slot)
+      if (!clip) continue
+      const expectedStartMs = Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS)
+      coachEvents.push({
+        kind: 'lead-in',
+        slot,
+        clipId: clip.id,
+        text: clip.text,
+        durationMs: clip.durationMs,
+        expectedStartTick: Math.round(expectedStartMs / MS_PER_TICK),
+        expectedStartMs,
+        source: 'clickScript.schedule',
+      })
     }
   }
   coachEvents.sort((a, b) => a.expectedStartTick - b.expectedStartTick)

@@ -131,3 +131,15 @@ cp tools/voice/reference/cornerman-reference-v4.wav \
    tools/voice/reference/cornerman-reference.wav
 # then revert personas.mjs's version bump and re-render the corpus
 ```
+
+## cornerman-selfref-30s.wav (2026-09-01)
+
+Self-clone reference for the `cornerman2` persona: a 31.7 s concatenation
+of six SHIPPED renders from `assets/voice/numbers/standalone/`
+(intro-hello, intro-rounds-4, intro-program-{beginner,intermediate,advanced}-steady,
+intro-letsgo), all produced by the `cornerman` persona from
+`cornerman-reference.wav`. No new source material enters the chain — the
+licensing of this reference is exactly the licensing of
+`cornerman-reference.wav`, one generation removed. Purpose: new batches
+clone the production sound (texture chain included) instead of the raw
+extract, so they match what the athlete already hears.
