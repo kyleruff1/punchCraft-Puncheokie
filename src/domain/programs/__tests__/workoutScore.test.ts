@@ -228,9 +228,11 @@ describe('compileWorkoutScore — strikes', () => {
     const timeline = expandTimeline(threeRoundFundamentals, 'orthodox', bpm)
 
     // Round 0 starts at tick 0, so a round-0 cue's first strike lands on
-    // the cue's authored millisecond offset, expressed in ticks. (Only
-    // the FIRST strike: positions WITHIN a cue come off `compileCue`'s
-    // step grid, which is a separate mapping from `tokenOffsetsMs`.)
+    // the cue's authored start PLUS the first PUNCH token's own offset —
+    // since the one-grid fix (GH #305), every strike sits on the same
+    // tempo-scaled `tokenOffsetsMs` the rings run on. A cue that opens
+    // with a defense token (slip-2-3-2) has its first punch a beat in;
+    // the old step grid wrongly collapsed that punch onto the cue start.
     const round0 = timeline[0]!
     const msToTicks = (ms: number) => Math.round(ms / (60_000 / (60 * TRANSPORT_TICKS_PER_PULSE)))
 
@@ -238,8 +240,10 @@ describe('compileWorkoutScore — strikes', () => {
     for (const cue of round0.cues) {
       const first = score.strikes.find((s) => s.cueId === cue.id && s.roundIndex === 0)
       if (!first) continue
-      // ±1 tick for the independent rounding on each side.
-      expect(Math.abs(first.startTick - msToTicks(cue.scheduledStartMs))).toBeLessThanOrEqual(1)
+      const firstPunchIndex = cue.tokens.findIndex((t) => t.kind === 'punch')
+      const authoredMs = cue.scheduledStartMs + (cue.tokenOffsetsMs[firstPunchIndex] ?? 0)
+      // ±2 ticks for the independent rounding on each side.
+      expect(Math.abs(first.startTick - msToTicks(authoredMs))).toBeLessThanOrEqual(2)
       checked += 1
     }
     // Guard the guard: a lookup that silently matched nothing would
@@ -252,6 +256,53 @@ describe('compileWorkoutScore — strikes', () => {
     const lastStrike = score.strikes.filter((s) => s.roundIndex === 0).at(-1)!
     const lastCue = round0.cues.at(-1)!
     expect(lastStrike.startTick).toBeLessThanOrEqual(msToTicks(lastCue.windowEndMs))
+  })
+
+  it('strike spacing is TEMPO-SCALED — the grid follows the workout BPM', () => {
+    // Regression, GH #305 "one grid". Before this fix the compiled score
+    // placed strikes on `atStep * unitTicks` — a fixed 500 ms lattice at
+    // EVERY tempo (measured identical at 85 and 240 BPM across all ten
+    // committed manifests), while the rings ran the authored tempo-scaled
+    // offsets. Every ordering/bounds test passed under it; only a
+    // cross-tempo RATIO assertion catches this class.
+    const slow = compileWorkoutScore(threeRoundFundamentals, baseConfig({ bpm: 60 }))
+    const fast = compileWorkoutScore(threeRoundFundamentals, baseConfig({ bpm: 120 }))
+
+    const gapsByCue = (score: typeof slow) => {
+      const ticksByCue = new Map<string, number[]>()
+      for (const s of score.strikes) {
+        if (s.roundIndex !== 0) continue
+        if (!ticksByCue.has(s.cueId)) ticksByCue.set(s.cueId, [])
+        ticksByCue.get(s.cueId)!.push(s.startTick)
+      }
+      const gaps = new Map<string, number[]>()
+      for (const [cueId, ticks] of ticksByCue) {
+        ticks.sort((a, b) => a - b)
+        const list: number[] = []
+        for (let i = 1; i < ticks.length; i += 1) list.push(ticks[i]! - ticks[i - 1]!)
+        if (list.length > 0) gaps.set(cueId, list)
+      }
+      return gaps
+    }
+
+    // Join BY CUE ID: `expandTimeline` fills the round with MORE reps at
+    // the faster tempo, so the cue sets differ and index-pairing would
+    // compare unrelated cues. Only cues present at both tempos count.
+    const slowGaps = gapsByCue(slow)
+    const fastGaps = gapsByCue(fast)
+    let compared = 0
+    for (const [cueId, sGaps] of slowGaps) {
+      const fGaps = fastGaps.get(cueId)
+      if (!fGaps || fGaps.length !== sGaps.length) continue
+      for (let i = 0; i < sGaps.length; i += 1) {
+        // Halving the beat duration halves every intra-cue gap (±2 ticks
+        // of rounding). Under the old grid this fails everywhere: both
+        // sides read exactly 480 regardless of tempo.
+        expect(Math.abs(sGaps[i]! - 2 * fGaps[i]!)).toBeLessThanOrEqual(2)
+        compared += 1
+      }
+    }
+    expect(compared).toBeGreaterThan(10)
   })
 
   it('bodyWork sample emits body-shot strikes (token includes B) — score sees fused-body tokens', () => {

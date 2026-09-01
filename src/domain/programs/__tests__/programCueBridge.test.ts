@@ -66,12 +66,34 @@ describe('programCueFromInstance — the CueInstance → ProgramCue bridge', () 
       coachAssets: NULL_COACH_ASSET_RESOLVER,
     })
     expect(program).not.toBeNull()
+    // Placement is `atTick`, converted from the fixture's tokenOffsetsMs
+    // (i × 400 ms → i × 384 ticks at the 60-BPM base). `atStep` stays as
+    // the compiler's fallback. A strike's window runs to the next strike;
+    // the last reuses the previous gap (GH #305, one grid).
     expect(program!.combo.strikes).toEqual([
-      { token: '1', atStep: 0 },
-      { token: '1', atStep: 1 },
-      { token: '2', atStep: 2 },
+      { token: '1', atStep: 0, atTick: 0, endAtTick: 384 },
+      { token: '1', atStep: 1, atTick: 384, endAtTick: 768 },
+      { token: '2', atStep: 2, atTick: 768, endAtTick: 1152 },
     ])
     expect(program!.combo.totalSteps).toBe(3)
+    expect(program!.combo.totalTicks).toBe(1152)
+  })
+
+  it('atTick is TEMPO-SCALED — halving the offsets halves the ticks', () => {
+    // The regression this whole change exists for: before GH #305 the
+    // bridge emitted ordinal steps only, so strikes sat 500 ms apart at
+    // EVERY tempo (measured identical at 85 and 240 BPM across all ten
+    // samples). Ticks must follow the authored, tempo-scaled offsets.
+    const slow = programCueFromInstance(
+      cue({ tokens: [punch(1), punch(2)], tokenOffsetsMs: [0, 800] }),
+      { roundId: 'r', coachAssets: NULL_COACH_ASSET_RESOLVER },
+    )!
+    const fast = programCueFromInstance(
+      cue({ tokens: [punch(1), punch(2)], tokenOffsetsMs: [0, 400] }),
+      { roundId: 'r', coachAssets: NULL_COACH_ASSET_RESOLVER },
+    )!
+    const gap = (p: typeof slow) => p.combo.strikes[1]!.atTick! - p.combo.strikes[0]!.atTick!
+    expect(gap(slow)).toBe(2 * gap(fast))
   })
 
   it('maps body tokens to uppercase-B strike ids (matching StrikeToken)', () => {
@@ -95,10 +117,13 @@ describe('programCueFromInstance — the CueInstance → ProgramCue bridge', () 
       roundId: 'r1',
       coachAssets: NULL_COACH_ASSET_RESOLVER,
     })
-    // Only two strikes survive; step positions are per-punch ordinal.
+    // Only two strikes survive; steps are per-punch ordinal, but TICKS
+    // keep the punches' real offsets (indexes 1 and 3 of the fixture's
+    // i × 400 ms grid) — a skipped defense token must not drag the
+    // following punch earlier (GH #305).
     expect(program!.combo.strikes).toEqual([
-      { token: '2', atStep: 0 },
-      { token: '3', atStep: 1 },
+      { token: '2', atStep: 0, atTick: 384, endAtTick: 1152 },
+      { token: '3', atStep: 1, atTick: 1152, endAtTick: 1920 },
     ])
     expect(program!.combo.totalSteps).toBe(2)
   })

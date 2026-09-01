@@ -20,9 +20,13 @@
  *   coach tokens are skipped — the compiled timeline is a STRIKE
  *   timeline, and a non-punch token has no strike identity in the
  *   Phase 3 sense.
- * - `atStep` uses the token's `beatOffset` when present, else the
- *   punch's ordinal position — the same fallback the V1c cue expander
- *   uses to place tokens on the beat grid.
+ * - Strike PLACEMENT is `atTick`, converted from the cue's
+ *   `tokenOffsetsMs` — the same tempo-scaled offsets the rings run on,
+ *   so the compiled score and the ring grid are ONE grid. `atStep` is
+ *   carried only as the compiler's step fallback. (This comment used to
+ *   claim `atStep` was derived from `beatOffset`; it never was — the
+ *   ordinal-only placement froze every strike 500 ms apart at any tempo,
+ *   and the false comment is part of why that survived. GH #305.)
  * - Each CueInstance represents ONE rep of its authored block
  *   (`expandBlock` already mints per-repeat cueIds), so the bridge
  *   emits `{ count: 1, gapSteps: 0 }` — a single rep. Multi-rep
@@ -160,21 +164,49 @@ export function programCueFromInstance(
   }
   if (punchIndexes.length === 0) return null
 
+  // Placement comes from `tokenOffsetsMs` — the SAME tempo-scaled authored
+  // offsets the rings and the beat projection run on — converted to ticks.
+  // `atStep: ordinal` is kept only as the compiler's documented fallback;
+  // before GH #305 it was the ONLY placement, which put every strike on a
+  // fixed 500 ms lattice regardless of workout tempo (measured identical
+  // at 85 and 240 BPM), 2-7× off the ring grid. One grid now.
+  const offsetTicks = punchIndexes.map((tokenIndex) =>
+    ticksAtMs(cue.tokenOffsetsMs[tokenIndex] ?? 0),
+  )
   const strikes = punchIndexes.map((tokenIndex, ordinal) => {
     const token = cue.tokens[tokenIndex] as Extract<
       CueInstance['tokens'][number],
       { kind: 'punch' }
     >
+    const atTick = offsetTicks[ordinal]!
+    // A strike's window runs to the next strike; the last reuses the
+    // previous gap (a lone strike keeps the step-based span — with no
+    // second offset there is no tempo evidence to derive one from).
+    const nextTick = offsetTicks[ordinal + 1]
+    const prevTick = offsetTicks[ordinal - 1]
+    const endAtTick =
+      nextTick !== undefined
+        ? nextTick
+        : prevTick !== undefined
+          ? atTick + (atTick - prevTick)
+          : undefined
     return {
       token: strikeTokenFor(token.number, token.body),
-      atStep: ordinal, // step per punch ordinal — simple + honest for V1c cues
+      atStep: ordinal,
+      atTick,
+      ...(endAtTick !== undefined ? { endAtTick } : {}),
     }
   })
 
+  const lastStrike = strikes[strikes.length - 1]!
   const combo = {
     id: `${cue.id}:combo`,
     strikes,
     totalSteps: strikes.length,
+    // Real span of one pass, so the (production-dormant) rep stride
+    // cannot lie either. Falls back to nothing for a lone strike whose
+    // end is step-derived.
+    ...(lastStrike.endAtTick !== undefined ? { totalTicks: lastStrike.endAtTick } : {}),
   }
 
   return {

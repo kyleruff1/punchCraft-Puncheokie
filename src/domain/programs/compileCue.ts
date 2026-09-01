@@ -84,6 +84,21 @@ import { hashTimelineContent, type TimelineIdentity } from './timelineHash'
 export interface AuthoredStrike {
   token: StrikeToken
   atStep: number
+  /**
+   * Exact placement in transport ticks relative to the rep start,
+   * honoured over `atStep` when present (GH #305, "one grid").
+   *
+   * `atStep * unitTicks` is TEMPO-BLIND: unitTicks is a fixed fraction
+   * of the 60-BPM base pulse, so step-placed strikes sit 500 ms apart at
+   * every workout tempo — measured identical at 85 and 240 BPM across
+   * all ten samples, diverging from the ring grid by up to 867 ms. A
+   * producer that knows the real tempo-scaled offsets (the bridge, via
+   * `tokenOffsetsMs`) supplies ticks here; step authoring remains for
+   * hand-written patterns and tests.
+   */
+  atTick?: number
+  /** Exact end in ticks relative to rep start; overrides `spanSteps`. */
+  endAtTick?: number
   spanSteps?: number
   accent?: 'setup' | 'normal' | 'power' | 'finish'
   /**
@@ -109,6 +124,14 @@ export interface ComboPattern {
    * empty steps (a rest at the end of the phrase).
    */
   totalSteps: number
+  /**
+   * Exact span of one pass in ticks, honoured over
+   * `totalSteps * unitTicks` when present — same tempo-blindness fix as
+   * `AuthoredStrike.atTick`. Only affects the rep stride, which today
+   * never executes with `repetition.count > 1` in production, but the
+   * span must not lie regardless.
+   */
+  totalTicks?: number
 }
 
 /**
@@ -311,7 +334,7 @@ export function compileCue(cue: ProgramCue): CompiledCueTimeline {
   const responseGap = cue.responseGapTicks ?? DEFAULT_RESPONSE_GAP_TICKS
   const unitTicks = ticksPerUnit(cue.executionDivision)
   const gapTicks = cue.repetition.gapSteps * unitTicks
-  const passTicks = cue.combo.totalSteps * unitTicks
+  const passTicks = cue.combo.totalTicks ?? cue.combo.totalSteps * unitTicks
 
   // Canonical signature for the combo this cue speaks — combo-announce
   // resolvers key on this to fetch the pre-rendered clip. Derived here
@@ -347,8 +370,12 @@ export function compileCue(cue: ProgramCue): CompiledCueTimeline {
     const repStrikeIds: string[] = []
     for (let strikeIndex = 0; strikeIndex < cue.combo.strikes.length; strikeIndex += 1) {
       const authored = cue.combo.strikes[strikeIndex]!
-      const startTick = repStartTick + authored.atStep * unitTicks
-      const endTick = startTick + (authored.spanSteps ?? 1) * unitTicks
+      // Exact ticks win over steps — see AuthoredStrike.atTick (GH #305).
+      const startTick = repStartTick + (authored.atTick ?? authored.atStep * unitTicks)
+      const endTick =
+        authored.endAtTick !== undefined
+          ? repStartTick + authored.endAtTick
+          : startTick + (authored.spanSteps ?? 1) * unitTicks
       const strikeEventId = `${cue.cueId}:${repId}:${strikeIndex}`
       const definition = strikeFor(
         Number(authored.token.replace('B', '')) as 1 | 2 | 3 | 4 | 5 | 6,
