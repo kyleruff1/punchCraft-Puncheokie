@@ -581,6 +581,7 @@ export default function LiveScreen(): React.JSX.Element {
               reducedMotion={reducedMotion}
               avatarAnchor={avatarAnchor}
         workClock={workClock}
+        {...(cues.walkNext ? { walkNext: cues.walkNext } : {})}
             />
           )}
 

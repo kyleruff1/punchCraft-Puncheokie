@@ -168,7 +168,7 @@ export interface WorkoutRunner {
   /** Live vocabulary switch (numbers ⇄ techniques) — next call speaks it. */
   setVocabulary(vocabulary: 'numbers' | 'techniques'): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
-  readCues(): { current?: CueView; next?: CueView; freeWork?: boolean }
+  readCues(): { current?: CueView; next?: CueView; walkNext?: CueView; freeWork?: boolean }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
   readResults(): WorkoutRunnerResults
 }
@@ -427,6 +427,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
    * reached must not appear as though it did.
    */
   const realizedBlocksRef = useRef(new Set<string>())
+  /** Unsuppressed next for the ring worklet's staging — see syncFromEngine. */
+  const walkNextRef = useRef<CueView | null>(null)
   const announcerRef = useRef<CueAnnouncer | null>(null)
   /**
    * D1 third-party-playback state, mirrored out of the detector so the
@@ -623,6 +625,14 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const nextIsSameBlock =
       snap.next !== undefined && snap.next.blockId === snap.current?.blockId
     nextRef.current = nextIsSameBlock ? null : renderStateFor(snap.next)
+    // The WALK's staging channel (GH #305): the suppression above is a
+    // preview-ZONE aesthetic — but the ring worklet stages its next bar
+    // from `next`, and suppressing same-block reps starved it for every
+    // click-set bar. Measured: only 4 of 69 promotes boundary-exact,
+    // p50 +119ms, 13 a full beat late — Kyle's "opens on the 2, ~1 in
+    // 11". The walk gets the engine's queued next RAW; the visual Next
+    // zone keeps its suppression untouched.
+    walkNextRef.current = snap.next ? renderStateFor(snap.next) : null
   }, [renderStateFor])
 
   // -------------------------------------------------------------------------

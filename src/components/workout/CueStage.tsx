@@ -90,6 +90,14 @@ export interface CueStageProps {
    * props-supplied tokenStates render untouched (tests, legacy screens).
    */
   workClock?: SharedValue<SharedWorkClock>
+  /**
+   * Unsuppressed engine-next for the WALK's staging (GH #305). The `next`
+   * prop is nulled between same-block reps (a preview-zone aesthetic);
+   * staging from it starved the worklet on every click-set bar and
+   * promotes ran 119ms-late p50. This channel carries the queued next
+   * raw and feeds only useRingBeatClock — never the preview zone.
+   */
+  walkNext?: CueView
 }
 
 /** Hand letter for a punch token, taken from the resolved expectations. */
@@ -330,7 +338,11 @@ function useWalkedView(
 
 function CueStageInner(props: CueStageProps): React.JSX.Element {
   const { next, reducedMotion = false, idleLabel, avatarAnchor, workClock } = props
-  const { view: current, walkOrdinal } = useWalkedView(props.current, props.next, workClock)
+  const { view: current, walkOrdinal } = useWalkedView(
+    props.current,
+    props.walkNext ?? props.next,
+    workClock,
+  )
   const walked = workClock !== undefined
 
   return (
