@@ -79,7 +79,6 @@ export const bodyWork: GeneratedWorkout = {
     // riding the session work clock, and bpmForRecipe still returns the
     // map tempo via coachTempo below.
     coachTempo: { baseBpm: MAP.bpm, division: 1, swing: 0.5 },
-    // eslint-disable-next-line no-restricted-syntax -- see note above
 
     metronome: { enabled: false, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,
