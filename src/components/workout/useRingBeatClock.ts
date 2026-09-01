@@ -68,10 +68,29 @@ export function useRingBeatClock(
   clock: SharedValue<SharedWorkClock> | undefined,
   onOrdinal: (epoch: string, ordinal: number) => void,
 ): void {
+  // TWO slots — the cue being WALKED and the cue STAGED behind it — and
+  // the WORKLET moves between them on its own clock (GH #305).
+  //
+  // The first wiring adopted whatever cue JS said was current, and JS
+  // says so EARLY: a sim/tracker punch landing on the final token
+  // completes the cue on that JS push, the runner flips `current`, and
+  // the row re-staged before the frame that would have lit the last
+  // node — on-glass: "very low rate of ever getting to the fourth
+  // node". The walk was losing its final step to the exact JS-event
+  // path it exists to escape.
+  //
+  // Now JS only ever STAGES: the incoming cue lands in the `next*`
+  // slots, and the worklet promotes it when the CLOCK reaches its
+  // scheduledStart — after the current bar's walk has finished by
+  // construction, since bars precede their successors on the same grid.
   const epoch = useSharedValue('')
   const scheduledStartMs = useSharedValue(0)
   const offsets = useSharedValue<number[]>([])
   const expected = useSharedValue<number[]>([])
+  const nextEpoch = useSharedValue('')
+  const nextScheduledStartMs = useSharedValue(0)
+  const nextOffsets = useSharedValue<number[]>([])
+  const nextExpected = useSharedValue<number[]>([])
   const lastOrdinal = useSharedValue(-1)
   const active = useSharedValue(false)
 
@@ -81,17 +100,27 @@ export function useRingBeatClock(
       active.value = false
       return
     }
-    epoch.value = cue.epoch
-    scheduledStartMs.value = cue.scheduledStartMs
-    offsets.value = [...cue.tokenOffsetsMs]
-    expected.value = [...cue.expectedTokenIndexes]
-    lastOrdinal.value = -1
+    if (!active.value || epoch.value === '') {
+      // Cold start: nothing is walking — adopt directly.
+      epoch.value = cue.epoch
+      scheduledStartMs.value = cue.scheduledStartMs
+      offsets.value = [...cue.tokenOffsetsMs]
+      expected.value = [...cue.expectedTokenIndexes]
+      lastOrdinal.value = -1
+      nextEpoch.value = ''
+    } else if (cue.epoch !== epoch.value) {
+      // STAGE ONLY — the worklet promotes on its own clock.
+      nextEpoch.value = cue.epoch
+      nextScheduledStartMs.value = cue.scheduledStartMs
+      nextOffsets.value = [...cue.tokenOffsetsMs]
+      nextExpected.value = [...cue.expectedTokenIndexes]
+    }
     active.value = true
     // Primitive-keyed on the occurrence: a re-render must not restage
     // (restaging resets the clamp — the exact class of bug the avatar's
     // dep-stomp was). A new epoch IS the reset.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cueEpoch, clock, epoch, scheduledStartMs, offsets, expected, lastOrdinal, active])
+  }, [cueEpoch, clock])
 
   const cb = useFrameCallback(({ timestamp }) => {
     'worklet'
@@ -99,6 +128,17 @@ export function useRingBeatClock(
     const c = clock.value
     if (!c.running) return
     const elapsed = sharedWorkElapsedMs(c, timestamp)
+    // Promote the staged cue once the clock reaches it — the boundary is
+    // a clock fact, not a JS-event fact.
+    if (nextEpoch.value !== '' && elapsed >= nextScheduledStartMs.value) {
+      epoch.value = nextEpoch.value
+      scheduledStartMs.value = nextScheduledStartMs.value
+      offsets.value = nextOffsets.value
+      expected.value = nextExpected.value
+      lastOrdinal.value = -1
+      nextEpoch.value = ''
+      runOnJS(onOrdinal)(epoch.value, -1) // page-turn clear at the boundary
+    }
     const target = beatOrdinalAtMsWorklet(
       scheduledStartMs.value,
       offsets.value,

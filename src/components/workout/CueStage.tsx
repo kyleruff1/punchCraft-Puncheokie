@@ -270,24 +270,34 @@ function useWalkedView(
 
   return React.useMemo(() => {
     if (!current || !cue) return current
-    if (!walk || walk.epoch !== cue.id) return current
-    // Merge: cursor = max(matcher credit, worklet beat) — identical to the
-    // runner's own sequence-branch rule, just fed a fresher beat.
-    const credited = current.tokenStates.filter(
-      (s, i) => s === 'completed' && cue.tokens[i]?.kind === 'punch',
-    ).length
-    const cursor = Math.max(credited, walk.ordinal)
+    // Only clocked SEQUENCE cues are walked; everything else renders the
+    // props-states untouched.
+    if (!workClock || cue.scoring !== 'sequence') return current
+    // THE WORKLET OWNS THE ROW — sole source, no merge (GH #305).
+    //
+    // The first wiring blended two async sources per frame:
+    // `max(matcherCredit, walkOrdinal)`, with credit arriving on the
+    // ~341 ms JS tick and the walk on UI frames. Every disagreement
+    // rendered as a bounce — on-glass: "stutters between 1 and 3,
+    // bouncing both directions" — and between cue switch and the first
+    // emission the fallback flashed the PREVIOUS cue's stale states.
+    // Two clocks, one row: the exact defect class this MVP exists to
+    // kill. Matcher credit still drives SCORING; it no longer touches
+    // the walk. Before the first emission of a new occurrence the row
+    // is all-upcoming — the page-turn clear, which is what the breath
+    // looks like.
+    const ordinal = walk && walk.epoch === cue.id ? walk.ordinal : -1
     const tokenStates = cue.tokens.map((t, i): TokenVisualState => {
       if (t.kind === 'rest') return 'empty'
       if (t.kind !== 'punch') return current.tokenStates[i] ?? 'upcoming'
       const po = cue.expectedPunches.findIndex((p) => p.tokenIndex === i)
       if (po < 0) return 'upcoming'
-      if (po < credited) return 'completed'
-      if (po === cursor) return 'active'
+      if (po < ordinal) return 'completed'
+      if (po === ordinal) return 'active'
       return 'upcoming'
     })
     return { ...current, tokenStates }
-  }, [current, cue, walk])
+  }, [current, cue, walk, workClock])
 }
 
 function CueStageInner(props: CueStageProps): React.JSX.Element {
