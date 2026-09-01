@@ -11,9 +11,12 @@
 // tests below never pass an `anchor`, so the setInterval
 // fallback path is what actually runs.
 jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: require('react-native').View },
   runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
   useSharedValue: <T,>(init: T) => ({ value: init }),
   useFrameCallback: () => ({ setActive: () => {} }),
+  useAnimatedStyle: (factory: () => object) => factory(),
 }))
 
 import React from 'react'
@@ -21,7 +24,7 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 
 import { PunchAvatarCard, requestedFor } from '../PunchAvatarCard'
 import { findPunchAvatar, punchAvatarFrames } from '../punchAvatarManifest'
-import { minHoldMs, punchAvatarKey } from '@domain/workout/punchAvatar'
+import { avatarFrameAt, minHoldMs, punchAvatarKey } from '@domain/workout/punchAvatar'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { PunchNumber, WorkoutToken } from '@domain/workout/WorkoutTokens'
 
@@ -196,19 +199,27 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
     expect(step2.props.source).toBe(findPunchAvatar(5, false)?.step2)
   })
 
-  it('flips to the strike after the wind-up, then back to guard', () => {
+  it('starts retracted, flips to the strike once, and HOLDS it (Kyle, one flip per node)', () => {
+    // One flip per node (2026-09-01): guard until the flip moment,
+    // extended for the REST of the window — the retraction happens when
+    // the next node's window begins. Frame names are legacy-inverted:
+    // step2 art = guard, step1 art = strike (punchAvatarManifest.ts).
     const tree = render(<PunchAvatarCard cue={cue([punch(1), punch(2)])} activeTokenIndex={0} />)
     const opacityOf = (id: string): number => {
       const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
       const flat = [node.props.style].flat()
       return flat.reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
     }
-    expect(opacityOf('punch-avatar-step1')).toBe(1)
+    expect(opacityOf('punch-avatar-step2')).toBe(1) // guard first
     act(() => {
       jest.advanceTimersByTime(120)
     })
-    expect(opacityOf('punch-avatar-step2')).toBe(1)
-    expect(opacityOf('punch-avatar-step1')).toBe(0)
+    expect(opacityOf('punch-avatar-step1')).toBe(1) // strike
+    expect(opacityOf('punch-avatar-step2')).toBe(0)
+    act(() => {
+      jest.advanceTimersByTime(40)
+    })
+    expect(opacityOf('punch-avatar-step1')).toBe(1) // STILL struck — no bounce back
   })
 })
 
@@ -216,30 +227,21 @@ describe('PunchAvatarCard — the flip repeats', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('keeps flipping while one punch holds the card, beat after beat', () => {
-    // A repeated combo lights the same token every rep; the figure must
-    // keep working rather than freezing after one cycle.
-    const tree = render(<PunchAvatarCard cue={cue([punch(1), punch(2)])} activeTokenIndex={0} />)
-    const stepOpacity = (id: string): number => {
-      const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
-      return [node.props.style]
-        .flat()
-        .reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+  it('keeps throwing beat after beat — one guard->strike per wrap (pure math)', () => {
+    // The repeat contract, pinned on the math the WORKLET runs (the
+    // device path); the setInterval fallback is test-scaffolding legacy
+    // and its wall-clock sampling made this assertion flaky. Each
+    // min-hold wrap must open in guard (step2 art) and flip exactly once
+    // to the strike (step1 art).
+    const w = 0
+    const beat = minHoldMs(w, false) // 180
+    for (let wrap = 0; wrap < 4; wrap += 1) {
+      const base = wrap * beat
+      expect(avatarFrameAt((base + 30) % beat, w, false)).toBe('step2') // guard
+      expect(avatarFrameAt((base + 120) % beat, w, false)).toBe('step1') // strike
+      // …and HOLDS the strike to the wrap — no bounce-back within a beat.
+      expect(avatarFrameAt((base + beat - 1) % beat, w, false)).toBe('step1')
     }
-    const seen: string[] = []
-    for (let beat = 0; beat < 4; beat += 1) {
-      act(() => {
-        jest.advanceTimersByTime(120)
-      })
-      seen.push(stepOpacity('punch-avatar-step2') === 1 ? 'step2' : 'step1')
-      act(() => {
-        jest.advanceTimersByTime(400)
-      })
-      seen.push(stepOpacity('punch-avatar-step1') === 1 ? 'step1' : 'step2')
-    }
-    // The strike shows on every beat, not just the first.
-    expect(seen.filter((s) => s === 'step2').length).toBeGreaterThanOrEqual(4)
-    expect(seen.filter((s) => s === 'step1').length).toBeGreaterThanOrEqual(4)
   })
 
   it('sizes the card in fixed points, so a layout change cannot resize the figure', () => {
@@ -408,17 +410,16 @@ describe('PunchAvatarCard — the last-in-chain sandwich', () => {
     expect(opacityOf(tree, 'punch-avatar-step2')).toBe(0)
   })
 
-  it('a middle punch keeps the classic two-frame flip', () => {
-    // Middle punch of a three-punch chain: isLast is false, so the
-    // window drives the old strike-then-retracted call, and the last
-    // punch's sandwich cannot reach here.
+  it('a middle punch throws once and holds — no sandwich anywhere now', () => {
+    // One-flip-per-node made every position identical: the old
+    // last-punch thirds sandwich and mid-window retraction are gone.
     const combo = cue([punch(1), punch(2), punch(3)])
     const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
     act(() => {
       jest.advanceTimersByTime(120)
     })
-    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(1)
-    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(0)
+    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1) // struck
+    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(0)
   })
 
   it('a solo-punch chain sandwiches that one punch', () => {

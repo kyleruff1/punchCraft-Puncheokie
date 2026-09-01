@@ -90,15 +90,11 @@ export function avatarFrameAtWorklet(
   isLast: boolean,
 ): AvatarStep {
   'worklet'
+  // Mirror of `avatarFrameAt` — one flip per node, guard(step2) then
+  // strike(step1); frame names are legacy-inverted (see punchAvatar.ts).
+  void isLast
   const t = Math.max(0, elapsedMs)
-  if (isLast) {
-    const third = Math.max(0, windowMs) / 3
-    if (t < third) return 'step1'
-    if (t < 2 * third) return 'step2'
-    return 'step1'
-  }
-  if (t < flipFrameMsWorklet(windowMs)) return 'step1'
-  return t < avatarResetAtMsWorklet(windowMs) ? 'step2' : 'step1'
+  return t < flipFrameMsWorklet(windowMs) ? 'step2' : 'step1'
 }
 
 /** Params driving one adopted-punch flip cycle. Null while no punch is shown. */
@@ -154,7 +150,7 @@ export function useAvatarFrameClock(
     startedAtTick.value = sharedAnchorCurrentTick(anchor.value, nowFrameTimestampMs())
     windowMs.value = shown.windowMs
     isLast.value = shown.isLast
-    lastStep.value = 'step1'
+    lastStep.value = 'step2'
     active.value = true
     // Deps are the PRIMITIVES, deliberately not `shown` (GH #305): this
     // effect re-samples `startedAtTick` and resets the cycle to step1, so

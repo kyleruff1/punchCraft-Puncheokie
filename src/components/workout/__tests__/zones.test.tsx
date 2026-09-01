@@ -17,9 +17,12 @@
 // an `anchor`, so the setInterval fallback path is what runs
 // and this minimal stub is enough to let the modules load.
 jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: require('react-native').View },
   runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
   useSharedValue: <T,>(init: T) => ({ value: init }),
   useFrameCallback: () => ({ setActive: () => {} }),
+  useAnimatedStyle: (factory: () => object) => factory(),
 }))
 
 import React from 'react'

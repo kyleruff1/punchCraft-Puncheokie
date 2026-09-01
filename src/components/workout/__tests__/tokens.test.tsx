@@ -6,6 +6,20 @@
  * (doc §13, §21), and that every state stays distinguishable with colour
  * removed (spec §19.4).
  */
+// Reanimated stub (GH #305 Stage 3): PunchToken now imports Animated +
+// useAnimatedStyle at module top, and the real module needs the native
+// worklets runtime jest lacks. Same minimal stub punchAvatar.test uses;
+// no test here passes a clock, so worklet paint stays inert and the
+// props-driven states render exactly as before.
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: require('react-native').View },
+  runOnJS: <A extends unknown[]>(fn: (...args: A) => void) => (...args: A) => fn(...args),
+  useSharedValue: <T,>(init: T) => ({ value: init }),
+  useFrameCallback: () => ({ setActive: () => {} }),
+  useAnimatedStyle: (factory: () => object) => factory(),
+}))
+
 import React from 'react'
 import { act, create, type ReactTestInstance, type ReactTestRenderer } from 'react-test-renderer'
 import { StyleSheet } from 'react-native'

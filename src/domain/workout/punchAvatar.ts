@@ -91,15 +91,23 @@ export function avatarFrameAt(
   windowMs: number,
   isLast: boolean = false,
 ): AvatarStep {
+  // ONE FLIP PER NODE (Kyle, on-glass 2026-09-01, right after the walk
+  // closed): "start retracted, then flip to extended — just one flip per
+  // node." The old model returned to guard within the window (and cut
+  // the last punch into strict thirds), so a node cost up to three
+  // visible changes. Now: guard until the flip moment, EXTENDED for the
+  // rest of the window — the retraction happens implicitly when the next
+  // node's window begins at step1. Pumps inherit it for free: each
+  // pulse-wrap is exactly one throw. `isLast` keeps the signature (the
+  // hold-to-window-end it used to encode is now everyone's behaviour).
+  // NOTE the frame names are LEGACY-INVERTED (punchAvatarManifest.ts:
+  // step1 = the STRIKE art, step2 = the RETRACTED/guard art — from the
+  // old strike-first model). Kyle's spec reads in ART terms: guard
+  // first, extended after the flip — which in manifest terms is
+  // step2 -> step1.
+  void isLast
   const t = Math.max(0, elapsedMs)
-  if (isLast) {
-    const third = Math.max(0, windowMs) / 3
-    if (t < third) return 'step1'
-    if (t < 2 * third) return 'step2'
-    return 'step1'
-  }
-  if (t < flipFrameMs(windowMs)) return 'step1'
-  return t < avatarResetAtMs(windowMs) ? 'step2' : 'step1'
+  return t < flipFrameMs(windowMs) ? 'step2' : 'step1'
 }
 
 /**
