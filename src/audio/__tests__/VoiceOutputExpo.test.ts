@@ -702,6 +702,21 @@ describe('audibleUntilMs — A15 (#256) busy-until timing signal', () => {
     expect(h.output.audibleUntilMs()).toBe(0)
   })
 
+  it('does NOT advance for a BELL — percussion is not a coach voice (GH #305)', async () => {
+    // The lane models SPEECH: two voices must not stack. Marking it busy
+    // for the bell's ~2.5s ring made the round-open bell "talk over"
+    // every round's opening combo-announce — the precall's audible
+    // window closed entirely inside the ring, the collision gate
+    // declined it, and the retry expired on the same tick. Measured
+    // on-glass on heavy-hands AND pace-pusher (both lost expectation #1
+    // to retry-expired). Speaking over a bell tail is the behaviour
+    // Kyle signed off by ear.
+    const h = harness()
+    await h.output.preload()
+    h.output.playAsset('bell')
+    expect(h.output.audibleUntilMs()).toBe(0)
+  })
+
   it('does NOT advance for playCombination — the phrase player retired in Phase 5-iv', async () => {
     const h = harness()
     await h.output.preload()

@@ -1367,10 +1367,24 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // audible for the length of this clip. `assetDurationMs` reads
       // from the runtime cache; `CALLOUT_CLIPS` fills the co- gap the
       // same way it does for the duck.
-      this.markBusy(
-        this.assetDurationMs(id, form)
-          ?? CALLOUT_CLIPS[id as CalloutClipId]?.durationMs,
-      )
+      //
+      // BELLS EXCLUDED (GH #305): the coach lane models SPEECH — two
+      // voices must not stack. A bell is percussion, and marking the
+      // lane busy for its ~2.5 s ring made the round-open bell "talk
+      // over" every round's opening combo-announce: the precall's
+      // audible window (authored to END by the first strike) closed
+      // entirely inside the bell, so the collision gate declined it and
+      // the retry expired on the same tick. Measured on-glass: both
+      // heavy-hands and pace-pusher lost their opener to
+      // `retry-expired` while the lane was "busy" with the bell.
+      // Speaking over a bell tail is the pre-gate behaviour Kyle
+      // signed off by ear.
+      if (!BELL_ASSETS.has(id)) {
+        this.markBusy(
+          this.assetDurationMs(id, form)
+            ?? CALLOUT_CLIPS[id as CalloutClipId]?.durationMs,
+        )
+      }
       if (isChimeInAsset(id)) {
         // A1 (fixed): the runtime durations cache is never populated for
         // `co-` assets (playerFor's create branch reads player.duration
