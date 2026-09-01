@@ -1659,6 +1659,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       readCues: () => ({
         ...(currentRef.current ? { current: currentRef.current } : {}),
         ...(nextRef.current ? { next: nextRef.current } : {}),
+        // THE LINE THE WHOLE STAGING SAGA WAS MISSING (GH #305). The
+        // runner computed timeline successors 150x/round; two prior
+        // patches meant to expose them here silently no-opped on an
+        // indentation-mismatched anchor while the interface change
+        // compiled — so `cues.walkNext` was undefined at the live screen
+        // all night and the worklet promoted every bar off the JS-late
+        // fallback. Chain-of-custody tracers (sets:150, readCues:0)
+        // caught the missing hop.
+        ...(walkNextRef.current ? { walkNext: walkNextRef.current } : {}),
         ...(freeWorkRef.current ? { freeWork: true } : {}),
       }),
       readResults: () => ({

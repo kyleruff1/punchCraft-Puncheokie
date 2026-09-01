@@ -116,9 +116,15 @@ export function PunchToken(props: PunchTokenProps): React.JSX.Element {
         {!walked && state === 'active' ? (
           <ActiveRing diameter={diameter} reducedMotion={reducedMotion} />
         ) : null}
+        {/* Under worklet paint the AffirmationRing is suppressed: it fires
+            per sim/tracker punch on JS timing — a SECOND highlighter
+            iterating the row on a different clock. Kyle, on-glass:
+            "skipping around like it's two different sets of iterating
+            highlights." The reward returns later as a worklet-driven
+            effect; the walk must have exactly one writer (GH #305). */}
         <AffirmationRing
           diameter={diameter}
-          active={affirmed}
+          active={!walked && affirmed}
           reducedMotion={reducedMotion}
           {...(props.affirmKey === undefined ? {} : { fireKey: props.affirmKey })}
         />
