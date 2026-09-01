@@ -65,6 +65,14 @@ export interface RingBeatCue {
  */
 export function useRingBeatClock(
   cue: RingBeatCue | null,
+  /**
+   * The PREVIEWED next cue (GH #305, late-staging fix). JS flips
+   * `current` on its ~200-350ms tick, so staging-from-current promoted
+   * cues PAST their boundary and the walk opened mid-bar ("random
+   * starts on the 2"). The engine previews `next` seconds early — stage
+   * it the moment it appears and promotion lands exactly on the clock.
+   */
+  nextCue: RingBeatCue | null,
   clock: SharedValue<SharedWorkClock> | undefined,
   onOrdinal: (epoch: string, ordinal: number) => void,
   /**
@@ -104,6 +112,7 @@ export function useRingBeatClock(
   const active = useSharedValue(false)
 
   const cueEpoch = cue?.epoch ?? null
+  const nextEpochProp = nextCue?.epoch ?? null
   useEffect(() => {
     if (!cue || !clock) {
       active.value = false
@@ -118,19 +127,31 @@ export function useRingBeatClock(
       lastOrdinal.value = -1
       nextEpoch.value = ''
       if (displayOrdinal) displayOrdinal.value = -1
-    } else if (cue.epoch !== epoch.value) {
-      // STAGE ONLY — the worklet promotes on its own clock.
+    } else if (cue.epoch !== epoch.value && cue.epoch !== nextEpoch.value) {
+      // STAGE ONLY — the worklet promotes on its own clock. (Fallback
+      // path: normally the preview staged this seconds ago.)
       nextEpoch.value = cue.epoch
       nextScheduledStartMs.value = cue.scheduledStartMs
       nextOffsets.value = [...cue.tokenOffsetsMs]
       nextExpected.value = [...cue.expectedTokenIndexes]
+    }
+    // EARLY staging from the preview — the fix for boundary lateness.
+    if (
+      nextCue &&
+      nextCue.epoch !== epoch.value &&
+      nextCue.epoch !== nextEpoch.value
+    ) {
+      nextEpoch.value = nextCue.epoch
+      nextScheduledStartMs.value = nextCue.scheduledStartMs
+      nextOffsets.value = [...nextCue.tokenOffsetsMs]
+      nextExpected.value = [...nextCue.expectedTokenIndexes]
     }
     active.value = true
     // Primitive-keyed on the occurrence: a re-render must not restage
     // (restaging resets the clamp — the exact class of bug the avatar's
     // dep-stomp was). A new epoch IS the reset.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cueEpoch, clock])
+  }, [cueEpoch, nextEpochProp, clock])
 
   const cb = useFrameCallback(({ timestamp }) => {
     'worklet'
@@ -156,14 +177,18 @@ export function useRingBeatClock(
       expected.value,
       elapsed,
     )
-    // Monotonic clamp + one-node-per-frame walk. `target < last` cannot
-    // happen while the clock only moves forward, but the clamp makes the
-    // contract independent of that assumption.
+    // TARGET-JUMP, not step-per-frame (GH #305). The +1/frame walk
+    // existed for the retired React paint path; with state-based
+    // overlays it rendered late joins as a 16ms strobe through the
+    // intermediates — on-glass: "speed-up spastic changes". Normal
+    // cadence still lights each node in order (target advances one beat
+    // at a time); a late join snaps once — past nodes filled, the
+    // correct node active — which is the option-C principle applied to
+    // paint: never replay what is already over. Monotonic clamp stands.
     if (target <= lastOrdinal.value) return
-    const next = lastOrdinal.value + 1
-    lastOrdinal.value = next
-    if (displayOrdinal) displayOrdinal.value = next
-    runOnJS(onOrdinal)(epoch.value, next)
+    lastOrdinal.value = target
+    if (displayOrdinal) displayOrdinal.value = target
+    runOnJS(onOrdinal)(epoch.value, target)
   })
 
   useEffect(() => {

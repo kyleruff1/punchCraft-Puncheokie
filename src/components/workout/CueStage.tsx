@@ -250,6 +250,7 @@ function CueRow(props: {
  */
 function useWalkedView(
   current: CueView | undefined,
+  next: CueView | undefined,
   workClock: SharedValue<SharedWorkClock> | undefined,
 ): { view: CueView | undefined; walkOrdinal: SharedValue<number> } {
   // Stage 3 (GH #305): the worklet writes this UI-thread-synchronously;
@@ -281,7 +282,18 @@ function useWalkedView(
       ordinal: safe(ordinal),
     })
   }, [])
-  useRingBeatClock(ringCue, workClock, onOrdinal, walkOrdinal)
+  const nextRingCue = React.useMemo<RingBeatCue | null>(() => {
+    const nc = next?.cue
+    if (!nc || nc.scoring !== 'sequence') return null
+    return {
+      epoch: nc.id,
+      scheduledStartMs: nc.scheduledStartMs,
+      tokenOffsetsMs: nc.tokenOffsetsMs,
+      expectedTokenIndexes: nc.expectedPunches.map((p) => p.tokenIndex),
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [next?.cue?.id])
+  useRingBeatClock(ringCue, nextRingCue, workClock, onOrdinal, walkOrdinal)
 
   const view = React.useMemo(() => {
     if (!current || !cue) return current
@@ -318,7 +330,7 @@ function useWalkedView(
 
 function CueStageInner(props: CueStageProps): React.JSX.Element {
   const { next, reducedMotion = false, idleLabel, avatarAnchor, workClock } = props
-  const { view: current, walkOrdinal } = useWalkedView(props.current, workClock)
+  const { view: current, walkOrdinal } = useWalkedView(props.current, props.next, workClock)
   const walked = workClock !== undefined
 
   return (
