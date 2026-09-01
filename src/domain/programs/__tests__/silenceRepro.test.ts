@@ -1,3 +1,8 @@
+// ENGINE-BEHAVIOR SUITE — pinned to the FROZEN pre-click-track samples
+// (samples/__fixtures__), NOT the live library. The live sets were
+// rewritten to the 4-slot click-track format (MVP v2, GH #305) and no
+// longer exercise bursts / count scoring / defense-counters; these
+// assertions encode engine semantics those shapes exist to test.
 /**
  * Mid-round silence regression (found on tape, 2026-08-25).
  *
@@ -16,7 +21,7 @@ import { defaultVoiceCoachPolicy } from '../../coach/VoiceCoachPolicy'
 import type { VoiceOutputPort } from '../../coach/VoiceOutputPort'
 import { CueEngine, DEFAULT_LEAD_TIMES } from '../CueEngine'
 import { expandTimeline } from '../CueTimeline'
-import { threeRoundFundamentals } from '../../workout/samples/threeRoundFundamentals'
+import { legacyThreeRoundFundamentals as threeRoundFundamentals } from '../../workout/samples/__fixtures__'
 import { createFakeClock } from '@testing/fakeClock'
 
 describe('burst blocks keep the coach speaking (mid-round silence regression)', () => {

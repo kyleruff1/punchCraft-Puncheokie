@@ -1,3 +1,8 @@
+// ENGINE-BEHAVIOR SUITE — pinned to the FROZEN pre-click-track samples
+// (samples/__fixtures__), NOT the live library. The live sets were
+// rewritten to the 4-slot click-track format (MVP v2, GH #305) and no
+// longer exercise bursts / count scoring / defense-counters; these
+// assertions encode engine semantics those shapes exist to test.
 /**
  * Live-layout zones (M32-07).
  *
@@ -25,7 +30,7 @@ import { MetricsRail, MAX_OPTIONAL_TILES, OPTIONAL_TILES, type TileId, type Velo
 import { RoundTopBar, TrackerLamp, formatCountdown } from '../RoundTopBar'
 import { expandTimeline } from '@domain/programs/CueTimeline'
 import { CADENCE_PROFILES } from '@domain/workout/cadence'
-import { threeRoundFundamentals } from '@domain/workout/samples'
+import { legacyThreeRoundFundamentals as threeRoundFundamentals } from '@domain/workout/samples/__fixtures__'
 import type { CapabilityTier } from '@domain/workout/capabilityTier'
 
 const STEADY_BPM = CADENCE_PROFILES.steady.nominalBpm

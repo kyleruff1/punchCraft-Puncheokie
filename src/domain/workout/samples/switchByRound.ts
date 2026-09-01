@@ -1,108 +1,39 @@
 /**
- * Switch by Round — stance alternates every round (M31-05).
+ * Switch by Round — click-track edition (MVP v2 Part B, GH #305, Kyle 2026-08-31).
  *
- * Exercises `BlockStance`, StanceMapper (#126/#127) and the stance-change
- * card (M32-06). Rounds alternate between the athlete's default stance and
- * its opposite by setting the block stance to `'inherit'` or `'switch'`.
+ * Rewritten to the 4-slot bar format from `CLICK_MAPS['switch-by-round']` — the
+ * plan's B2-MAPS table, verbatim. The walk is the product: coach voice is
+ * capped at 'minimal' (bells, stance, final countdown survive; every
+ * punch call belongs to the visuals), the metronome is ON and AUDIBLE,
+ * and each round's rows sum exactly to its measure budget (the
+ * denominator rule — see clickMaps.ts, self-checked in tests).
  *
- * **A stance change never occurs inside a combination** (doc §11, doc §15).
- * Every block within a round carries the same stance, so a switch can only
- * happen at a round boundary — where §11 requires it to be announced. A
- * test asserts this property structurally rather than trusting the
- * authoring.
- *
- * Because the same numbered combination maps to opposite hands in opposite
- * stances, this sample is also the fixture that proves the hand sequence
- * genuinely inverts (D12's verifiable surface).
+ * Sections walk at 1x, 1.5x and 2x under the same BPM overlay; 8-slot
+ * rows page as two chunks of 4. No count-scored blocks remain — pumps
+ * are `1-1-1-1 xN`, never `1 x4N`, so every block rides the UI-thread
+ * walk.
  */
-
-import { CADENCE_PROFILES } from '../cadence'
 import type { GeneratedWorkout } from '../GeneratedWorkout'
-import type { BlockStance, ProgramRound } from '../WorkoutTokens'
+import type { ProgramRound } from '../WorkoutTokens'
+import { parseCombo, punchTokens } from '../WorkoutTokens'
+import { buildRoundSchedule } from '../roundSchedule'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { GENERATOR_VERSION } from '../versions'
-import { layBlocks, padBlocksToRound, roundPunchCount, type BlockSpec } from './authoring'
+import { layBlocks, roundPunchCount } from './authoring'
+import { CLICK_MAPS, clickSpecs } from './clickMaps'
 
-const BPM = CADENCE_PROFILES.technical.nominalBpm
+const MAP = CLICK_MAPS['switch-by-round']!
+const schedule = buildRoundSchedule(20)
 
-/**
- * One block list, reused per round with a different stance.
- *
- * Deliberately technical-cadence and modest volume: the point of this
- * sample is the stance handover, and a busy round would bury it.
- */
-function roundSpecs(prefix: string, stance: BlockStance): BlockSpec[] {
-  return [
-    {
-      id: `${prefix}-b1`,
-      kind: 'repeated-combo',
-      notation: '1-2',
-      offsets: [0, 0.8],
-      gapBeats: 2,
-      repeat: 8,
-      stance,
-      spokenPhrase: 'One, two.',
-    },
-    {
-      id: `${prefix}-b2`,
-      kind: 'repeated-combo',
-      notation: '1-2-3',
-      offsets: [0, 0.8, 1.7],
-      gapBeats: 2,
-      repeat: 6,
-      stance,
-      spokenPhrase: 'One, two, three.',
-    },
-    {
-      id: `${prefix}-b3`,
-      kind: 'defense-counter',
-      notation: 'slip-2-3-2',
-      offsets: [0, 1, 1.8, 2.6],
-      gapBeats: 2.5,
-      stance,
-      spokenPhrase: 'Slip. Two, three, two.',
-    },
-    {
-      id: `${prefix}-b4`,
-      kind: 'volume-burst',
-      notation: '1-2',
-      offsets: [0, 0.8],
-      gapBeats: 1.6,
-      durationBeats: 45,
-      targetPunches: 40,
-      stance,
-      spokenPhrase: 'One-twos.',
-    },
-    {
-      id: `${prefix}-b5`,
-      kind: 'active-recovery',
-      notation: '1',
-      offsets: [0],
-      gapBeats: 3,
-      durationBeats: 20,
-      targetPunches: 6,
-      stance,
-      instruction: 'Reset. Ready to switch.',
-    },
-  ]
-}
-
-const ROUND_PLAN: Array<{ theme: string; stance: BlockStance }> = [
-  { theme: 'Orthodox fundamentals', stance: 'inherit' },
-  { theme: 'Switch-stance fundamentals', stance: 'switch' },
-  { theme: 'Orthodox under pressure', stance: 'inherit' },
-  { theme: 'Switch-stance under pressure', stance: 'switch' },
-]
-
-const rounds: ProgramRound[] = ROUND_PLAN.map((plan, index) => {
-  const blocks = padBlocksToRound(layBlocks(roundSpecs(`sw-r${index + 1}`, plan.stance), BPM), BPM, 240_000)
-  const isLast = index === ROUND_PLAN.length - 1
+const rounds: ProgramRound[] = MAP.rounds.map((round, index) => {
+  const blocks = layBlocks(clickSpecs('sw', index, round), MAP.bpm)
+  const isLast = index === MAP.rounds.length - 1
   return {
     id: `sw-r${index + 1}`,
     order: index + 1,
     kind: 'round',
     countsTowardGoal: true,
-    theme: plan.theme,
+    theme: round.theme,
     workDurationMs: 240_000,
     restAfterMs: isLast ? 0 : 60_000,
     targetPunches: roundPunchCount(blocks),
@@ -111,7 +42,22 @@ const rounds: ProgramRound[] = ROUND_PLAN.map((plan, index) => {
 })
 
 const totalGoal = rounds.reduce((sum, r) => sum + r.targetPunches, 0)
-const activeMinutes = (rounds.length * 240_000) / 60_000
+
+// Technique distribution COMPUTED from the map rather than hand-copied,
+// so it cannot drift from what the rounds actually prescribe.
+const tally: Record<string, number> = {}
+for (const round of MAP.rounds) {
+  for (const row of round.rows) {
+    for (const t of punchTokens(parseCombo(row.motif))) {
+      const key = `${t.number}${t.body ? 'b' : ''}`
+      tally[key] = (tally[key] ?? 0) + row.reps
+    }
+  }
+}
+const tallyTotal = Object.values(tally).reduce((a, b) => a + b, 0)
+const expectedTechniqueDistribution = Object.fromEntries(
+  Object.entries(tally).map(([k, v]) => [k, Math.round((v / tallyTotal) * 100) / 100]),
+)
 
 export const switchByRound: GeneratedWorkout = {
   id: 'switch-by-round',
@@ -119,16 +65,21 @@ export const switchByRound: GeneratedWorkout = {
     ...defaultRecipe(),
     durationMinutes: 20,
     totalPunchGoal: totalGoal,
-    defaultStance: 'orthodox',
-    stanceMode: 'switch-by-round',
     focus: 'balanced',
+    defaultStance: 'orthodox',
     cadenceProfile: 'technical',
+    stanceMode: 'switch-by-round',
+    // MVP v2: the click IS the audio. Minimal caps the coach at bells +
+    // stance + countdown; punch calls belong to the visuals.
+    voiceMode: 'minimal',
+    coachTempo: { baseBpm: MAP.bpm, division: 1, swing: 0.5 },
+    metronome: { enabled: true, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'switch-by-round-2026-08-23',
   },
   schedule: rounds,
   roundPunchTargets: rounds.map((r) => r.targetPunches),
-  expectedTechniqueDistribution: { '1': 0.44, '2': 0.34, '3': 0.22 },
-  estimatedActivePunchesPerMinute: Math.round(totalGoal / activeMinutes),
+  expectedTechniqueDistribution,
+  estimatedActivePunchesPerMinute: Math.round(totalGoal / (schedule.activeSeconds / 60)),
   warnings: [],
 }

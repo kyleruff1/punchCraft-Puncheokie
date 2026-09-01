@@ -1,3 +1,8 @@
+// ENGINE-BEHAVIOR SUITE — pinned to the FROZEN pre-click-track samples
+// (samples/__fixtures__), NOT the live library. The live sets were
+// rewritten to the 4-slot click-track format (MVP v2, GH #305) and no
+// longer exercise bursts / count scoring / defense-counters; these
+// assertions encode engine semantics those shapes exist to test.
 /**
  * The RhythmSpine contract — one per-token schedule that every output
  * track reads. Walks every sample workout and pins the invariants that
@@ -25,8 +30,8 @@ import {
   pulsesFor,
   RAIL_K_MS,
 } from '../RhythmSpine'
-import { pacePusher } from '../../workout/samples/pacePusher'
-import { listSampleWorkouts } from '../../workout/samples'
+import { legacyPacePusher as pacePusher } from '../../workout/samples/__fixtures__'
+import { listLegacySampleWorkouts as listSampleWorkouts } from '../../workout/samples/__fixtures__'
 import { findPhraseTiming } from '../phraseTimingManifest'
 import type { CueInstance } from '../CueTimeline'
 

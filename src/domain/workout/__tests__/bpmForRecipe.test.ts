@@ -1,3 +1,7 @@
+// PINNED TO THE FROZEN PRE-CLICK-TRACK SAMPLES (samples/__fixtures__):
+// the byte-identity law needs recipes with metronome DISABLED, and the
+// live library (MVP v2, GH #305) enables it everywhere. The law itself
+// is unchanged and still enforced — against the shapes that exercise it.
 /**
  * `bpmForRecipe` and the byte-identity guarantee for V1a (M39 / #279).
  *
@@ -24,7 +28,7 @@ import {
   type CadenceProfile,
 } from '../WorkoutRecipe'
 import { expandTimeline } from '@domain/programs/CueTimeline'
-import { listSampleWorkouts } from '../samples'
+import { listLegacySampleWorkouts as listSampleWorkouts } from '../samples/__fixtures__'
 
 describe('bpmForRecipe — the M39 bridge', () => {
   it('falls through to the legacy nominalBpm when metronome is off', () => {

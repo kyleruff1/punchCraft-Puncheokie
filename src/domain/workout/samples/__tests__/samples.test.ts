@@ -17,8 +17,8 @@ import {
 } from '../index'
 import { validateGeneratedWorkout } from '../../GeneratedWorkout'
 import { buildRoundSchedule } from '../../roundSchedule'
-import { CADENCE_PROFILES, msToBeats } from '../../cadence'
-import { punchTokens, type WorkoutBlock } from '../../WorkoutTokens'
+import { bpmForRecipe, msToBeats } from '../../cadence'
+import { punchTokens } from '../../WorkoutTokens'
 import { blocksSpanMs, roundPunchCount } from '../authoring'
 import { handSequence, resolveEffectiveStance } from '../../../programs/StanceMapper'
 
@@ -99,8 +99,16 @@ describe.each(ALL.map((s) => [s.key, s.workout] as const))('%s', (key, workout) 
     // subdivision, whereas a typed millisecond figure essentially never
     // would. (Integrality is not the test — at 100 BPM a beat is exactly
     // 600ms, so beat-derived durations are legitimately whole numbers.)
-    const bpm = CADENCE_PROFILES[workout.recipe.cadenceProfile].nominalBpm
-    const SUBDIVISION = 0.05
+    // Engine BPM, not the legacy profile nominal: the click-track sets
+    // (MVP v2, GH #305) run `metronome.enabled` with
+    // `coachTempo.baseBpm = MAP.bpm`, and decoding their durations at the
+    // profile BPM reads a different clock than the one they are authored
+    // on. `bpmForRecipe` is the single bridge both paths share.
+    const bpm = bpmForRecipe(workout.recipe)
+    // 1/60 beat: admits both the legacy 0.05-beat authoring grid AND the
+    // click sets' subdivision walks — 1.5x rows place slots every 2/3
+    // beat, whose breaths land on thirds.
+    const SUBDIVISION = 1 / 60
     for (const round of workout.schedule) {
       for (const block of round.blocks) {
         const beats = msToBeats(block.durationMs, bpm)
@@ -139,40 +147,37 @@ describe.each(ALL.map((s) => [s.key, s.workout] as const))('%s', (key, workout) 
   })
 })
 
-describe('three-round-fundamentals reproduces the doc §4 fragment', () => {
+describe('three-round-fundamentals — click-track edition (MVP v2, GH #305)', () => {
+  // The doc §4 fragment identity moved to the FROZEN fixtures
+  // (samples/__fixtures__) with the rest of the pre-rewrite shapes; the
+  // live sample now pins the click-track contract instead.
   const round1 = threeRoundFundamentals.schedule[0]!
 
-  it('is orthodox with the documented seed', () => {
+  it('keeps its identity: orthodox, documented seed, three scored rounds', () => {
     expect(threeRoundFundamentals.recipe.defaultStance).toBe('orthodox')
     expect(threeRoundFundamentals.recipe.seed).toBe('fundamentals-2026-08-22')
-  })
-
-  it('names round 1 "Jab and cross rhythm" and runs 4:00 work / 1:00 rest', () => {
-    expect(round1.theme).toBe('Jab and cross rhythm')
-    expect(round1.workDurationMs).toBe(240_000)
-    expect(round1.restAfterMs).toBe(60_000)
-  })
-
-  it('opens with the 1-2 x3 repeated-combo at offsets 0 / 0.75', () => {
-    const block = round1.blocks[0] as WorkoutBlock
-    expect(block.kind).toBe('repeated-combo')
-    expect(block.repeat).toBe(3)
-    expect(block.tokens.map((t) => t.beatOffset)).toEqual([0, 0.75])
-    expect(punchTokens(block.tokens).map((t) => t.number)).toEqual([1, 2])
-    expect(block.spokenPhrase).toBe('One, two. Three times.')
-  })
-
-  it('follows with the slip to 2-3-2 defense-counter at offsets 0 / 1 / 1.75 / 2.5', () => {
-    const block = round1.blocks[1] as WorkoutBlock
-    expect(block.kind).toBe('defense-counter')
-    expect(block.tokens.map((t) => t.beatOffset)).toEqual([0, 1, 1.75, 2.5])
-    expect(block.tokens[0]?.kind).toBe('defense')
-    expect(punchTokens(block.tokens).map((t) => t.number)).toEqual([2, 3, 2])
-  })
-
-  it('has three scored rounds', () => {
     expect(threeRoundFundamentals.schedule).toHaveLength(3)
-    expect(threeRoundFundamentals.roundPunchTargets).toHaveLength(3)
+  })
+
+  it('is a click set: metronome audible, voice capped at minimal, 120 BPM', () => {
+    expect(threeRoundFundamentals.recipe.metronome).toEqual({ enabled: true, volume: 0.6 })
+    expect(threeRoundFundamentals.recipe.voiceMode).toBe('minimal')
+    expect(bpmForRecipe(threeRoundFundamentals.recipe)).toBe(120)
+  })
+
+  it('opens with the 1-1-1-1 bar at whole-beat offsets, x10', () => {
+    const block = round1.blocks[0]!
+    expect(block.kind).toBe('repeated-combo')
+    expect(block.repeat).toBe(10)
+    expect(block.tokens.map((t) => t.beatOffset)).toEqual([0, 1, 2, 3])
+    expect(punchTokens(block.tokens).map((t) => t.number)).toEqual([1, 1, 1, 1])
+  })
+
+  it('walks all three rates in round 1 — 1x, 1.5x and 2x under one BPM', () => {
+    const steps = round1.blocks.map((b) => b.tokens[1]!.beatOffset - b.tokens[0]!.beatOffset)
+    expect(new Set(steps.map((v) => Math.round(1000 / v) / 1000))).toEqual(
+      new Set([1, 1.5, 2]),
+    )
   })
 })
 
@@ -191,12 +196,10 @@ describe('establish-the-jab-20', () => {
     expect(jabLed.length / structured.length).toBeGreaterThanOrEqual(0.6)
   })
 
-  it('records the gap between the suggested tier goal and what it prescribes', () => {
-    // The sample is hand-authored, so its prescribed total will not equal the
-    // tier suggestion. Surfacing that in warnings is honest; silently
-    // shipping a mismatched goal would not be.
-    expect(establishTheJab20.warnings.length).toBeGreaterThan(0)
-    expect(establishTheJab20.warnings[0]).toMatch(/Steady-tier/)
+  it('ships no warnings — targets are derived from the maps, never asserted', () => {
+    // Click sets compute totals from CLICK_MAPS rows, so there is no
+    // hand-vs-tier gap to disclose (MVP v2, GH #305).
+    expect(establishTheJab20.warnings).toEqual([])
   })
 })
 

@@ -1,3 +1,8 @@
+// ENGINE-BEHAVIOR SUITE — pinned to the FROZEN pre-click-track samples
+// (samples/__fixtures__), NOT the live library. The live sets were
+// rewritten to the 4-slot click-track format (MVP v2, GH #305) and no
+// longer exercise bursts / count scoring / defense-counters; these
+// assertions encode engine semantics those shapes exist to test.
 /**
  * Count-scored cues (#192, doc §14).
  *
@@ -14,7 +19,7 @@ import { CueEngine, DEFAULT_LEAD_TIMES } from '../CueEngine'
 import { LiveCueMatcher, type LiveMatcherEvent } from '../LiveCueMatcher'
 import { allCues, expandTimeline, type CueInstance, type RoundTimeline } from '../CueTimeline'
 import { CADENCE_PROFILES } from '../../workout/cadence'
-import { threeRoundFundamentals } from '../../workout/samples'
+import { legacyThreeRoundFundamentals as threeRoundFundamentals } from '../../workout/samples/__fixtures__'
 import { createFakeClock } from '@testing/fakeClock'
 import type { CueEvent } from '../CueState'
 import type { GeneratedWorkout } from '../../workout/GeneratedWorkout'

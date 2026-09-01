@@ -1168,9 +1168,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // The announcer holds the policy and the gate; the runner only feeds it
     // events. Absent `voice`, nothing is constructed and the workout is
     // silent by construction rather than by a flag (doc §25).
+    // MVP v2 (GH #305): a recipe may cap the coach at 'minimal' — the
+    // click-track sets keep bells + stance + countdown and hand every
+    // punch call to the visuals. The more-restrictive-wins rule inside
+    // shouldSpeak makes this a pure ceiling over the athlete's policy.
+    const effectivePolicy =
+      voice && workout.recipe.voiceMode === 'minimal'
+        ? { ...voice.policy, mode: 'minimal' as const }
+        : voice?.policy
     const announcer = voice
       ? new CueAnnouncer({
-          policy: voice.policy,
+          policy: effectivePolicy ?? voice.policy,
           output: voice.output,
           // The recipe's cadence chooses which rendering of a combination is
           // called — a phrase is a performance, so a faster round means a
@@ -1235,6 +1243,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // for 3-a-ii the dispatcher checks at fire time — good enough while
     // slots are only combo-announces).
     let slotDispatcher: SlotDispatcher | null = null
+    const scoreDispatchEnabled = workout.recipe.voiceMode !== 'minimal'
     /**
      * Score tick each round's work phase begins at, indexed by round.
      *
@@ -1249,7 +1258,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
      * round-relative clock back into the score's axis.
      */
     let roundStartTicks: number[] = []
-    if (announcer && voice) {
+    if (announcer && voice && scoreDispatchEnabled) {
       const compiledScore = compileWorkoutScore(workout, {
         stance,
         bpm: bpmForRecipe(workout.recipe),

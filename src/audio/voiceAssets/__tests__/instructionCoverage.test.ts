@@ -1,3 +1,9 @@
+// PINNED TO THE FROZEN PRE-CLICK-TRACK SAMPLES (samples/__fixtures__).
+// The live click-track sets (MVP v2, GH #305) author NO instruction or
+// spokenPhrase lines BY DESIGN — the walk is the product and the coach
+// is capped at minimal. The script table stays, aimed at the corpus-bank
+// phase; this suite keeps enforcing the script<->authored-line contract
+// against the frozen shapes that actually carry lines.
 /**
  * Coverage guard between the shipped sample workouts and the
  * instruction script (`tools/voice/instructions.json`).
@@ -18,7 +24,7 @@ import { readFileSync } from 'node:fs'
 import { cwd } from 'node:process'
 import { join } from 'node:path'
 
-import { listSampleWorkouts } from '@domain/workout/samples'
+import { listLegacySampleWorkouts as listSampleWorkouts } from '@domain/workout/samples/__fixtures__'
 
 interface InstructionEntry {
   id: string

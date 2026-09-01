@@ -1,3 +1,8 @@
+// ENGINE-BEHAVIOR SUITE — pinned to the FROZEN pre-click-track samples
+// (samples/__fixtures__), NOT the live library. The live sets were
+// rewritten to the 4-slot click-track format (MVP v2, GH #305) and no
+// longer exercise bursts / count scoring / defense-counters; these
+// assertions encode engine semantics those shapes exist to test.
 /**
  * Exhaustive cue-timeline expansion (M32-09, #186).
  *
@@ -31,17 +36,7 @@ import {
 } from '../CueTimeline'
 import { generateCase } from './helpers/timelineGen'
 import { CADENCE_PROFILES, beatsToMs } from '../../workout/cadence'
-import {
-  bodyWork,
-  establishTheJab20,
-  heavyHands,
-  pacePusher,
-  progressiveBuildup,
-  speedCombos,
-  switchByRound,
-  threeRoundFundamentals,
-  uppercutClinic,
-} from '../../workout/samples'
+import { legacyBodyWork as bodyWork, legacyEstablishTheJab20 as establishTheJab20, legacyHeavyHands as heavyHands, legacyPacePusher as pacePusher, legacyProgressiveBuildup as progressiveBuildup, legacySpeedCombos as speedCombos, legacySwitchByRound as switchByRound, legacyThreeRoundFundamentals as threeRoundFundamentals, legacyUppercutClinic as uppercutClinic } from '../../workout/samples/__fixtures__'
 import { resolveHand } from '../StanceMapper'
 import type { GeneratedWorkout } from '../../workout/GeneratedWorkout'
 import type {

@@ -225,7 +225,12 @@ export function buildFirstRoundManifest(
     const ev = toExpectedCoachEvent(slot)
     if (ev) coachEvents.push(ev)
   }
-  if (round0) {
+  // MVP v2 (GH #305): a click-track set caps the coach at 'minimal' —
+  // punch calls belong to the visuals, so there are no per-word
+  // expectations to correlate. Emitting them anyway would hard-FAIL every
+  // click set on audio it is designed not to produce.
+  const voiceMinimal = workout.recipe.voiceMode === 'minimal'
+  if (round0 && !voiceMinimal) {
     for (const cue of round0.cues) {
       if (atwCueIds.has(cue.id)) continue
       for (let i = 0; i < cue.tokens.length; i += 1) {
