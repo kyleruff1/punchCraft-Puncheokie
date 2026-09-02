@@ -19,11 +19,15 @@ import {
 import { validateGeneratedWorkout } from '../GeneratedWorkout'
 import { defaultRecipe } from '../WorkoutRecipe'
 import { CADENCE_PROFILES } from '../cadence'
-import { threeRoundFundamentals } from '../samples'
+import { legacyThreeRoundFundamentals } from '../samples/__fixtures__'
 import type { GeneratedWorkout } from '../GeneratedWorkout'
 import type { PunchNumber, WorkoutBlock } from '../WorkoutTokens'
 
-const WORKOUT: GeneratedWorkout = threeRoundFundamentals
+// The LEGACY fixture, deliberately: click sets fill their rounds to the
+// bell EXACTLY (setup pauses included, 2026-09-02), so any insertion or
+// lengthening overruns by construction — pacing mutations are a
+// legacy-shape concern until click sets grow displacement semantics.
+const WORKOUT: GeneratedWorkout = legacyThreeRoundFundamentals
 const BPM = CADENCE_PROFILES.steady.nominalBpm
 
 const catchUp = (id = 'catch-1'): WorkoutBlock =>

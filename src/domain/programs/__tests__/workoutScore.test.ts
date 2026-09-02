@@ -32,6 +32,7 @@
  * absence to prove the slice boundary.
  */
 
+import { bpmForRecipe } from '../../workout/cadence'
 import { compileWorkoutScore, type WorkoutScoreConfig } from '../workoutScore'
 import { expandTimeline } from '../CueTimeline'
 import { TRANSPORT_TICKS_PER_PULSE } from '../../timing/TimingEngine'
@@ -158,7 +159,15 @@ describe('compileWorkoutScore — strikes', () => {
   })
 
   it('every strike sits inside its round bounds', () => {
-    const score = compileWorkoutScore(threeRoundFundamentals, baseConfig())
+    // Compile on the recipe's OWN clock: click sets fill their rounds to
+    // the bell exactly (2026-09-02), so the legacy bpm:60 default lays a
+    // 120-BPM workout's tail past the fixed round window — a clock
+    // mismatch the runtime can never produce (it always compiles at
+    // bpmForRecipe).
+    const score = compileWorkoutScore(
+      threeRoundFundamentals,
+      baseConfig({ bpm: bpmForRecipe(threeRoundFundamentals.recipe) }),
+    )
     const roundBounds = new Map<number, { start: number; end: number }>()
     for (const boundary of score.phaseBoundaries) {
       const entry = roundBounds.get(boundary.roundIndex) ?? { start: 0, end: 0 }
