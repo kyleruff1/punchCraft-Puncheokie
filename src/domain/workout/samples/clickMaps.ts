@@ -106,7 +106,12 @@ export function clickSpecs(prefix: string, roundIndex: number, round: ClickRound
       kind: 'repeated-combo' as const,
       notation: row.motif,
       offsets: Array.from({ length: slots }, (_, k) => k * step),
-      gapBeats: breathBeats(slots, row.rate),
+      // The laid rep span is lastOffset + gapBeats — measured to the last
+      // punch's ONSET, not the end of its slot — so the gap must carry the
+      // final slot's width (1/rate) on top of the breath or every rep lays
+      // one slot short of its stride. Caught 2026-09-02: rounds under-
+      // filled ~12% and ended ~30s of dead air before the bell.
+      gapBeats: breathBeats(slots, row.rate) + step,
       repeat: row.reps,
       ...(i > 0 ? { leadInBeats: SETUP_GAP_MEASURES * 4 } : {}),
       ...(round.stance ? { stance: round.stance } : {}),

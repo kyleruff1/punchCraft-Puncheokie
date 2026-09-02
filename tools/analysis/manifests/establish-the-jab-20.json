@@ -8,7 +8,7 @@
   "identity": {
     "workoutId": "establish-the-jab-20",
     "revision": 1,
-    "timelineHash": "v2:c73ed1b6"
+    "timelineHash": "v2:21bea79b"
   },
   "strikes": [
     {
@@ -66,10 +66,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 4032,
-      "startMs": 4200,
-      "targetStrikeTick": 4320,
-      "targetStrikeMs": 4500
+      "startTick": 4608,
+      "startMs": 4800,
+      "targetStrikeTick": 4896,
+      "targetStrikeMs": 5100
     },
     {
       "eventId": "jab1-b1#1:rep-0:1",
@@ -78,10 +78,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 4608,
-      "startMs": 4800,
-      "targetStrikeTick": 4896,
-      "targetStrikeMs": 5100
+      "startTick": 5184,
+      "startMs": 5400,
+      "targetStrikeTick": 5472,
+      "targetStrikeMs": 5700
     },
     {
       "eventId": "jab1-b1#1:rep-0:2",
@@ -90,10 +90,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 5184,
-      "startMs": 5400,
-      "targetStrikeTick": 5472,
-      "targetStrikeMs": 5700
+      "startTick": 5760,
+      "startMs": 6000,
+      "targetStrikeTick": 6048,
+      "targetStrikeMs": 6300
     },
     {
       "eventId": "jab1-b1#1:rep-0:3",
@@ -102,10 +102,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 5760,
-      "startMs": 6000,
-      "targetStrikeTick": 6048,
-      "targetStrikeMs": 6300
+      "startTick": 6336,
+      "startMs": 6600,
+      "targetStrikeTick": 6624,
+      "targetStrikeMs": 6900
     },
     {
       "eventId": "jab1-b1#2:rep-0:0",
@@ -114,10 +114,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 8064,
-      "startMs": 8400,
-      "targetStrikeTick": 8352,
-      "targetStrikeMs": 8700
+      "startTick": 9216,
+      "startMs": 9600,
+      "targetStrikeTick": 9504,
+      "targetStrikeMs": 9900
     },
     {
       "eventId": "jab1-b1#2:rep-0:1",
@@ -126,10 +126,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 8640,
-      "startMs": 9000,
-      "targetStrikeTick": 8928,
-      "targetStrikeMs": 9300
+      "startTick": 9792,
+      "startMs": 10200,
+      "targetStrikeTick": 10080,
+      "targetStrikeMs": 10500
     },
     {
       "eventId": "jab1-b1#2:rep-0:2",
@@ -138,10 +138,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 9216,
-      "startMs": 9600,
-      "targetStrikeTick": 9504,
-      "targetStrikeMs": 9900
+      "startTick": 10368,
+      "startMs": 10800,
+      "targetStrikeTick": 10656,
+      "targetStrikeMs": 11100
     },
     {
       "eventId": "jab1-b1#2:rep-0:3",
@@ -150,10 +150,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 9792,
-      "startMs": 10200,
-      "targetStrikeTick": 10080,
-      "targetStrikeMs": 10500
+      "startTick": 10944,
+      "startMs": 11400,
+      "targetStrikeTick": 11232,
+      "targetStrikeMs": 11700
     },
     {
       "eventId": "jab1-b1#3:rep-0:0",
@@ -162,10 +162,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 12096,
-      "startMs": 12600,
-      "targetStrikeTick": 12384,
-      "targetStrikeMs": 12900
+      "startTick": 13824,
+      "startMs": 14400,
+      "targetStrikeTick": 14112,
+      "targetStrikeMs": 14700
     },
     {
       "eventId": "jab1-b1#3:rep-0:1",
@@ -174,10 +174,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 12672,
-      "startMs": 13200,
-      "targetStrikeTick": 12960,
-      "targetStrikeMs": 13500
+      "startTick": 14400,
+      "startMs": 15000,
+      "targetStrikeTick": 14688,
+      "targetStrikeMs": 15300
     },
     {
       "eventId": "jab1-b1#3:rep-0:2",
@@ -186,10 +186,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 13248,
-      "startMs": 13800,
-      "targetStrikeTick": 13536,
-      "targetStrikeMs": 14100
+      "startTick": 14976,
+      "startMs": 15600,
+      "targetStrikeTick": 15264,
+      "targetStrikeMs": 15900
     },
     {
       "eventId": "jab1-b1#3:rep-0:3",
@@ -198,10 +198,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 13824,
-      "startMs": 14400,
-      "targetStrikeTick": 14112,
-      "targetStrikeMs": 14700
+      "startTick": 15552,
+      "startMs": 16200,
+      "targetStrikeTick": 15840,
+      "targetStrikeMs": 16500
     },
     {
       "eventId": "jab1-b1#4:rep-0:0",
@@ -210,10 +210,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 16128,
-      "startMs": 16800,
-      "targetStrikeTick": 16416,
-      "targetStrikeMs": 17100
+      "startTick": 18432,
+      "startMs": 19200,
+      "targetStrikeTick": 18720,
+      "targetStrikeMs": 19500
     },
     {
       "eventId": "jab1-b1#4:rep-0:1",
@@ -222,10 +222,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 16704,
-      "startMs": 17400,
-      "targetStrikeTick": 16992,
-      "targetStrikeMs": 17700
+      "startTick": 19008,
+      "startMs": 19800,
+      "targetStrikeTick": 19296,
+      "targetStrikeMs": 20100
     },
     {
       "eventId": "jab1-b1#4:rep-0:2",
@@ -234,10 +234,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 17280,
-      "startMs": 18000,
-      "targetStrikeTick": 17568,
-      "targetStrikeMs": 18300
+      "startTick": 19584,
+      "startMs": 20400,
+      "targetStrikeTick": 19872,
+      "targetStrikeMs": 20700
     },
     {
       "eventId": "jab1-b1#4:rep-0:3",
@@ -246,10 +246,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 17856,
-      "startMs": 18600,
-      "targetStrikeTick": 18144,
-      "targetStrikeMs": 18900
+      "startTick": 20160,
+      "startMs": 21000,
+      "targetStrikeTick": 20448,
+      "targetStrikeMs": 21300
     },
     {
       "eventId": "jab1-b1#5:rep-0:0",
@@ -258,10 +258,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 20160,
-      "startMs": 21000,
-      "targetStrikeTick": 20448,
-      "targetStrikeMs": 21300
+      "startTick": 23040,
+      "startMs": 24000,
+      "targetStrikeTick": 23328,
+      "targetStrikeMs": 24300
     },
     {
       "eventId": "jab1-b1#5:rep-0:1",
@@ -270,10 +270,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 20736,
-      "startMs": 21600,
-      "targetStrikeTick": 21024,
-      "targetStrikeMs": 21900
+      "startTick": 23616,
+      "startMs": 24600,
+      "targetStrikeTick": 23904,
+      "targetStrikeMs": 24900
     },
     {
       "eventId": "jab1-b1#5:rep-0:2",
@@ -282,10 +282,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 21312,
-      "startMs": 22200,
-      "targetStrikeTick": 21600,
-      "targetStrikeMs": 22500
+      "startTick": 24192,
+      "startMs": 25200,
+      "targetStrikeTick": 24480,
+      "targetStrikeMs": 25500
     },
     {
       "eventId": "jab1-b1#5:rep-0:3",
@@ -294,10 +294,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 21888,
-      "startMs": 22800,
-      "targetStrikeTick": 22176,
-      "targetStrikeMs": 23100
+      "startTick": 24768,
+      "startMs": 25800,
+      "targetStrikeTick": 25056,
+      "targetStrikeMs": 26100
     },
     {
       "eventId": "jab1-b1#6:rep-0:0",
@@ -306,10 +306,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 24192,
-      "startMs": 25200,
-      "targetStrikeTick": 24480,
-      "targetStrikeMs": 25500
+      "startTick": 27648,
+      "startMs": 28800,
+      "targetStrikeTick": 27936,
+      "targetStrikeMs": 29100
     },
     {
       "eventId": "jab1-b1#6:rep-0:1",
@@ -318,10 +318,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 24768,
-      "startMs": 25800,
-      "targetStrikeTick": 25056,
-      "targetStrikeMs": 26100
+      "startTick": 28224,
+      "startMs": 29400,
+      "targetStrikeTick": 28512,
+      "targetStrikeMs": 29700
     },
     {
       "eventId": "jab1-b1#6:rep-0:2",
@@ -330,10 +330,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 25344,
-      "startMs": 26400,
-      "targetStrikeTick": 25632,
-      "targetStrikeMs": 26700
+      "startTick": 28800,
+      "startMs": 30000,
+      "targetStrikeTick": 29088,
+      "targetStrikeMs": 30300
     },
     {
       "eventId": "jab1-b1#6:rep-0:3",
@@ -342,62 +342,14 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 25920,
-      "startMs": 27000,
-      "targetStrikeTick": 26208,
-      "targetStrikeMs": 27300
-    },
-    {
-      "eventId": "jab1-b1#7:rep-0:0",
-      "cueId": "jab1-b1#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1",
-      "startTick": 28224,
-      "startMs": 29400,
-      "targetStrikeTick": 28512,
-      "targetStrikeMs": 29700
-    },
-    {
-      "eventId": "jab1-b1#7:rep-0:1",
-      "cueId": "jab1-b1#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1",
-      "startTick": 28800,
-      "startMs": 30000,
-      "targetStrikeTick": 29088,
-      "targetStrikeMs": 30300
-    },
-    {
-      "eventId": "jab1-b1#7:rep-0:2",
-      "cueId": "jab1-b1#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1",
       "startTick": 29376,
       "startMs": 30600,
       "targetStrikeTick": 29664,
       "targetStrikeMs": 30900
     },
     {
-      "eventId": "jab1-b1#7:rep-0:3",
+      "eventId": "jab1-b1#7:rep-0:0",
       "cueId": "jab1-b1#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1",
-      "startTick": 29952,
-      "startMs": 31200,
-      "targetStrikeTick": 30240,
-      "targetStrikeMs": 31500
-    },
-    {
-      "eventId": "jab1-b1#8:rep-0:0",
-      "cueId": "jab1-b1#8",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
@@ -408,8 +360,8 @@
       "targetStrikeMs": 33900
     },
     {
-      "eventId": "jab1-b1#8:rep-0:1",
-      "cueId": "jab1-b1#8",
+      "eventId": "jab1-b1#7:rep-0:1",
+      "cueId": "jab1-b1#7",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 1,
@@ -420,8 +372,8 @@
       "targetStrikeMs": 34500
     },
     {
-      "eventId": "jab1-b1#8:rep-0:2",
-      "cueId": "jab1-b1#8",
+      "eventId": "jab1-b1#7:rep-0:2",
+      "cueId": "jab1-b1#7",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 2,
@@ -432,8 +384,8 @@
       "targetStrikeMs": 35100
     },
     {
-      "eventId": "jab1-b1#8:rep-0:3",
-      "cueId": "jab1-b1#8",
+      "eventId": "jab1-b1#7:rep-0:3",
+      "cueId": "jab1-b1#7",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 3,
@@ -444,16 +396,64 @@
       "targetStrikeMs": 35700
     },
     {
+      "eventId": "jab1-b1#8:rep-0:0",
+      "cueId": "jab1-b1#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1",
+      "startTick": 36864,
+      "startMs": 38400,
+      "targetStrikeTick": 37152,
+      "targetStrikeMs": 38700
+    },
+    {
+      "eventId": "jab1-b1#8:rep-0:1",
+      "cueId": "jab1-b1#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1",
+      "startTick": 37440,
+      "startMs": 39000,
+      "targetStrikeTick": 37728,
+      "targetStrikeMs": 39300
+    },
+    {
+      "eventId": "jab1-b1#8:rep-0:2",
+      "cueId": "jab1-b1#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1",
+      "startTick": 38016,
+      "startMs": 39600,
+      "targetStrikeTick": 38304,
+      "targetStrikeMs": 39900
+    },
+    {
+      "eventId": "jab1-b1#8:rep-0:3",
+      "cueId": "jab1-b1#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1",
+      "startTick": 38592,
+      "startMs": 40200,
+      "targetStrikeTick": 38880,
+      "targetStrikeMs": 40500
+    },
+    {
       "eventId": "jab1-b1#9:rep-0:0",
       "cueId": "jab1-b1#9",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 36288,
-      "startMs": 37800,
-      "targetStrikeTick": 36576,
-      "targetStrikeMs": 38100
+      "startTick": 41472,
+      "startMs": 43200,
+      "targetStrikeTick": 41760,
+      "targetStrikeMs": 43500
     },
     {
       "eventId": "jab1-b1#9:rep-0:1",
@@ -462,10 +462,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 36864,
-      "startMs": 38400,
-      "targetStrikeTick": 37152,
-      "targetStrikeMs": 38700
+      "startTick": 42048,
+      "startMs": 43800,
+      "targetStrikeTick": 42336,
+      "targetStrikeMs": 44100
     },
     {
       "eventId": "jab1-b1#9:rep-0:2",
@@ -474,10 +474,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 37440,
-      "startMs": 39000,
-      "targetStrikeTick": 37728,
-      "targetStrikeMs": 39300
+      "startTick": 42624,
+      "startMs": 44400,
+      "targetStrikeTick": 42912,
+      "targetStrikeMs": 44700
     },
     {
       "eventId": "jab1-b1#9:rep-0:3",
@@ -486,10 +486,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 38016,
-      "startMs": 39600,
-      "targetStrikeTick": 38304,
-      "targetStrikeMs": 39900
+      "startTick": 43200,
+      "startMs": 45000,
+      "targetStrikeTick": 43488,
+      "targetStrikeMs": 45300
     },
     {
       "eventId": "jab1-b1#10:rep-0:0",
@@ -498,10 +498,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 40320,
-      "startMs": 42000,
-      "targetStrikeTick": 40608,
-      "targetStrikeMs": 42300
+      "startTick": 46080,
+      "startMs": 48000,
+      "targetStrikeTick": 46368,
+      "targetStrikeMs": 48300
     },
     {
       "eventId": "jab1-b1#10:rep-0:1",
@@ -510,10 +510,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 40896,
-      "startMs": 42600,
-      "targetStrikeTick": 41184,
-      "targetStrikeMs": 42900
+      "startTick": 46656,
+      "startMs": 48600,
+      "targetStrikeTick": 46944,
+      "targetStrikeMs": 48900
     },
     {
       "eventId": "jab1-b1#10:rep-0:2",
@@ -522,10 +522,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 41472,
-      "startMs": 43200,
-      "targetStrikeTick": 41760,
-      "targetStrikeMs": 43500
+      "startTick": 47232,
+      "startMs": 49200,
+      "targetStrikeTick": 47520,
+      "targetStrikeMs": 49500
     },
     {
       "eventId": "jab1-b1#10:rep-0:3",
@@ -534,10 +534,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 42048,
-      "startMs": 43800,
-      "targetStrikeTick": 42336,
-      "targetStrikeMs": 44100
+      "startTick": 47808,
+      "startMs": 49800,
+      "targetStrikeTick": 48096,
+      "targetStrikeMs": 50100
     },
     {
       "eventId": "jab1-b1#11:rep-0:0",
@@ -546,10 +546,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 44352,
-      "startMs": 46200,
-      "targetStrikeTick": 44640,
-      "targetStrikeMs": 46500
+      "startTick": 50688,
+      "startMs": 52800,
+      "targetStrikeTick": 50976,
+      "targetStrikeMs": 53100
     },
     {
       "eventId": "jab1-b1#11:rep-0:1",
@@ -558,10 +558,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 44928,
-      "startMs": 46800,
-      "targetStrikeTick": 45216,
-      "targetStrikeMs": 47100
+      "startTick": 51264,
+      "startMs": 53400,
+      "targetStrikeTick": 51552,
+      "targetStrikeMs": 53700
     },
     {
       "eventId": "jab1-b1#11:rep-0:2",
@@ -570,10 +570,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 45504,
-      "startMs": 47400,
-      "targetStrikeTick": 45792,
-      "targetStrikeMs": 47700
+      "startTick": 51840,
+      "startMs": 54000,
+      "targetStrikeTick": 52128,
+      "targetStrikeMs": 54300
     },
     {
       "eventId": "jab1-b1#11:rep-0:3",
@@ -582,10 +582,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 46080,
-      "startMs": 48000,
-      "targetStrikeTick": 46368,
-      "targetStrikeMs": 48300
+      "startTick": 52416,
+      "startMs": 54600,
+      "targetStrikeTick": 52704,
+      "targetStrikeMs": 54900
     },
     {
       "eventId": "jab1-b1#12:rep-0:0",
@@ -594,10 +594,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 48384,
-      "startMs": 50400,
-      "targetStrikeTick": 48672,
-      "targetStrikeMs": 50700
+      "startTick": 55296,
+      "startMs": 57600,
+      "targetStrikeTick": 55584,
+      "targetStrikeMs": 57900
     },
     {
       "eventId": "jab1-b1#12:rep-0:1",
@@ -606,10 +606,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 48960,
-      "startMs": 51000,
-      "targetStrikeTick": 49248,
-      "targetStrikeMs": 51300
+      "startTick": 55872,
+      "startMs": 58200,
+      "targetStrikeTick": 56160,
+      "targetStrikeMs": 58500
     },
     {
       "eventId": "jab1-b1#12:rep-0:2",
@@ -618,10 +618,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 49536,
-      "startMs": 51600,
-      "targetStrikeTick": 49824,
-      "targetStrikeMs": 51900
+      "startTick": 56448,
+      "startMs": 58800,
+      "targetStrikeTick": 56736,
+      "targetStrikeMs": 59100
     },
     {
       "eventId": "jab1-b1#12:rep-0:3",
@@ -630,10 +630,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 50112,
-      "startMs": 52200,
-      "targetStrikeTick": 50400,
-      "targetStrikeMs": 52500
+      "startTick": 57024,
+      "startMs": 59400,
+      "targetStrikeTick": 57312,
+      "targetStrikeMs": 59700
     },
     {
       "eventId": "jab1-b2#0:rep-0:0",
@@ -642,10 +642,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 57024,
-      "startMs": 59400,
-      "targetStrikeTick": 57312,
-      "targetStrikeMs": 59700
+      "startTick": 64512,
+      "startMs": 67200,
+      "targetStrikeTick": 64800,
+      "targetStrikeMs": 67500
     },
     {
       "eventId": "jab1-b2#0:rep-0:1",
@@ -654,10 +654,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 57600,
-      "startMs": 60000,
-      "targetStrikeTick": 57888,
-      "targetStrikeMs": 60300
+      "startTick": 65088,
+      "startMs": 67800,
+      "targetStrikeTick": 65376,
+      "targetStrikeMs": 68100
     },
     {
       "eventId": "jab1-b2#0:rep-0:2",
@@ -666,86 +666,14 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 58176,
-      "startMs": 60600,
-      "targetStrikeTick": 58464,
-      "targetStrikeMs": 60900
-    },
-    {
-      "eventId": "jab1-b2#1:rep-0:0",
-      "cueId": "jab1-b2#1",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1",
-      "startTick": 61056,
-      "startMs": 63600,
-      "targetStrikeTick": 61344,
-      "targetStrikeMs": 63900
-    },
-    {
-      "eventId": "jab1-b2#1:rep-0:1",
-      "cueId": "jab1-b2#1",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1",
-      "startTick": 61632,
-      "startMs": 64200,
-      "targetStrikeTick": 61920,
-      "targetStrikeMs": 64500
-    },
-    {
-      "eventId": "jab1-b2#1:rep-0:2",
-      "cueId": "jab1-b2#1",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "2",
-      "startTick": 62208,
-      "startMs": 64800,
-      "targetStrikeTick": 62496,
-      "targetStrikeMs": 65100
-    },
-    {
-      "eventId": "jab1-b2#2:rep-0:0",
-      "cueId": "jab1-b2#2",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1",
-      "startTick": 65088,
-      "startMs": 67800,
-      "targetStrikeTick": 65376,
-      "targetStrikeMs": 68100
-    },
-    {
-      "eventId": "jab1-b2#2:rep-0:1",
-      "cueId": "jab1-b2#2",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1",
       "startTick": 65664,
       "startMs": 68400,
       "targetStrikeTick": 65952,
       "targetStrikeMs": 68700
     },
     {
-      "eventId": "jab1-b2#2:rep-0:2",
-      "cueId": "jab1-b2#2",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "2",
-      "startTick": 66240,
-      "startMs": 69000,
-      "targetStrikeTick": 66528,
-      "targetStrikeMs": 69300
-    },
-    {
-      "eventId": "jab1-b2#3:rep-0:0",
-      "cueId": "jab1-b2#3",
+      "eventId": "jab1-b2#1:rep-0:0",
+      "cueId": "jab1-b2#1",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
@@ -756,8 +684,8 @@
       "targetStrikeMs": 72300
     },
     {
-      "eventId": "jab1-b2#3:rep-0:1",
-      "cueId": "jab1-b2#3",
+      "eventId": "jab1-b2#1:rep-0:1",
+      "cueId": "jab1-b2#1",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 1,
@@ -768,8 +696,8 @@
       "targetStrikeMs": 72900
     },
     {
-      "eventId": "jab1-b2#3:rep-0:2",
-      "cueId": "jab1-b2#3",
+      "eventId": "jab1-b2#1:rep-0:2",
+      "cueId": "jab1-b2#1",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 2,
@@ -780,16 +708,88 @@
       "targetStrikeMs": 73500
     },
     {
+      "eventId": "jab1-b2#2:rep-0:0",
+      "cueId": "jab1-b2#2",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1",
+      "startTick": 73728,
+      "startMs": 76800,
+      "targetStrikeTick": 74016,
+      "targetStrikeMs": 77100
+    },
+    {
+      "eventId": "jab1-b2#2:rep-0:1",
+      "cueId": "jab1-b2#2",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1",
+      "startTick": 74304,
+      "startMs": 77400,
+      "targetStrikeTick": 74592,
+      "targetStrikeMs": 77700
+    },
+    {
+      "eventId": "jab1-b2#2:rep-0:2",
+      "cueId": "jab1-b2#2",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "2",
+      "startTick": 74880,
+      "startMs": 78000,
+      "targetStrikeTick": 75168,
+      "targetStrikeMs": 78300
+    },
+    {
+      "eventId": "jab1-b2#3:rep-0:0",
+      "cueId": "jab1-b2#3",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1",
+      "startTick": 78336,
+      "startMs": 81600,
+      "targetStrikeTick": 78624,
+      "targetStrikeMs": 81900
+    },
+    {
+      "eventId": "jab1-b2#3:rep-0:1",
+      "cueId": "jab1-b2#3",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1",
+      "startTick": 78912,
+      "startMs": 82200,
+      "targetStrikeTick": 79200,
+      "targetStrikeMs": 82500
+    },
+    {
+      "eventId": "jab1-b2#3:rep-0:2",
+      "cueId": "jab1-b2#3",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "2",
+      "startTick": 79488,
+      "startMs": 82800,
+      "targetStrikeTick": 79776,
+      "targetStrikeMs": 83100
+    },
+    {
       "eventId": "jab1-b2#4:rep-0:0",
       "cueId": "jab1-b2#4",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 73152,
-      "startMs": 76200,
-      "targetStrikeTick": 73440,
-      "targetStrikeMs": 76500
+      "startTick": 82944,
+      "startMs": 86400,
+      "targetStrikeTick": 83232,
+      "targetStrikeMs": 86700
     },
     {
       "eventId": "jab1-b2#4:rep-0:1",
@@ -798,10 +798,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 73728,
-      "startMs": 76800,
-      "targetStrikeTick": 74016,
-      "targetStrikeMs": 77100
+      "startTick": 83520,
+      "startMs": 87000,
+      "targetStrikeTick": 83808,
+      "targetStrikeMs": 87300
     },
     {
       "eventId": "jab1-b2#4:rep-0:2",
@@ -810,10 +810,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 74304,
-      "startMs": 77400,
-      "targetStrikeTick": 74592,
-      "targetStrikeMs": 77700
+      "startTick": 84096,
+      "startMs": 87600,
+      "targetStrikeTick": 84384,
+      "targetStrikeMs": 87900
     },
     {
       "eventId": "jab1-b2#5:rep-0:0",
@@ -822,10 +822,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 77184,
-      "startMs": 80400,
-      "targetStrikeTick": 77472,
-      "targetStrikeMs": 80700
+      "startTick": 87552,
+      "startMs": 91200,
+      "targetStrikeTick": 87840,
+      "targetStrikeMs": 91500
     },
     {
       "eventId": "jab1-b2#5:rep-0:1",
@@ -834,10 +834,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 77760,
-      "startMs": 81000,
-      "targetStrikeTick": 78048,
-      "targetStrikeMs": 81300
+      "startTick": 88128,
+      "startMs": 91800,
+      "targetStrikeTick": 88416,
+      "targetStrikeMs": 92100
     },
     {
       "eventId": "jab1-b2#5:rep-0:2",
@@ -846,10 +846,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 78336,
-      "startMs": 81600,
-      "targetStrikeTick": 78624,
-      "targetStrikeMs": 81900
+      "startTick": 88704,
+      "startMs": 92400,
+      "targetStrikeTick": 88992,
+      "targetStrikeMs": 92700
     },
     {
       "eventId": "jab1-b2#6:rep-0:0",
@@ -858,10 +858,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 81216,
-      "startMs": 84600,
-      "targetStrikeTick": 81504,
-      "targetStrikeMs": 84900
+      "startTick": 92160,
+      "startMs": 96000,
+      "targetStrikeTick": 92448,
+      "targetStrikeMs": 96300
     },
     {
       "eventId": "jab1-b2#6:rep-0:1",
@@ -870,10 +870,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 81792,
-      "startMs": 85200,
-      "targetStrikeTick": 82080,
-      "targetStrikeMs": 85500
+      "startTick": 92736,
+      "startMs": 96600,
+      "targetStrikeTick": 93024,
+      "targetStrikeMs": 96900
     },
     {
       "eventId": "jab1-b2#6:rep-0:2",
@@ -882,10 +882,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 82368,
-      "startMs": 85800,
-      "targetStrikeTick": 82656,
-      "targetStrikeMs": 86100
+      "startTick": 93312,
+      "startMs": 97200,
+      "targetStrikeTick": 93600,
+      "targetStrikeMs": 97500
     },
     {
       "eventId": "jab1-b2#7:rep-0:0",
@@ -894,10 +894,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 85248,
-      "startMs": 88800,
-      "targetStrikeTick": 85536,
-      "targetStrikeMs": 89100
+      "startTick": 96768,
+      "startMs": 100800,
+      "targetStrikeTick": 97056,
+      "targetStrikeMs": 101100
     },
     {
       "eventId": "jab1-b2#7:rep-0:1",
@@ -906,10 +906,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 85824,
-      "startMs": 89400,
-      "targetStrikeTick": 86112,
-      "targetStrikeMs": 89700
+      "startTick": 97344,
+      "startMs": 101400,
+      "targetStrikeTick": 97632,
+      "targetStrikeMs": 101700
     },
     {
       "eventId": "jab1-b2#7:rep-0:2",
@@ -918,10 +918,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 86400,
-      "startMs": 90000,
-      "targetStrikeTick": 86688,
-      "targetStrikeMs": 90300
+      "startTick": 97920,
+      "startMs": 102000,
+      "targetStrikeTick": 98208,
+      "targetStrikeMs": 102300
     },
     {
       "eventId": "jab1-b2#8:rep-0:0",
@@ -930,10 +930,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 89280,
-      "startMs": 93000,
-      "targetStrikeTick": 89568,
-      "targetStrikeMs": 93300
+      "startTick": 101376,
+      "startMs": 105600,
+      "targetStrikeTick": 101664,
+      "targetStrikeMs": 105900
     },
     {
       "eventId": "jab1-b2#8:rep-0:1",
@@ -942,10 +942,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 89856,
-      "startMs": 93600,
-      "targetStrikeTick": 90144,
-      "targetStrikeMs": 93900
+      "startTick": 101952,
+      "startMs": 106200,
+      "targetStrikeTick": 102240,
+      "targetStrikeMs": 106500
     },
     {
       "eventId": "jab1-b2#8:rep-0:2",
@@ -954,10 +954,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "2",
-      "startTick": 90432,
-      "startMs": 94200,
-      "targetStrikeTick": 90720,
-      "targetStrikeMs": 94500
+      "startTick": 102528,
+      "startMs": 106800,
+      "targetStrikeTick": 102816,
+      "targetStrikeMs": 107100
     },
     {
       "eventId": "jab1-b3#0:rep-0:0",
@@ -966,10 +966,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 97920,
-      "startMs": 102000,
-      "targetStrikeTick": 98064,
-      "targetStrikeMs": 102150
+      "startTick": 110592,
+      "startMs": 115200,
+      "targetStrikeTick": 110736,
+      "targetStrikeMs": 115350
     },
     {
       "eventId": "jab1-b3#0:rep-0:1",
@@ -978,10 +978,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 98208,
-      "startMs": 102300,
-      "targetStrikeTick": 98352,
-      "targetStrikeMs": 102450
+      "startTick": 110880,
+      "startMs": 115500,
+      "targetStrikeTick": 111024,
+      "targetStrikeMs": 115650
     },
     {
       "eventId": "jab1-b3#0:rep-0:2",
@@ -990,10 +990,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 98496,
-      "startMs": 102600,
-      "targetStrikeTick": 98640,
-      "targetStrikeMs": 102750
+      "startTick": 111168,
+      "startMs": 115800,
+      "targetStrikeTick": 111312,
+      "targetStrikeMs": 115950
     },
     {
       "eventId": "jab1-b3#0:rep-0:3",
@@ -1002,10 +1002,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 98784,
-      "startMs": 102900,
-      "targetStrikeTick": 98928,
-      "targetStrikeMs": 103050
+      "startTick": 111456,
+      "startMs": 116100,
+      "targetStrikeTick": 111600,
+      "targetStrikeMs": 116250
     },
     {
       "eventId": "jab1-b3#1:rep-0:0",
@@ -1014,10 +1014,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 99936,
-      "startMs": 104100,
-      "targetStrikeTick": 100080,
-      "targetStrikeMs": 104250
+      "startTick": 112896,
+      "startMs": 117600,
+      "targetStrikeTick": 113040,
+      "targetStrikeMs": 117750
     },
     {
       "eventId": "jab1-b3#1:rep-0:1",
@@ -1026,10 +1026,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 100224,
-      "startMs": 104400,
-      "targetStrikeTick": 100368,
-      "targetStrikeMs": 104550
+      "startTick": 113184,
+      "startMs": 117900,
+      "targetStrikeTick": 113328,
+      "targetStrikeMs": 118050
     },
     {
       "eventId": "jab1-b3#1:rep-0:2",
@@ -1038,10 +1038,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 100512,
-      "startMs": 104700,
-      "targetStrikeTick": 100656,
-      "targetStrikeMs": 104850
+      "startTick": 113472,
+      "startMs": 118200,
+      "targetStrikeTick": 113616,
+      "targetStrikeMs": 118350
     },
     {
       "eventId": "jab1-b3#1:rep-0:3",
@@ -1050,10 +1050,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 100800,
-      "startMs": 105000,
-      "targetStrikeTick": 100944,
-      "targetStrikeMs": 105150
+      "startTick": 113760,
+      "startMs": 118500,
+      "targetStrikeTick": 113904,
+      "targetStrikeMs": 118650
     },
     {
       "eventId": "jab1-b3#2:rep-0:0",
@@ -1062,10 +1062,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 101952,
-      "startMs": 106200,
-      "targetStrikeTick": 102096,
-      "targetStrikeMs": 106350
+      "startTick": 115200,
+      "startMs": 120000,
+      "targetStrikeTick": 115344,
+      "targetStrikeMs": 120150
     },
     {
       "eventId": "jab1-b3#2:rep-0:1",
@@ -1074,10 +1074,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 102240,
-      "startMs": 106500,
-      "targetStrikeTick": 102384,
-      "targetStrikeMs": 106650
+      "startTick": 115488,
+      "startMs": 120300,
+      "targetStrikeTick": 115632,
+      "targetStrikeMs": 120450
     },
     {
       "eventId": "jab1-b3#2:rep-0:2",
@@ -1086,10 +1086,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 102528,
-      "startMs": 106800,
-      "targetStrikeTick": 102672,
-      "targetStrikeMs": 106950
+      "startTick": 115776,
+      "startMs": 120600,
+      "targetStrikeTick": 115920,
+      "targetStrikeMs": 120750
     },
     {
       "eventId": "jab1-b3#2:rep-0:3",
@@ -1098,10 +1098,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 102816,
-      "startMs": 107100,
-      "targetStrikeTick": 102960,
-      "targetStrikeMs": 107250
+      "startTick": 116064,
+      "startMs": 120900,
+      "targetStrikeTick": 116208,
+      "targetStrikeMs": 121050
     },
     {
       "eventId": "jab1-b3#3:rep-0:0",
@@ -1110,10 +1110,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 103968,
-      "startMs": 108300,
-      "targetStrikeTick": 104112,
-      "targetStrikeMs": 108450
+      "startTick": 117504,
+      "startMs": 122400,
+      "targetStrikeTick": 117648,
+      "targetStrikeMs": 122550
     },
     {
       "eventId": "jab1-b3#3:rep-0:1",
@@ -1122,10 +1122,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 104256,
-      "startMs": 108600,
-      "targetStrikeTick": 104400,
-      "targetStrikeMs": 108750
+      "startTick": 117792,
+      "startMs": 122700,
+      "targetStrikeTick": 117936,
+      "targetStrikeMs": 122850
     },
     {
       "eventId": "jab1-b3#3:rep-0:2",
@@ -1134,10 +1134,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 104544,
-      "startMs": 108900,
-      "targetStrikeTick": 104688,
-      "targetStrikeMs": 109050
+      "startTick": 118080,
+      "startMs": 123000,
+      "targetStrikeTick": 118224,
+      "targetStrikeMs": 123150
     },
     {
       "eventId": "jab1-b3#3:rep-0:3",
@@ -1146,10 +1146,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 104832,
-      "startMs": 109200,
-      "targetStrikeTick": 104976,
-      "targetStrikeMs": 109350
+      "startTick": 118368,
+      "startMs": 123300,
+      "targetStrikeTick": 118512,
+      "targetStrikeMs": 123450
     },
     {
       "eventId": "jab1-b3#4:rep-0:0",
@@ -1158,10 +1158,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 105984,
-      "startMs": 110400,
-      "targetStrikeTick": 106128,
-      "targetStrikeMs": 110550
+      "startTick": 119808,
+      "startMs": 124800,
+      "targetStrikeTick": 119952,
+      "targetStrikeMs": 124950
     },
     {
       "eventId": "jab1-b3#4:rep-0:1",
@@ -1170,10 +1170,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 106272,
-      "startMs": 110700,
-      "targetStrikeTick": 106416,
-      "targetStrikeMs": 110850
+      "startTick": 120096,
+      "startMs": 125100,
+      "targetStrikeTick": 120240,
+      "targetStrikeMs": 125250
     },
     {
       "eventId": "jab1-b3#4:rep-0:2",
@@ -1182,10 +1182,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 106560,
-      "startMs": 111000,
-      "targetStrikeTick": 106704,
-      "targetStrikeMs": 111150
+      "startTick": 120384,
+      "startMs": 125400,
+      "targetStrikeTick": 120528,
+      "targetStrikeMs": 125550
     },
     {
       "eventId": "jab1-b3#4:rep-0:3",
@@ -1194,350 +1194,14 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 106848,
-      "startMs": 111300,
-      "targetStrikeTick": 106992,
-      "targetStrikeMs": 111450
-    },
-    {
-      "eventId": "jab1-b3#5:rep-0:0",
-      "cueId": "jab1-b3#5",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 108000,
-      "startMs": 112500,
-      "targetStrikeTick": 108144,
-      "targetStrikeMs": 112650
-    },
-    {
-      "eventId": "jab1-b3#5:rep-0:1",
-      "cueId": "jab1-b3#5",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 108288,
-      "startMs": 112800,
-      "targetStrikeTick": 108432,
-      "targetStrikeMs": 112950
-    },
-    {
-      "eventId": "jab1-b3#5:rep-0:2",
-      "cueId": "jab1-b3#5",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 108576,
-      "startMs": 113100,
-      "targetStrikeTick": 108720,
-      "targetStrikeMs": 113250
-    },
-    {
-      "eventId": "jab1-b3#5:rep-0:3",
-      "cueId": "jab1-b3#5",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 108864,
-      "startMs": 113400,
-      "targetStrikeTick": 109008,
-      "targetStrikeMs": 113550
-    },
-    {
-      "eventId": "jab1-b3#6:rep-0:0",
-      "cueId": "jab1-b3#6",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 110016,
-      "startMs": 114600,
-      "targetStrikeTick": 110160,
-      "targetStrikeMs": 114750
-    },
-    {
-      "eventId": "jab1-b3#6:rep-0:1",
-      "cueId": "jab1-b3#6",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 110304,
-      "startMs": 114900,
-      "targetStrikeTick": 110448,
-      "targetStrikeMs": 115050
-    },
-    {
-      "eventId": "jab1-b3#6:rep-0:2",
-      "cueId": "jab1-b3#6",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 110592,
-      "startMs": 115200,
-      "targetStrikeTick": 110736,
-      "targetStrikeMs": 115350
-    },
-    {
-      "eventId": "jab1-b3#6:rep-0:3",
-      "cueId": "jab1-b3#6",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 110880,
-      "startMs": 115500,
-      "targetStrikeTick": 111024,
-      "targetStrikeMs": 115650
-    },
-    {
-      "eventId": "jab1-b3#7:rep-0:0",
-      "cueId": "jab1-b3#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 112032,
-      "startMs": 116700,
-      "targetStrikeTick": 112176,
-      "targetStrikeMs": 116850
-    },
-    {
-      "eventId": "jab1-b3#7:rep-0:1",
-      "cueId": "jab1-b3#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 112320,
-      "startMs": 117000,
-      "targetStrikeTick": 112464,
-      "targetStrikeMs": 117150
-    },
-    {
-      "eventId": "jab1-b3#7:rep-0:2",
-      "cueId": "jab1-b3#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 112608,
-      "startMs": 117300,
-      "targetStrikeTick": 112752,
-      "targetStrikeMs": 117450
-    },
-    {
-      "eventId": "jab1-b3#7:rep-0:3",
-      "cueId": "jab1-b3#7",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 112896,
-      "startMs": 117600,
-      "targetStrikeTick": 113040,
-      "targetStrikeMs": 117750
-    },
-    {
-      "eventId": "jab1-b3#8:rep-0:0",
-      "cueId": "jab1-b3#8",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 114048,
-      "startMs": 118800,
-      "targetStrikeTick": 114192,
-      "targetStrikeMs": 118950
-    },
-    {
-      "eventId": "jab1-b3#8:rep-0:1",
-      "cueId": "jab1-b3#8",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 114336,
-      "startMs": 119100,
-      "targetStrikeTick": 114480,
-      "targetStrikeMs": 119250
-    },
-    {
-      "eventId": "jab1-b3#8:rep-0:2",
-      "cueId": "jab1-b3#8",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 114624,
-      "startMs": 119400,
-      "targetStrikeTick": 114768,
-      "targetStrikeMs": 119550
-    },
-    {
-      "eventId": "jab1-b3#8:rep-0:3",
-      "cueId": "jab1-b3#8",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 114912,
-      "startMs": 119700,
-      "targetStrikeTick": 115056,
-      "targetStrikeMs": 119850
-    },
-    {
-      "eventId": "jab1-b3#9:rep-0:0",
-      "cueId": "jab1-b3#9",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 116064,
-      "startMs": 120900,
-      "targetStrikeTick": 116208,
-      "targetStrikeMs": 121050
-    },
-    {
-      "eventId": "jab1-b3#9:rep-0:1",
-      "cueId": "jab1-b3#9",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 116352,
-      "startMs": 121200,
-      "targetStrikeTick": 116496,
-      "targetStrikeMs": 121350
-    },
-    {
-      "eventId": "jab1-b3#9:rep-0:2",
-      "cueId": "jab1-b3#9",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 116640,
-      "startMs": 121500,
-      "targetStrikeTick": 116784,
-      "targetStrikeMs": 121650
-    },
-    {
-      "eventId": "jab1-b3#9:rep-0:3",
-      "cueId": "jab1-b3#9",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 116928,
-      "startMs": 121800,
-      "targetStrikeTick": 117072,
-      "targetStrikeMs": 121950
-    },
-    {
-      "eventId": "jab1-b3#10:rep-0:0",
-      "cueId": "jab1-b3#10",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 118080,
-      "startMs": 123000,
-      "targetStrikeTick": 118224,
-      "targetStrikeMs": 123150
-    },
-    {
-      "eventId": "jab1-b3#10:rep-0:1",
-      "cueId": "jab1-b3#10",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 118368,
-      "startMs": 123300,
-      "targetStrikeTick": 118512,
-      "targetStrikeMs": 123450
-    },
-    {
-      "eventId": "jab1-b3#10:rep-0:2",
-      "cueId": "jab1-b3#10",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
-      "startTick": 118656,
-      "startMs": 123600,
-      "targetStrikeTick": 118800,
-      "targetStrikeMs": 123750
-    },
-    {
-      "eventId": "jab1-b3#10:rep-0:3",
-      "cueId": "jab1-b3#10",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 118944,
-      "startMs": 123900,
-      "targetStrikeTick": 119088,
-      "targetStrikeMs": 124050
-    },
-    {
-      "eventId": "jab1-b3#11:rep-0:0",
-      "cueId": "jab1-b3#11",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 0,
-      "token": "1B",
-      "startTick": 120096,
-      "startMs": 125100,
-      "targetStrikeTick": 120240,
-      "targetStrikeMs": 125250
-    },
-    {
-      "eventId": "jab1-b3#11:rep-0:1",
-      "cueId": "jab1-b3#11",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 1,
-      "token": "1B",
-      "startTick": 120384,
-      "startMs": 125400,
-      "targetStrikeTick": 120528,
-      "targetStrikeMs": 125550
-    },
-    {
-      "eventId": "jab1-b3#11:rep-0:2",
-      "cueId": "jab1-b3#11",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 2,
-      "token": "1B",
       "startTick": 120672,
       "startMs": 125700,
       "targetStrikeTick": 120816,
       "targetStrikeMs": 125850
     },
     {
-      "eventId": "jab1-b3#11:rep-0:3",
-      "cueId": "jab1-b3#11",
-      "repId": "rep-0",
-      "repIndex": 0,
-      "strikeIndex": 3,
-      "token": "1B",
-      "startTick": 120960,
-      "startMs": 126000,
-      "targetStrikeTick": 121104,
-      "targetStrikeMs": 126150
-    },
-    {
-      "eventId": "jab1-b3#12:rep-0:0",
-      "cueId": "jab1-b3#12",
+      "eventId": "jab1-b3#5:rep-0:0",
+      "cueId": "jab1-b3#5",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
@@ -1548,8 +1212,8 @@
       "targetStrikeMs": 127350
     },
     {
-      "eventId": "jab1-b3#12:rep-0:1",
-      "cueId": "jab1-b3#12",
+      "eventId": "jab1-b3#5:rep-0:1",
+      "cueId": "jab1-b3#5",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 1,
@@ -1560,8 +1224,8 @@
       "targetStrikeMs": 127650
     },
     {
-      "eventId": "jab1-b3#12:rep-0:2",
-      "cueId": "jab1-b3#12",
+      "eventId": "jab1-b3#5:rep-0:2",
+      "cueId": "jab1-b3#5",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 2,
@@ -1572,8 +1236,8 @@
       "targetStrikeMs": 127950
     },
     {
-      "eventId": "jab1-b3#12:rep-0:3",
-      "cueId": "jab1-b3#12",
+      "eventId": "jab1-b3#5:rep-0:3",
+      "cueId": "jab1-b3#5",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 3,
@@ -1584,16 +1248,352 @@
       "targetStrikeMs": 128250
     },
     {
+      "eventId": "jab1-b3#6:rep-0:0",
+      "cueId": "jab1-b3#6",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 124416,
+      "startMs": 129600,
+      "targetStrikeTick": 124560,
+      "targetStrikeMs": 129750
+    },
+    {
+      "eventId": "jab1-b3#6:rep-0:1",
+      "cueId": "jab1-b3#6",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 124704,
+      "startMs": 129900,
+      "targetStrikeTick": 124848,
+      "targetStrikeMs": 130050
+    },
+    {
+      "eventId": "jab1-b3#6:rep-0:2",
+      "cueId": "jab1-b3#6",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 124992,
+      "startMs": 130200,
+      "targetStrikeTick": 125136,
+      "targetStrikeMs": 130350
+    },
+    {
+      "eventId": "jab1-b3#6:rep-0:3",
+      "cueId": "jab1-b3#6",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 125280,
+      "startMs": 130500,
+      "targetStrikeTick": 125424,
+      "targetStrikeMs": 130650
+    },
+    {
+      "eventId": "jab1-b3#7:rep-0:0",
+      "cueId": "jab1-b3#7",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 126720,
+      "startMs": 132000,
+      "targetStrikeTick": 126864,
+      "targetStrikeMs": 132150
+    },
+    {
+      "eventId": "jab1-b3#7:rep-0:1",
+      "cueId": "jab1-b3#7",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 127008,
+      "startMs": 132300,
+      "targetStrikeTick": 127152,
+      "targetStrikeMs": 132450
+    },
+    {
+      "eventId": "jab1-b3#7:rep-0:2",
+      "cueId": "jab1-b3#7",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 127296,
+      "startMs": 132600,
+      "targetStrikeTick": 127440,
+      "targetStrikeMs": 132750
+    },
+    {
+      "eventId": "jab1-b3#7:rep-0:3",
+      "cueId": "jab1-b3#7",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 127584,
+      "startMs": 132900,
+      "targetStrikeTick": 127728,
+      "targetStrikeMs": 133050
+    },
+    {
+      "eventId": "jab1-b3#8:rep-0:0",
+      "cueId": "jab1-b3#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 129024,
+      "startMs": 134400,
+      "targetStrikeTick": 129168,
+      "targetStrikeMs": 134550
+    },
+    {
+      "eventId": "jab1-b3#8:rep-0:1",
+      "cueId": "jab1-b3#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 129312,
+      "startMs": 134700,
+      "targetStrikeTick": 129456,
+      "targetStrikeMs": 134850
+    },
+    {
+      "eventId": "jab1-b3#8:rep-0:2",
+      "cueId": "jab1-b3#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 129600,
+      "startMs": 135000,
+      "targetStrikeTick": 129744,
+      "targetStrikeMs": 135150
+    },
+    {
+      "eventId": "jab1-b3#8:rep-0:3",
+      "cueId": "jab1-b3#8",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 129888,
+      "startMs": 135300,
+      "targetStrikeTick": 130032,
+      "targetStrikeMs": 135450
+    },
+    {
+      "eventId": "jab1-b3#9:rep-0:0",
+      "cueId": "jab1-b3#9",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 131328,
+      "startMs": 136800,
+      "targetStrikeTick": 131472,
+      "targetStrikeMs": 136950
+    },
+    {
+      "eventId": "jab1-b3#9:rep-0:1",
+      "cueId": "jab1-b3#9",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 131616,
+      "startMs": 137100,
+      "targetStrikeTick": 131760,
+      "targetStrikeMs": 137250
+    },
+    {
+      "eventId": "jab1-b3#9:rep-0:2",
+      "cueId": "jab1-b3#9",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 131904,
+      "startMs": 137400,
+      "targetStrikeTick": 132048,
+      "targetStrikeMs": 137550
+    },
+    {
+      "eventId": "jab1-b3#9:rep-0:3",
+      "cueId": "jab1-b3#9",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 132192,
+      "startMs": 137700,
+      "targetStrikeTick": 132336,
+      "targetStrikeMs": 137850
+    },
+    {
+      "eventId": "jab1-b3#10:rep-0:0",
+      "cueId": "jab1-b3#10",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 133632,
+      "startMs": 139200,
+      "targetStrikeTick": 133776,
+      "targetStrikeMs": 139350
+    },
+    {
+      "eventId": "jab1-b3#10:rep-0:1",
+      "cueId": "jab1-b3#10",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 133920,
+      "startMs": 139500,
+      "targetStrikeTick": 134064,
+      "targetStrikeMs": 139650
+    },
+    {
+      "eventId": "jab1-b3#10:rep-0:2",
+      "cueId": "jab1-b3#10",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 134208,
+      "startMs": 139800,
+      "targetStrikeTick": 134352,
+      "targetStrikeMs": 139950
+    },
+    {
+      "eventId": "jab1-b3#10:rep-0:3",
+      "cueId": "jab1-b3#10",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 134496,
+      "startMs": 140100,
+      "targetStrikeTick": 134640,
+      "targetStrikeMs": 140250
+    },
+    {
+      "eventId": "jab1-b3#11:rep-0:0",
+      "cueId": "jab1-b3#11",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 135936,
+      "startMs": 141600,
+      "targetStrikeTick": 136080,
+      "targetStrikeMs": 141750
+    },
+    {
+      "eventId": "jab1-b3#11:rep-0:1",
+      "cueId": "jab1-b3#11",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 136224,
+      "startMs": 141900,
+      "targetStrikeTick": 136368,
+      "targetStrikeMs": 142050
+    },
+    {
+      "eventId": "jab1-b3#11:rep-0:2",
+      "cueId": "jab1-b3#11",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 136512,
+      "startMs": 142200,
+      "targetStrikeTick": 136656,
+      "targetStrikeMs": 142350
+    },
+    {
+      "eventId": "jab1-b3#11:rep-0:3",
+      "cueId": "jab1-b3#11",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 136800,
+      "startMs": 142500,
+      "targetStrikeTick": 136944,
+      "targetStrikeMs": 142650
+    },
+    {
+      "eventId": "jab1-b3#12:rep-0:0",
+      "cueId": "jab1-b3#12",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 0,
+      "token": "1B",
+      "startTick": 138240,
+      "startMs": 144000,
+      "targetStrikeTick": 138384,
+      "targetStrikeMs": 144150
+    },
+    {
+      "eventId": "jab1-b3#12:rep-0:1",
+      "cueId": "jab1-b3#12",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 1,
+      "token": "1B",
+      "startTick": 138528,
+      "startMs": 144300,
+      "targetStrikeTick": 138672,
+      "targetStrikeMs": 144450
+    },
+    {
+      "eventId": "jab1-b3#12:rep-0:2",
+      "cueId": "jab1-b3#12",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 2,
+      "token": "1B",
+      "startTick": 138816,
+      "startMs": 144600,
+      "targetStrikeTick": 138960,
+      "targetStrikeMs": 144750
+    },
+    {
+      "eventId": "jab1-b3#12:rep-0:3",
+      "cueId": "jab1-b3#12",
+      "repId": "rep-0",
+      "repIndex": 0,
+      "strikeIndex": 3,
+      "token": "1B",
+      "startTick": 139104,
+      "startMs": 144900,
+      "targetStrikeTick": 139248,
+      "targetStrikeMs": 145050
+    },
+    {
       "eventId": "jab1-b3#13:rep-0:0",
       "cueId": "jab1-b3#13",
       "repId": "rep-0",
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 124128,
-      "startMs": 129300,
-      "targetStrikeTick": 124272,
-      "targetStrikeMs": 129450
+      "startTick": 140544,
+      "startMs": 146400,
+      "targetStrikeTick": 140688,
+      "targetStrikeMs": 146550
     },
     {
       "eventId": "jab1-b3#13:rep-0:1",
@@ -1602,10 +1602,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 124416,
-      "startMs": 129600,
-      "targetStrikeTick": 124560,
-      "targetStrikeMs": 129750
+      "startTick": 140832,
+      "startMs": 146700,
+      "targetStrikeTick": 140976,
+      "targetStrikeMs": 146850
     },
     {
       "eventId": "jab1-b3#13:rep-0:2",
@@ -1614,10 +1614,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 124704,
-      "startMs": 129900,
-      "targetStrikeTick": 124848,
-      "targetStrikeMs": 130050
+      "startTick": 141120,
+      "startMs": 147000,
+      "targetStrikeTick": 141264,
+      "targetStrikeMs": 147150
     },
     {
       "eventId": "jab1-b3#13:rep-0:3",
@@ -1626,10 +1626,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 124992,
-      "startMs": 130200,
-      "targetStrikeTick": 125136,
-      "targetStrikeMs": 130350
+      "startTick": 141408,
+      "startMs": 147300,
+      "targetStrikeTick": 141552,
+      "targetStrikeMs": 147450
     },
     {
       "eventId": "jab1-b3#14:rep-0:0",
@@ -1638,10 +1638,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 126144,
-      "startMs": 131400,
-      "targetStrikeTick": 126288,
-      "targetStrikeMs": 131550
+      "startTick": 142848,
+      "startMs": 148800,
+      "targetStrikeTick": 142992,
+      "targetStrikeMs": 148950
     },
     {
       "eventId": "jab1-b3#14:rep-0:1",
@@ -1650,10 +1650,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 126432,
-      "startMs": 131700,
-      "targetStrikeTick": 126576,
-      "targetStrikeMs": 131850
+      "startTick": 143136,
+      "startMs": 149100,
+      "targetStrikeTick": 143280,
+      "targetStrikeMs": 149250
     },
     {
       "eventId": "jab1-b3#14:rep-0:2",
@@ -1662,10 +1662,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 126720,
-      "startMs": 132000,
-      "targetStrikeTick": 126864,
-      "targetStrikeMs": 132150
+      "startTick": 143424,
+      "startMs": 149400,
+      "targetStrikeTick": 143568,
+      "targetStrikeMs": 149550
     },
     {
       "eventId": "jab1-b3#14:rep-0:3",
@@ -1674,10 +1674,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 127008,
-      "startMs": 132300,
-      "targetStrikeTick": 127152,
-      "targetStrikeMs": 132450
+      "startTick": 143712,
+      "startMs": 149700,
+      "targetStrikeTick": 143856,
+      "targetStrikeMs": 149850
     },
     {
       "eventId": "jab1-b3#15:rep-0:0",
@@ -1686,10 +1686,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 128160,
-      "startMs": 133500,
-      "targetStrikeTick": 128304,
-      "targetStrikeMs": 133650
+      "startTick": 145152,
+      "startMs": 151200,
+      "targetStrikeTick": 145296,
+      "targetStrikeMs": 151350
     },
     {
       "eventId": "jab1-b3#15:rep-0:1",
@@ -1698,10 +1698,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 128448,
-      "startMs": 133800,
-      "targetStrikeTick": 128592,
-      "targetStrikeMs": 133950
+      "startTick": 145440,
+      "startMs": 151500,
+      "targetStrikeTick": 145584,
+      "targetStrikeMs": 151650
     },
     {
       "eventId": "jab1-b3#15:rep-0:2",
@@ -1710,10 +1710,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 128736,
-      "startMs": 134100,
-      "targetStrikeTick": 128880,
-      "targetStrikeMs": 134250
+      "startTick": 145728,
+      "startMs": 151800,
+      "targetStrikeTick": 145872,
+      "targetStrikeMs": 151950
     },
     {
       "eventId": "jab1-b3#15:rep-0:3",
@@ -1722,10 +1722,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 129024,
-      "startMs": 134400,
-      "targetStrikeTick": 129168,
-      "targetStrikeMs": 134550
+      "startTick": 146016,
+      "startMs": 152100,
+      "targetStrikeTick": 146160,
+      "targetStrikeMs": 152250
     },
     {
       "eventId": "jab1-b3#16:rep-0:0",
@@ -1734,10 +1734,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 130176,
-      "startMs": 135600,
-      "targetStrikeTick": 130320,
-      "targetStrikeMs": 135750
+      "startTick": 147456,
+      "startMs": 153600,
+      "targetStrikeTick": 147600,
+      "targetStrikeMs": 153750
     },
     {
       "eventId": "jab1-b3#16:rep-0:1",
@@ -1746,10 +1746,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 130464,
-      "startMs": 135900,
-      "targetStrikeTick": 130608,
-      "targetStrikeMs": 136050
+      "startTick": 147744,
+      "startMs": 153900,
+      "targetStrikeTick": 147888,
+      "targetStrikeMs": 154050
     },
     {
       "eventId": "jab1-b3#16:rep-0:2",
@@ -1758,10 +1758,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 130752,
-      "startMs": 136200,
-      "targetStrikeTick": 130896,
-      "targetStrikeMs": 136350
+      "startTick": 148032,
+      "startMs": 154200,
+      "targetStrikeTick": 148176,
+      "targetStrikeMs": 154350
     },
     {
       "eventId": "jab1-b3#16:rep-0:3",
@@ -1770,10 +1770,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 131040,
-      "startMs": 136500,
-      "targetStrikeTick": 131184,
-      "targetStrikeMs": 136650
+      "startTick": 148320,
+      "startMs": 154500,
+      "targetStrikeTick": 148464,
+      "targetStrikeMs": 154650
     },
     {
       "eventId": "jab1-b3#17:rep-0:0",
@@ -1782,10 +1782,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1B",
-      "startTick": 132192,
-      "startMs": 137700,
-      "targetStrikeTick": 132336,
-      "targetStrikeMs": 137850
+      "startTick": 149760,
+      "startMs": 156000,
+      "targetStrikeTick": 149904,
+      "targetStrikeMs": 156150
     },
     {
       "eventId": "jab1-b3#17:rep-0:1",
@@ -1794,10 +1794,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1B",
-      "startTick": 132480,
-      "startMs": 138000,
-      "targetStrikeTick": 132624,
-      "targetStrikeMs": 138150
+      "startTick": 150048,
+      "startMs": 156300,
+      "targetStrikeTick": 150192,
+      "targetStrikeMs": 156450
     },
     {
       "eventId": "jab1-b3#17:rep-0:2",
@@ -1806,10 +1806,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1B",
-      "startTick": 132768,
-      "startMs": 138300,
-      "targetStrikeTick": 132912,
-      "targetStrikeMs": 138450
+      "startTick": 150336,
+      "startMs": 156600,
+      "targetStrikeTick": 150480,
+      "targetStrikeMs": 156750
     },
     {
       "eventId": "jab1-b3#17:rep-0:3",
@@ -1818,10 +1818,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1B",
-      "startTick": 133056,
-      "startMs": 138600,
-      "targetStrikeTick": 133200,
-      "targetStrikeMs": 138750
+      "startTick": 150624,
+      "startMs": 156900,
+      "targetStrikeTick": 150768,
+      "targetStrikeMs": 157050
     },
     {
       "eventId": "jab1-b4#0:rep-0:0",
@@ -1830,10 +1830,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 138816,
-      "startMs": 144600,
-      "targetStrikeTick": 139008,
-      "targetStrikeMs": 144800
+      "startTick": 156672,
+      "startMs": 163200,
+      "targetStrikeTick": 156864,
+      "targetStrikeMs": 163400
     },
     {
       "eventId": "jab1-b4#0:rep-0:1",
@@ -1842,10 +1842,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 139200,
-      "startMs": 145000,
-      "targetStrikeTick": 139392,
-      "targetStrikeMs": 145200
+      "startTick": 157056,
+      "startMs": 163600,
+      "targetStrikeTick": 157248,
+      "targetStrikeMs": 163800
     },
     {
       "eventId": "jab1-b4#0:rep-0:2",
@@ -1854,10 +1854,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 139584,
-      "startMs": 145400,
-      "targetStrikeTick": 139776,
-      "targetStrikeMs": 145600
+      "startTick": 157440,
+      "startMs": 164000,
+      "targetStrikeTick": 157632,
+      "targetStrikeMs": 164200
     },
     {
       "eventId": "jab1-b4#0:rep-0:3",
@@ -1866,10 +1866,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 139968,
-      "startMs": 145800,
-      "targetStrikeTick": 140160,
-      "targetStrikeMs": 146000
+      "startTick": 157824,
+      "startMs": 164400,
+      "targetStrikeTick": 158016,
+      "targetStrikeMs": 164600
     },
     {
       "eventId": "jab1-b4#1:rep-0:0",
@@ -1878,10 +1878,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 140736,
-      "startMs": 146600,
-      "targetStrikeTick": 140928,
-      "targetStrikeMs": 146800
+      "startTick": 158976,
+      "startMs": 165600,
+      "targetStrikeTick": 159168,
+      "targetStrikeMs": 165800
     },
     {
       "eventId": "jab1-b4#1:rep-0:1",
@@ -1890,10 +1890,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 141120,
-      "startMs": 147000,
-      "targetStrikeTick": 141312,
-      "targetStrikeMs": 147200
+      "startTick": 159360,
+      "startMs": 166000,
+      "targetStrikeTick": 159552,
+      "targetStrikeMs": 166200
     },
     {
       "eventId": "jab1-b4#1:rep-0:2",
@@ -1902,10 +1902,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 141504,
-      "startMs": 147400,
-      "targetStrikeTick": 141696,
-      "targetStrikeMs": 147600
+      "startTick": 159744,
+      "startMs": 166400,
+      "targetStrikeTick": 159936,
+      "targetStrikeMs": 166600
     },
     {
       "eventId": "jab1-b4#1:rep-0:3",
@@ -1914,10 +1914,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 141888,
-      "startMs": 147800,
-      "targetStrikeTick": 142080,
-      "targetStrikeMs": 148000
+      "startTick": 160128,
+      "startMs": 166800,
+      "targetStrikeTick": 160320,
+      "targetStrikeMs": 167000
     },
     {
       "eventId": "jab1-b4#2:rep-0:0",
@@ -1926,10 +1926,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 142656,
-      "startMs": 148600,
-      "targetStrikeTick": 142848,
-      "targetStrikeMs": 148800
+      "startTick": 161280,
+      "startMs": 168000,
+      "targetStrikeTick": 161472,
+      "targetStrikeMs": 168200
     },
     {
       "eventId": "jab1-b4#2:rep-0:1",
@@ -1938,10 +1938,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 143040,
-      "startMs": 149000,
-      "targetStrikeTick": 143232,
-      "targetStrikeMs": 149200
+      "startTick": 161664,
+      "startMs": 168400,
+      "targetStrikeTick": 161856,
+      "targetStrikeMs": 168600
     },
     {
       "eventId": "jab1-b4#2:rep-0:2",
@@ -1950,10 +1950,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 143424,
-      "startMs": 149400,
-      "targetStrikeTick": 143616,
-      "targetStrikeMs": 149600
+      "startTick": 162048,
+      "startMs": 168800,
+      "targetStrikeTick": 162240,
+      "targetStrikeMs": 169000
     },
     {
       "eventId": "jab1-b4#2:rep-0:3",
@@ -1962,10 +1962,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 143808,
-      "startMs": 149800,
-      "targetStrikeTick": 144000,
-      "targetStrikeMs": 150000
+      "startTick": 162432,
+      "startMs": 169200,
+      "targetStrikeTick": 162624,
+      "targetStrikeMs": 169400
     },
     {
       "eventId": "jab1-b4#3:rep-0:0",
@@ -1974,10 +1974,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 144576,
-      "startMs": 150600,
-      "targetStrikeTick": 144768,
-      "targetStrikeMs": 150800
+      "startTick": 163584,
+      "startMs": 170400,
+      "targetStrikeTick": 163776,
+      "targetStrikeMs": 170600
     },
     {
       "eventId": "jab1-b4#3:rep-0:1",
@@ -1986,10 +1986,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 144960,
-      "startMs": 151000,
-      "targetStrikeTick": 145152,
-      "targetStrikeMs": 151200
+      "startTick": 163968,
+      "startMs": 170800,
+      "targetStrikeTick": 164160,
+      "targetStrikeMs": 171000
     },
     {
       "eventId": "jab1-b4#3:rep-0:2",
@@ -1998,10 +1998,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 145344,
-      "startMs": 151400,
-      "targetStrikeTick": 145536,
-      "targetStrikeMs": 151600
+      "startTick": 164352,
+      "startMs": 171200,
+      "targetStrikeTick": 164544,
+      "targetStrikeMs": 171400
     },
     {
       "eventId": "jab1-b4#3:rep-0:3",
@@ -2010,10 +2010,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 145728,
-      "startMs": 151800,
-      "targetStrikeTick": 145920,
-      "targetStrikeMs": 152000
+      "startTick": 164736,
+      "startMs": 171600,
+      "targetStrikeTick": 164928,
+      "targetStrikeMs": 171800
     },
     {
       "eventId": "jab1-b4#4:rep-0:0",
@@ -2022,10 +2022,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 146496,
-      "startMs": 152600,
-      "targetStrikeTick": 146688,
-      "targetStrikeMs": 152800
+      "startTick": 165888,
+      "startMs": 172800,
+      "targetStrikeTick": 166080,
+      "targetStrikeMs": 173000
     },
     {
       "eventId": "jab1-b4#4:rep-0:1",
@@ -2034,10 +2034,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 146880,
-      "startMs": 153000,
-      "targetStrikeTick": 147072,
-      "targetStrikeMs": 153200
+      "startTick": 166272,
+      "startMs": 173200,
+      "targetStrikeTick": 166464,
+      "targetStrikeMs": 173400
     },
     {
       "eventId": "jab1-b4#4:rep-0:2",
@@ -2046,10 +2046,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 147264,
-      "startMs": 153400,
-      "targetStrikeTick": 147456,
-      "targetStrikeMs": 153600
+      "startTick": 166656,
+      "startMs": 173600,
+      "targetStrikeTick": 166848,
+      "targetStrikeMs": 173800
     },
     {
       "eventId": "jab1-b4#4:rep-0:3",
@@ -2058,10 +2058,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 147648,
-      "startMs": 153800,
-      "targetStrikeTick": 147840,
-      "targetStrikeMs": 154000
+      "startTick": 167040,
+      "startMs": 174000,
+      "targetStrikeTick": 167232,
+      "targetStrikeMs": 174200
     },
     {
       "eventId": "jab1-b4#5:rep-0:0",
@@ -2070,10 +2070,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 148416,
-      "startMs": 154600,
-      "targetStrikeTick": 148608,
-      "targetStrikeMs": 154800
+      "startTick": 168192,
+      "startMs": 175200,
+      "targetStrikeTick": 168384,
+      "targetStrikeMs": 175400
     },
     {
       "eventId": "jab1-b4#5:rep-0:1",
@@ -2082,10 +2082,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 148800,
-      "startMs": 155000,
-      "targetStrikeTick": 148992,
-      "targetStrikeMs": 155200
+      "startTick": 168576,
+      "startMs": 175600,
+      "targetStrikeTick": 168768,
+      "targetStrikeMs": 175800
     },
     {
       "eventId": "jab1-b4#5:rep-0:2",
@@ -2094,10 +2094,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 149184,
-      "startMs": 155400,
-      "targetStrikeTick": 149376,
-      "targetStrikeMs": 155600
+      "startTick": 168960,
+      "startMs": 176000,
+      "targetStrikeTick": 169152,
+      "targetStrikeMs": 176200
     },
     {
       "eventId": "jab1-b4#5:rep-0:3",
@@ -2106,10 +2106,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 149568,
-      "startMs": 155800,
-      "targetStrikeTick": 149760,
-      "targetStrikeMs": 156000
+      "startTick": 169344,
+      "startMs": 176400,
+      "targetStrikeTick": 169536,
+      "targetStrikeMs": 176600
     },
     {
       "eventId": "jab1-b4#6:rep-0:0",
@@ -2118,10 +2118,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 150336,
-      "startMs": 156600,
-      "targetStrikeTick": 150528,
-      "targetStrikeMs": 156800
+      "startTick": 170496,
+      "startMs": 177600,
+      "targetStrikeTick": 170688,
+      "targetStrikeMs": 177800
     },
     {
       "eventId": "jab1-b4#6:rep-0:1",
@@ -2130,10 +2130,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 150720,
-      "startMs": 157000,
-      "targetStrikeTick": 150912,
-      "targetStrikeMs": 157200
+      "startTick": 170880,
+      "startMs": 178000,
+      "targetStrikeTick": 171072,
+      "targetStrikeMs": 178200
     },
     {
       "eventId": "jab1-b4#6:rep-0:2",
@@ -2142,10 +2142,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 151104,
-      "startMs": 157400,
-      "targetStrikeTick": 151296,
-      "targetStrikeMs": 157600
+      "startTick": 171264,
+      "startMs": 178400,
+      "targetStrikeTick": 171456,
+      "targetStrikeMs": 178600
     },
     {
       "eventId": "jab1-b4#6:rep-0:3",
@@ -2154,10 +2154,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 151488,
-      "startMs": 157800,
-      "targetStrikeTick": 151680,
-      "targetStrikeMs": 158000
+      "startTick": 171648,
+      "startMs": 178800,
+      "targetStrikeTick": 171840,
+      "targetStrikeMs": 179000
     },
     {
       "eventId": "jab1-b4#7:rep-0:0",
@@ -2166,10 +2166,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 152256,
-      "startMs": 158600,
-      "targetStrikeTick": 152448,
-      "targetStrikeMs": 158800
+      "startTick": 172800,
+      "startMs": 180000,
+      "targetStrikeTick": 172992,
+      "targetStrikeMs": 180200
     },
     {
       "eventId": "jab1-b4#7:rep-0:1",
@@ -2178,10 +2178,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 152640,
-      "startMs": 159000,
-      "targetStrikeTick": 152832,
-      "targetStrikeMs": 159200
+      "startTick": 173184,
+      "startMs": 180400,
+      "targetStrikeTick": 173376,
+      "targetStrikeMs": 180600
     },
     {
       "eventId": "jab1-b4#7:rep-0:2",
@@ -2190,10 +2190,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 153024,
-      "startMs": 159400,
-      "targetStrikeTick": 153216,
-      "targetStrikeMs": 159600
+      "startTick": 173568,
+      "startMs": 180800,
+      "targetStrikeTick": 173760,
+      "targetStrikeMs": 181000
     },
     {
       "eventId": "jab1-b4#7:rep-0:3",
@@ -2202,10 +2202,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 153408,
-      "startMs": 159800,
-      "targetStrikeTick": 153600,
-      "targetStrikeMs": 160000
+      "startTick": 173952,
+      "startMs": 181200,
+      "targetStrikeTick": 174144,
+      "targetStrikeMs": 181400
     },
     {
       "eventId": "jab1-b4#8:rep-0:0",
@@ -2214,10 +2214,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 154176,
-      "startMs": 160600,
-      "targetStrikeTick": 154368,
-      "targetStrikeMs": 160800
+      "startTick": 175104,
+      "startMs": 182400,
+      "targetStrikeTick": 175296,
+      "targetStrikeMs": 182600
     },
     {
       "eventId": "jab1-b4#8:rep-0:1",
@@ -2226,10 +2226,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 154560,
-      "startMs": 161000,
-      "targetStrikeTick": 154752,
-      "targetStrikeMs": 161200
+      "startTick": 175488,
+      "startMs": 182800,
+      "targetStrikeTick": 175680,
+      "targetStrikeMs": 183000
     },
     {
       "eventId": "jab1-b4#8:rep-0:2",
@@ -2238,10 +2238,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 154944,
-      "startMs": 161400,
-      "targetStrikeTick": 155136,
-      "targetStrikeMs": 161600
+      "startTick": 175872,
+      "startMs": 183200,
+      "targetStrikeTick": 176064,
+      "targetStrikeMs": 183400
     },
     {
       "eventId": "jab1-b4#8:rep-0:3",
@@ -2250,10 +2250,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 155328,
-      "startMs": 161800,
-      "targetStrikeTick": 155520,
-      "targetStrikeMs": 162000
+      "startTick": 176256,
+      "startMs": 183600,
+      "targetStrikeTick": 176448,
+      "targetStrikeMs": 183800
     },
     {
       "eventId": "jab1-b4#9:rep-0:0",
@@ -2262,10 +2262,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 156096,
-      "startMs": 162600,
-      "targetStrikeTick": 156288,
-      "targetStrikeMs": 162800
+      "startTick": 177408,
+      "startMs": 184800,
+      "targetStrikeTick": 177600,
+      "targetStrikeMs": 185000
     },
     {
       "eventId": "jab1-b4#9:rep-0:1",
@@ -2274,10 +2274,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 156480,
-      "startMs": 163000,
-      "targetStrikeTick": 156672,
-      "targetStrikeMs": 163200
+      "startTick": 177792,
+      "startMs": 185200,
+      "targetStrikeTick": 177984,
+      "targetStrikeMs": 185400
     },
     {
       "eventId": "jab1-b4#9:rep-0:2",
@@ -2286,10 +2286,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 156864,
-      "startMs": 163400,
-      "targetStrikeTick": 157056,
-      "targetStrikeMs": 163600
+      "startTick": 178176,
+      "startMs": 185600,
+      "targetStrikeTick": 178368,
+      "targetStrikeMs": 185800
     },
     {
       "eventId": "jab1-b4#9:rep-0:3",
@@ -2298,10 +2298,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 157248,
-      "startMs": 163800,
-      "targetStrikeTick": 157440,
-      "targetStrikeMs": 164000
+      "startTick": 178560,
+      "startMs": 186000,
+      "targetStrikeTick": 178752,
+      "targetStrikeMs": 186200
     },
     {
       "eventId": "jab1-b4#10:rep-0:0",
@@ -2310,10 +2310,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 158016,
-      "startMs": 164600,
-      "targetStrikeTick": 158208,
-      "targetStrikeMs": 164800
+      "startTick": 179712,
+      "startMs": 187200,
+      "targetStrikeTick": 179904,
+      "targetStrikeMs": 187400
     },
     {
       "eventId": "jab1-b4#10:rep-0:1",
@@ -2322,10 +2322,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 158400,
-      "startMs": 165000,
-      "targetStrikeTick": 158592,
-      "targetStrikeMs": 165200
+      "startTick": 180096,
+      "startMs": 187600,
+      "targetStrikeTick": 180288,
+      "targetStrikeMs": 187800
     },
     {
       "eventId": "jab1-b4#10:rep-0:2",
@@ -2334,10 +2334,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 158784,
-      "startMs": 165400,
-      "targetStrikeTick": 158976,
-      "targetStrikeMs": 165600
+      "startTick": 180480,
+      "startMs": 188000,
+      "targetStrikeTick": 180672,
+      "targetStrikeMs": 188200
     },
     {
       "eventId": "jab1-b4#10:rep-0:3",
@@ -2346,10 +2346,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 159168,
-      "startMs": 165800,
-      "targetStrikeTick": 159360,
-      "targetStrikeMs": 166000
+      "startTick": 180864,
+      "startMs": 188400,
+      "targetStrikeTick": 181056,
+      "targetStrikeMs": 188600
     },
     {
       "eventId": "jab1-b4#11:rep-0:0",
@@ -2358,10 +2358,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 159936,
-      "startMs": 166600,
-      "targetStrikeTick": 160128,
-      "targetStrikeMs": 166800
+      "startTick": 182016,
+      "startMs": 189600,
+      "targetStrikeTick": 182208,
+      "targetStrikeMs": 189800
     },
     {
       "eventId": "jab1-b4#11:rep-0:1",
@@ -2370,10 +2370,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 160320,
-      "startMs": 167000,
-      "targetStrikeTick": 160512,
-      "targetStrikeMs": 167200
+      "startTick": 182400,
+      "startMs": 190000,
+      "targetStrikeTick": 182592,
+      "targetStrikeMs": 190200
     },
     {
       "eventId": "jab1-b4#11:rep-0:2",
@@ -2382,10 +2382,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 160704,
-      "startMs": 167400,
-      "targetStrikeTick": 160896,
-      "targetStrikeMs": 167600
+      "startTick": 182784,
+      "startMs": 190400,
+      "targetStrikeTick": 182976,
+      "targetStrikeMs": 190600
     },
     {
       "eventId": "jab1-b4#11:rep-0:3",
@@ -2394,10 +2394,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 161088,
-      "startMs": 167800,
-      "targetStrikeTick": 161280,
-      "targetStrikeMs": 168000
+      "startTick": 183168,
+      "startMs": 190800,
+      "targetStrikeTick": 183360,
+      "targetStrikeMs": 191000
     },
     {
       "eventId": "jab1-b4#12:rep-0:0",
@@ -2406,10 +2406,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 161856,
-      "startMs": 168600,
-      "targetStrikeTick": 162048,
-      "targetStrikeMs": 168800
+      "startTick": 184320,
+      "startMs": 192000,
+      "targetStrikeTick": 184512,
+      "targetStrikeMs": 192200
     },
     {
       "eventId": "jab1-b4#12:rep-0:1",
@@ -2418,10 +2418,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 162240,
-      "startMs": 169000,
-      "targetStrikeTick": 162432,
-      "targetStrikeMs": 169200
+      "startTick": 184704,
+      "startMs": 192400,
+      "targetStrikeTick": 184896,
+      "targetStrikeMs": 192600
     },
     {
       "eventId": "jab1-b4#12:rep-0:2",
@@ -2430,10 +2430,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 162624,
-      "startMs": 169400,
-      "targetStrikeTick": 162816,
-      "targetStrikeMs": 169600
+      "startTick": 185088,
+      "startMs": 192800,
+      "targetStrikeTick": 185280,
+      "targetStrikeMs": 193000
     },
     {
       "eventId": "jab1-b4#12:rep-0:3",
@@ -2442,10 +2442,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 163008,
-      "startMs": 169800,
-      "targetStrikeTick": 163200,
-      "targetStrikeMs": 170000
+      "startTick": 185472,
+      "startMs": 193200,
+      "targetStrikeTick": 185664,
+      "targetStrikeMs": 193400
     },
     {
       "eventId": "jab1-b4#13:rep-0:0",
@@ -2454,10 +2454,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 163776,
-      "startMs": 170600,
-      "targetStrikeTick": 163968,
-      "targetStrikeMs": 170800
+      "startTick": 186624,
+      "startMs": 194400,
+      "targetStrikeTick": 186816,
+      "targetStrikeMs": 194600
     },
     {
       "eventId": "jab1-b4#13:rep-0:1",
@@ -2466,10 +2466,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 164160,
-      "startMs": 171000,
-      "targetStrikeTick": 164352,
-      "targetStrikeMs": 171200
+      "startTick": 187008,
+      "startMs": 194800,
+      "targetStrikeTick": 187200,
+      "targetStrikeMs": 195000
     },
     {
       "eventId": "jab1-b4#13:rep-0:2",
@@ -2478,10 +2478,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 164544,
-      "startMs": 171400,
-      "targetStrikeTick": 164736,
-      "targetStrikeMs": 171600
+      "startTick": 187392,
+      "startMs": 195200,
+      "targetStrikeTick": 187584,
+      "targetStrikeMs": 195400
     },
     {
       "eventId": "jab1-b4#13:rep-0:3",
@@ -2490,10 +2490,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 164928,
-      "startMs": 171800,
-      "targetStrikeTick": 165120,
-      "targetStrikeMs": 172000
+      "startTick": 187776,
+      "startMs": 195600,
+      "targetStrikeTick": 187968,
+      "targetStrikeMs": 195800
     },
     {
       "eventId": "jab1-b4#14:rep-0:0",
@@ -2502,10 +2502,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 165696,
-      "startMs": 172600,
-      "targetStrikeTick": 165888,
-      "targetStrikeMs": 172800
+      "startTick": 188928,
+      "startMs": 196800,
+      "targetStrikeTick": 189120,
+      "targetStrikeMs": 197000
     },
     {
       "eventId": "jab1-b4#14:rep-0:1",
@@ -2514,10 +2514,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "2",
-      "startTick": 166080,
-      "startMs": 173000,
-      "targetStrikeTick": 166272,
-      "targetStrikeMs": 173200
+      "startTick": 189312,
+      "startMs": 197200,
+      "targetStrikeTick": 189504,
+      "targetStrikeMs": 197400
     },
     {
       "eventId": "jab1-b4#14:rep-0:2",
@@ -2526,10 +2526,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 166464,
-      "startMs": 173400,
-      "targetStrikeTick": 166656,
-      "targetStrikeMs": 173600
+      "startTick": 189696,
+      "startMs": 197600,
+      "targetStrikeTick": 189888,
+      "targetStrikeMs": 197800
     },
     {
       "eventId": "jab1-b4#14:rep-0:3",
@@ -2538,10 +2538,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "3",
-      "startTick": 166848,
-      "startMs": 173800,
-      "targetStrikeTick": 167040,
-      "targetStrikeMs": 174000
+      "startTick": 190080,
+      "startMs": 198000,
+      "targetStrikeTick": 190272,
+      "targetStrikeMs": 198200
     },
     {
       "eventId": "jab1-b5#0:rep-0:0",
@@ -2550,10 +2550,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 172224,
-      "startMs": 179400,
-      "targetStrikeTick": 172416,
-      "targetStrikeMs": 179600
+      "startTick": 195840,
+      "startMs": 204000,
+      "targetStrikeTick": 196032,
+      "targetStrikeMs": 204200
     },
     {
       "eventId": "jab1-b5#0:rep-0:1",
@@ -2562,10 +2562,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 172608,
-      "startMs": 179800,
-      "targetStrikeTick": 172800,
-      "targetStrikeMs": 180000
+      "startTick": 196224,
+      "startMs": 204400,
+      "targetStrikeTick": 196416,
+      "targetStrikeMs": 204600
     },
     {
       "eventId": "jab1-b5#0:rep-0:2",
@@ -2574,10 +2574,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 172992,
-      "startMs": 180200,
-      "targetStrikeTick": 173184,
-      "targetStrikeMs": 180400
+      "startTick": 196608,
+      "startMs": 204800,
+      "targetStrikeTick": 196800,
+      "targetStrikeMs": 205000
     },
     {
       "eventId": "jab1-b5#0:rep-0:3",
@@ -2586,10 +2586,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 173376,
-      "startMs": 180600,
-      "targetStrikeTick": 173568,
-      "targetStrikeMs": 180800
+      "startTick": 196992,
+      "startMs": 205200,
+      "targetStrikeTick": 197184,
+      "targetStrikeMs": 205400
     },
     {
       "eventId": "jab1-b5#1:rep-0:0",
@@ -2598,10 +2598,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 174144,
-      "startMs": 181400,
-      "targetStrikeTick": 174336,
-      "targetStrikeMs": 181600
+      "startTick": 198144,
+      "startMs": 206400,
+      "targetStrikeTick": 198336,
+      "targetStrikeMs": 206600
     },
     {
       "eventId": "jab1-b5#1:rep-0:1",
@@ -2610,10 +2610,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 174528,
-      "startMs": 181800,
-      "targetStrikeTick": 174720,
-      "targetStrikeMs": 182000
+      "startTick": 198528,
+      "startMs": 206800,
+      "targetStrikeTick": 198720,
+      "targetStrikeMs": 207000
     },
     {
       "eventId": "jab1-b5#1:rep-0:2",
@@ -2622,10 +2622,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 174912,
-      "startMs": 182200,
-      "targetStrikeTick": 175104,
-      "targetStrikeMs": 182400
+      "startTick": 198912,
+      "startMs": 207200,
+      "targetStrikeTick": 199104,
+      "targetStrikeMs": 207400
     },
     {
       "eventId": "jab1-b5#1:rep-0:3",
@@ -2634,10 +2634,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 175296,
-      "startMs": 182600,
-      "targetStrikeTick": 175488,
-      "targetStrikeMs": 182800
+      "startTick": 199296,
+      "startMs": 207600,
+      "targetStrikeTick": 199488,
+      "targetStrikeMs": 207800
     },
     {
       "eventId": "jab1-b5#2:rep-0:0",
@@ -2646,10 +2646,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 176064,
-      "startMs": 183400,
-      "targetStrikeTick": 176256,
-      "targetStrikeMs": 183600
+      "startTick": 200448,
+      "startMs": 208800,
+      "targetStrikeTick": 200640,
+      "targetStrikeMs": 209000
     },
     {
       "eventId": "jab1-b5#2:rep-0:1",
@@ -2658,10 +2658,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 176448,
-      "startMs": 183800,
-      "targetStrikeTick": 176640,
-      "targetStrikeMs": 184000
+      "startTick": 200832,
+      "startMs": 209200,
+      "targetStrikeTick": 201024,
+      "targetStrikeMs": 209400
     },
     {
       "eventId": "jab1-b5#2:rep-0:2",
@@ -2670,10 +2670,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 176832,
-      "startMs": 184200,
-      "targetStrikeTick": 177024,
-      "targetStrikeMs": 184400
+      "startTick": 201216,
+      "startMs": 209600,
+      "targetStrikeTick": 201408,
+      "targetStrikeMs": 209800
     },
     {
       "eventId": "jab1-b5#2:rep-0:3",
@@ -2682,10 +2682,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 177216,
-      "startMs": 184600,
-      "targetStrikeTick": 177408,
-      "targetStrikeMs": 184800
+      "startTick": 201600,
+      "startMs": 210000,
+      "targetStrikeTick": 201792,
+      "targetStrikeMs": 210200
     },
     {
       "eventId": "jab1-b5#3:rep-0:0",
@@ -2694,10 +2694,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 177984,
-      "startMs": 185400,
-      "targetStrikeTick": 178176,
-      "targetStrikeMs": 185600
+      "startTick": 202752,
+      "startMs": 211200,
+      "targetStrikeTick": 202944,
+      "targetStrikeMs": 211400
     },
     {
       "eventId": "jab1-b5#3:rep-0:1",
@@ -2706,10 +2706,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 178368,
-      "startMs": 185800,
-      "targetStrikeTick": 178560,
-      "targetStrikeMs": 186000
+      "startTick": 203136,
+      "startMs": 211600,
+      "targetStrikeTick": 203328,
+      "targetStrikeMs": 211800
     },
     {
       "eventId": "jab1-b5#3:rep-0:2",
@@ -2718,10 +2718,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 178752,
-      "startMs": 186200,
-      "targetStrikeTick": 178944,
-      "targetStrikeMs": 186400
+      "startTick": 203520,
+      "startMs": 212000,
+      "targetStrikeTick": 203712,
+      "targetStrikeMs": 212200
     },
     {
       "eventId": "jab1-b5#3:rep-0:3",
@@ -2730,10 +2730,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 179136,
-      "startMs": 186600,
-      "targetStrikeTick": 179328,
-      "targetStrikeMs": 186800
+      "startTick": 203904,
+      "startMs": 212400,
+      "targetStrikeTick": 204096,
+      "targetStrikeMs": 212600
     },
     {
       "eventId": "jab1-b5#4:rep-0:0",
@@ -2742,10 +2742,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 179904,
-      "startMs": 187400,
-      "targetStrikeTick": 180096,
-      "targetStrikeMs": 187600
+      "startTick": 205056,
+      "startMs": 213600,
+      "targetStrikeTick": 205248,
+      "targetStrikeMs": 213800
     },
     {
       "eventId": "jab1-b5#4:rep-0:1",
@@ -2754,10 +2754,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 180288,
-      "startMs": 187800,
-      "targetStrikeTick": 180480,
-      "targetStrikeMs": 188000
+      "startTick": 205440,
+      "startMs": 214000,
+      "targetStrikeTick": 205632,
+      "targetStrikeMs": 214200
     },
     {
       "eventId": "jab1-b5#4:rep-0:2",
@@ -2766,10 +2766,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 180672,
-      "startMs": 188200,
-      "targetStrikeTick": 180864,
-      "targetStrikeMs": 188400
+      "startTick": 205824,
+      "startMs": 214400,
+      "targetStrikeTick": 206016,
+      "targetStrikeMs": 214600
     },
     {
       "eventId": "jab1-b5#4:rep-0:3",
@@ -2778,10 +2778,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 181056,
-      "startMs": 188600,
-      "targetStrikeTick": 181248,
-      "targetStrikeMs": 188800
+      "startTick": 206208,
+      "startMs": 214800,
+      "targetStrikeTick": 206400,
+      "targetStrikeMs": 215000
     },
     {
       "eventId": "jab1-b5#5:rep-0:0",
@@ -2790,10 +2790,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 181824,
-      "startMs": 189400,
-      "targetStrikeTick": 182016,
-      "targetStrikeMs": 189600
+      "startTick": 207360,
+      "startMs": 216000,
+      "targetStrikeTick": 207552,
+      "targetStrikeMs": 216200
     },
     {
       "eventId": "jab1-b5#5:rep-0:1",
@@ -2802,10 +2802,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 182208,
-      "startMs": 189800,
-      "targetStrikeTick": 182400,
-      "targetStrikeMs": 190000
+      "startTick": 207744,
+      "startMs": 216400,
+      "targetStrikeTick": 207936,
+      "targetStrikeMs": 216600
     },
     {
       "eventId": "jab1-b5#5:rep-0:2",
@@ -2814,10 +2814,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 182592,
-      "startMs": 190200,
-      "targetStrikeTick": 182784,
-      "targetStrikeMs": 190400
+      "startTick": 208128,
+      "startMs": 216800,
+      "targetStrikeTick": 208320,
+      "targetStrikeMs": 217000
     },
     {
       "eventId": "jab1-b5#5:rep-0:3",
@@ -2826,10 +2826,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 182976,
-      "startMs": 190600,
-      "targetStrikeTick": 183168,
-      "targetStrikeMs": 190800
+      "startTick": 208512,
+      "startMs": 217200,
+      "targetStrikeTick": 208704,
+      "targetStrikeMs": 217400
     },
     {
       "eventId": "jab1-b5#6:rep-0:0",
@@ -2838,10 +2838,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 183744,
-      "startMs": 191400,
-      "targetStrikeTick": 183936,
-      "targetStrikeMs": 191600
+      "startTick": 209664,
+      "startMs": 218400,
+      "targetStrikeTick": 209856,
+      "targetStrikeMs": 218600
     },
     {
       "eventId": "jab1-b5#6:rep-0:1",
@@ -2850,10 +2850,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 184128,
-      "startMs": 191800,
-      "targetStrikeTick": 184320,
-      "targetStrikeMs": 192000
+      "startTick": 210048,
+      "startMs": 218800,
+      "targetStrikeTick": 210240,
+      "targetStrikeMs": 219000
     },
     {
       "eventId": "jab1-b5#6:rep-0:2",
@@ -2862,10 +2862,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 184512,
-      "startMs": 192200,
-      "targetStrikeTick": 184704,
-      "targetStrikeMs": 192400
+      "startTick": 210432,
+      "startMs": 219200,
+      "targetStrikeTick": 210624,
+      "targetStrikeMs": 219400
     },
     {
       "eventId": "jab1-b5#6:rep-0:3",
@@ -2874,10 +2874,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 184896,
-      "startMs": 192600,
-      "targetStrikeTick": 185088,
-      "targetStrikeMs": 192800
+      "startTick": 210816,
+      "startMs": 219600,
+      "targetStrikeTick": 211008,
+      "targetStrikeMs": 219800
     },
     {
       "eventId": "jab1-b5#7:rep-0:0",
@@ -2886,10 +2886,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 185664,
-      "startMs": 193400,
-      "targetStrikeTick": 185856,
-      "targetStrikeMs": 193600
+      "startTick": 211968,
+      "startMs": 220800,
+      "targetStrikeTick": 212160,
+      "targetStrikeMs": 221000
     },
     {
       "eventId": "jab1-b5#7:rep-0:1",
@@ -2898,10 +2898,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 186048,
-      "startMs": 193800,
-      "targetStrikeTick": 186240,
-      "targetStrikeMs": 194000
+      "startTick": 212352,
+      "startMs": 221200,
+      "targetStrikeTick": 212544,
+      "targetStrikeMs": 221400
     },
     {
       "eventId": "jab1-b5#7:rep-0:2",
@@ -2910,10 +2910,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 186432,
-      "startMs": 194200,
-      "targetStrikeTick": 186624,
-      "targetStrikeMs": 194400
+      "startTick": 212736,
+      "startMs": 221600,
+      "targetStrikeTick": 212928,
+      "targetStrikeMs": 221800
     },
     {
       "eventId": "jab1-b5#7:rep-0:3",
@@ -2922,10 +2922,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 186816,
-      "startMs": 194600,
-      "targetStrikeTick": 187008,
-      "targetStrikeMs": 194800
+      "startTick": 213120,
+      "startMs": 222000,
+      "targetStrikeTick": 213312,
+      "targetStrikeMs": 222200
     },
     {
       "eventId": "jab1-b5#8:rep-0:0",
@@ -2934,10 +2934,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 187584,
-      "startMs": 195400,
-      "targetStrikeTick": 187776,
-      "targetStrikeMs": 195600
+      "startTick": 214272,
+      "startMs": 223200,
+      "targetStrikeTick": 214464,
+      "targetStrikeMs": 223400
     },
     {
       "eventId": "jab1-b5#8:rep-0:1",
@@ -2946,10 +2946,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 187968,
-      "startMs": 195800,
-      "targetStrikeTick": 188160,
-      "targetStrikeMs": 196000
+      "startTick": 214656,
+      "startMs": 223600,
+      "targetStrikeTick": 214848,
+      "targetStrikeMs": 223800
     },
     {
       "eventId": "jab1-b5#8:rep-0:2",
@@ -2958,10 +2958,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 188352,
-      "startMs": 196200,
-      "targetStrikeTick": 188544,
-      "targetStrikeMs": 196400
+      "startTick": 215040,
+      "startMs": 224000,
+      "targetStrikeTick": 215232,
+      "targetStrikeMs": 224200
     },
     {
       "eventId": "jab1-b5#8:rep-0:3",
@@ -2970,10 +2970,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 188736,
-      "startMs": 196600,
-      "targetStrikeTick": 188928,
-      "targetStrikeMs": 196800
+      "startTick": 215424,
+      "startMs": 224400,
+      "targetStrikeTick": 215616,
+      "targetStrikeMs": 224600
     },
     {
       "eventId": "jab1-b5#9:rep-0:0",
@@ -2982,10 +2982,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 189504,
-      "startMs": 197400,
-      "targetStrikeTick": 189696,
-      "targetStrikeMs": 197600
+      "startTick": 216576,
+      "startMs": 225600,
+      "targetStrikeTick": 216768,
+      "targetStrikeMs": 225800
     },
     {
       "eventId": "jab1-b5#9:rep-0:1",
@@ -2994,10 +2994,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 189888,
-      "startMs": 197800,
-      "targetStrikeTick": 190080,
-      "targetStrikeMs": 198000
+      "startTick": 216960,
+      "startMs": 226000,
+      "targetStrikeTick": 217152,
+      "targetStrikeMs": 226200
     },
     {
       "eventId": "jab1-b5#9:rep-0:2",
@@ -3006,10 +3006,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 190272,
-      "startMs": 198200,
-      "targetStrikeTick": 190464,
-      "targetStrikeMs": 198400
+      "startTick": 217344,
+      "startMs": 226400,
+      "targetStrikeTick": 217536,
+      "targetStrikeMs": 226600
     },
     {
       "eventId": "jab1-b5#9:rep-0:3",
@@ -3018,10 +3018,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 190656,
-      "startMs": 198600,
-      "targetStrikeTick": 190848,
-      "targetStrikeMs": 198800
+      "startTick": 217728,
+      "startMs": 226800,
+      "targetStrikeTick": 217920,
+      "targetStrikeMs": 227000
     },
     {
       "eventId": "jab1-b5#10:rep-0:0",
@@ -3030,10 +3030,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 191424,
-      "startMs": 199400,
-      "targetStrikeTick": 191616,
-      "targetStrikeMs": 199600
+      "startTick": 218880,
+      "startMs": 228000,
+      "targetStrikeTick": 219072,
+      "targetStrikeMs": 228200
     },
     {
       "eventId": "jab1-b5#10:rep-0:1",
@@ -3042,10 +3042,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 191808,
-      "startMs": 199800,
-      "targetStrikeTick": 192000,
-      "targetStrikeMs": 200000
+      "startTick": 219264,
+      "startMs": 228400,
+      "targetStrikeTick": 219456,
+      "targetStrikeMs": 228600
     },
     {
       "eventId": "jab1-b5#10:rep-0:2",
@@ -3054,10 +3054,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 192192,
-      "startMs": 200200,
-      "targetStrikeTick": 192384,
-      "targetStrikeMs": 200400
+      "startTick": 219648,
+      "startMs": 228800,
+      "targetStrikeTick": 219840,
+      "targetStrikeMs": 229000
     },
     {
       "eventId": "jab1-b5#10:rep-0:3",
@@ -3066,10 +3066,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 192576,
-      "startMs": 200600,
-      "targetStrikeTick": 192768,
-      "targetStrikeMs": 200800
+      "startTick": 220032,
+      "startMs": 229200,
+      "targetStrikeTick": 220224,
+      "targetStrikeMs": 229400
     },
     {
       "eventId": "jab1-b5#11:rep-0:0",
@@ -3078,10 +3078,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 193344,
-      "startMs": 201400,
-      "targetStrikeTick": 193536,
-      "targetStrikeMs": 201600
+      "startTick": 221184,
+      "startMs": 230400,
+      "targetStrikeTick": 221376,
+      "targetStrikeMs": 230600
     },
     {
       "eventId": "jab1-b5#11:rep-0:1",
@@ -3090,10 +3090,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 193728,
-      "startMs": 201800,
-      "targetStrikeTick": 193920,
-      "targetStrikeMs": 202000
+      "startTick": 221568,
+      "startMs": 230800,
+      "targetStrikeTick": 221760,
+      "targetStrikeMs": 231000
     },
     {
       "eventId": "jab1-b5#11:rep-0:2",
@@ -3102,10 +3102,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 194112,
-      "startMs": 202200,
-      "targetStrikeTick": 194304,
-      "targetStrikeMs": 202400
+      "startTick": 221952,
+      "startMs": 231200,
+      "targetStrikeTick": 222144,
+      "targetStrikeMs": 231400
     },
     {
       "eventId": "jab1-b5#11:rep-0:3",
@@ -3114,10 +3114,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 194496,
-      "startMs": 202600,
-      "targetStrikeTick": 194688,
-      "targetStrikeMs": 202800
+      "startTick": 222336,
+      "startMs": 231600,
+      "targetStrikeTick": 222528,
+      "targetStrikeMs": 231800
     },
     {
       "eventId": "jab1-b5#12:rep-0:0",
@@ -3126,10 +3126,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 195264,
-      "startMs": 203400,
-      "targetStrikeTick": 195456,
-      "targetStrikeMs": 203600
+      "startTick": 223488,
+      "startMs": 232800,
+      "targetStrikeTick": 223680,
+      "targetStrikeMs": 233000
     },
     {
       "eventId": "jab1-b5#12:rep-0:1",
@@ -3138,10 +3138,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 195648,
-      "startMs": 203800,
-      "targetStrikeTick": 195840,
-      "targetStrikeMs": 204000
+      "startTick": 223872,
+      "startMs": 233200,
+      "targetStrikeTick": 224064,
+      "targetStrikeMs": 233400
     },
     {
       "eventId": "jab1-b5#12:rep-0:2",
@@ -3150,10 +3150,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 196032,
-      "startMs": 204200,
-      "targetStrikeTick": 196224,
-      "targetStrikeMs": 204400
+      "startTick": 224256,
+      "startMs": 233600,
+      "targetStrikeTick": 224448,
+      "targetStrikeMs": 233800
     },
     {
       "eventId": "jab1-b5#12:rep-0:3",
@@ -3162,10 +3162,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 196416,
-      "startMs": 204600,
-      "targetStrikeTick": 196608,
-      "targetStrikeMs": 204800
+      "startTick": 224640,
+      "startMs": 234000,
+      "targetStrikeTick": 224832,
+      "targetStrikeMs": 234200
     },
     {
       "eventId": "jab1-b5#13:rep-0:0",
@@ -3174,10 +3174,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 197184,
-      "startMs": 205400,
-      "targetStrikeTick": 197376,
-      "targetStrikeMs": 205600
+      "startTick": 225792,
+      "startMs": 235200,
+      "targetStrikeTick": 225984,
+      "targetStrikeMs": 235400
     },
     {
       "eventId": "jab1-b5#13:rep-0:1",
@@ -3186,10 +3186,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 197568,
-      "startMs": 205800,
-      "targetStrikeTick": 197760,
-      "targetStrikeMs": 206000
+      "startTick": 226176,
+      "startMs": 235600,
+      "targetStrikeTick": 226368,
+      "targetStrikeMs": 235800
     },
     {
       "eventId": "jab1-b5#13:rep-0:2",
@@ -3198,10 +3198,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 197952,
-      "startMs": 206200,
-      "targetStrikeTick": 198144,
-      "targetStrikeMs": 206400
+      "startTick": 226560,
+      "startMs": 236000,
+      "targetStrikeTick": 226752,
+      "targetStrikeMs": 236200
     },
     {
       "eventId": "jab1-b5#13:rep-0:3",
@@ -3210,10 +3210,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 198336,
-      "startMs": 206600,
-      "targetStrikeTick": 198528,
-      "targetStrikeMs": 206800
+      "startTick": 226944,
+      "startMs": 236400,
+      "targetStrikeTick": 227136,
+      "targetStrikeMs": 236600
     },
     {
       "eventId": "jab1-b5#14:rep-0:0",
@@ -3222,10 +3222,10 @@
       "repIndex": 0,
       "strikeIndex": 0,
       "token": "1",
-      "startTick": 199104,
-      "startMs": 207400,
-      "targetStrikeTick": 199296,
-      "targetStrikeMs": 207600
+      "startTick": 228096,
+      "startMs": 237600,
+      "targetStrikeTick": 228288,
+      "targetStrikeMs": 237800
     },
     {
       "eventId": "jab1-b5#14:rep-0:1",
@@ -3234,10 +3234,10 @@
       "repIndex": 0,
       "strikeIndex": 1,
       "token": "1",
-      "startTick": 199488,
-      "startMs": 207800,
-      "targetStrikeTick": 199680,
-      "targetStrikeMs": 208000
+      "startTick": 228480,
+      "startMs": 238000,
+      "targetStrikeTick": 228672,
+      "targetStrikeMs": 238200
     },
     {
       "eventId": "jab1-b5#14:rep-0:2",
@@ -3246,10 +3246,10 @@
       "repIndex": 0,
       "strikeIndex": 2,
       "token": "1",
-      "startTick": 199872,
-      "startMs": 208200,
-      "targetStrikeTick": 200064,
-      "targetStrikeMs": 208400
+      "startTick": 228864,
+      "startMs": 238400,
+      "targetStrikeTick": 229056,
+      "targetStrikeMs": 238600
     },
     {
       "eventId": "jab1-b5#14:rep-0:3",
@@ -3258,10 +3258,10 @@
       "repIndex": 0,
       "strikeIndex": 3,
       "token": "1",
-      "startTick": 200256,
-      "startMs": 208600,
-      "targetStrikeTick": 200448,
-      "targetStrikeMs": 208800
+      "startTick": 229248,
+      "startMs": 238800,
+      "targetStrikeTick": 229440,
+      "targetStrikeMs": 239000
     }
   ],
   "coachEvents": [
@@ -3271,8 +3271,8 @@
       "clipId": "li-f55b35b6",
       "text": "One, one, two — straight time, nine bars. Double one, then two. Fourth slot is quiet.",
       "durationMs": 6813,
-      "expectedStartTick": 50244,
-      "expectedStartMs": 52337,
+      "expectedStartTick": 57732,
+      "expectedStartMs": 60137,
       "source": "clickScript.schedule"
     },
     {
@@ -3281,8 +3281,8 @@
       "clipId": "li-ddbe9a47",
       "text": "Long set: one-bees only, double-time — eighteen bars. Same lead hand, lower target. Keep your eyes up.",
       "durationMs": 6093,
-      "expectedStartTick": 91831,
-      "expectedStartMs": 95657,
+      "expectedStartTick": 104503,
+      "expectedStartMs": 108857,
       "source": "clickScript.schedule"
     },
     {
@@ -3291,8 +3291,8 @@
       "clipId": "li-bf378145",
       "text": "One, two, one, three — time-and-a-half, fifteen bars. The one comes back before the three turns.",
       "durationMs": 6493,
-      "expectedStartTick": 132343,
-      "expectedStartMs": 137857,
+      "expectedStartTick": 150199,
+      "expectedStartMs": 156457,
       "source": "clickScript.schedule"
     },
     {
@@ -3301,12 +3301,12 @@
       "clipId": "li-dfb302b7",
       "text": "Pump: ones only, time-and-a-half — fifteen bars. Finish the round owning the lead hand. Crisp, not tense.",
       "durationMs": 5893,
-      "expectedStartTick": 166327,
-      "expectedStartMs": 173257,
+      "expectedStartTick": 189943,
+      "expectedStartMs": 197857,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 63,
+  "expectedCallBars": 65,
   "silentByDesign": [],
   "notes": []
 }
