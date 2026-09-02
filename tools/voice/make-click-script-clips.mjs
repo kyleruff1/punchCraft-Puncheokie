@@ -161,12 +161,24 @@ const allJobs = [
         finish: 'shout',
       }),
       minDurationMs: 250,
-      // A wide stride window lets Chatterbox improvise a preamble around
-      // a short call ("One!" came back as "Go again! One!"), so the cap
-      // is also bounded by the word count — a call is TIGHT by genre.
+      // A call must live in the BREATH, not blanket the previous bar's
+      // punches: at body-work's 4.8s stride a 3.1s call started 1.2s
+      // AFTER the bar it named and read as "the coach is a second late"
+      // (Kyle on-glass, 2026-09-02). Budget by syllable units — a fused
+      // "-bee" token is two — clamped to [800ms, the stride window].
+      // ~250ms/unit + 300 is the clipped-urgent corner call the original
+      // loop-call design specified (~1s for a plain pair).
       maxDurationMs: Math.min(
         row.windowMs,
-        600 + row.text.split(/[ ,]+/).filter(Boolean).length * 700,
+        Math.max(
+          800,
+          300 +
+            250 *
+              row.text
+                .split(/[ ,!]+/)
+                .filter(Boolean)
+                .reduce((a, w) => a + (w.includes('-bee') ? 2 : 1), 0),
+        ),
       ),
       // Token-exact ASR: a call that loses a word ("Six, five, two" heard
       // as "the 652") is worse than a slower take — the athlete throws
