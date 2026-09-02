@@ -16,7 +16,7 @@
  *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
  *        tools/analysis/gen-workout-scripts.ts > docs/click-workout-scripts.md
  */
-import { CLICK_MAPS, breathBeats, measuresPerRep, rowMeasures, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
+import { CLICK_MAPS, SETUP_GAP_MEASURES, breathBeats, measuresPerRep, rowMeasures, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
 import { parseCombo, punchTokens } from '../../src/domain/workout/WorkoutTokens'
 
 const NAMES: Record<string, string> = {
@@ -162,6 +162,10 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       const kind = sectionKind(row.motif)
       const perBar = punchTokens(parseCombo(row.motif)).length
       punchTotal += perBar * row.reps
+      if (i > 0) {
+        out.push(`_⏸ setup pause — ${SETUP_GAP_MEASURES} measures on the click, no tokens (lead-in room)_`)
+        out.push('')
+      }
       out.push(`**§${ri + 1}.${i + 1} ${kind}** — ${rowMeasures(row)} measures`)
       out.push('')
       const leadText = row.leadIn
@@ -178,7 +182,8 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       out.push('```')
       out.push('')
     })
-    out.push(`_Round ${ri + 1} totals: ${round.rows.reduce((a, r) => a + rowMeasures(r), 0)} measures · **${punchTotal} punches**_`)
+    const gapMeasures = SETUP_GAP_MEASURES * Math.max(0, round.rows.length - 1)
+    out.push(`_Round ${ri + 1} totals: ${round.rows.reduce((a, r) => a + rowMeasures(r), 0)} row measures + ${gapMeasures} setup-pause measures · **${punchTotal} punches**_`)
     out.push('')
     if (round.rest) {
       out.push(`### Rest ${ri + 1} → ${ri + 2}  (1:00)`)

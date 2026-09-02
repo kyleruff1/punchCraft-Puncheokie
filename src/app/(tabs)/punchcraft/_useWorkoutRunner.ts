@@ -97,8 +97,14 @@ export const TICK_INTERVAL_MS = 50
  */
 export const LEAD_IN_PAD_MS = 250
 
-/** Per-bar loop calls land tighter — finish ~100ms before the bar's first strike. */
-export const CALL_PAD_MS = 100
+/**
+ * Per-bar loop calls finish ~half a second before the bar's first strike
+ * (Kyle, on-glass 2026-09-02: the 100ms pad "creates pressure" — with
+ * the setup pauses giving each section clean air, the call now leads its
+ * bar with real separation). Long clips still start as early as the
+ * previous audio allows; the pad is the target, the busy check the law.
+ */
+export const CALL_PAD_MS = 500
 /**
  * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
  * found Pressables dead DURING work while fine in idle: the 10Hz

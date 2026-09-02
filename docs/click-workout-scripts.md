@@ -24,65 +24,75 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 
 ### Round 1 — “Build the base”
 
-**§1.1 PUMP BAR (single punch, four slots)** — 20 measures
+**§1.1 PUMP BAR (single punch, four slots)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s1>>
-"Pump: ones only, straight time — ten bars. Set the range. Every one comes home."
+"Pump: ones only, straight time — nine bars. Set the range. Every one comes home."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-**§1.2 COMBO BAR** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COMBO BAR** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s2>>
-"One, two, one, two — straight time, fifteen bars. Loose shoulders. Let the two arrive behind the one."
+"One, two, one, two — straight time, thirteen bars. Loose shoulders. Let the two arrive behind the one."
 
-  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 15   (4 punches/bar -> 60 punches)
+  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | one | two
 ```
 
-**§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s3>>
-"One, one, two — straight time, ten bars. Leave the fourth slot open. Reset there."
+"One, one, two — straight time, nine bars. Leave the fourth slot open. Reset there."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 9   (3 punches/bar -> 27 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s4>>
-"One, two, one — double-time, twenty bars. Three quick shots, then clear the page."
+"One, two, one — double-time, eighteen bars. Three quick shots, then clear the page."
 
-  [ 1 ][ 2 ][ 1 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 2 ][ 1 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | one | (rest)
 ```
 
-**§1.5 PUNCTUATED BAR (breath baked into slot 4)** — 15 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.5 PUNCTUATED BAR (breath baked into slot 4)** — 13 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r1s5>>
-"One, two, three — time-and-a-half, fifteen bars. Turn the three and take the empty slot."
+"One, two, three — time-and-a-half, thirteen bars. Turn the three and take the empty slot."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 15   (3 punches/bar -> 45 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 13   (3 punches/bar -> 39 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.6 COMBO BAR** — 10 measures
 
@@ -96,6 +106,8 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 [[COMPONENT HITS]] per bar: three | two | three | two
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.7 PUNCTUATED BAR (breath baked into slot 4)** — 5 measures
 
 ```text
@@ -108,7 +120,7 @@ Three-Round Fundamentals. Three rounds, four minutes each, one-twenty on the cli
 [[COMPONENT HITS]] per bar: one | three | two | (rest)
 ```
 
-_Round 1 totals: 120 measures · **270 punches**_
+_Round 1 totals: 108 row measures + 12 setup-pause measures · **243 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -119,65 +131,75 @@ Good first round. Let the arms hang for a breath, then bring the hands back home
 
 ### Round 2 — “Change levels”
 
-**§2.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
+**§2.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s1>>
-"Big phrase — two pages: one, two, one, two, one-bee, two, three, two. Straight time, ten times through. Page one stays upstairs. Page two drops the one-bee, then comes right back up."
+"Big phrase — two pages: one, two, one, two, one-bee, two, three, two. Straight time, nine times through. Page one stays upstairs. Page two drops the one-bee, then comes right back up."
 
-  [ 1 ][ 2 ][ 1 ][ 2 ][ 1b][ 2 ][ 3 ][ 2 ]  @1x   x 10   (8 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 1 ][ 2 ][ 1b][ 2 ][ 3 ][ 2 ]  @1x   x 9   (8 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | one | two | one-bee | two | three | two
 ```
 
-**§2.2 PUMP BAR (single punch, four slots)** — 10 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 PUMP BAR (single punch, four slots)** — 9 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s2>>
-"Pump: one-bees only, double-time — ten bars. Touch the body and get the hand straight back."
+"Pump: one-bees only, double-time — nine bars. Touch the body and get the hand straight back."
 
-  [ 1b][ 1b][ 1b][ 1b]  @2x   x 10   (4 punches/bar -> 40 punches)
+  [ 1b][ 1b][ 1b][ 1b]  @2x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s3>>
-"One, two-bee, three — straight time, fifteen bars. One, two-bee, three. Leave the last slot empty."
+"One, two-bee, three — straight time, fourteen bars. One, two-bee, three. Leave the last slot empty."
 
-  [ 1 ][ 2b][ 3 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
+  [ 1 ][ 2b][ 3 ][ . ]  @1x   x 14   (3 punches/bar -> 42 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two-bee | three | (rest)
 ```
 
-**§2.4 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.4 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s4>>
-"One, two, three, two — time-and-a-half, twenty bars. Four clean beats. Do not rush the three."
+"One, two, three, two — time-and-a-half, eighteen bars. Four clean beats. Do not rush the three."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§2.5 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.5 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r2s5>>
-"One, four, two, three — straight time, ten bars. Trace the square: one, four, two, three."
+"One, four, two, three — straight time, nine bars. Trace the square: one, four, two, three."
 
-  [ 1 ][ 4 ][ 2 ][ 3 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 4 ][ 2 ][ 3 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | four | two | three
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.6 COMBO BAR** — 10 measures
 
@@ -191,7 +213,7 @@ Good first round. Let the arms hang for a breath, then bring the hands back home
 [[COMPONENT HITS]] per bar: one-bee | two | one | two
 ```
 
-_Round 2 totals: 120 measures · **325 punches**_
+_Round 2 totals: 110 row measures + 10 setup-pause measures · **298 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -202,41 +224,47 @@ That round added the floor change. Take two slow breaths and shake out the shoul
 
 ### Round 3 — “Put it together”
 
-**§3.1 COMBO BAR** — 40 measures
+**§3.1 COMBO BAR** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s1>>
-"One, two, three, two — straight time, twenty bars. This is your home combination. Smooth first, strong finish."
+"One, two, three, two — straight time, eighteen bars. This is your home combination. Smooth first, strong finish."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§3.2 COMBO BAR** — 22 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 COMBO BAR** — 20 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s2>>
-"One, five, two, three — straight time, eleven bars. Bring the five up the middle, then turn the three."
+"One, five, two, three — straight time, ten bars. Bring the five up the middle, then turn the three."
 
-  [ 1 ][ 5 ][ 2 ][ 3 ]  @1x   x 11   (4 punches/bar -> 44 punches)
+  [ 1 ][ 5 ][ 2 ][ 3 ]  @1x   x 10   (4 punches/bar -> 40 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | five | two | three
 ```
 
-**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/three-round-fundamentals/r3s3>>
-"One, one, two — double-time, twenty bars. Fast double one into two. Fourth slot is your reset."
+"One, one, two — double-time, eighteen bars. Fast double one into two. Fourth slot is your reset."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -250,6 +278,8 @@ That round added the floor change. Take two slow breaths and shake out the shoul
 [[COMPONENT HITS]] per bar: one | six | three | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§3.5 TWO-PAGE SET (8 slots, paged as 2 bars)** — 18 measures
 
 ```text
@@ -262,7 +292,7 @@ That round added the floor change. Take two slow breaths and shake out the shoul
 [[COMPONENT HITS]] per bar: one | one | two | three | two | five | two | (rest)
 ```
 
-_Round 3 totals: 120 measures · **286 punches**_
+_Round 3 totals: 112 row measures + 8 setup-pause measures · **268 punches**_
 
 ---
 
@@ -279,41 +309,47 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 
 ### Round 1 — “The jab is home”
 
-**§1.1 PUMP BAR (single punch, four slots)** — 30 measures
+**§1.1 PUMP BAR (single punch, four slots)** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s1>>
-"Pump: ones only, straight time — fifteen bars. Touch, recover, touch again. No reaching."
+"Pump: ones only, straight time — thirteen bars. Touch, recover, touch again. No reaching."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 15   (4 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s2>>
-"One, one, two — straight time, ten bars. Double one, then two. Fourth slot is quiet."
+"One, one, two — straight time, nine bars. Double one, then two. Fourth slot is quiet."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 9   (3 punches/bar -> 27 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§1.3 PUMP BAR (single punch, four slots)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.3 PUMP BAR (single punch, four slots)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r1s3>>
-"Long set: one-bees only, double-time — twenty bars. Same lead hand, lower target. Keep your eyes up."
+"Long set: one-bees only, double-time — eighteen bars. Same lead hand, lower target. Keep your eyes up."
 
-  [ 1b][ 1b][ 1b][ 1b]  @2x   x 20   (4 punches/bar -> 80 punches)
+  [ 1b][ 1b][ 1b][ 1b]  @2x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.4 COMBO BAR** — 15 measures
 
@@ -327,6 +363,8 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 [[COMPONENT HITS]] per bar: one | two | one | three
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.5 PUMP BAR (single punch, four slots)** — 15 measures
 
 ```text
@@ -339,7 +377,7 @@ Establish the Jab. Four rounds at one hundred beats. Tonight the jab is home —
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-_Round 1 totals: 100 measures · **290 punches**_
+_Round 1 totals: 92 row measures + 8 setup-pause measures · **271 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -350,41 +388,47 @@ Good. You found the lead hand upstairs and downstairs. Next round doubles it and
 
 ### Round 2 — “Double and angle”
 
-**§2.1 COMBO BAR** — 20 measures
+**§2.1 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s1>>
-"One, one, two, three — straight time, ten bars. Two ones open the door. Two, three closes it."
+"One, one, two, three — straight time, nine bars. Two ones open the door. Two, three closes it."
 
-  [ 1 ][ 1 ][ 2 ][ 3 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 1 ][ 2 ][ 3 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | three
 ```
 
-**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s2>>
-"One, one, two — double-time, twenty bars. Quick double one, two, then an empty slot."
+"One, one, two — double-time, eighteen bars. Quick double one, two, then an empty slot."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r2s3>>
-"One-bee, one, two — straight time, fifteen bars. Low one, high one, two. Reset on four."
+"One-bee, one, two — straight time, fourteen bars. Low one, high one, two. Reset on four."
 
-  [ 1b][ 1 ][ 2 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
+  [ 1b][ 1 ][ 2 ][ . ]  @1x   x 14   (3 punches/bar -> 42 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 COMBO BAR** — 30 measures
 
@@ -398,7 +442,7 @@ Good. You found the lead hand upstairs and downstairs. Next round doubles it and
 [[COMPONENT HITS]] per bar: one | one | three | two
 ```
 
-_Round 2 totals: 100 measures · **265 punches**_
+_Round 2 totals: 94 row measures + 6 setup-pause measures · **252 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -409,29 +453,33 @@ The jab is starting to create openings now. Breathe out long and let the forearm
 
 ### Round 3 — “Jab to body and head”
 
-**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
+**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s1>>
-"Big phrase — two pages: one, one, two, one-bee, one, two, three, breathe. Straight time, ten times through. Page one ends downstairs. Page two climbs back up one, two, three, then breathe."
+"Big phrase — two pages: one, one, two, one-bee, one, two, three, breathe. Straight time, nine times through. Page one ends downstairs. Page two climbs back up one, two, three, then breathe."
 
-  [ 1 ][ 1 ][ 2 ][ 1b][ 1 ][ 2 ][ 3 ][ . ]  @1x   x 10   (7 punches/bar -> 70 punches)
+  [ 1 ][ 1 ][ 2 ][ 1b][ 1 ][ 2 ][ 3 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | one-bee | one | two | three | (rest)
 ```
 
-**§3.2 PUMP BAR (single punch, four slots)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 PUMP BAR (single punch, four slots)** — 29 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s2>>
-"Long set: one-bees only, double-time — thirty bars. Fast body ones. Small bend, fast return."
+"Long set: one-bees only, double-time — twenty-nine bars. Fast body ones. Small bend, fast return."
 
-  [ 1b][ 1b][ 1b][ 1b]  @2x   x 30   (4 punches/bar -> 120 punches)
+  [ 1b][ 1b][ 1b][ 1b]  @2x   x 29   (4 punches/bar -> 116 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.3 COMBO BAR** — 20 measures
 
@@ -445,19 +493,21 @@ The jab is starting to create openings now. Breathe out long and let the forearm
 [[COMPONENT HITS]] per bar: one | two | one-bee | two
 ```
 
-**§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r3s4>>
-"One, one, two — time-and-a-half, twenty bars. Double one, two, breathe. Same rhythm every time."
+"One, one, two — time-and-a-half, eighteen bars. Double one, two, breathe. Same rhythm every time."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 3 totals: 100 measures · **290 punches**_
+_Round 3 totals: 94 row measures + 6 setup-pause measures · **273 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -468,17 +518,19 @@ Three rounds in, the jab should feel like a steering wheel. Last round is range 
 
 ### Round 4 — “Own the range”
 
-**§4.1 PUMP BAR (single punch, four slots)** — 40 measures
+**§4.1 PUMP BAR (single punch, four slots)** — 38 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r4s1>>
-"Long set: ones only, straight time — twenty bars. Long, clean ones. Make the bag meet the end of the punch."
+"Long set: ones only, straight time — nineteen bars. Long, clean ones. Make the bag meet the end of the punch."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 19   (4 punches/bar -> 76 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.2 PUNCTUATED BAR (breath baked into slot 4)** — 40 measures
 
@@ -492,19 +544,21 @@ Three rounds in, the jab should feel like a steering wheel. Last round is range 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/establish-the-jab-20/r4s3>>
-"One-bee, one, two — time-and-a-half, twenty bars. Finish low-high-high. Leave the fourth slot empty and finish balanced."
+"One-bee, one, two — time-and-a-half, eighteen bars. Finish low-high-high. Leave the fourth slot empty and finish balanced."
 
-  [ 1b][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
+  [ 1b][ 1 ][ 2 ][ . ]  @1.5x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one | two | (rest)
 ```
 
-_Round 4 totals: 100 measures · **260 punches**_
+_Round 4 totals: 96 row measures + 4 setup-pause measures · **250 punches**_
 
 ---
 
@@ -521,29 +575,33 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 
 ### Round 1 — “Orthodox base”  ·  stance: **ORTHODOX**
 
-**§1.1 COMBO BAR** — 32 measures
+**§1.1 COMBO BAR** — 30 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s1>>
-"One, two, three, two — straight time, sixteen bars. Build it from the lead side and finish behind the rear hand."
+"One, two, three, two — straight time, fifteen bars. Build it from the lead side and finish behind the rear hand."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 16 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r1s2>>
-"One, one, two — straight time, ten bars. Double one, two. Fourth slot is your stance check."
+"One, one, two — straight time, eight bars. Double one, two. Fourth slot is your stance check."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 8   (3 punches/bar -> 24 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 16 measures
 
@@ -557,6 +615,8 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
 ```text
@@ -569,7 +629,7 @@ Switch by Round. Four rounds, eighty-five on the click — orthodox, southpaw, o
 [[COMPONENT HITS]] per bar: one | two-bee | three | (rest)
 ```
 
-_Round 1 totals: 85 measures · **193 punches**_
+_Round 1 totals: 79 row measures + 6 setup-pause measures · **183 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -580,41 +640,47 @@ Orthodox round is banked. Square up for a moment, breathe, then put the right fo
 
 ### Round 2 — “Southpaw mirror”  ·  stance: **SOUTHPAW**
 
-**§2.1 COMBO BAR** — 28 measures
+**§2.1 COMBO BAR** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s1>>
-"One, two, three, two — straight time, fourteen bars. Same four numbers, new stance. Do not let the rear foot trail."
+"One, two, three, two — straight time, thirteen bars. Same four numbers, new stance. Do not let the rear foot trail."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§2.2 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s2>>
-"One, one, two, three — time-and-a-half, twenty bars. Double one, two, three. Let the stance do the work."
+"One, one, two, three — time-and-a-half, eighteen bars. Double one, two, three. Let the stance do the work."
 
-  [ 1 ][ 1 ][ 2 ][ 3 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 1 ][ 2 ][ 3 ]  @1.5x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | three
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r2s3>>
-"One-bee, one, two — straight time, ten bars. Body one, head one, two. Reset your base on four."
+"One-bee, one, two — straight time, nine bars. Body one, head one, two. Reset your base on four."
 
-  [ 1b][ 1 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 1b][ 1 ][ 2 ][ . ]  @1x   x 9   (3 punches/bar -> 27 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
@@ -628,7 +694,7 @@ Orthodox round is banked. Square up for a moment, breathe, then put the right fo
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-_Round 2 totals: 85 measures · **217 punches**_
+_Round 2 totals: 79 row measures + 6 setup-pause measures · **202 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -639,41 +705,47 @@ Good mirror round. Switch back to orthodox and let the hips settle before the be
 
 ### Round 3 — “Orthodox pressure”  ·  stance: **ORTHODOX**
 
-**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
+**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s1>>
-"Big phrase — two pages: one, two, three, two, one-bee, two, three, breathe. Straight time, nine times through. Page one is the clean four. Page two goes body one, two, three, then breathe."
+"Big phrase — two pages: one, two, three, two, one-bee, two, three, breathe. Straight time, eight times through. Page one is the clean four. Page two goes body one, two, three, then breathe."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ][ 1b][ 2 ][ 3 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ][ 1b][ 2 ][ 3 ][ . ]  @1x   x 8   (7 punches/bar -> 56 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two | one-bee | two | three | (rest)
 ```
 
-**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s2>>
-"One, one, two — double-time, eighteen bars. Double one, two. Quick burst, clean stop."
+"One, one, two — double-time, seventeen bars. Double one, two. Quick burst, clean stop."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 17   (3 punches/bar -> 51 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r3s3>>
-"Two, three, two — straight time, ten bars. Two, three, two. Compact and balanced."
+"Two, three, two — straight time, nine bars. Two, three, two. Compact and balanced."
 
-  [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 9   (3 punches/bar -> 27 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -687,7 +759,7 @@ Good mirror round. Switch back to orthodox and let the hips settle before the be
 [[COMPONENT HITS]] per bar: one | six | three | (rest)
 ```
 
-_Round 3 totals: 85 measures · **207 punches**_
+_Round 3 totals: 79 row measures + 6 setup-pause measures · **194 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -698,29 +770,33 @@ One more stance change. Southpaw for the finish. First set is one, two, three, t
 
 ### Round 4 — “Southpaw finish”  ·  stance: **SOUTHPAW**
 
-**§4.1 COMBO BAR** — 32 measures
+**§4.1 COMBO BAR** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s1>>
-"One, two, three, two — straight time, sixteen bars. Own the familiar four from the opposite stance."
+"One, two, three, two — straight time, fourteen bars. Own the familiar four from the opposite stance."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§4.2 COMBO BAR** — 16 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 COMBO BAR** — 14 measures
 
 ```text
 <<SINGLE CLIP  lead-in/switch-by-round/r4s2>>
-"One, four, two, three — time-and-a-half, sixteen bars. One, four, two, three. Trace the square without crossing the feet."
+"One, four, two, three — time-and-a-half, fourteen bars. One, four, two, three. Trace the square without crossing the feet."
 
-  [ 1 ][ 4 ][ 2 ][ 3 ]  @1.5x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 4 ][ 2 ][ 3 ]  @1.5x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | four | two | three
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.3 COMBO BAR** — 16 measures
 
@@ -734,6 +810,8 @@ One more stance change. Southpaw for the finish. First set is one, two, three, t
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§4.4 PUNCTUATED BAR (breath baked into slot 4)** — 21 measures
 
 ```text
@@ -746,7 +824,7 @@ One more stance change. Southpaw for the finish. First set is one, two, three, t
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 4 totals: 85 measures · **223 punches**_
+_Round 4 totals: 79 row measures + 6 setup-pause measures · **207 punches**_
 
 ---
 
@@ -763,41 +841,47 @@ Heavy Hands. Four rounds, one-twenty on the click. Hooks and crosses with weight
 
 ### Round 1 — “Build the power line”
 
-**§1.1 PUNCTUATED BAR (breath baked into slot 4)** — 34 measures
+**§1.1 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s1>>
-"One, two, three — straight time, seventeen bars. One, two, three. Give the power room to land, then reset."
+"One, two, three — straight time, fifteen bars. One, two, three. Give the power room to land, then reset."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 17   (3 punches/bar -> 51 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§1.2 COMBO BAR** — 26 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COMBO BAR** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s2>>
-"One, two, three, two — straight time, thirteen bars. One, two, three, two. Stay heavy without getting slow."
+"One, two, three, two — straight time, twelve bars. One, two, three, two. Stay heavy without getting slow."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 13   (4 punches/bar -> 52 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 12   (4 punches/bar -> 48 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r1s3>>
-"Two, three, two — time-and-a-half, twenty bars. Two, three, two. Sit down, then get back under yourself."
+"Two, three, two — time-and-a-half, eighteen bars. Two, three, two. Sit down, then get back under yourself."
 
-  [ 2 ][ 3 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
+  [ 2 ][ 3 ][ 2 ][ . ]  @1.5x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 26 measures
 
@@ -811,6 +895,8 @@ Heavy Hands. Four rounds, one-twenty on the click. Hooks and crosses with weight
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.5 PUNCTUATED BAR (breath baked into slot 4)** — 14 measures
 
 ```text
@@ -823,7 +909,7 @@ Heavy Hands. Four rounds, one-twenty on the click. Hooks and crosses with weight
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 1 totals: 120 measures · **262 punches**_
+_Round 1 totals: 112 row measures + 8 setup-pause measures · **246 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -834,53 +920,61 @@ Good power round. Heavy does not mean tight — open the hands inside the gloves
 
 ### Round 2 — “Hooks off the line”
 
-**§2.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
+**§2.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s1>>
-"Big phrase — two pages: one, two, three, two, one, four, three, two. Straight time, ten times through. Page one finishes three, two. Page two brings the four before the three-two."
+"Big phrase — two pages: one, two, three, two, one, four, three, two. Straight time, nine times through. Page one finishes three, two. Page two brings the four before the three-two."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ][ 1 ][ 4 ][ 3 ][ 2 ]  @1x   x 10   (8 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ][ 1 ][ 4 ][ 3 ][ 2 ]  @1x   x 9   (8 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two | one | four | three | two
 ```
 
-**§2.2 COMBO BAR** — 17 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 COMBO BAR** — 15 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s2>>
-"One, four, three, two — time-and-a-half, seventeen bars. One, four, three, two. Turn the threes and fours; do not swing them."
+"One, four, three, two — time-and-a-half, fifteen bars. One, four, three, two. Turn the threes and fours; do not swing them."
 
-  [ 1 ][ 4 ][ 3 ][ 2 ]  @1.5x   x 17   (4 punches/bar -> 68 punches)
+  [ 1 ][ 4 ][ 3 ][ 2 ]  @1.5x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | four | three | two
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 23 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 22 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s3>>
-"One, two, three — double-time, twenty-three bars. Fast one, two, three, then space. Power stays organized."
+"One, two, three — double-time, twenty-two bars. Fast one, two, three, then space. Power stays organized."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 23   (3 punches/bar -> 69 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 22   (3 punches/bar -> 66 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§2.4 PUNCTUATED BAR (breath baked into slot 4)** — 26 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.4 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r2s4>>
-"Three, two, three — straight time, thirteen bars. Three, two, three. Keep the threes short and bring the two straight home."
+"Three, two, three — straight time, twelve bars. Three, two, three. Keep the threes short and bring the two straight home."
 
-  [ 3 ][ 2 ][ 3 ][ . ]  @1x   x 13   (3 punches/bar -> 39 punches)
+  [ 3 ][ 2 ][ 3 ][ . ]  @1x   x 12   (3 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: three | two | three | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.5 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
 
@@ -894,7 +988,7 @@ Good power round. Heavy does not mean tight — open the hands inside the gloves
 [[COMPONENT HITS]] per bar: one | three | two | (rest)
 ```
 
-_Round 2 totals: 120 measures · **328 punches**_
+_Round 2 totals: 112 row measures + 8 setup-pause measures · **306 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -905,17 +999,19 @@ That was the hook round. Let the shoulders drop and breathe through the nose if 
 
 ### Round 3 — “Power in layers”
 
-**§3.1 COMBO BAR** — 40 measures
+**§3.1 COMBO BAR** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s1>>
-"One, two, three, two — straight time, twenty bars. Four strong shots, same shape every rep."
+"One, two, three, two — straight time, eighteen bars. Four strong shots, same shape every rep."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -929,17 +1025,21 @@ That was the hook round. Let the shoulders drop and breathe through the nose if 
 [[COMPONENT HITS]] per bar: three | two | three | (rest)
 ```
 
-**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 38 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r3s3>>
-"Two, three, two — straight time, twenty bars. Two, three, two. Keep the chin behind the shoulders."
+"Two, three, two — straight time, nineteen bars. Two, three, two. Keep the chin behind the shoulders."
 
-  [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 20   (3 punches/bar -> 60 punches)
+  [ 2 ][ 3 ][ 2 ][ . ]  @1x   x 19   (3 punches/bar -> 57 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 COMBO BAR** — 20 measures
 
@@ -953,7 +1053,7 @@ That was the hook round. Let the shoulders drop and breathe through the nose if 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-_Round 3 totals: 120 measures · **280 punches**_
+_Round 3 totals: 114 row measures + 6 setup-pause measures · **269 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -964,41 +1064,47 @@ Three done. Shake the arms once and let them get heavy again. Final round starts
 
 ### Round 4 — “Heavy finish”
 
-**§4.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 39 measures
+**§4.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s1>>
-"Big phrase — two pages: one, one, two, three, two, five, two, breathe. Straight time, thirteen times through. Page one gets you in. Page two is two, five, two, then breathe."
+"Big phrase — two pages: one, one, two, three, two, five, two, breathe. Straight time, twelve times through. Page one gets you in. Page two is two, five, two, then breathe."
 
-  [ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 5 ][ 2 ][ . ]  @1x   x 13   (7 punches/bar -> 91 punches)
+  [ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 5 ][ 2 ][ . ]  @1x   x 12   (7 punches/bar -> 84 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | three | two | five | two | (rest)
 ```
 
-**§4.2 PUNCTUATED BAR (breath baked into slot 4)** — 27 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 PUNCTUATED BAR (breath baked into slot 4)** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s2>>
-"One, two, three — double-time, twenty-seven bars. Fast one, two, three. Leave the fourth slot for balance."
+"One, two, three — double-time, twenty-six bars. Fast one, two, three. Leave the fourth slot for balance."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 27   (3 punches/bar -> 81 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 26   (3 punches/bar -> 78 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§4.3 COMBO BAR** — 28 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.3 COMBO BAR** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/heavy-hands/r4s3>>
-"One, four, three, two — straight time, fourteen bars. Square it up: one, four, three, two. Heavy and compact."
+"One, four, three, two — straight time, thirteen bars. Square it up: one, four, three, two. Heavy and compact."
 
-  [ 1 ][ 4 ][ 3 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
+  [ 1 ][ 4 ][ 3 ][ 2 ]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | four | three | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.4 PUNCTUATED BAR (breath baked into slot 4)** — 26 measures
 
@@ -1012,7 +1118,7 @@ Three done. Shake the arms once and let them get heavy again. Final round starts
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
 
-_Round 4 totals: 120 measures · **306 punches**_
+_Round 4 totals: 114 row measures + 6 setup-pause measures · **292 punches**_
 
 ---
 
@@ -1029,53 +1135,61 @@ Speed Combos. Four rounds at one-twenty on the click. Short combinations, quick 
 
 ### Round 1 — “Fast hands, clean stops”
 
-**§1.1 COMBO BAR** — 30 measures
+**§1.1 COMBO BAR** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s1>>
-"One, two, one, two — straight time, fifteen bars. Fast does not mean wild. Four straight slots and back to guard."
+"One, two, one, two — straight time, fourteen bars. Fast does not mean wild. Four straight slots and back to guard."
 
-  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 15   (4 punches/bar -> 60 punches)
+  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | one | two
 ```
 
-**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s2>>
-"One, one, two — time-and-a-half, twenty bars. Double one, two, empty fourth slot. Let the reset stay visible."
+"One, one, two — time-and-a-half, eighteen bars. Double one, two, empty fourth slot. Let the reset stay visible."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§1.3 COAST BAR (rest-heavy — recovery in rhythm)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.3 COAST BAR (rest-heavy — recovery in rhythm)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s3>>
-"Coast bar — one, two, empty, empty, double-time, thirty bars. One, two, then two empty slots. Speed lives inside the pair."
+"Coast bar — one, two, empty, empty, double-time, twenty-eight bars. One, two, then two empty slots. Speed lives inside the pair."
 
-  [ 1 ][ 2 ][ . ][ . ]  @2x   x 30   (2 punches/bar -> 60 punches)
+  [ 1 ][ 2 ][ . ][ . ]  @2x   x 28   (2 punches/bar -> 56 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
-**§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r1s4>>
-"Two, three, two — double-time, twenty bars. Two, three, two. Three fast hits, then clear the page."
+"Two, three, two — double-time, eighteen bars. Two, three, two. Three fast hits, then clear the page."
 
-  [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
+  [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.5 PUMP BAR (single punch, four slots)** — 20 measures
 
@@ -1089,7 +1203,7 @@ Speed Combos. Four rounds at one-twenty on the click. Short combinations, quick 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-_Round 1 totals: 120 measures · **280 punches**_
+_Round 1 totals: 112 row measures + 8 setup-pause measures · **260 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -1112,29 +1226,35 @@ Good speed, now let the hands loosen. Next round is doubles at pace. First set i
 [[COMPONENT HITS]] per bar: one | one | two | one | two | three | two | (rest)
 ```
 
-**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s2>>
-"One, one, two — double-time, forty bars. Double one, two. One slot off, then do it again."
+"One, one, two — double-time, thirty-six bars. Double one, two. One slot off, then do it again."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 40   (3 punches/bar -> 120 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 36   (3 punches/bar -> 108 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r2s3>>
-"One-bee, one, two — time-and-a-half, twenty bars. Body one, head one, two. Fast level change, clean exit."
+"One-bee, one, two — time-and-a-half, eighteen bars. Body one, head one, two. Fast level change, clean exit."
 
-  [ 1b][ 1 ][ 2 ][ . ]  @1.5x   x 20   (3 punches/bar -> 60 punches)
+  [ 1b][ 1 ][ 2 ][ . ]  @1.5x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 COMBO BAR** — 30 measures
 
@@ -1148,7 +1268,7 @@ Good speed, now let the hands loosen. Next round is doubles at pace. First set i
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-_Round 2 totals: 120 measures · **310 punches**_
+_Round 2 totals: 114 row measures + 6 setup-pause measures · **292 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -1159,41 +1279,47 @@ Two rounds down. Drop the shoulders and slow your breathing. Round three makes y
 
 ### Round 3 — “Pages at speed”
 
-**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s1>>
-"One, one, two — double-time, twenty bars. Quick double one, two. Stop on the empty slot."
+"One, one, two — double-time, eighteen bars. Quick double one, two. Stop on the empty slot."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§3.2 COMBO BAR** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 COMBO BAR** — 38 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s2>>
-"One, two, three, two — straight time, twenty bars. Four clean slots. Make speed look calm."
+"One, two, three, two — straight time, nineteen bars. Four clean slots. Make speed look calm."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1x   x 19   (4 punches/bar -> 76 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s3>>
-"One, two, three — time-and-a-half, thirty bars. One, two, three, breathe. Keep the three compact."
+"One, two, three — time-and-a-half, twenty-seven bars. One, two, three, breathe. Keep the three compact."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 30   (3 punches/bar -> 90 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 27   (3 punches/bar -> 81 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 TWO-PAGE SET (8 slots, paged as 2 bars)** — 15 measures
 
@@ -1207,19 +1333,21 @@ Two rounds down. Drop the shoulders and slow your breathing. Round three makes y
 [[COMPONENT HITS]] per bar: one | two | one | two | three | two | (rest) | (rest)
 ```
 
-**§3.5 PUNCTUATED BAR (breath baked into slot 4)** — 15 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.5 PUNCTUATED BAR (breath baked into slot 4)** — 14 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r3s5>>
-"One, one, two — double-time, fifteen bars. Double one, two, reset. Stay sharp late."
+"One, one, two — double-time, fourteen bars. Double one, two, reset. Stay sharp late."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 15   (3 punches/bar -> 45 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 14   (3 punches/bar -> 42 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 3 totals: 120 measures · **335 punches**_
+_Round 3 totals: 112 row measures + 8 setup-pause measures · **313 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -1230,55 +1358,61 @@ Last round coming. You do not need to outrun the click; you need to own the open
 
 ### Round 4 — “Empty the tank cleanly”
 
-**§4.1 PUNCTUATED BAR (breath baked into slot 4)** — 25 measures
+**§4.1 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s1>>
-"One, two, three — double-time, twenty-five bars. One, two, three, stop. Fast burst, clean recovery."
+"One, two, three — double-time, twenty-four bars. One, two, three, stop. Fast burst, clean recovery."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 25   (3 punches/bar -> 75 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 24   (3 punches/bar -> 72 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§4.2 PUNCTUATED BAR (breath baked into slot 4)** — 25 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s2>>
-"One, one, two — time-and-a-half, twenty-five bars. Double one, two. Keep the lead hand alive."
+"One, one, two — time-and-a-half, twenty-four bars. Double one, two. Keep the lead hand alive."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 25   (3 punches/bar -> 75 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 24   (3 punches/bar -> 72 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§4.3 COMBO BAR** — 36 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.3 COMBO BAR** — 34 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s3>>
-"One, two, five, two — straight time, eighteen bars. One, two, five, two. Speed up the hands, not the posture."
+"One, two, five, two — straight time, seventeen bars. One, two, five, two. Speed up the hands, not the posture."
 
-  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 18   (4 punches/bar -> 72 punches)
+  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-**§4.4 PUNCTUATED BAR (breath baked into slot 4)** — 34 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.4 PUNCTUATED BAR (breath baked into slot 4)** — 32 measures
 
 ```text
 <<SINGLE CLIP  lead-in/speed-combos/r4s4>>
-"Two, three, two — double-time, thirty-four bars. Two, three, two, empty slot. Last push — stay accurate."
+"Two, three, two — double-time, thirty-two bars. Two, three, two, empty slot. Last push — stay accurate."
 
-  [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 34   (3 punches/bar -> 102 punches)
+  [ 2 ][ 3 ][ 2 ][ . ]  @2x   x 32   (3 punches/bar -> 96 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: two | three | two | (rest)
 ```
 
-_Round 4 totals: 120 measures · **324 punches**_
+_Round 4 totals: 114 row measures + 6 setup-pause measures · **308 punches**_
 
 ---
 
@@ -1295,29 +1429,33 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 
 ### Round 1 — “Find the short line”
 
-**§1.1 COMBO BAR** — 32 measures
+**§1.1 COMBO BAR** — 30 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s1>>
-"One, two, five, two — straight time, sixteen bars. One, two, five, two. Keep the five short."
+"One, two, five, two — straight time, fifteen bars. One, two, five, two. Keep the five short."
 
-  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 15   (4 punches/bar -> 60 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-**§1.2 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COMBO BAR** — 16 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r1s2>>
-"One, six, three, two — straight time, ten bars. One, six, three, two. Rise through the six, turn the three."
+"One, six, three, two — straight time, eight bars. One, six, three, two. Rise through the six, turn the three."
 
-  [ 1 ][ 6 ][ 3 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 6 ][ 3 ][ 2 ]  @1x   x 8   (4 punches/bar -> 32 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | six | three | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.3 PUNCTUATED BAR (breath baked into slot 4)** — 16 measures
 
@@ -1331,6 +1469,8 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 [[COMPONENT HITS]] per bar: five | six | five | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
 ```text
@@ -1343,7 +1483,7 @@ Uppercut Clinic. Four rounds, eighty-five on the click. Fives and sixes up the m
 [[COMPONENT HITS]] per bar: one | five | two | (rest)
 ```
 
-_Round 1 totals: 85 measures · **203 punches**_
+_Round 1 totals: 79 row measures + 6 setup-pause measures · **191 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -1354,41 +1494,47 @@ Good. The uppercuts should feel short, not scooped. Next round brings the body i
 
 ### Round 2 — “Change the level”
 
-**§2.1 COMBO BAR** — 28 measures
+**§2.1 COMBO BAR** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s1>>
-"One, two, five, two — straight time, fourteen bars. Same home combination. Let the five split the straight shots."
+"One, two, five, two — straight time, thirteen bars. Same home combination. Let the five split the straight shots."
 
-  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
+  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-**§2.2 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s2>>
-"One, two, five-bee, two — time-and-a-half, twenty bars. One, two, five-bee, two. Small level change, fast finish."
+"One, two, five-bee, two — time-and-a-half, eighteen bars. One, two, five-bee, two. Small level change, fast finish."
 
-  [ 1 ][ 2 ][ 5b][ 2 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 5b][ 2 ]  @1.5x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | five-bee | two
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r2s3>>
-"Two, five, two — straight time, ten bars. Two, five, two. Stay over the knees."
+"Two, five, two — straight time, nine bars. Two, five, two. Stay over the knees."
 
-  [ 2 ][ 5 ][ 2 ][ . ]  @1x   x 10   (3 punches/bar -> 30 punches)
+  [ 2 ][ 5 ][ 2 ][ . ]  @1x   x 9   (3 punches/bar -> 27 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: two | five | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
@@ -1402,7 +1548,7 @@ Good. The uppercuts should feel short, not scooped. Next round brings the body i
 [[COMPONENT HITS]] per bar: one | six | three | (rest)
 ```
 
-_Round 2 totals: 85 measures · **217 punches**_
+_Round 2 totals: 79 row measures + 6 setup-pause measures · **202 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -1413,41 +1559,47 @@ Now you have the head and body uppercut lines. Round three turns them into longe
 
 ### Round 3 — “Pairs and pages”
 
-**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
+**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 24 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s1>>
-"Big phrase — two pages: one, two, five-bee, two, one, six-bee, three, breathe. Straight time, nine times through. Page one works the five-bee. Page two works the six-bee into three, then breathe."
+"Big phrase — two pages: one, two, five-bee, two, one, six-bee, three, breathe. Straight time, eight times through. Page one works the five-bee. Page two works the six-bee into three, then breathe."
 
-  [ 1 ][ 2 ][ 5b][ 2 ][ 1 ][ 6b][ 3 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
+  [ 1 ][ 2 ][ 5b][ 2 ][ 1 ][ 6b][ 3 ][ . ]  @1x   x 8   (7 punches/bar -> 56 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | five-bee | two | one | six-bee | three | (rest)
 ```
 
-**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 18 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 17 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s2>>
-"Five, six, three — double-time, eighteen bars. Five, six, three. Tight burst, clean reset."
+"Five, six, three — double-time, seventeen bars. Five, six, three. Tight burst, clean reset."
 
-  [ 5 ][ 6 ][ 3 ][ . ]  @2x   x 18   (3 punches/bar -> 54 punches)
+  [ 5 ][ 6 ][ 3 ][ . ]  @2x   x 17   (3 punches/bar -> 51 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: five | six | three | (rest)
 ```
 
-**§3.3 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r3s3>>
-"One, six, three, two — straight time, ten bars. One, six, three, two. Finish straight."
+"One, six, three, two — straight time, nine bars. One, six, three, two. Finish straight."
 
-  [ 1 ][ 6 ][ 3 ][ 2 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 6 ][ 3 ][ 2 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | six | three | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -1461,7 +1613,7 @@ Now you have the head and body uppercut lines. Round three turns them into longe
 [[COMPONENT HITS]] per bar: six | five | two | (rest)
 ```
 
-_Round 3 totals: 85 measures · **217 punches**_
+_Round 3 totals: 79 row measures + 6 setup-pause measures · **203 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -1472,29 +1624,33 @@ One round left. Let the elbows hang for a breath and loosen the forearms. Clinic
 
 ### Round 4 — “Clinic finish”
 
-**§4.1 COMBO BAR** — 32 measures
+**§4.1 COMBO BAR** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s1>>
-"One, two, five, two — straight time, sixteen bars. One, two, five, two. Make it automatic."
+"One, two, five, two — straight time, fourteen bars. One, two, five, two. Make it automatic."
 
-  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 2 ][ 5 ][ 2 ]  @1x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-**§4.2 COMBO BAR** — 16 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 COMBO BAR** — 14 measures
 
 ```text
 <<SINGLE CLIP  lead-in/uppercut-clinic/r4s2>>
-"One, six-bee, three, two — time-and-a-half, sixteen bars. One, six-bee, three, two. Body to head without standing tall."
+"One, six-bee, three, two — time-and-a-half, fourteen bars. One, six-bee, three, two. Body to head without standing tall."
 
-  [ 1 ][ 6b][ 3 ][ 2 ]  @1.5x   x 16   (4 punches/bar -> 64 punches)
+  [ 1 ][ 6b][ 3 ][ 2 ]  @1.5x   x 14   (4 punches/bar -> 56 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | six-bee | three | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 16 measures
 
@@ -1508,6 +1664,8 @@ One round left. Let the elbows hang for a breath and loosen the forearms. Clinic
 [[COMPONENT HITS]] per bar: two | five | two | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§4.4 PUNCTUATED BAR (breath baked into slot 4)** — 21 measures
 
 ```text
@@ -1520,7 +1678,7 @@ One round left. Let the elbows hang for a breath and loosen the forearms. Clinic
 [[COMPONENT HITS]] per bar: five | two | three | (rest)
 ```
 
-_Round 4 totals: 85 measures · **215 punches**_
+_Round 4 totals: 79 row measures + 6 setup-pause measures · **199 punches**_
 
 ---
 
@@ -1537,29 +1695,33 @@ Progressive Buildup. Four rounds at one hundred. We build it one punch at a time
 
 ### Round 1 — “Build the entry”
 
-**§1.1 PUMP BAR (single punch, four slots)** — 50 measures
+**§1.1 PUMP BAR (single punch, four slots)** — 48 measures
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r1s1>>
-"Long set: ones only, straight time — twenty-five bars. Start with the one and make every rep look the same."
+"Long set: ones only, straight time — twenty-four bars. Start with the one and make every rep look the same."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 25   (4 punches/bar -> 100 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 24   (4 punches/bar -> 96 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r1s2>>
-"One, one, two — time-and-a-half, thirty bars. Now double the one and add the two. Fourth slot stays open."
+"One, one, two — time-and-a-half, twenty-eight bars. Now double the one and add the two. Fourth slot stays open."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 30   (3 punches/bar -> 90 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 28   (3 punches/bar -> 84 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.3 COMBO BAR** — 20 measures
 
@@ -1573,7 +1735,7 @@ Progressive Buildup. Four rounds at one hundred. We build it one punch at a time
 [[COMPONENT HITS]] per bar: one | one | two | three
 ```
 
-_Round 1 totals: 100 measures · **270 punches**_
+_Round 1 totals: 96 row measures + 4 setup-pause measures · **260 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -1584,17 +1746,19 @@ That is the idea: add without losing what came before. Round two starts with one
 
 ### Round 2 — “Add the two”
 
-**§2.1 COMBO BAR** — 40 measures
+**§2.1 COMBO BAR** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r2s1>>
-"One, two, one, two — straight time, twenty bars. One, two, one, two. Establish the straight rhythm."
+"One, two, one, two — straight time, eighteen bars. One, two, one, two. Establish the straight rhythm."
 
-  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ 1 ][ 2 ]  @1x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | one | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.2 COAST BAR (rest-heavy — recovery in rhythm)** — 30 measures
 
@@ -1608,6 +1772,8 @@ That is the idea: add without losing what came before. Round two starts with one
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§2.3 COMBO BAR** — 30 measures
 
 ```text
@@ -1620,7 +1786,7 @@ That is the idea: add without losing what came before. Round two starts with one
 [[COMPONENT HITS]] per bar: one | one | two | three
 ```
 
-_Round 2 totals: 100 measures · **230 punches**_
+_Round 2 totals: 96 row measures + 4 setup-pause measures · **222 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -1631,17 +1797,19 @@ Good. Now the three becomes part of the chain. First set next round is one, two,
 
 ### Round 3 — “Add the three”
 
-**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 50 measures
+**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 46 measures
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r3s1>>
-"One, two, three — straight time, twenty-five bars. One, two, three, breathe. Own the three-count."
+"One, two, three — straight time, twenty-three bars. One, two, three, breathe. Own the three-count."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 25   (3 punches/bar -> 75 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 23   (3 punches/bar -> 69 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.2 COMBO BAR** — 30 measures
 
@@ -1655,6 +1823,8 @@ Good. Now the three becomes part of the chain. First set next round is one, two,
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
 ```text
@@ -1667,7 +1837,7 @@ Good. Now the three becomes part of the chain. First set next round is one, two,
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-_Round 3 totals: 100 measures · **255 punches**_
+_Round 3 totals: 96 row measures + 4 setup-pause measures · **249 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -1690,17 +1860,21 @@ Last round is where the pieces become phrases. First two-page set is one, two, t
 [[COMPONENT HITS]] per bar: one | two | three | two | one | two | five | (rest)
 ```
 
-**§4.2 COMBO BAR** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 COMBO BAR** — 36 measures
 
 ```text
 <<SINGLE CLIP  lead-in/progressive-buildup/r4s2>>
-"One, four, two, three — straight time, twenty bars. Trace the square: one, four, two, three. New shape, same calm rhythm."
+"One, four, two, three — straight time, eighteen bars. Trace the square: one, four, two, three. New shape, same calm rhythm."
 
-  [ 1 ][ 4 ][ 2 ][ 3 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 4 ][ 2 ][ 3 ]  @1x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | four | two | three
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.3 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
 
@@ -1714,7 +1888,7 @@ Last round is where the pieces become phrases. First two-page set is one, two, t
 [[COMPONENT HITS]] per bar: one | two | three | two | one | six | three | (rest)
 ```
 
-_Round 4 totals: 100 measures · **290 punches**_
+_Round 4 totals: 96 row measures + 4 setup-pause measures · **282 punches**_
 
 ---
 
@@ -1731,29 +1905,33 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 
 ### Round 1 — “Find the downstairs line”
 
-**§1.1 COMBO BAR** — 30 measures
+**§1.1 COMBO BAR** — 26 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r1s1>>
-"One, two-bee, one, two-bee — straight time, fifteen bars. One, two-bee, one, two-bee. Change level without reaching."
+"One, two-bee, one, two-bee — straight time, thirteen bars. One, two-bee, one, two-bee. Change level without reaching."
 
-  [ 1 ][ 2b][ 1 ][ 2b]  @1x   x 15   (4 punches/bar -> 60 punches)
+  [ 1 ][ 2b][ 1 ][ 2b]  @1x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two-bee | one | two-bee
 ```
 
-**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r1s2>>
-"Coast bar — one-bee, two-bee, empty, empty, straight time, ten bars. One-bee, two-bee, then two empty slots. Come back tall and balanced."
+"Coast bar — one-bee, two-bee, empty, empty, straight time, nine bars. One-bee, two-bee, then two empty slots. Come back tall and balanced."
 
-  [ 1b][ 2b][ . ][ . ]  @1x   x 10   (2 punches/bar -> 20 punches)
+  [ 1b][ 2b][ . ][ . ]  @1x   x 9   (2 punches/bar -> 18 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one-bee | two-bee | (rest) | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.3 COMBO BAR** — 30 measures
 
@@ -1767,6 +1945,8 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 [[COMPONENT HITS]] per bar: one | two-bee | three-bee | two
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§1.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
 ```text
@@ -1779,7 +1959,7 @@ Body Work. Four rounds at one hundred. Downstairs tonight — body jabs, body cr
 [[COMPONENT HITS]] per bar: one | one-bee | two | (rest)
 ```
 
-_Round 1 totals: 100 measures · **260 punches**_
+_Round 1 totals: 94 row measures + 6 setup-pause measures · **250 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -1790,41 +1970,47 @@ Good body work starts with your balance, not with reaching down. Round two digs 
 
 ### Round 2 — “Dig and come back up”
 
-**§2.1 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+**§2.1 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s1>>
-"Two-bee, three-bee, two-bee — straight time, fifteen bars. Two-bee, three-bee, two-bee. Stay compact downstairs."
+"Two-bee, three-bee, two-bee — straight time, fourteen bars. Two-bee, three-bee, two-bee. Stay compact downstairs."
 
-  [ 2b][ 3b][ 2b][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
+  [ 2b][ 3b][ 2b][ . ]  @1x   x 14   (3 punches/bar -> 42 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: two-bee | three-bee | two-bee | (rest)
 ```
 
-**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s2>>
-"One, two, three-bee — time-and-a-half, thirty bars. One, two, three-bee. Head first, then dig."
+"One, two, three-bee — time-and-a-half, twenty-eight bars. One, two, three-bee. Head first, then dig."
 
-  [ 1 ][ 2 ][ 3b][ . ]  @1.5x   x 30   (3 punches/bar -> 90 punches)
+  [ 1 ][ 2 ][ 3b][ . ]  @1.5x   x 28   (3 punches/bar -> 84 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three-bee | (rest)
 ```
 
-**§2.3 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 COMBO BAR** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r2s3>>
-"One-bee, two-bee, three-bee, two-bee — double-time, twenty bars. One-bee, two-bee, three-bee, two-bee. Short body burst, no big swings."
+"One-bee, two-bee, three-bee, two-bee — double-time, eighteen bars. One-bee, two-bee, three-bee, two-bee. Short body burst, no big swings."
 
-  [ 1b][ 2b][ 3b][ 2b]  @2x   x 20   (4 punches/bar -> 80 punches)
+  [ 1b][ 2b][ 3b][ 2b]  @2x   x 18   (4 punches/bar -> 72 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one-bee | two-bee | three-bee | two-bee
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -1838,7 +2024,7 @@ Good body work starts with your balance, not with reaching down. Round two digs 
 [[COMPONENT HITS]] per bar: one | two-bee | three | (rest)
 ```
 
-_Round 2 totals: 100 measures · **245 punches**_
+_Round 2 totals: 94 row measures + 6 setup-pause measures · **228 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -1849,41 +2035,47 @@ You have the basic body lines. Next round mixes floors and sides. First two page
 
 ### Round 3 — “Mix the floors”
 
-**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
+**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s1>>
-"Big phrase — two pages: one, two-bee, three, two, one-bee, four-bee, three, breathe. Straight time, ten times through. Page one goes head-body-head-head. Page two opens body one-bee, four-bee, three, then breathe."
+"Big phrase — two pages: one, two-bee, three, two, one-bee, four-bee, three, breathe. Straight time, nine times through. Page one goes head-body-head-head. Page two opens body one-bee, four-bee, three, then breathe."
 
-  [ 1 ][ 2b][ 3 ][ 2 ][ 1b][ 4b][ 3 ][ . ]  @1x   x 10   (7 punches/bar -> 70 punches)
+  [ 1 ][ 2b][ 3 ][ 2 ][ 1b][ 4b][ 3 ][ . ]  @1x   x 9   (7 punches/bar -> 63 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two-bee | three | two | one-bee | four-bee | three | (rest)
 ```
 
-**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s2>>
-"Two, three-bee, two — straight time, fifteen bars. Two, three-bee, two. Dig and get out."
+"Two, three-bee, two — straight time, fourteen bars. Two, three-bee, two. Dig and get out."
 
-  [ 2 ][ 3b][ 2 ][ . ]  @1x   x 15   (3 punches/bar -> 45 punches)
+  [ 2 ][ 3b][ 2 ][ . ]  @1x   x 14   (3 punches/bar -> 42 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: two | three-bee | two | (rest)
 ```
 
-**§3.3 COMBO BAR** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 COMBO BAR** — 19 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r3s3>>
-"One, two-bee, five-bee, two — time-and-a-half, twenty bars. One, two-bee, five-bee, two. Straight, body, up the middle, finish."
+"One, two-bee, five-bee, two — time-and-a-half, nineteen bars. One, two-bee, five-bee, two. Straight, body, up the middle, finish."
 
-  [ 1 ][ 2b][ 5b][ 2 ]  @1.5x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2b][ 5b][ 2 ]  @1.5x   x 19   (4 punches/bar -> 76 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two-bee | five-bee | two
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
@@ -1897,7 +2089,7 @@ You have the basic body lines. Next round mixes floors and sides. First two page
 [[COMPONENT HITS]] per bar: one-bee | two-bee | three-bee | (rest)
 ```
 
-_Round 3 totals: 100 measures · **255 punches**_
+_Round 3 totals: 94 row measures + 6 setup-pause measures · **241 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -1908,17 +2100,19 @@ Last round. Let the ribs expand on a long inhale and keep the hands relaxed. Fir
 
 ### Round 4 — “Body finish”
 
-**§4.1 COMBO BAR** — 40 measures
+**§4.1 COMBO BAR** — 34 measures
 
 ```text
 <<SINGLE CLIP  lead-in/body-work/r4s1>>
-"One, two-bee, three, four-bee — straight time, twenty bars. One, two-bee, three, four-bee. Alternate floors without losing the stance."
+"One, two-bee, three, four-bee — straight time, seventeen bars. One, two-bee, three, four-bee. Alternate floors without losing the stance."
 
-  [ 1 ][ 2b][ 3 ][ 4b]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 2b][ 3 ][ 4b]  @1x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two-bee | three | four-bee
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.2 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
 
@@ -1932,6 +2126,8 @@ Last round. Let the ribs expand on a long inhale and keep the hands relaxed. Fir
 [[COMPONENT HITS]] per bar: one-bee | two-bee | (rest) | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
 ```text
@@ -1943,6 +2139,8 @@ Last round. Let the ribs expand on a long inhale and keep the hands relaxed. Fir
 
 [[COMPONENT HITS]] per bar: one | six-bee | three-bee | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.4 COMBO BAR** — 20 measures
 
@@ -1956,7 +2154,7 @@ Last round. Let the ribs expand on a long inhale and keep the hands relaxed. Fir
 [[COMPONENT HITS]] per bar: one | two-bee | five-bee | two
 ```
 
-_Round 4 totals: 100 measures · **230 punches**_
+_Round 4 totals: 94 row measures + 6 setup-pause measures · **218 punches**_
 
 ---
 
@@ -1973,43 +2171,47 @@ Pace Pusher. Four rounds, one-twenty on the click. Same combination, three speed
 
 ### Round 1 — “The one-two ladder”
 
-**§1.1 COAST BAR (rest-heavy — recovery in rhythm)** — 40 measures
+**§1.1 COAST BAR (rest-heavy — recovery in rhythm)** — 38 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s1>>
-"Coast bar — one, two, empty, empty, straight time, twenty bars. One, two, then space. Learn the pair before you accelerate it."
+"Coast bar — one, two, empty, empty, straight time, nineteen bars. One, two, then space. Learn the pair before you accelerate it."
 
-  [ 1 ][ 2 ][ . ][ . ]  @1x   x 20   (2 punches/bar -> 40 punches)
+  [ 1 ][ 2 ][ . ][ . ]  @1x   x 19   (2 punches/bar -> 38 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
-**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 39 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s2>>
-"Coast bar — one, two, empty, empty, time-and-a-half, forty bars. Same one-two, quicker slots, same empty finish."
+"Coast bar — one, two, empty, empty, time-and-a-half, thirty-nine bars. Same one-two, quicker slots, same empty finish."
 
-  [ 1 ][ 2 ][ . ][ . ]  @1.5x   x 40   (2 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ . ][ . ]  @1.5x   x 39   (2 punches/bar -> 78 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
-**§1.3 COAST BAR (rest-heavy — recovery in rhythm)** — 40 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.3 COAST BAR (rest-heavy — recovery in rhythm)** — 39 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r1s3>>
-"Coast bar — one, two, empty, empty, double-time, forty bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean."
+"Coast bar — one, two, empty, empty, double-time, thirty-nine bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean."
 
-  [ 1 ][ 2 ][ . ][ . ]  @2x   x 40   (2 punches/bar -> 80 punches)
+  [ 1 ][ 2 ][ . ][ . ]  @2x   x 39   (2 punches/bar -> 78 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
-_Round 1 totals: 120 measures · **200 punches**_
+_Round 1 totals: 116 row measures + 4 setup-pause measures · **194 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -2020,41 +2222,47 @@ First ladder is done. The next one adds a second one before the two. First set i
 
 ### Round 2 — “Ladder the double one”
 
-**§2.1 PUNCTUATED BAR (breath baked into slot 4)** — 34 measures
+**§2.1 PUNCTUATED BAR (breath baked into slot 4)** — 32 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s1>>
-"One, one, two — straight time, seventeen bars. One, one, two. Establish the spacing."
+"One, one, two — straight time, sixteen bars. One, one, two. Establish the spacing."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 17   (3 punches/bar -> 51 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1x   x 16   (3 punches/bar -> 48 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 33 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 PUNCTUATED BAR (breath baked into slot 4)** — 31 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s2>>
-"One, one, two — time-and-a-half, thirty-three bars. Same three shots, time-and-a-half. Do not compress the last two together."
+"One, one, two — time-and-a-half, thirty-one bars. Same three shots, time-and-a-half. Do not compress the last two together."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 33   (3 punches/bar -> 99 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @1.5x   x 31   (3 punches/bar -> 93 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 33 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUNCTUATED BAR (breath baked into slot 4)** — 31 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r2s3>>
-"One, one, two — double-time, thirty-three bars. Same double one, two at double-time. Fast but readable."
+"One, one, two — double-time, thirty-one bars. Same double one, two at double-time. Fast but readable."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 33   (3 punches/bar -> 99 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 31   (3 punches/bar -> 93 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.4 PUMP BAR (single punch, four slots)** — 20 measures
 
@@ -2068,7 +2276,7 @@ First ladder is done. The next one adds a second one before the two. First set i
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
 
-_Round 2 totals: 120 measures · **289 punches**_
+_Round 2 totals: 114 row measures + 6 setup-pause measures · **274 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -2079,41 +2287,47 @@ Good. Round three changes the ladder shape to one, two, three, then an empty slo
 
 ### Round 3 — “Ladder the hook”
 
-**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 40 measures
+**§3.1 PUNCTUATED BAR (breath baked into slot 4)** — 38 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s1>>
-"One, two, three — straight time, twenty bars. One, two, three. Let the three finish the phrase."
+"One, two, three — straight time, nineteen bars. One, two, three. Let the three finish the phrase."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 20   (3 punches/bar -> 60 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1x   x 19   (3 punches/bar -> 57 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 27 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 PUNCTUATED BAR (breath baked into slot 4)** — 25 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s2>>
-"One, two, three — time-and-a-half, twenty-seven bars. Same one, two, three. Quicker grid, same shape."
+"One, two, three — time-and-a-half, twenty-five bars. Same one, two, three. Quicker grid, same shape."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 27   (3 punches/bar -> 81 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @1.5x   x 25   (3 punches/bar -> 75 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 27 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUNCTUATED BAR (breath baked into slot 4)** — 25 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r3s3>>
-"One, two, three — double-time, twenty-seven bars. Same three at double-time. Fast hands, empty fourth slot."
+"One, two, three — double-time, twenty-five bars. Same three at double-time. Fast hands, empty fourth slot."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 27   (3 punches/bar -> 81 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 25   (3 punches/bar -> 75 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 COMBO BAR** — 26 measures
 
@@ -2127,7 +2341,7 @@ Good. Round three changes the ladder shape to one, two, three, then an empty slo
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-_Round 3 totals: 120 measures · **274 punches**_
+_Round 3 totals: 114 row measures + 6 setup-pause measures · **259 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -2150,55 +2364,63 @@ Final ladder mixes everything you have used. First is two pages: one, two, three
 [[COMPONENT HITS]] per bar: one | two | three | two | one | two | five | two
 ```
 
-**§4.2 COMBO BAR** — 24 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.2 COMBO BAR** — 22 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s2>>
-"One, two, three, two — time-and-a-half, twenty-four bars. One, two, three, two at time-and-a-half. Stay smooth."
+"One, two, three, two — time-and-a-half, twenty-two bars. One, two, three, two at time-and-a-half. Stay smooth."
 
-  [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 24   (4 punches/bar -> 96 punches)
+  [ 1 ][ 2 ][ 3 ][ 2 ]  @1.5x   x 22   (4 punches/bar -> 88 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-**§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 22 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s3>>
-"One, two, three — double-time, twenty-four bars. One, two, three at double-time, then an empty slot."
+"One, two, three — double-time, twenty-two bars. One, two, three at double-time, then an empty slot."
 
-  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 24   (3 punches/bar -> 72 punches)
+  [ 1 ][ 2 ][ 3 ][ . ]  @2x   x 22   (3 punches/bar -> 66 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | two | three | (rest)
 ```
 
-**§4.4 COMBO BAR** — 24 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.4 COMBO BAR** — 22 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s4>>
-"One, two, five, two — time-and-a-half, twenty-four bars. One, two, five, two. Same rate, different finish."
+"One, two, five, two — time-and-a-half, twenty-two bars. One, two, five, two. Same rate, different finish."
 
-  [ 1 ][ 2 ][ 5 ][ 2 ]  @1.5x   x 24   (4 punches/bar -> 96 punches)
+  [ 1 ][ 2 ][ 5 ][ 2 ]  @1.5x   x 22   (4 punches/bar -> 88 punches)
   breath after every bar: 1 1/3 beats
 
 [[COMPONENT HITS]] per bar: one | two | five | two
 ```
 
-**§4.5 PUNCTUATED BAR (breath baked into slot 4)** — 24 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§4.5 PUNCTUATED BAR (breath baked into slot 4)** — 22 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pace-pusher/r4s5>>
-"One, one, two — double-time, twenty-four bars. Double one, two at double-time. Finish the ladder clean."
+"One, one, two — double-time, twenty-two bars. Double one, two at double-time. Finish the ladder clean."
 
-  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 24   (3 punches/bar -> 72 punches)
+  [ 1 ][ 1 ][ 2 ][ . ]  @2x   x 22   (3 punches/bar -> 66 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 4 totals: 120 measures · **400 punches**_
+_Round 4 totals: 112 row measures + 8 setup-pause measures · **372 punches**_
 
 ---
 
@@ -2215,29 +2437,33 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 
 ### Round 1 — “Pump, then breathe”
 
-**§1.1 PUMP BAR (single punch, four slots)** — 20 measures
+**§1.1 PUMP BAR (single punch, four slots)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s1>>
-"Pump: ones only, straight time — ten bars. Pump the ones. Stay long and keep them coming."
+"Pump: ones only, straight time — nine bars. Pump the ones. Stay long and keep them coming."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
 
-**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.2 COAST BAR (rest-heavy — recovery in rhythm)** — 16 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s2>>
-"Coast bar — one, empty, empty, empty, straight time, ten bars. One touch, three empty slots. Move, breathe, stay ready."
+"Coast bar — one, empty, empty, empty, straight time, eight bars. One touch, three empty slots. Move, breathe, stay ready."
 
-  [ 1 ][ . ][ . ][ . ]  @1x   x 10   (1 punches/bar -> 10 punches)
+  [ 1 ][ . ][ . ][ . ]  @1x   x 8   (1 punches/bar -> 8 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | (rest) | (rest) | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.3 PUMP BAR (single punch, four slots)** — 10 measures
 
@@ -2251,17 +2477,21 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 [[COMPONENT HITS]] per bar: two | two | two | two
 ```
 
-**§1.4 COAST BAR (rest-heavy — recovery in rhythm)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§1.4 COAST BAR (rest-heavy — recovery in rhythm)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r1s4>>
-"Coast bar — one, empty, two, empty, straight time, fifteen bars. One, empty, two, empty. Let the coast stay active."
+"Coast bar — one, empty, two, empty, straight time, fourteen bars. One, empty, two, empty. Let the coast stay active."
 
-  [ 1 ][ . ][ 2 ][ . ]  @1x   x 15   (2 punches/bar -> 30 punches)
+  [ 1 ][ . ][ 2 ][ . ]  @1x   x 14   (2 punches/bar -> 28 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | (rest) | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§1.5 PUMP BAR (single punch, four slots)** — 20 measures
 
@@ -2275,7 +2505,7 @@ Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pum
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
 
-_Round 1 totals: 100 measures · **200 punches**_
+_Round 1 totals: 92 row measures + 8 setup-pause measures · **192 punches**_
 
 ### Rest 1 → 2  (1:00)
 
@@ -2286,53 +2516,61 @@ That is the rhythm: work, recover, stay alive. Round two changes the pump target
 
 ### Round 2 — “Change the pump”
 
-**§2.1 PUMP BAR (single punch, four slots)** — 15 measures
+**§2.1 PUMP BAR (single punch, four slots)** — 13 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s1>>
-"Pump: threes only, double-time — fifteen bars. Pump the threes. Short turn, fast recovery."
+"Pump: threes only, double-time — thirteen bars. Pump the threes. Short turn, fast recovery."
 
-  [ 3 ][ 3 ][ 3 ][ 3 ]  @2x   x 15   (4 punches/bar -> 60 punches)
+  [ 3 ][ 3 ][ 3 ][ 3 ]  @2x   x 13   (4 punches/bar -> 52 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: three | three | three | three
 ```
 
-**§2.2 COAST BAR (rest-heavy — recovery in rhythm)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.2 COAST BAR (rest-heavy — recovery in rhythm)** — 28 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s2>>
-"Coast bar — one, empty, empty, empty, straight time, fifteen bars. One touch, three empty slots. Circle in place and breathe."
+"Coast bar — one, empty, empty, empty, straight time, fourteen bars. One touch, three empty slots. Circle in place and breathe."
 
-  [ 1 ][ . ][ . ][ . ]  @1x   x 15   (1 punches/bar -> 15 punches)
+  [ 1 ][ . ][ . ][ . ]  @1x   x 14   (1 punches/bar -> 14 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | (rest) | (rest) | (rest)
 ```
 
-**§2.3 PUMP BAR (single punch, four slots)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.3 PUMP BAR (single punch, four slots)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s3>>
-"Pump: fives only, straight time — ten bars. Pump the fives. Keep them short and underneath you."
+"Pump: fives only, straight time — nine bars. Pump the fives. Keep them short and underneath you."
 
-  [ 5 ][ 5 ][ 5 ][ 5 ]  @1x   x 10   (4 punches/bar -> 40 punches)
+  [ 5 ][ 5 ][ 5 ][ 5 ]  @1x   x 9   (4 punches/bar -> 36 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: five | five | five | five
 ```
 
-**§2.4 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§2.4 COAST BAR (rest-heavy — recovery in rhythm)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r2s4>>
-"Coast bar — one, two, empty, empty, straight time, ten bars. One, two, then two empty slots. Recover behind the pair."
+"Coast bar — one, two, empty, empty, straight time, nine bars. One, two, then two empty slots. Recover behind the pair."
 
-  [ 1 ][ 2 ][ . ][ . ]  @1x   x 10   (2 punches/bar -> 20 punches)
+  [ 1 ][ 2 ][ . ][ . ]  @1x   x 9   (2 punches/bar -> 18 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§2.5 PUNCTUATED BAR (breath baked into slot 4)** — 15 measures
 
@@ -2346,7 +2584,7 @@ That is the rhythm: work, recover, stay alive. Round two changes the pump target
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
 
-_Round 2 totals: 100 measures · **180 punches**_
+_Round 2 totals: 92 row measures + 8 setup-pause measures · **165 punches**_
 
 ### Rest 2 → 3  (1:00)
 
@@ -2357,41 +2595,47 @@ Good. Round three turns the pump into a two-page sequence. First page is one, on
 
 ### Round 3 — “Two-page pump”
 
-**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 30 measures
+**§3.1 TWO-PAGE SET (8 slots, paged as 2 bars)** — 27 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r3s1>>
-"Big phrase — two pages: one, one, one, two, three, two, three, two. Straight time, ten times through. Page one builds behind the ones. Page two rolls three, two, three, two."
+"Big phrase — two pages: one, one, one, two, three, two, three, two. Straight time, nine times through. Page one builds behind the ones. Page two rolls three, two, three, two."
 
-  [ 1 ][ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 10   (8 punches/bar -> 80 punches)
+  [ 1 ][ 1 ][ 1 ][ 2 ][ 3 ][ 2 ][ 3 ][ 2 ]  @1x   x 9   (8 punches/bar -> 72 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | two | three | two | three | two
 ```
 
-**§3.2 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.2 COAST BAR (rest-heavy — recovery in rhythm)** — 18 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r3s2>>
-"Coast bar — one, empty, two, empty, straight time, ten bars. One, empty, two, empty. Let the heartbeat come down."
+"Coast bar — one, empty, two, empty, straight time, nine bars. One, empty, two, empty. Let the heartbeat come down."
 
-  [ 1 ][ . ][ 2 ][ . ]  @1x   x 10   (2 punches/bar -> 20 punches)
+  [ 1 ][ . ][ 2 ][ . ]  @1x   x 9   (2 punches/bar -> 18 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | (rest) | two | (rest)
 ```
 
-**§3.3 PUMP BAR (single punch, four slots)** — 30 measures
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
+**§3.3 PUMP BAR (single punch, four slots)** — 29 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r3s3>>
-"Long set: one-bees only, double-time — thirty bars. Pump the one-bees. Fast touch downstairs, eyes up."
+"Long set: one-bees only, double-time — twenty-nine bars. Pump the one-bees. Fast touch downstairs, eyes up."
 
-  [ 1b][ 1b][ 1b][ 1b]  @2x   x 30   (4 punches/bar -> 120 punches)
+  [ 1b][ 1b][ 1b][ 1b]  @2x   x 29   (4 punches/bar -> 116 punches)
   breath after every bar: 2 beats
 
 [[COMPONENT HITS]] per bar: one-bee | one-bee | one-bee | one-bee
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§3.4 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
 
@@ -2405,7 +2649,7 @@ Good. Round three turns the pump into a two-page sequence. First page is one, on
 [[COMPONENT HITS]] per bar: one | two | (rest) | (rest)
 ```
 
-_Round 3 totals: 100 measures · **260 punches**_
+_Round 3 totals: 94 row measures + 6 setup-pause measures · **246 punches**_
 
 ### Rest 3 → 4  (1:00)
 
@@ -2416,17 +2660,19 @@ One last round. We start with steady ones, coast, then turn the final half into 
 
 ### Round 4 — “Big pump home”
 
-**§4.1 PUMP BAR (single punch, four slots)** — 40 measures
+**§4.1 PUMP BAR (single punch, four slots)** — 34 measures
 
 ```text
 <<SINGLE CLIP  lead-in/pump-and-coast/r4s1>>
-"Long set: ones only, straight time — twenty bars. Long steady ones. Build pressure without squeezing the shoulders."
+"Long set: ones only, straight time — seventeen bars. Long steady ones. Build pressure without squeezing the shoulders."
 
-  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 20   (4 punches/bar -> 80 punches)
+  [ 1 ][ 1 ][ 1 ][ 1 ]  @1x   x 17   (4 punches/bar -> 68 punches)
   breath after every bar: 4 beats
 
 [[COMPONENT HITS]] per bar: one | one | one | one
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.2 COAST BAR (rest-heavy — recovery in rhythm)** — 20 measures
 
@@ -2440,6 +2686,8 @@ One last round. We start with steady ones, coast, then turn the final half into 
 [[COMPONENT HITS]] per bar: one | (rest) | (rest) | (rest)
 ```
 
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
+
 **§4.3 PUNCTUATED BAR (breath baked into slot 4)** — 20 measures
 
 ```text
@@ -2451,6 +2699,8 @@ One last round. We start with steady ones, coast, then turn the final half into 
 
 [[COMPONENT HITS]] per bar: one | one | two | (rest)
 ```
+
+_⏸ setup pause — 2 measures on the click, no tokens (lead-in room)_
 
 **§4.4 COMBO BAR** — 20 measures
 
@@ -2464,7 +2714,7 @@ One last round. We start with steady ones, coast, then turn the final half into 
 [[COMPONENT HITS]] per bar: one | two | three | two
 ```
 
-_Round 4 totals: 100 measures · **230 punches**_
+_Round 4 totals: 94 row measures + 6 setup-pause measures · **218 punches**_
 
 ---
 

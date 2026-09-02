@@ -173,7 +173,7 @@ describe('three-round-fundamentals — click-track edition (MVP v2, GH #305)', (
   it('opens with the 1-1-1-1 bar at whole-beat offsets, x10', () => {
     const block = round1.blocks[0]!
     expect(block.kind).toBe('repeated-combo')
-    expect(block.repeat).toBe(10)
+    expect(block.repeat).toBe(9) // 10 -> 9: setup-pause rebalance (2026-09-02)
     expect(block.tokens.map((t) => t.beatOffset)).toEqual([0, 1, 2, 3])
     expect(punchTokens(block.tokens).map((t) => t.number)).toEqual([1, 1, 1, 1])
   })
