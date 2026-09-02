@@ -91,23 +91,24 @@ export function avatarFrameAt(
   windowMs: number,
   isLast: boolean = false,
 ): AvatarStep {
-  // ONE FLIP PER NODE (Kyle, on-glass 2026-09-01, right after the walk
-  // closed): "start retracted, then flip to extended — just one flip per
-  // node." The old model returned to guard within the window (and cut
-  // the last punch into strict thirds), so a node cost up to three
-  // visible changes. Now: guard until the flip moment, EXTENDED for the
-  // rest of the window — the retraction happens implicitly when the next
-  // node's window begins at step1. Pumps inherit it for free: each
-  // pulse-wrap is exactly one throw. `isLast` keeps the signature (the
-  // hold-to-window-end it used to encode is now everyone's behaviour).
+  // ONE FLIP PER NODE, THEN SETTLE (Kyle, on-glass 2026-09-01 + the
+  // stillness rule 2026-09-02): guard until the flip moment, EXTENDED
+  // through the punch's window, then BACK TO GUARD and motionless. Mid-
+  // combo the settle is invisible — the next punch adopts exactly at
+  // window end — but before a rest slot, a setup gap, or any quiet span
+  // the settle IS the retracted stillness Kyle asked for ("sit still in
+  // retracted poses when pauses happen"). The old always-extended tail
+  // let the drivers' wrap re-throw the same punch through every rest.
+  // The strike region is floored at MIN_FRAME_MS so a degenerate window
+  // still shows the throw. `isLast` keeps the signature only.
   // NOTE the frame names are LEGACY-INVERTED (punchAvatarManifest.ts:
-  // step1 = the STRIKE art, step2 = the RETRACTED/guard art — from the
-  // old strike-first model). Kyle's spec reads in ART terms: guard
-  // first, extended after the flip — which in manifest terms is
-  // step2 -> step1.
+  // step1 = the STRIKE art, step2 = the RETRACTED/guard art).
   void isLast
   const t = Math.max(0, elapsedMs)
-  return t < flipFrameMs(windowMs) ? 'step2' : 'step1'
+  const flip = flipFrameMs(windowMs)
+  if (t < flip) return 'step2'
+  if (t < Math.max(windowMs, flip + MIN_FRAME_MS)) return 'step1'
+  return 'step2'
 }
 
 /**

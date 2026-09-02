@@ -59,12 +59,18 @@ describe('avatarFrameAt — one flip per node', () => {
     expect(avatarFrameAt(frame, windowMs)).toBe('step1')
   })
 
-  it.each(windows)('window %sms holds the strike forever after the flip', (windowMs) => {
-    // One flip means ONE transition — the strike never reverts, however
-    // long the node stays adopted (the next adoption resets the cycle).
-    const frame = flipFrameMs(windowMs) // >= MIN_FRAME_MS even for tiny windows
-    for (const t of [frame, Math.max(windowMs, frame), windowMs * 2 + 500, 60_000]) {
-      expect(avatarFrameAt(t, windowMs)).toBe('step1')
+  it.each(windows)('window %sms shows the strike through its window, then settles to guard', (windowMs) => {
+    // Stillness rule (Kyle, 2026-09-02): guard -> strike -> SETTLE back
+    // to guard, once. Mid-combo the settle is invisible (the next punch
+    // adopts at window end); before rests, gaps and pauses it IS the
+    // motionless retracted pose. The strike region is floored at
+    // MIN_FRAME_MS so degenerate windows still show the throw.
+    const frame = flipFrameMs(windowMs)
+    const strikeEnd = Math.max(windowMs, frame + MIN_FRAME_MS)
+    expect(avatarFrameAt(frame, windowMs)).toBe('step1')
+    expect(avatarFrameAt(strikeEnd - 1, windowMs)).toBe('step1')
+    for (const t of [strikeEnd, strikeEnd + 500, 60_000]) {
+      expect(avatarFrameAt(t, windowMs)).toBe('step2')
     }
   })
 

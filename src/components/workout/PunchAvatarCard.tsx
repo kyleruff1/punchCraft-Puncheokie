@@ -26,8 +26,10 @@ import { useAvatarFrameClock } from './useAvatarFrameClock'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
 import {
+  MIN_FRAME_MS,
   avatarFrameAt,
   avatarWindowMs,
+  flipFrameMs,
   minHoldMs,
   type AvatarStep,
 } from '@domain/workout/punchAvatar'
@@ -147,6 +149,14 @@ export function PunchAvatarCard(props: {
    * `useAvatarFrameClock.ts`.
    */
   anchor?: SharedValue<SharedTransportAnchor>
+  /**
+   * The upcoming block's first cue when one is pending CROSS-BLOCK
+   * (stillness rule, 2026-09-02): during a setup gap the engine's
+   * `current` lingers on the finished block, so the guard-hold family
+   * comes from here — the figure rests in the pose of the section the
+   * coach is announcing.
+   */
+  nextCue?: CueInstance
 }): React.JSX.Element | null {
   const { cue, activeTokenIndex, reducedMotion = false, anchor } = props
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions()
@@ -161,24 +171,18 @@ export function PunchAvatarCard(props: {
     [cue],
   )
   const cueId = cue?.id
-  // Where the demonstration has walked to. The engine is authoritative
-  // whenever it lights a token; between those moments — a gap between reps,
-  // a cue still previewing — the card keeps demonstrating the combination
-  // rather than freezing on a guard pose.
-  const [demoPos, setDemoPos] = useState(0)
-  useEffect(() => {
-    setDemoPos(0)
-  }, [cueId])
-  useEffect(() => {
-    const pos = punchIndexes.indexOf(activeTokenIndex)
-    if (pos >= 0) setDemoPos(pos)
-  }, [activeTokenIndex, punchIndexes])
 
   // Only a PUNCH the engine has lit can steer the card. Defense, footwork
   // and coach tokens are marked active for the whole cue, so trusting any
   // active index parked the figure in guard for the entire block.
+  //
+  // NO self-driven fallback (stillness rule, Kyle on-glass 2026-09-02).
+  // The old "demo walker" cycled the combination whenever the engine was
+  // quiet — which is exactly every rest slot, bar boundary, setup gap and
+  // pause — and every hop was a fresh adoption + flip: "empty slots make
+  // the avatar jitter out". Quiet now means the guard-hold below.
   const engineLit = activeTokenIndex >= 0 && punchIndexes.includes(activeTokenIndex)
-  const tokenIndex = engineLit ? activeTokenIndex : (punchIndexes[demoPos] ?? -1)
+  const tokenIndex = engineLit ? activeTokenIndex : -1
   const lastPunchIndex = punchIndexes.at(-1) ?? -1
   const requested = requestedFor(cue, tokenIndex, lastPunchIndex)
   // The identity the effect actually keys off; the object itself is rebuilt
@@ -223,7 +227,9 @@ export function PunchAvatarCard(props: {
     const adopt = (): void => {
       adoptedOccurrenceRef.current = occurrenceKey
       setShown({ ...req, startedAt: Date.now() })
-      setStep('step1')
+      // Guard-first: the cycle opens retracted (step2 is the GUARD art —
+      // legacy-inverted names) and the drivers flip it to the strike.
+      setStep('step2')
     }
     if (!current) {
       adopt()
@@ -245,15 +251,21 @@ export function PunchAvatarCard(props: {
     }
   }, [requestedKey, requestedWindowMs, requestedIsLast, occurrenceKey])
 
-  // Walk to the next punch when the engine is quiet, on that punch's own
-  // window so the demonstration keeps the combination's rhythm.
-  const stepCount = punchIndexes.length
-  useEffect(() => {
-    if (engineLit || stepCount === 0 || requestedWindowMs <= 0) return
-    const dwell = Math.max(requestedWindowMs, minHoldMs(requestedWindowMs, requestedIsLast))
-    const timer = setTimeout(() => setDemoPos((p) => (p + 1) % stepCount), dwell)
-    return () => clearTimeout(timer)
-  }, [engineLit, stepCount, requestedWindowMs, requestedIsLast, demoPos])
+  // The RETRACTED frames held during any quiet span (stillness rule,
+  // 2026-09-02): the first punch of the NEXT block's cue when one is
+  // pending cross-block (setup gap / transitionary call-out — the figure
+  // previews the section the coach is announcing), else the current
+  // cue's first punch (in-bar rests, bar boundaries, preview, pause).
+  const holdFrames = useMemo(() => {
+    for (const c of [props.nextCue, cue]) {
+      const first = c?.tokens.find((t) => t.kind === 'punch')
+      if (first) {
+        const frames = findPunchAvatar(first.number, first.body)
+        if (frames) return frames
+      }
+    }
+    return null
+  }, [props.nextCue, cue])
 
   // Flip: wind-up, strike, hold the strike, back to guard, repeat on the
   // beat. LEVEL-TRIGGERED on purpose — the frame is recomputed from elapsed
@@ -278,16 +290,21 @@ export function PunchAvatarCard(props: {
     const anchorRunning = anchor !== undefined && anchor.value.ticksPerMillisecond > 0
     if (anchorRunning) return
     if (!shown || reducedMotion) return
-    const beat = Math.max(shown.windowMs, minHoldMs(shown.windowMs, shown.isLast))
-    const tick = (): void => {
+    // RAW elapsed, never wrapped (stillness rule, 2026-09-02): the cycle
+    // is guard -> strike -> settle-to-guard, once. The old modulo wrap
+    // re-threw the same punch every beat through rests and pauses. Once
+    // settled the interval clears itself — still means ZERO timers.
+    const settleAtMs =
+      Math.max(shown.windowMs, flipFrameMs(shown.windowMs) + MIN_FRAME_MS) + FLIP_TICK_MS
+    const id = setInterval(() => {
       // Deterministic handoff: if the transport starts mid-adoption the
       // worklet takes over; two writers on `step` would fight.
       if (anchor !== undefined && anchor.value.ticksPerMillisecond > 0) return
-      const elapsed = (Date.now() - shown.startedAt) % beat
+      const elapsed = Date.now() - shown.startedAt
       setStep(avatarFrameAt(elapsed, shown.windowMs, shown.isLast))
-    }
-    tick()
-    const id = setInterval(tick, FLIP_TICK_MS)
+      if (elapsed >= settleAtMs) clearInterval(id)
+    }, FLIP_TICK_MS)
+    setStep(avatarFrameAt(Date.now() - shown.startedAt, shown.windowMs, shown.isLast))
     return () => clearInterval(id)
   }, [shown, reducedMotion, anchor])
 
@@ -312,22 +329,17 @@ export function PunchAvatarCard(props: {
   )
   useAvatarFrameClock(clockShown, reducedMotion, anchor, setStep)
 
-  if (!shown) return null
-  // No art for defense, footwork or coach tokens: the figure holds guard.
-  //
-  // `step2` IS the guard (see punchAvatarManifest: step1 → `-s2.png`, the
-  // STRIKE; step2 → `-s1.png`, the RETRACTED guard). This branch used to
-  // return `step1`, which pinned the figure EXTENDED for the whole span —
-  // exactly the "he's stuck in position extended" Kyle saw on-glass
-  // 2026-08-31, because `shown` is never cleared, so any cue whose active
-  // token is defense/footwork/coach (or has no lit punch) froze the card
-  // mid-strike with no path back.
-  const holdingGuard = requested === null
-  const visible: AvatarStep = reducedMotion
-    ? 'step2'
-    : holdingGuard
-      ? 'step2'
-      : step
+  // GUARD-HOLD (stillness rule, Kyle on-glass 2026-09-02): whenever no
+  // punch is lit — rest slots, bar boundaries, setup gaps, pauses,
+  // transitionary call-outs — the figure sits MOTIONLESS in the hold
+  // family's retracted pose (`step2` IS the guard art; the frame names
+  // are legacy-inverted, see punchAvatarManifest). The hold family may
+  // differ from the last adoption (a setup gap previews the NEXT
+  // section), so the hold renders its own frames rather than `shown`'s.
+  const holding = requested === null
+  const frames = holding ? (holdFrames ?? shown?.frames ?? null) : (shown?.frames ?? null)
+  if (!frames) return null
+  const visible: AvatarStep = reducedMotion || holding ? 'step2' : step
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
@@ -350,14 +362,14 @@ export function PunchAvatarCard(props: {
             GHOSTED in over 300 ms — on top of a 90-220 ms stop-motion
             frame. The flip must be a hard cut. */}
         <Image
-          source={shown.frames.step1}
+          source={frames.step1}
           style={[styles.frame, visible === 'step1' ? styles.frameOn : styles.frameOff]}
           resizeMode="contain"
           fadeDuration={0}
           testID="punch-avatar-step1"
         />
         <Image
-          source={shown.frames.step2}
+          source={frames.step2}
           style={[styles.frame, visible === 'step2' ? styles.frameOn : styles.frameOff]}
           resizeMode="contain"
           fadeDuration={0}

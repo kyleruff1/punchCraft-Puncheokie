@@ -82,11 +82,15 @@ export function avatarFrameAtWorklet(
   isLast: boolean,
 ): AvatarStep {
   'worklet'
-  // Mirror of `avatarFrameAt` — one flip per node, guard(step2) then
-  // strike(step1); frame names are legacy-inverted (see punchAvatar.ts).
+  // Mirror of `avatarFrameAt` — guard(step2), strike(step1) through the
+  // window, then SETTLE back to guard and stay (the 2026-09-02 stillness
+  // rule); frame names are legacy-inverted (see punchAvatar.ts).
   void isLast
   const t = Math.max(0, elapsedMs)
-  return t < flipFrameMsWorklet(windowMs) ? 'step2' : 'step1'
+  const flip = flipFrameMsWorklet(windowMs)
+  if (t < flip) return 'step2'
+  if (t < Math.max(windowMs, flip + MIN_FRAME_MS)) return 'step1'
+  return 'step2'
 }
 
 /** Params driving one adopted-punch flip cycle. Null while no punch is shown. */
@@ -160,10 +164,11 @@ export function useAvatarFrameClock(
     if (ticksPerMs <= 0) return // transport stopped → freeze at last frame
     const elapsedTicks = sharedAnchorCurrentTick(anchor.value, timestamp) - startedAtTick.value
     const elapsedMs = elapsedTicks / ticksPerMs
-    const beat = Math.max(windowMs.value, minHoldMsWorklet(windowMs.value, isLast.value))
-    if (beat <= 0) return
-    const wrapped = ((elapsedMs % beat) + beat) % beat
-    const step = avatarFrameAtWorklet(wrapped, windowMs.value, isLast.value)
+    // RAW elapsed, never wrapped (stillness rule, 2026-09-02): once the
+    // cycle settles to guard the callback goes quiescent until the next
+    // adoption resamples `startedAtTick`. The old modulo wrap re-threw
+    // the same punch every beat through rest slots and pauses.
+    const step = avatarFrameAtWorklet(elapsedMs, windowMs.value, isLast.value)
     if (step !== lastStep.value) {
       lastStep.value = step
       runOnJS(setStep)(step)

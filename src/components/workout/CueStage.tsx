@@ -348,6 +348,7 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
               )}
               reducedMotion={reducedMotion}
               {...(avatarAnchor ? { anchor: avatarAnchor } : {})}
+              {...(next ? { nextCue: next.cue } : {})}
             />
             <CueRow
               view={current}

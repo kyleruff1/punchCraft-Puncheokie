@@ -166,9 +166,11 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('walks the combination when the engine lights nothing', () => {
-    // A cue can sit previewing, or between reps, with no token 'active'.
-    // The card keeps demonstrating rather than freezing on a guard pose.
+  it('holds the first punch RETRACTED, motionless, when the engine lights nothing', () => {
+    // Stillness rule (Kyle, 2026-09-02): quiet spans — previews, rests,
+    // bar boundaries, setup gaps — hold the segment's first punch in its
+    // retracted pose. The old demo walker cycled the combination here,
+    // which on-glass read as "empty slots make the avatar jitter out".
     const tree = render(
       <PunchAvatarCard cue={cue([punch(1), punch(2), punch(3)])} activeTokenIndex={-1} />,
     )
@@ -176,13 +178,28 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
       tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
     expect(shownKey()).toBe(findPunchAvatar(1, false)?.step2)
     act(() => {
-      jest.advanceTimersByTime(1200)
+      jest.advanceTimersByTime(5_000)
     })
-    expect(shownKey()).toBe(findPunchAvatar(2, false)?.step2)
+    expect(shownKey()).toBe(findPunchAvatar(1, false)?.step2)
+  })
+
+  it("holds the NEXT cue's first punch through a cross-block gap", () => {
+    // During a setup gap the engine's `current` lingers on the finished
+    // block; the hold family must come from the pending block instead.
+    const tree = render(
+      <PunchAvatarCard
+        cue={cue([punch(1), punch(2)])}
+        activeTokenIndex={-1}
+        nextCue={cue([punch(5), punch(2)], { id: 'next-cue' })}
+      />,
+    )
+    const shownKey = (): unknown =>
+      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
+    expect(shownKey()).toBe(findPunchAvatar(5, false)?.step2)
     act(() => {
-      jest.advanceTimersByTime(1200)
+      jest.advanceTimersByTime(5_000)
     })
-    expect(shownKey()).toBe(findPunchAvatar(3, false)?.step2)
+    expect(shownKey()).toBe(findPunchAvatar(5, false)?.step2)
   })
 
   it('snaps to the engine the moment it lights a token', () => {
@@ -361,9 +378,11 @@ describe('PunchAvatarCard — only punches steer it', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('keeps demonstrating when the lit token is a coach or defense command', () => {
-    // The runner marks EVERY non-punch token 'active' for the whole cue, so
-    // an index pointing at one must not park the figure in guard.
+  it('holds the first punch retracted when the lit token is a coach command', () => {
+    // A non-punch active index is a quiet span like any other: the
+    // figure sits in the segment's first-punch guard, motionless
+    // (stillness rule, 2026-09-02 — the walker that used to keep
+    // demonstrating here was the jitter).
     const tokens: WorkoutToken[] = [
       { kind: 'coach', command: 'hands-up', beatOffset: 0 },
       punch(1),
@@ -376,7 +395,7 @@ describe('PunchAvatarCard — only punches steer it', () => {
     act(() => {
       jest.advanceTimersByTime(1200)
     })
-    expect(source()).toBe(findPunchAvatar(4, false)?.step2)
+    expect(source()).toBe(findPunchAvatar(1, false)?.step2)
   })
 })
 
