@@ -242,7 +242,9 @@ if (!manifestOnly) {
       // `--persona=` (caught 2026-09-01: the first cornerman2 batch
       // actually cloned from the original cornerman reference).
       reference: PERSONA.reference,
-      attempts: 8,
+      attempts: Number(
+        process.argv.find((a) => a.startsWith('--attempts='))?.slice('--attempts='.length) ?? 8,
+      ),
       jobs: jobs.map((j) => ({
         path: j.wav,
         text: j.plan.renderedText,
