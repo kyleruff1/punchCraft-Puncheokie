@@ -36,15 +36,14 @@ import {
 } from '@domain/workout/punchAvatar'
 
 /**
- * Watermark strength — SETTLED, not a placeholder (Kyle on glass,
- * 2026-08-29): "not completely opaque but a background spirit". Do not
- * raise this toward opacity 1 thinking it is unfinished; the figure is
- * meant to haunt the stage behind the numbers, not compete with them.
- *
- * Deliberately a constant, too: a blackout round must leave the card
+ * Full presence (Kyle on glass, 2026-09-02). The 0.28 watermark was
+ * settled for the era when the figure haunted the stage BEHIND the
+ * token row; it ended when he moved into his own partitioned trainer
+ * box — a demonstrator the boxer mimics, not a background spirit.
+ * Still deliberately a constant: a blackout round must leave the card
  * exactly as bright as a quiet one.
  */
-const CARD_OPACITY = 0.28
+const CARD_OPACITY = 1
 /** The source art's 1024x1536. */
 const CARD_ASPECT = 1024 / 1536
 /**
@@ -312,6 +311,10 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
+      {/* 1:3 spacers put a QUARTER of the free width on his left — half
+          the centered gap, which reads centered in the panel's empty
+          space given the art's own internal whitespace (Kyle). */}
+      <View style={styles.leftSpacer} />
       <View style={styles.card}>
         {/* Both frames stay mounted and toggle opacity — swapping a single
             source would risk a decode hitch mid-combination.
@@ -346,6 +349,7 @@ export function PunchAvatarCard(props: {
           testID="punch-avatar-guard"
         />
       </View>
+      <View style={styles.rightSpacer} />
     </View>
   )
 }
@@ -362,10 +366,12 @@ const styles = StyleSheet.create({
     width: '35%',
     borderRightWidth: 1,
     borderRightColor: colors.border,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     opacity: CARD_OPACITY,
   },
+  leftSpacer: { flex: 1 },
+  rightSpacer: { flex: 3 },
   card: { height: CARD_HEIGHT, maxWidth: '96%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
