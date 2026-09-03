@@ -14,7 +14,7 @@
  */
 import React, { useMemo, useState } from 'react'
 import { Stack } from 'expo-router'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
@@ -24,6 +24,10 @@ import type { BackdropQuality } from '@domain/effects/backdropSettings'
 import type { PunchHand } from '@domain/punch/PunchEvent'
 
 const QUALITIES: BackdropQuality[] = ['off', 'reduced', 'standard']
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+const BACKDROP = require('../../../assets/branding/backdrop-landscape.png') as number
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 export default function EffectsLabScreen(): React.JSX.Element {
   const bus = useMemo(() => {
@@ -45,6 +49,14 @@ export default function EffectsLabScreen(): React.JSX.Element {
   return (
     <View style={styles.root}>
       <Stack.Screen options={{ title: 'Effects lab' }} />
+      {/* Backdrop art behind the reactive layer so the darkening has
+          something to darken. Matches the live screen's layer stack. */}
+      <Image
+        source={BACKDROP}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+        accessibilityLabel=""
+      />
       <BackdropRenderer bus={bus} quality={quality} />
 
       <View style={styles.controls} pointerEvents="box-none">
