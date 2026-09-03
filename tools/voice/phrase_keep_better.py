@@ -33,7 +33,7 @@ from resemblyzer import VoiceEncoder, preprocess_wav
 
 from phrase_token_audit import ASR_PROMPT, canonical
 
-REFERENCE = os.environ.get("KEEP_BETTER_REFERENCE", "tools/voice/reference/cornerman3-selfref-30s.wav")
+REFERENCE = "tools/voice/reference/cornerman-reference.wav"
 
 with open(sys.argv[1], encoding="utf-8") as fh:
     expectations = json.load(fh)

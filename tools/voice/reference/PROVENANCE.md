@@ -143,35 +143,3 @@ licensing of this reference is exactly the licensing of
 `cornerman-reference.wav`, one generation removed. Purpose: new batches
 clone the production sound (texture chain included) instead of the raw
 extract, so they match what the athlete already hears.
-
-## cornerman3-selfref-30s.wav (2026-09-02)
-
-Clean self-clone reference for the `cornerman3` persona — the echo fix.
-Diagnosis: every cornerman2 clip carried THREE broadcast passes (v5
-reference = textured render; selfref = concat of shipped textured clips;
-plus the render-time chain), and the chain's `aecho` taps compound per
-pass — Kyle heard it as "echoey and lo-fi". Ruling (2026-09-02): keep
-the broadcast character, remove the echo, rebuild from existing raw
-material.
-
-Built by `tools/voice/bakeoff-clean-voice.mjs`: the same six intro lines
-as the cornerman2 selfref, re-rendered fresh from
-`cornerman-reference-v4.wav` (Kyle's raw recording, zero texture passes)
-with NO texture applied, concatenated to ~31 s at 24 kHz mono. One clean
-generation: Chatterbox's averaging tames v4's bellowing register the way
-the v5 swap did, without baking any production chain into the timbre.
-Chosen over v4-direct and dry-broadcast variants in the 2026-09-02
-bake-off (B2): reference = this file, texture = `broadcast-dry-gentle`
-(broadcast minus `aecho`, compressor eased to 8:1 @ -28 dB, makeup 6).
-
-Licensing: derives solely from `cornerman-reference-v4.wav` (Kyle's own
-voice) via Chatterbox renders — no third-party rights attach. The
-texture chain is now applied EXACTLY ONCE, at render time; a future
-reference must never be built from textured output again.
-
-### Rollback
-
-```
-# personas.mjs: remove/ignore cornerman3, render with --persona=cornerman2
-# (assets per persona live side by side; manifests name the persona dir)
-```

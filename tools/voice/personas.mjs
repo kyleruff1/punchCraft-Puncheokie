@@ -106,34 +106,6 @@ export const PERSONAS = {
   },
 
   /**
-   * The clean-generation cornerman (Kyle's B2 pick, 2026-09-02): same
-   * character, ONE texture pass. cornerman2's clips were three broadcast
-   * passes deep (reference built from textured output, then textured
-   * again at render) and the compounding `aecho` taps read as "echoey
-   * and lo-fi". This reference is the six intro lines re-rendered fresh
-   * from the raw v4 recording with NO texture, so the broadcast chain —
-   * echo-free, compressor eased — is applied exactly once, at render.
-   * Doctrine: a reference must always be PRE-texture material.
-   */
-  cornerman3: {
-    id: 'cornerman3',
-    label: 'Cornerman (clean self-clone)',
-    version: 'cornerman3-1',
-    engine: 'chatterbox',
-    reference: 'tools/voice/reference/cornerman3-selfref-30s.wav',
-    intensity: {
-      teach: { exaggeration: 1.0, cfgWeight: 0.3 },
-      work: { exaggeration: 1.0, cfgWeight: 0.3 },
-      push: { exaggeration: 1.0, cfgWeight: 0.3 },
-    },
-    performances: ['push'],
-    tempoCalibration: 1.35,
-    expression: 'theatrical',
-    finish: 'shout',
-    texture: 'broadcast-dry-gentle',
-  },
-
-  /**
    * The original Kokoro voice, kept as a fallback rather than deleted.
    *
    * Needs no GPU and no separate venv, so it is the persona a machine that

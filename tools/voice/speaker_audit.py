@@ -17,7 +17,7 @@ import sys
 import numpy as np
 from resemblyzer import VoiceEncoder, preprocess_wav
 
-REFERENCE = os.environ.get("SPEAKER_AUDIT_REFERENCE", "tools/voice/reference/cornerman3-selfref-30s.wav")
+REFERENCE = os.environ.get("SPEAKER_AUDIT_REFERENCE", "tools/voice/reference/cornerman-reference.wav")
 BASE = "assets/voice/numbers/standalone/"
 DEFAULT_GLOBS = ["intro-*.wav", "warn-*.wav", "co-*.wav", "theme-*.wav", "joke-*.wav"]
 

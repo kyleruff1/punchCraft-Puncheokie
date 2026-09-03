@@ -37,19 +37,14 @@ import { join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
-import { ACTIVE_PERSONA, getPersona, rendererId } from './personas.mjs'
+import {
+  ENGINE,
+  PRODUCTION_EXPRESSION,
+  PRODUCTION_TEXTURE,
+  REFERENCE_VOICE,
+  RENDERER,
+} from './persona.mjs'
 import { measureDuration, trimEnds, renameWithRetry } from './wav.mjs'
-
-// Persona comes from `--persona=` (default: the registry's active one),
-// and every derived value reads PERSONA — the flat persona.mjs constants
-// follow ACTIVE_PERSONA and silently ignore the flag (2026-09-01 bug).
-const personaArg = process.argv.find((a) => a.startsWith('--persona='))?.slice('--persona='.length)
-const PERSONA = getPersona(personaArg ?? ACTIVE_PERSONA)
-const ENGINE = PERSONA.engine
-const PRODUCTION_EXPRESSION = PERSONA.expression
-const PRODUCTION_TEXTURE = PERSONA.texture
-const REFERENCE_VOICE = PERSONA.reference
-const RENDERER = rendererId(PERSONA)
 
 const OUT_DIR = join('assets', 'voice', 'numbers', 'standalone')
 
