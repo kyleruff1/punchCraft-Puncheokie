@@ -34,19 +34,20 @@ import { join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
-import {
-  ENGINE,
-  EXAGGERATION,
-  PRODUCTION_EXPRESSION,
-  PRODUCTION_TEXTURE,
-  REFERENCE_VOICE,
-  RENDERER,
-} from './persona.mjs'
-import { ACTIVE_PERSONA, getPersona } from './personas.mjs'
+import { ACTIVE_PERSONA, getPersona, rendererId } from './personas.mjs'
 import { measureDuration, renameWithRetry, trimEnds } from './wav.mjs'
 
+// EVERY persona-derived value comes off PERSONA, never the flat persona.mjs
+// constants — those follow ACTIVE_PERSONA and silently ignore `--persona=`
+// (the 2026-09-01 reference bug; the same trap re-textured cornerman3 takes
+// with cornerman's echoey chain until caught 2026-09-02).
 const personaArg = process.argv.find((a) => a.startsWith('--persona='))?.slice('--persona='.length)
 const PERSONA = getPersona(personaArg ?? ACTIVE_PERSONA)
+const ENGINE = PERSONA.engine
+const EXAGGERATION = PERSONA.intensity ?? {}
+const PRODUCTION_EXPRESSION = PERSONA.expression
+const PRODUCTION_TEXTURE = PERSONA.texture
+const RENDERER = rendererId(PERSONA)
 const OUT_ROOT = join('assets', 'voice', 'click-scripts', PERSONA.id)
 
 function findFfmpeg() {
