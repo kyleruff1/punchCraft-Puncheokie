@@ -126,6 +126,12 @@ function assemble(kind, rows, prefix, plan, vocabulary = 'numbers') {
 // call N+1 can never pile on call N (Pillar 2 by construction).
 const CALL_WINDOW_PAD_MS = 150
 
+// Per-call rubberband cap overrides (default 1.3×). 1b-2-1-2 is a mixed
+// bar — a lone body jab among head shots — that blocks all copy
+// factoring, so it renders ~2.05s against a 2.0s stride; Kyle approved
+// the extra compression for this one bar (2026-09-03) to bring it under.
+const CALL_MAX_STRETCH = { 'call/1b-2-1-2': 1.6 }
+
 // Syllable-unit budget per word: technique words run longer than digits
 // ("uppercut" is three syllables to "five"'s one), and the call cap must
 // know it or every uppercut motif renders against a numeric-sized window.
@@ -288,10 +294,16 @@ if (!manifestOnly) {
     // stride window gets the make-phrase-clips rubberband pass (formant-
     // preserved). Capped at 1.3× — beyond that the delivery smears (the
     // documented b-syllable crush), so we flag rather than push harder.
+    // Per-slot exceptions raise the cap for a specific call Kyle has
+    // ear-approved at a harder stretch: 1b-2-1-2 (lone body jab among head
+    // shots — no legal copy factoring) needs ~1.5× to clear its 2.0s
+    // stride, and Kyle signed off on the extra compression for that one
+    // bar (2026-09-03).
     if (job.kind === 'call') {
+      const stretchCap = Math.max(1.3, ...job.slots.map((s) => CALL_MAX_STRETCH[s] ?? 1.3))
       const measured = measureDuration(job.wav)
       if (measured > job.maxDurationMs) {
-        const rate = Math.min(1.3, measured / job.maxDurationMs)
+        const rate = Math.min(stretchCap, measured / job.maxDurationMs)
         const fitTemp = `${job.wav}.f.wav`
         execFileSync(
           FFMPEG,

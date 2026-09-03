@@ -36,20 +36,17 @@ function minStrides(): Map<string, number> {
  * a partial techniques render is then a failure, never a silent fallback.
  */
 /**
- * Compressed 2026-09-03: five of the six over-stride technique calls now
- * fit after a coach-shorthand rewrite (pump→plural "Body jabs!", all-body
- * factored to one "Body:" prefix, adjacent same-level runs hyphenated to
- * one breath, "lead uppercut"→"lead upper" keeping the hand). See
- * CALL_TECHNIQUE_OVERRIDES in gen-workout-scripts.ts.
- *
- * ONE resists: `1b-2-1-2` (body jab + head cross-jab-cross). A lone body
- * shot among head shots blocks factoring, so the copy is already minimal,
- * yet the clip renders ~2.05s against a 1.9s stride (longer than the
- * stride itself). Copy cannot fix it — it needs a STRUCTURAL decision
- * (rebalance the row to a wider stride, accept the numbers fallback for
- * this one bar, or allow a harder per-clip stretch). Tracked until ruled.
+ * Resolved 2026-09-03: all six formerly-over-stride technique calls now
+ * fit and are enforced. Five were fixed by a coach-shorthand rewrite
+ * (pump→plural "Body jabs!", all-body factored to one "Body:" prefix,
+ * adjacent same-level runs hyphenated to one breath, "lead uppercut"→
+ * "lead upper" keeping the hand — CALL_TECHNIQUE_OVERRIDES in
+ * gen-workout-scripts.ts). The sixth, `1b-2-1-2` (lone body jab among
+ * head shots — no legal factoring), got a Kyle-approved harder per-clip
+ * stretch (CALL_MAX_STRETCH 1.6× in make-click-script-clips.mjs). Nothing
+ * is exempt now; the empty set is the assertion.
  */
-const PENDING_OVER_STRIDE_TECHNIQUES = new Set(['1b-2-1-2'])
+const PENDING_OVER_STRIDE_TECHNIQUES = new Set<string>([])
 
 describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabulary) => {
   const strides = minStrides()
