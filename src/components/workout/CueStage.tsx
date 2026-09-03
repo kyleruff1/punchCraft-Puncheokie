@@ -416,7 +416,13 @@ const styles = StyleSheet.create({
   // the remaining space, never under the figure (Kyle, screenshot).
   zones: {
     flex: 1,
-    marginLeft: '35%',
+    // The trainer box is 35% (partition at its border). The stage content
+    // clears the partition and centers in the remaining gap to the KPI
+    // rail — a right inset keeps wide bars off the partition and pulls the
+    // whole column off the figure (Kyle, 2026-09-03: nodes were crowding
+    // the partition). Partition itself is unmoved.
+    marginLeft: '38%',
+    paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
