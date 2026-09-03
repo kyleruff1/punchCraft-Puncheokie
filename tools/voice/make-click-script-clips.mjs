@@ -46,7 +46,12 @@ const PERSONA = getPersona(personaArg ?? ACTIVE_PERSONA)
 const ENGINE = PERSONA.engine
 const EXAGGERATION = PERSONA.intensity ?? {}
 const PRODUCTION_EXPRESSION = PERSONA.expression
-const PRODUCTION_TEXTURE = PERSONA.texture
+// Texture + output sample rate are overridable for the quality bake-off /
+// full high-quality pass (Kyle, 2026-09-03: "make it sound nice and high
+// bit rate"). Default to the persona's approved texture at 24kHz (the
+// Chatterbox model's native rate).
+const PRODUCTION_TEXTURE = process.argv.find((a) => a.startsWith('--texture='))?.slice('--texture='.length) ?? PERSONA.texture
+const OUT_SAMPLE_RATE = process.argv.find((a) => a.startsWith('--sample-rate='))?.slice('--sample-rate='.length) ?? String(PERSONA.sampleRate ?? 24000)
 const RENDERER = rendererId(PERSONA)
 const OUT_ROOT = join('assets', 'voice', 'click-scripts', PERSONA.id)
 
@@ -120,6 +125,14 @@ function assemble(kind, rows, prefix, plan, vocabulary = 'numbers') {
     })
   }
   return [...byText.values()]
+}
+
+// Chatterbox reads "lead" as /lɛd/ ("led hook") — respell it to "leed"
+// for the TTS input ONLY (Kyle on-glass, 2026-09-03). The manifest text
+// and the ASR expectText keep the real "lead" (Whisper transcribes the
+// spoken /liːd/ back to "lead"), so nothing downstream sees "leed".
+function speechText(text) {
+  return text.replace(/\blead\b/gi, (m) => (m[0] === 'L' ? 'Leed' : 'leed'))
 }
 
 // Loop calls fit UNDER the tightest stride any occurrence runs at, so
@@ -260,7 +273,7 @@ if (!manifestOnly) {
       ),
       jobs: jobs.map((j) => ({
         path: j.wav,
-        text: j.plan.renderedText,
+        text: speechText(j.plan.renderedText),
         ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work ?? {}),
         minDurationMs: j.minDurationMs,
         maxDurationMs: j.maxDurationMs,
@@ -286,7 +299,7 @@ if (!manifestOnly) {
     execFileSync(
       FFMPEG,
       ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav, '-af', filters,
-        '-ar', '24000', '-ac', '1', temp],
+        '-ar', OUT_SAMPLE_RATE, '-ac', '1', temp],
       { stdio: 'ignore' },
     )
     if (existsSync(temp)) renameWithRetry(temp, job.wav)
@@ -309,7 +322,7 @@ if (!manifestOnly) {
           FFMPEG,
           ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav,
             '-af', `rubberband=tempo=${rate.toFixed(4)}:formant=preserved:pitchq=quality`,
-            '-ar', '24000', '-ac', '1', fitTemp],
+            '-ar', OUT_SAMPLE_RATE, '-ac', '1', fitTemp],
           { stdio: 'ignore' },
         )
         if (existsSync(fitTemp)) renameWithRetry(fitTemp, job.wav)

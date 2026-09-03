@@ -118,7 +118,11 @@ export const PERSONAS = {
   cornerman3: {
     id: 'cornerman3',
     label: 'Cornerman (clean self-clone)',
-    version: 'cornerman3-1',
+    // v2 (Kyle, 2026-09-03): the band-limit opened 7.2k -> 10.5k for
+    // top-end "air" and output raised to 48kHz — his C pick from the
+    // quality bake-off ("make it sound nice and high bit rate"). Same
+    // dry-gentle character underneath, one texture pass.
+    version: 'cornerman3-2',
     engine: 'chatterbox',
     reference: 'tools/voice/reference/cornerman3-selfref-30s.wav',
     intensity: {
@@ -130,7 +134,9 @@ export const PERSONAS = {
     tempoCalibration: 1.35,
     expression: 'theatrical',
     finish: 'shout',
-    texture: 'broadcast-dry-gentle',
+    texture: 'broadcast-dry-gentle-bright',
+    /** Output sample rate; the model synthesizes at 24k but 48k is the shipped container (Kyle's hi-fi ask). */
+    sampleRate: 48000,
   },
 
   /**

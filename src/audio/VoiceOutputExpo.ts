@@ -106,6 +106,15 @@ export const CHIME_IN_RELEASE_MS = 250
 export const DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS = 40
 
 /**
+ * Gap after a click-script call's own duration before the cached player is
+ * pre-seeked back to 0 for its next bar. Long enough to clear the clip's
+ * tail, short enough to land well before the next bar (tightest stride is
+ * ~2s, clips ≤2.5s but bars are seconds apart), so the repeat finds an
+ * armed player and plays with no rewind wait.
+ */
+export const CLICK_SCRIPT_PREARM_PAD_MS = 200
+
+/**
  * Pure helper: given the wall-clock ms at which a coach event's
  * desired audible start would land ideally (`tickTimeMs`, derived
  * from `MetronomeTransport.timeAtTick(event.desiredAudibleStartTick)`),
@@ -308,6 +317,17 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private clickScriptPlayer: AudioPlayer | null = null
   /** Cached click-script players by Metro module — reused via seekTo(0) so a call starts with no load latency. */
   private readonly clickScriptPlayers = new Map<number, AudioPlayer>()
+  /**
+   * Pre-armed click-script modules: after a call finishes, the player is
+   * seeked back to 0 during the idle gap before its next bar, so the
+   * repeat plays IMMEDIATELY like a fresh player rather than paying the
+   * ~200ms serialized-rewind wait (the shllck-fix side effect that made
+   * repeated bars land ~200ms later than a section's first bar — the
+   * set-dependent drift Kyle heard, 2026-09-03). Membership = "at 0, ready".
+   */
+  private readonly clickScriptArmed = new Set<number>()
+  /** Per-module play generation, so a scheduled pre-arm never seeks a player that has since replayed. */
+  private readonly clickScriptGen = new Map<number, number>()
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -1020,19 +1040,25 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         player = this.makeClickScriptPlayer(clip.module)
         this.clickScriptPlayers.set(clip.module, player)
       }
-      this.clickScriptPlayer = player
-      player.volume = this.callsMuted() ? 0 : this.volumes.voice
-      this.markBusy(clip.durationMs)
       // A reused player is parked at end-of-stream, and `seekTo` is
       // ASYNC — firing `play()` before the rewind lands plays the
       // buffered ~50-100ms tail at EOS and stops (the 2026-09-03
-      // "shllck": every re-dispatch truncated once a cold Metro made
-      // seeks slow enough to lose the race every time). The rewind is
-      // therefore SERIALIZED: play only after seekTo resolves, with a
-      // scheduled fallback so a pathologically stalled seek degrades to
-      // the old race rather than to silence. Fresh players are already
-      // at 0 and play immediately.
+      // "shllck"). Fresh players sit at 0. A PRE-ARMED player was seeked
+      // back to 0 during the idle gap after its last call, so it too can
+      // play immediately — that is the common per-bar-repeat path and it
+      // erases the ~200ms serialized-rewind wait that made repeats drift
+      // late. Only a reused, not-yet-rearmed player pays the serialized
+      // rewind (fallback degrades a stalled seek to the old race, never
+      // silence).
+      const armed = this.clickScriptArmed.has(clip.module)
+      this.clickScriptArmed.delete(clip.module)
+      const gen = (this.clickScriptGen.get(clip.module) ?? 0) + 1
+      this.clickScriptGen.set(clip.module, gen)
+      this.clickScriptPlayer = player
+      player.volume = this.callsMuted() ? 0 : this.volumes.voice
+      this.markBusy(clip.durationMs)
       const target = player
+      const module = clip.module
       const dispatchedAt = this.clock()
       const speak = (path: string): void => {
         target.play()
@@ -1043,9 +1069,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           rewindMs: safe(Math.round(this.clock() - dispatchedAt)),
           path: safe(path),
         })
+        // Re-arm for the next bar: once this call has finished, seek back
+        // to 0 during the idle gap so the repeat plays immediately. Guarded
+        // by the play generation so a player that has since replayed is
+        // never seeked mid-clip (which would cut it). PRE_ARM_PAD clears
+        // the clip's own duration first.
+        this.schedule(() => {
+          if (this.clickScriptGen.get(module) !== gen) return
+          void Promise.resolve(target.seekTo(0))
+            .catch(() => undefined)
+            .then(() => {
+              if (this.clickScriptGen.get(module) === gen) this.clickScriptArmed.add(module)
+            })
+        }, clip.durationMs + CLICK_SCRIPT_PREARM_PAD_MS)
       }
-      if (!reused) {
-        speak('fresh')
+      if (!reused || armed) {
+        speak(reused ? 'armed' : 'fresh')
       } else {
         let spoken = false
         const once = (path: string): void => {
@@ -1398,6 +1437,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // Already gone.
       }
       this.clickScriptPlayer = null
+      // A paused player is no longer parked at 0, and any pending pre-arm
+      // for it is now stale — clearing the generation map skips every
+      // scheduled pre-arm, and the armed set empties so the next call
+      // rewinds honestly rather than trusting a false "armed".
+      this.clickScriptArmed.clear()
+      this.clickScriptGen.clear()
       this.busyUntilMs = 0
     }
   }
@@ -1442,6 +1487,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       }
     }
     this.clickScriptPlayers.clear()
+    this.clickScriptArmed.clear()
+    this.clickScriptGen.clear()
     this.clickScriptPlayer = null
     // Tear the metronome loop down alongside every other native
     // handle — a stranded loop after `release()` would keep clicking

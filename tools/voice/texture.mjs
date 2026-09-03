@@ -92,12 +92,16 @@ const BROADCAST_BASE = {
   limitRelease: 25,
   baseI: -14,
   echo: true,
+  lowpass: 7200,
 }
 
 function broadcastChain({ single, finalAccentDb }, o) {
   return [
     'highpass=f=150',
-    'lowpass=f=7200',
+    // The band-limit ceiling. 7200 is the PA/broadcast character; raising
+    // it opens the top end for "air" (Kyle, 2026-09-03: nicer/hi-fi). The
+    // reference clone tops out ~8kHz, so beyond ~10.5k adds only hiss.
+    `lowpass=f=${o.lowpass ?? 7200}`,
     compressor({ threshold: o.threshold, ratio: o.ratio, attack: 1, release: single ? 40 : 55, makeup: o.makeup }),
     shelf(1200, 3),
     shelf(2600, o.presence),
@@ -225,6 +229,18 @@ export const TEXTURES = {
     broadcastChain(
       { single, finalAccentDb },
       { ...BROADCAST_BASE, echo: false, threshold: -28, ratio: 8, makeup: 6 },
+    ),
+
+  /**
+   * The approved dry-gentle voice with the band-limit opened from 7200 to
+   * 10500 Hz — the same character with the top end let back in for "air"
+   * (Kyle, 2026-09-03: make it sound nice / hi-fi). Paired with 48kHz
+   * output. A bake-off candidate against the plain dry-gentle.
+   */
+  'broadcast-dry-gentle-bright': ({ single, finalAccentDb }) =>
+    broadcastChain(
+      { single, finalAccentDb },
+      { ...BROADCAST_BASE, echo: false, threshold: -28, ratio: 8, makeup: 6, lowpass: 10500 },
     ),
 
   /**

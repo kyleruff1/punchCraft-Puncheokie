@@ -46,6 +46,8 @@ const PRODUCTION_EXPRESSION = PERSONA.expression
 const PRODUCTION_TEXTURE = PERSONA.texture
 const REFERENCE_VOICE = PERSONA.reference
 const RENDERER = rendererId(PERSONA)
+const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? 24000)
+const RENDER_ATTEMPTS = Number(process.argv.find((a) => a.startsWith('--attempts='))?.slice('--attempts='.length) ?? 8)
 
 const OUT_DIR = join('assets', 'voice', 'numbers', 'standalone')
 
@@ -182,7 +184,7 @@ console.log(`Rendering ${jobs.length} intro segments — ${RENDERER}…`)
 const renderOut = execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatterbox_render.py')], {
   input: JSON.stringify({
     reference: REFERENCE_VOICE,
-    attempts: 8,
+    attempts: RENDER_ATTEMPTS,
     jobs: jobs.map((j) => ({
       path: j.wav,
       text: j.plan.renderedText,
@@ -209,7 +211,7 @@ for (const job of jobs) {
   execFileSync(
     FFMPEG,
     ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav, '-af', filters,
-      '-ar', '24000', '-ac', '1', temp],
+      '-ar', OUT_SAMPLE_RATE, '-ac', '1', temp],
     { stdio: 'ignore' },
   )
   if (existsSync(temp)) renameWithRetry(temp, job.wav)

@@ -1188,4 +1188,19 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
     await h.finishSeek() // the late seek resolution must not re-play
     expect(h.plays).toEqual([77, 77])
   })
+
+  it('a PRE-ARMED player (seeked to 0 during the idle gap) plays immediately — no rewind wait', async () => {
+    // Kills the ~200ms reused-player lag on per-bar repeats: after the
+    // first call finishes, the player is pre-seeked to 0 so the repeat is
+    // as fast as a fresh play (path 'armed').
+    const h = rig()
+    h.output.playClickScript(h.clip) // fresh → plays, schedules pre-arm at duration+200
+    expect(h.plays).toEqual([77])
+    h.advance(950) // fire the pre-arm (700+200=900): it seeks to 0…
+    await h.finishSeek() // …and the seek resolves → module is now armed
+    const seeksBefore = h.seekCalls
+    h.output.playClickScript(h.clip) // reused BUT armed → immediate, no new rewind
+    expect(h.plays).toEqual([77, 77])
+    expect(h.seekCalls).toBe(seeksBefore) // no pre-play seek on the armed path
+  })
 })
