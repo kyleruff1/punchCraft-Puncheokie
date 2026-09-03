@@ -112,8 +112,13 @@ export const CALL_PAD_MS = 500
  * flip track plays this far AHEAD of the walk — "a trainer training,
  * between the voice and the avatar showing." A pure time-shift of the
  * full track each round, never an acceleration. The single tuning knob.
+ * Tuned 750 -> 375 on-glass (Kyle, 2026-09-02): at 750 the figure struck
+ * slightly before the calls on transitions; 375 lands him 125ms AFTER
+ * each loop call ends and within a hair of the lead-ins — "sync up
+ * amazingly and pretty consistently." Next stop on the dial if
+ * transitions still read early: 250 (= LEAD_IN_PAD_MS, lead-in-end exact).
  */
-export const AVATAR_LEAD_MS = 750
+export const AVATAR_LEAD_MS = 375
 /**
  * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
  * found Pressables dead DURING work while fine in idle: the 10Hz
