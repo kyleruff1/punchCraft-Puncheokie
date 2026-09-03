@@ -909,9 +909,13 @@ function main() {
     console.error(`manifest not found: ${args.manifest}`)
     process.exit(3)
   }
-  const sessionLogPath = join(args.session, 'logcat.txt')
-  if (!existsSync(sessionLogPath)) {
-    console.error(`session logcat not found: ${sessionLogPath}`)
+  // drive-workout-first-round writes logcat.txt; monitor-session writes
+  // log.txt. Accept either so a mic-monitored session verifies too.
+  const sessionLogPath = [join(args.session, 'logcat.txt'), join(args.session, 'log.txt')].find(
+    (p) => existsSync(p),
+  )
+  if (!sessionLogPath) {
+    console.error(`session logcat not found: ${join(args.session, 'logcat.txt')} (or log.txt)`)
     process.exit(3)
   }
   const manifest = JSON.parse(readFileSync(args.manifest, 'utf8'))

@@ -79,6 +79,15 @@ const NUM_WORD = '(?:one|two|three|four|five|six)'
 const techFull = (numWord: string): string =>
   spokenFor(NUM_TO_DIGIT[numWord.toLowerCase()]!, { vocabulary: 'techniques', cadence: 'steady' }).toLowerCase()
 
+/**
+ * Pluralize a technique name for pump copy ("crosses only", not "crosss
+ * only"). A sibilant ending (s/x/z/ch/sh) takes -es; only "cross" among
+ * the technique roots hits it, but the rule is spelled out so a future
+ * word does not reintroduce the triple-s the coach mispronounced.
+ */
+const pluralizeTech = (word: string): string =>
+  /(?:s|x|z|ch|sh)$/i.test(word) ? `${word}es` : `${word}s`
+
 /** Compact technique name for a motif token ("5" → "Lead upper", "2b" → "Body cross"). */
 const techCompact = (token: string): string =>
   spokenFor(token, { vocabulary: 'techniques', cadence: 'sprint' })
@@ -117,10 +126,11 @@ function techniqueText(text: string, notes: string[]): string {
 
   // 2b. Plural cue groups — the pump copy's "ones only" / "one-bees only".
   //     Pluralize the technique's last word: "jabs", "body jabs", "lead hooks".
-  result = result.replace(new RegExp(`\\b(${NUM_WORD})-bees\\b`, 'gi'), (m, num) => matchCase(`body ${techFull(num)}s`, m))
+  result = result.replace(new RegExp(`\\b(${NUM_WORD})-bees\\b`, 'gi'), (m, num) => matchCase(`body ${pluralizeTech(techFull(num))}`, m))
   result = result.replace(new RegExp(`\\b(${NUM_WORD})s\\b`, 'gi'), (m, num) => {
-    notes.push(`plural: "${m}" → "${techFull(num)}s"`)
-    return matchCase(`${techFull(num)}s`, m)
+    const plural = pluralizeTech(techFull(num))
+    notes.push(`plural: "${m}" → "${plural}"`)
+    return matchCase(plural, m)
   })
 
   // 3. Comma-separated cue runs (members numeric or -bee).
