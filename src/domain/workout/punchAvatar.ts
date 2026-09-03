@@ -37,7 +37,14 @@ export const RESET_MS = 130
 /** The floor of `minHoldMs` — the tightest a full flip can ever be. */
 export const MIN_HOLD_MS = MIN_FRAME_MS * 2
 
-export type AvatarStep = 'step1' | 'step2'
+
+/**
+ * 'step1' = strike art, 'step2' = the punch's own retracted art (legacy-
+ * inverted names), 'guard' = the universal GUARD stance the cycle
+ * settles into (Kyle 2026-09-02: round starts, combo-end breaths, and
+ * every pause sit in guard).
+ */
+export type AvatarStep = 'step1' | 'step2' | 'guard'
 
 /** Punch notation for a token — '1', '1b', … '6b'. The only avatar key. */
 export function punchAvatarKey(number: PunchNumber, body: boolean): string {
@@ -91,24 +98,25 @@ export function avatarFrameAt(
   windowMs: number,
   isLast: boolean = false,
 ): AvatarStep {
-  // ONE FLIP PER NODE, THEN SETTLE (Kyle, on-glass 2026-09-01 + the
-  // stillness rule 2026-09-02): guard until the flip moment, EXTENDED
-  // through the punch's window, then BACK TO GUARD and motionless. Mid-
-  // combo the settle is invisible — the next punch adopts exactly at
-  // window end — but before a rest slot, a setup gap, or any quiet span
-  // the settle IS the retracted stillness Kyle asked for ("sit still in
-  // retracted poses when pauses happen"). The old always-extended tail
-  // let the drivers' wrap re-throw the same punch through every rest.
-  // The strike region is floored at MIN_FRAME_MS so a degenerate window
-  // still shows the throw. `isLast` keeps the signature only.
+  // STRIKE-FIRST, GUARD ON ALL SIDES (Kyle, on-glass 2026-09-02: "per
+  // punch should be extended, then flip to retracted — reversed — but
+  // putting guard on all sides of it"). The identity frame lands ON the
+  // node's beat: EXTENDED for the body of the window, a flip-frame of
+  // RETRACTED as the hand comes back, then the universal GUARD until the
+  // next adoption. Mid-combo the next punch preempts at the guard
+  // boundary; at a combo's end the retract->guard IS the finish — no
+  // last-punch special case ("guard is designed to be parked on"). The
+  // strike is floored at MIN_FRAME_MS so a degenerate window still shows
+  // the throw.
   // NOTE the frame names are LEGACY-INVERTED (punchAvatarManifest.ts:
-  // step1 = the STRIKE art, step2 = the RETRACTED/guard art).
+  // step1 = the STRIKE art, step2 = the RETRACTED art).
   void isLast
   const t = Math.max(0, elapsedMs)
   const flip = flipFrameMs(windowMs)
-  if (t < flip) return 'step2'
-  if (t < Math.max(windowMs, flip + MIN_FRAME_MS)) return 'step1'
-  return 'step2'
+  const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flip)
+  if (t < strikeEnd) return 'step1'
+  if (t < strikeEnd + flip) return 'step2'
+  return 'guard'
 }
 
 /**

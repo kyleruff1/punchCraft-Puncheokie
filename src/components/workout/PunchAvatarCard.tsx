@@ -21,7 +21,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
 import type { SharedValue } from 'react-native-reanimated'
 
-import { findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
+import { GUARD_FRAME, findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
 import { useAvatarFrameClock } from './useAvatarFrameClock'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
@@ -149,14 +149,6 @@ export function PunchAvatarCard(props: {
    * `useAvatarFrameClock.ts`.
    */
   anchor?: SharedValue<SharedTransportAnchor>
-  /**
-   * The upcoming block's first cue when one is pending CROSS-BLOCK
-   * (stillness rule, 2026-09-02): during a setup gap the engine's
-   * `current` lingers on the finished block, so the guard-hold family
-   * comes from here — the figure rests in the pose of the section the
-   * coach is announcing.
-   */
-  nextCue?: CueInstance
 }): React.JSX.Element | null {
   const { cue, activeTokenIndex, reducedMotion = false, anchor } = props
   const { width: viewportWidth, height: viewportHeight } = useWindowDimensions()
@@ -227,9 +219,9 @@ export function PunchAvatarCard(props: {
     const adopt = (): void => {
       adoptedOccurrenceRef.current = occurrenceKey
       setShown({ ...req, startedAt: Date.now() })
-      // Guard-first: the cycle opens retracted (step2 is the GUARD art —
-      // legacy-inverted names) and the drivers flip it to the strike.
-      setStep('step2')
+      // Strike-first (2026-09-02): the identity frame lands ON the beat
+      // the node lights; the drivers walk it to retract, then guard.
+      setStep('step1')
     }
     if (!current) {
       adopt()
@@ -251,21 +243,7 @@ export function PunchAvatarCard(props: {
     }
   }, [requestedKey, requestedWindowMs, requestedIsLast, occurrenceKey])
 
-  // The RETRACTED frames held during any quiet span (stillness rule,
-  // 2026-09-02): the first punch of the NEXT block's cue when one is
-  // pending cross-block (setup gap / transitionary call-out — the figure
-  // previews the section the coach is announcing), else the current
-  // cue's first punch (in-bar rests, bar boundaries, preview, pause).
-  const holdFrames = useMemo(() => {
-    for (const c of [props.nextCue, cue]) {
-      const first = c?.tokens.find((t) => t.kind === 'punch')
-      if (first) {
-        const frames = findPunchAvatar(first.number, first.body)
-        if (frames) return frames
-      }
-    }
-    return null
-  }, [props.nextCue, cue])
+
 
   // Flip: wind-up, strike, hold the strike, back to guard, repeat on the
   // beat. LEVEL-TRIGGERED on purpose — the frame is recomputed from elapsed
@@ -295,7 +273,9 @@ export function PunchAvatarCard(props: {
     // re-threw the same punch every beat through rests and pauses. Once
     // settled the interval clears itself — still means ZERO timers.
     const settleAtMs =
-      Math.max(shown.windowMs, flipFrameMs(shown.windowMs) + MIN_FRAME_MS) + FLIP_TICK_MS
+      Math.max(MIN_FRAME_MS, shown.windowMs - flipFrameMs(shown.windowMs)) +
+      flipFrameMs(shown.windowMs) +
+      FLIP_TICK_MS
     const id = setInterval(() => {
       // Deterministic handoff: if the transport starts mid-adoption the
       // worklet takes over; two writers on `step` would fight.
@@ -329,17 +309,18 @@ export function PunchAvatarCard(props: {
   )
   useAvatarFrameClock(clockShown, reducedMotion, anchor, setStep)
 
-  // GUARD-HOLD (stillness rule, Kyle on-glass 2026-09-02): whenever no
-  // punch is lit — rest slots, bar boundaries, setup gaps, pauses,
-  // transitionary call-outs — the figure sits MOTIONLESS in the hold
-  // family's retracted pose (`step2` IS the guard art; the frame names
-  // are legacy-inverted, see punchAvatarManifest). The hold family may
-  // differ from the last adoption (a setup gap previews the NEXT
-  // section), so the hold renders its own frames rather than `shown`'s.
+  // THE GUARD STANCE (Kyle, on-glass 2026-09-02): whenever no punch is
+  // lit — round start, combo-end breaths, rest slots, bar boundaries,
+  // setup gaps, pauses, transitionary call-outs — the figure sits
+  // MOTIONLESS in the universal GUARD art. Purely visual filler for the
+  // quiet moments; never called out by the coach. The per-punch cycle's
+  // own settle also lands here (avatarFrameAt returns 'guard' after the
+  // strike linger), so every full combo ends in guard with no last-punch
+  // special case.
   const holding = requested === null
-  const frames = holding ? (holdFrames ?? shown?.frames ?? null) : (shown?.frames ?? null)
-  if (!frames) return null
-  const visible: AvatarStep = reducedMotion || holding ? 'step2' : step
+  const frames = shown?.frames ?? null
+  const visible: AvatarStep = reducedMotion || holding ? 'guard' : step
+  if (!frames && visible !== 'guard') return null
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
@@ -361,19 +342,30 @@ export function PunchAvatarCard(props: {
             sources on every new punch adoption, so each first appearance
             GHOSTED in over 300 ms — on top of a 90-220 ms stop-motion
             frame. The flip must be a hard cut. */}
+        {frames ? (
+          <Image
+            source={frames.step1}
+            style={[styles.frame, visible === 'step1' ? styles.frameOn : styles.frameOff]}
+            resizeMode="contain"
+            fadeDuration={0}
+            testID="punch-avatar-step1"
+          />
+        ) : null}
+        {frames ? (
+          <Image
+            source={frames.step2}
+            style={[styles.frame, visible === 'step2' ? styles.frameOn : styles.frameOff]}
+            resizeMode="contain"
+            fadeDuration={0}
+            testID="punch-avatar-step2"
+          />
+        ) : null}
         <Image
-          source={frames.step1}
-          style={[styles.frame, visible === 'step1' ? styles.frameOn : styles.frameOff]}
+          source={GUARD_FRAME}
+          style={[styles.frame, visible === 'guard' ? styles.frameOn : styles.frameOff]}
           resizeMode="contain"
           fadeDuration={0}
-          testID="punch-avatar-step1"
-        />
-        <Image
-          source={frames.step2}
-          style={[styles.frame, visible === 'step2' ? styles.frameOn : styles.frameOff]}
-          resizeMode="contain"
-          fadeDuration={0}
-          testID="punch-avatar-step2"
+          testID="punch-avatar-guard"
         />
       </View>
     </View>

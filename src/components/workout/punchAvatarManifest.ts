@@ -113,6 +113,16 @@ export const punchAvatarFrames: readonly PunchAvatarFrames[] = [
 ]
 /* eslint-enable @typescript-eslint/no-require-imports */
 
+/**
+ * The universal GUARD stance (Kyle, on-glass 2026-09-02): a dedicated
+ * neutral pose — not any punch's retracted frame — shown at round start,
+ * through breaths at combo end, and across every pause or gap. Purely
+ * visual: it "fills in awkward gaps with the avatar" and is never called
+ * out by the coach.
+ */
+/* eslint-disable-next-line @typescript-eslint/no-require-imports */
+export const GUARD_FRAME: number = require('../../../assets/avatar/punch/guard.png')
+
 /** Frames for a punch token. Undefined only if a render is missing. */
 export function findPunchAvatar(
   number: PunchNumber,

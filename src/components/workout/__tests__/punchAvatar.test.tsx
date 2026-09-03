@@ -114,36 +114,34 @@ describe('PunchAvatarCard', () => {
     expect(step2.props.source).toBe(findPunchAvatar(6, true)?.step2)
   })
 
-  it('demonstrates the opening punch before the engine lights anything', () => {
-    // A cue previewing, or a gap between reps, still shows the combination.
+  it('parks on guard before the engine lights anything', () => {
+    // A cue previewing, or a gap between reps, is a quiet span: the
+    // universal GUARD stance, motionless ("guard is designed to be
+    // parked on" — Kyle, 2026-09-02).
     const tree = render(<PunchAvatarCard cue={cue([punch(1)])} activeTokenIndex={-1} />)
-    const step2 = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
-    expect(step2.props.source).toBe(findPunchAvatar(1, false)?.step2)
+    const guard = tree.root.findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+    expect([guard.props.style].flat().at(-1).opacity).toBe(1)
   })
 
-  it('renders nothing with no cue at all', () => {
+  it('shows guard with no cue at all — every round STARTS in guard', () => {
     const tree = render(<PunchAvatarCard activeTokenIndex={-1} />)
-    expect(tree.root.findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })).toHaveLength(
-      0,
-    )
+    const guard = tree.root.findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+    expect([guard.props.style].flat().at(-1).opacity).toBe(1)
   })
 
-  it('renders nothing for a token with no art (defense, footwork, coach)', () => {
+  it('parks on guard for a token with no art (defense, footwork, coach)', () => {
     const tokens: WorkoutToken[] = [{ kind: 'defense', command: 'slip', beatOffset: 0 }]
     const tree = render(<PunchAvatarCard cue={cue(tokens)} activeTokenIndex={0} />)
-    expect(tree.root.findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })).toHaveLength(
-      0,
-    )
+    const guard = tree.root.findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+    expect([guard.props.style].flat().at(-1).opacity).toBe(1)
   })
 
-  it('holds the strike statically under reduced motion', () => {
+  it('holds guard statically under reduced motion', () => {
     const tree = render(
       <PunchAvatarCard cue={cue([punch(3)])} activeTokenIndex={0} reducedMotion />,
     )
-    const step2 = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
-    expect(step2.props.style).toEqual(
-      expect.arrayContaining([expect.objectContaining({ opacity: 1 })]),
-    )
+    const guard = tree.root.findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+    expect([guard.props.style].flat().at(-1).opacity).toBe(1)
   })
 
   it('is a decorative layer — never intercepts a touch', () => {
@@ -166,40 +164,23 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('holds the first punch RETRACTED, motionless, when the engine lights nothing', () => {
-    // Stillness rule (Kyle, 2026-09-02): quiet spans — previews, rests,
-    // bar boundaries, setup gaps — hold the segment's first punch in its
-    // retracted pose. The old demo walker cycled the combination here,
-    // which on-glass read as "empty slots make the avatar jitter out".
+  it('parks on the GUARD stance, motionless, when the engine lights nothing', () => {
+    // "Guard is designed to be parked on" (Kyle, 2026-09-02): quiet
+    // spans — round start, previews, rests, bar boundaries, setup gaps —
+    // show the universal GUARD art. The old demo walker cycled the
+    // combination here ("empty slots make the avatar jitter out").
     const tree = render(
       <PunchAvatarCard cue={cue([punch(1), punch(2), punch(3)])} activeTokenIndex={-1} />,
     )
-    const shownKey = (): unknown =>
-      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
-    expect(shownKey()).toBe(findPunchAvatar(1, false)?.step2)
+    const guardOpacity = (): unknown =>
+      tree.root
+        .findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+        .props.style.at(-1).opacity
+    expect(guardOpacity()).toBe(1)
     act(() => {
       jest.advanceTimersByTime(5_000)
     })
-    expect(shownKey()).toBe(findPunchAvatar(1, false)?.step2)
-  })
-
-  it("holds the NEXT cue's first punch through a cross-block gap", () => {
-    // During a setup gap the engine's `current` lingers on the finished
-    // block; the hold family must come from the pending block instead.
-    const tree = render(
-      <PunchAvatarCard
-        cue={cue([punch(1), punch(2)])}
-        activeTokenIndex={-1}
-        nextCue={cue([punch(5), punch(2)], { id: 'next-cue' })}
-      />,
-    )
-    const shownKey = (): unknown =>
-      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
-    expect(shownKey()).toBe(findPunchAvatar(5, false)?.step2)
-    act(() => {
-      jest.advanceTimersByTime(5_000)
-    })
-    expect(shownKey()).toBe(findPunchAvatar(5, false)?.step2)
+    expect(guardOpacity()).toBe(1)
   })
 
   it('snaps to the engine the moment it lights a token', () => {
@@ -217,27 +198,26 @@ describe('PunchAvatarCard — demonstrating the combination', () => {
     expect(step2.props.source).toBe(findPunchAvatar(5, false)?.step2)
   })
 
-  it('starts retracted, flips to the strike once, and HOLDS it (Kyle, one flip per node)', () => {
-    // One flip per node (2026-09-01): guard until the flip moment,
-    // extended for the REST of the window — the retraction happens when
-    // the next node's window begins. Frame names are legacy-inverted:
-    // step2 art = guard, step1 art = strike (punchAvatarManifest.ts).
+  it('strikes ON adoption, retracts, then parks on guard (strike-first, 2026-09-02)', () => {
+    // Reversed cycle with guard on all sides (Kyle): the identity frame
+    // paints the moment the engine lights the node — reactive, so the
+    // strike can never be AHEAD of the call, only on it or behind —
+    // then a flip-frame of retract, then the universal guard.
     const tree = render(<PunchAvatarCard cue={cue([punch(1), punch(2)])} activeTokenIndex={0} />)
     const opacityOf = (id: string): number => {
       const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
       const flat = [node.props.style].flat()
       return flat.reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
     }
-    expect(opacityOf('punch-avatar-step2')).toBe(1) // guard first
+    expect(opacityOf('punch-avatar-step1')).toBe(1) // strike lands with the beat
     act(() => {
-      jest.advanceTimersByTime(120)
+      jest.advanceTimersByTime(340) // past strikeEnd (window 400 − flip 100 = 300)
     })
-    expect(opacityOf('punch-avatar-step1')).toBe(1) // strike
-    expect(opacityOf('punch-avatar-step2')).toBe(0)
+    expect(opacityOf('punch-avatar-step2')).toBe(1) // retract flip
     act(() => {
-      jest.advanceTimersByTime(40)
+      jest.advanceTimersByTime(120) // past retract (flip 100)
     })
-    expect(opacityOf('punch-avatar-step1')).toBe(1) // STILL struck — no bounce back
+    expect(opacityOf('punch-avatar-guard')).toBe(1) // parked
   })
 })
 
@@ -245,20 +225,17 @@ describe('PunchAvatarCard — the flip repeats', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('keeps throwing beat after beat — one guard->strike per wrap (pure math)', () => {
-    // The repeat contract, pinned on the math the WORKLET runs (the
-    // device path); the setInterval fallback is test-scaffolding legacy
-    // and its wall-clock sampling made this assertion flaky. Each
-    // min-hold wrap must open in guard (step2 art) and flip exactly once
-    // to the strike (step1 art).
-    const w = 0
-    const beat = minHoldMs(w, false) // 180
-    for (let wrap = 0; wrap < 4; wrap += 1) {
-      const base = wrap * beat
-      expect(avatarFrameAt((base + 30) % beat, w, false)).toBe('step2') // guard
-      expect(avatarFrameAt((base + 120) % beat, w, false)).toBe('step1') // strike
-      // …and HOLDS the strike to the wrap — no bounce-back within a beat.
-      expect(avatarFrameAt((base + beat - 1) % beat, w, false)).toBe('step1')
+  it('repetition comes from re-adoption — the pure cycle runs once and parks (no wrap to lap)', () => {
+    // Anti-lap contract (Kyle, 2026-09-02): with no modulo wrap the
+    // cycle cannot re-throw on its own, so misaligned timing can never
+    // lap the reps — every new throw requires the engine to light a new
+    // node. The single cycle: strike, retract, guard forever.
+    const w = 400
+    const flip = 100
+    expect(avatarFrameAt(0, w, false)).toBe('step1')
+    expect(avatarFrameAt(w - flip, w, false)).toBe('step2')
+    for (const t of [w, w * 2, w * 10]) {
+      expect(avatarFrameAt(t, w, false)).toBe('guard')
     }
   })
 
@@ -378,32 +355,31 @@ describe('PunchAvatarCard — only punches steer it', () => {
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
-  it('holds the first punch retracted when the lit token is a coach command', () => {
+  it('parks on guard when the lit token is a coach command', () => {
     // A non-punch active index is a quiet span like any other: the
-    // figure sits in the segment's first-punch guard, motionless
-    // (stillness rule, 2026-09-02 — the walker that used to keep
-    // demonstrating here was the jitter).
+    // figure parks on the universal GUARD stance, motionless.
     const tokens: WorkoutToken[] = [
       { kind: 'coach', command: 'hands-up', beatOffset: 0 },
       punch(1),
       punch(4),
     ]
     const tree = render(<PunchAvatarCard cue={cue(tokens)} activeTokenIndex={0} />)
-    const source = (): unknown =>
-      tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!.props.source
-    expect(source()).toBe(findPunchAvatar(1, false)?.step2)
+    const guardOpacity = (): unknown =>
+      tree.root
+        .findAllByProps({ testID: 'punch-avatar-guard' }, { deep: false })[0]!
+        .props.style.at(-1).opacity
+    expect(guardOpacity()).toBe(1)
     act(() => {
       jest.advanceTimersByTime(1200)
     })
-    expect(source()).toBe(findPunchAvatar(1, false)?.step2)
+    expect(guardOpacity()).toBe(1)
   })
 })
 
-describe('PunchAvatarCard — the last-in-chain sandwich', () => {
-  // Kyle 2026-08-30: the final punch of a chain has to end on the
-  // strike frame. The card gets that by splitting the last punch's
-  // window into thirds — strike, retracted, strike — so the reader
-  // sees the identifying frame at the tail of every combination.
+describe('PunchAvatarCard — guard bookends the chain (2026-09-02)', () => {
+  // Strike-first with guard on all sides: every punch strikes on its
+  // node, retracts, and the chain's tail PARKS ON GUARD — no sandwich,
+  // no last-punch special case anywhere.
   beforeEach(() => jest.useFakeTimers())
   afterEach(() => jest.useRealTimers())
 
@@ -414,25 +390,23 @@ describe('PunchAvatarCard — the last-in-chain sandwich', () => {
       .reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
   }
 
-  it('ends the chain on the strike, not the retracted', () => {
-    // A three-punch chain, engine lit on the last. The chain's tail
-    // frame under the sandwich is the strike (step1).
+  it('ends the chain parked on guard, via the retract flip', () => {
+    // A three-punch chain, engine lit on the last (window 400ms, flip
+    // 100): strike [0,300), retract [300,400), guard after.
     const combo = cue([punch(1), punch(2), punch(3)])
     const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={2} />)
-    // A generous window (400ms per token) so each third of the last
-    // punch is ~133ms, comfortably above one FLIP_TICK_MS (30).
+    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1) // strike on the node
     act(() => {
-      jest.advanceTimersByTime(380)
+      jest.advanceTimersByTime(340)
     })
-    // Two-thirds through the last punch's window we should be on the
-    // final strike slot, not the retracted middle.
-    expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1)
-    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(0)
+    expect(opacityOf(tree, 'punch-avatar-step2')).toBe(1) // retract
+    act(() => {
+      jest.advanceTimersByTime(200)
+    })
+    expect(opacityOf(tree, 'punch-avatar-guard')).toBe(1) // parked for the breath
   })
 
-  it('a middle punch throws once and holds — no sandwich anywhere now', () => {
-    // One-flip-per-node made every position identical: the old
-    // last-punch thirds sandwich and mid-window retraction are gone.
+  it('a middle punch is identical — strike on its node, no special cases', () => {
     const combo = cue([punch(1), punch(2), punch(3)])
     const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
     act(() => {
@@ -442,12 +416,14 @@ describe('PunchAvatarCard — the last-in-chain sandwich', () => {
     expect(opacityOf(tree, 'punch-avatar-step2')).toBe(0)
   })
 
-  it('a solo-punch chain sandwiches that one punch', () => {
+  it('a solo punch strikes, retracts, and parks like any other', () => {
     const tree = render(<PunchAvatarCard cue={cue([punch(4)])} activeTokenIndex={0} />)
-    act(() => {
-      jest.advanceTimersByTime(380)
-    })
     expect(opacityOf(tree, 'punch-avatar-step1')).toBe(1)
+    act(() => {
+      // Solo window runs to the cue end (1200ms) + retract flip (220).
+      jest.advanceTimersByTime(1500)
+    })
+    expect(opacityOf(tree, 'punch-avatar-guard')).toBe(1)
   })
 })
 
@@ -462,7 +438,7 @@ describe('PunchAvatarCard — under the live re-render cadence', () => {
     const combo = cue([punch(1), punch(2)])
     const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
     const isStrike = (): boolean => {
-      const node = tree.root.findAllByProps({ testID: 'punch-avatar-step2' }, { deep: false })[0]!
+      const node = tree.root.findAllByProps({ testID: 'punch-avatar-step1' }, { deep: false })[0]!
       return [node.props.style]
         .flat()
         .some((s) => s && s.opacity === 1)

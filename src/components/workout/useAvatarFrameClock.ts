@@ -82,15 +82,17 @@ export function avatarFrameAtWorklet(
   isLast: boolean,
 ): AvatarStep {
   'worklet'
-  // Mirror of `avatarFrameAt` — guard(step2), strike(step1) through the
-  // window, then SETTLE back to guard and stay (the 2026-09-02 stillness
-  // rule); frame names are legacy-inverted (see punchAvatar.ts).
+  // Mirror of `avatarFrameAt` — STRIKE-FIRST with guard on all sides
+  // (2026-09-02): strike(step1) on the beat, a flip-frame of
+  // retract(step2), then the universal guard. Frame names are
+  // legacy-inverted (see punchAvatar.ts).
   void isLast
   const t = Math.max(0, elapsedMs)
   const flip = flipFrameMsWorklet(windowMs)
-  if (t < flip) return 'step2'
-  if (t < Math.max(windowMs, flip + MIN_FRAME_MS)) return 'step1'
-  return 'step2'
+  const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flip)
+  if (t < strikeEnd) return 'step1'
+  if (t < strikeEnd + flip) return 'step2'
+  return 'guard'
 }
 
 /** Params driving one adopted-punch flip cycle. Null while no punch is shown. */
@@ -146,7 +148,9 @@ export function useAvatarFrameClock(
     startedAtTick.value = sharedAnchorCurrentTick(anchor.value, nowFrameTimestampMs())
     windowMs.value = shown.windowMs
     isLast.value = shown.isLast
-    lastStep.value = 'step2'
+    // Strike-first: the card's adoption already painted step1, so the
+    // worklet's first emission is the RETRACT flip, not a redundant strike.
+    lastStep.value = 'step1'
     active.value = true
     // Deps are the PRIMITIVES, deliberately not `shown` (GH #305): this
     // effect re-samples `startedAtTick` and resets the cycle to step1, so

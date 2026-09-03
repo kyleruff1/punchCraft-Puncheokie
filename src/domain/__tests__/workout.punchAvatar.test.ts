@@ -52,25 +52,24 @@ describe('avatarFrameAt — one flip per node', () => {
   // Sprint cadence through a long technical hold, plus the degenerate ends.
   const windows = [0, 50, 120, 180, 250, 400, 600, 900, 1500, 3000]
 
-  it.each(windows)('window %sms opens in guard and strikes once', (windowMs) => {
-    const frame = flipFrameMs(windowMs)
-    expect(avatarFrameAt(0, windowMs)).toBe('step2')
-    expect(avatarFrameAt(frame - 1, windowMs)).toBe('step2')
-    expect(avatarFrameAt(frame, windowMs)).toBe('step1')
+  it.each(windows)('window %sms opens ON the strike — identity lands with the beat', (windowMs) => {
+    // Strike-first (Kyle, 2026-09-02): "per punch should be extended,
+    // then flip to retracted — reversed — but putting guard on all sides."
+    expect(avatarFrameAt(0, windowMs)).toBe('step1')
   })
 
-  it.each(windows)('window %sms shows the strike through its window, then settles to guard', (windowMs) => {
-    // Stillness rule (Kyle, 2026-09-02): guard -> strike -> SETTLE back
-    // to guard, once. Mid-combo the settle is invisible (the next punch
-    // adopts at window end); before rests, gaps and pauses it IS the
-    // motionless retracted pose. The strike region is floored at
-    // MIN_FRAME_MS so degenerate windows still show the throw.
-    const frame = flipFrameMs(windowMs)
-    const strikeEnd = Math.max(windowMs, frame + MIN_FRAME_MS)
-    expect(avatarFrameAt(frame, windowMs)).toBe('step1')
+  it.each(windows)('window %sms strikes, retracts for a flip-frame, then parks on guard', (windowMs) => {
+    // strike [0, strikeEnd) -> retract [strikeEnd, +flip) -> GUARD, once.
+    // "Guard is designed to be parked on" (Kyle): every combo ends via
+    // retract->guard with no last-punch special case; rests, breaths and
+    // gaps inherit the parked guard for free.
+    const flip = flipFrameMs(windowMs)
+    const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flip)
     expect(avatarFrameAt(strikeEnd - 1, windowMs)).toBe('step1')
-    for (const t of [strikeEnd, strikeEnd + 500, 60_000]) {
-      expect(avatarFrameAt(t, windowMs)).toBe('step2')
+    expect(avatarFrameAt(strikeEnd, windowMs)).toBe('step2')
+    expect(avatarFrameAt(strikeEnd + flip - 1, windowMs)).toBe('step2')
+    for (const t of [strikeEnd + flip, strikeEnd + flip + 500, 60_000]) {
+      expect(avatarFrameAt(t, windowMs)).toBe('guard')
     }
   })
 
@@ -83,11 +82,13 @@ describe('avatarFrameAt — one flip per node', () => {
   })
 
   it('clicks through the flip well under half a second when punches are quick', () => {
-    // Kyle's bar: a fast pair still has to make sense.
+    // Kyle's bar: a fast pair still has to make sense — strike on the
+    // beat, retract visible before the next node.
     for (const windowMs of [120, 200, 300, 400]) {
       expect(minHoldMs(windowMs)).toBeLessThanOrEqual(500)
-      expect(avatarFrameAt(0, windowMs)).toBe('step2')
-      expect(avatarFrameAt(flipFrameMs(windowMs), windowMs)).toBe('step1')
+      expect(avatarFrameAt(0, windowMs)).toBe('step1')
+      const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flipFrameMs(windowMs))
+      expect(avatarFrameAt(strikeEnd, windowMs)).toBe('step2')
     }
   })
 
@@ -100,8 +101,8 @@ describe('avatarFrameAt — one flip per node', () => {
     }
   })
 
-  it('treats negative elapsed as the start of the guard', () => {
-    expect(avatarFrameAt(-100, 600)).toBe('step2')
+  it('treats negative elapsed as the start of the strike', () => {
+    expect(avatarFrameAt(-100, 600)).toBe('step1')
   })
 })
 
