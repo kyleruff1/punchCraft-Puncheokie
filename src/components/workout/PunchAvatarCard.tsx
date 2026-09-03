@@ -311,9 +311,8 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
-      {/* 3:1 spacers put three quarters of the free width on his left —
-          shifted AWAY from the border into the panel's empty space (Kyle,
-          corrected on-glass). */}
+      {/* 1:3 spacers put a quarter of the free width on his left —
+          shifted toward the border by half the centered gap (Kyle). */}
       <View style={styles.leftSpacer} />
       <View style={styles.card}>
         {/* Both frames stay mounted and toggle opacity — swapping a single
@@ -370,11 +369,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     opacity: CARD_OPACITY,
   },
-  // 3:1 — three quarters of the free width on his LEFT, moving the
-  // figure AWAY from the border by half the centered gap (Kyle: the 1:3
-  // version 'shifted him the wrong way').
-  leftSpacer: { flex: 3 },
-  rightSpacer: { flex: 1 },
+  // 1:3 — a quarter of the free width on his left: shifted TOWARD the
+  // screen's left border by half the centered gap (Kyle, final direction
+  // call after one on-glass round-trip each way).
+  leftSpacer: { flex: 1 },
+  rightSpacer: { flex: 3 },
   card: { height: CARD_HEIGHT, maxWidth: '96%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
