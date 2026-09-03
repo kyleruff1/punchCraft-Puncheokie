@@ -68,6 +68,10 @@ function parseArgs(argv) {
     else if (a === '--forensic') args.forensic = true
     else if (a.startsWith('--mic=')) args.mic = a.slice('--mic='.length)
     else if (a.startsWith('--timeout=')) args.timeoutSec = Number(a.slice('--timeout='.length))
+    else if (a.startsWith('--vocab=')) args.vocab = a.slice('--vocab='.length)
+  }
+  if (args.vocab !== undefined && args.vocab !== 'numbers' && args.vocab !== 'techniques') {
+    throw new Error(`--vocab must be numbers or techniques, got '${args.vocab}'`)
   }
   // Forensic mode implies video; `--no-screen` would defeat the purpose.
   if (args.forensic) args.screen = true
@@ -421,6 +425,22 @@ async function drive(args) {
     log(`tapping quick-start at ${quickstart.x},${quickstart.y}`)
     tap(deviceId, quickstart.x, quickstart.y)
     await sleep(3000)
+
+    // Vocabulary radio (2026-09-03): flip BEFORE Hit It so the intro plan,
+    // warn budgets, and every round's click-script schedule all compile in
+    // the requested vocabulary from round one (a mid-workout flip only
+    // lands at the next round build).
+    if (args.vocab === 'techniques') {
+      const radio = await waitForUiTarget(
+        deviceId,
+        { contentDescSubstring: 'Technique callouts' },
+        10_000,
+      )
+      if (!radio) throw new Error('Technique callouts radio not found on live screen')
+      log(`tapping Techniques radio at ${radio.x},${radio.y}`)
+      tap(deviceId, radio.x, radio.y)
+      await sleep(800)
+    }
 
     const hitIt = await waitForUiTarget(deviceId, { resourceId: 'start-workout' }, 10_000)
     if (!hitIt) throw new Error('start-workout (Hit It!) button not found')
