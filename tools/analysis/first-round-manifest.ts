@@ -108,6 +108,8 @@ type ExpectedCoachEvent =
 interface FirstRoundManifest {
   workoutId: string
   workoutName: string
+  /** Which click-script vocabulary the expectations priced (default numbers). */
+  vocabulary: 'numbers' | 'techniques'
   roundIndex: 0
   workDurationMs: number
   bpm: number
@@ -171,6 +173,10 @@ function toExpectedCoachEvent(slot: CompiledCoachSlot): ExpectedCoachEvent | nul
 
 export function buildFirstRoundManifest(
   workoutId: SampleWorkoutKey,
+  // Mirrors the runner's per-round vocabulary snapshot: expectations must
+  // price the SAME clips the runner will dispatch, or every technique
+  // drive reads as uniformly early/late against numeric durations.
+  vocabulary: 'numbers' | 'techniques' = 'numbers',
 ): FirstRoundManifest {
   const sample = getSampleWorkout(workoutId)
   const workout = sample.workout
@@ -291,7 +297,7 @@ export function buildFirstRoundManifest(
       // expecting it here would report a designed silence as missing.
       if (seenBlocks.size === 1) continue
       const slot = `lead-in/${workout.id}/r1s${seenBlocks.size}`
-      const clip = findClickScript(slot)
+      const clip = findClickScript(slot, vocabulary)
       if (!clip) continue
       const expectedStartMs = Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS)
       coachEvents.push({
@@ -325,7 +331,7 @@ export function buildFirstRoundManifest(
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
-      const clip = findClickScript(`call/${motif}`)
+      const clip = findClickScript(`call/${motif}`, vocabulary)
       if (!clip) continue
       const dispatchAt = Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS)
       const end = dispatchAt + clip.durationMs
@@ -342,6 +348,7 @@ export function buildFirstRoundManifest(
   return {
     workoutId: sample.key,
     workoutName: sample.name,
+    vocabulary,
     roundIndex: 0,
     workDurationMs: workout.schedule[0]?.workDurationMs ?? 0,
     bpm,
@@ -365,7 +372,11 @@ function ensureDir(path: string): void {
 
 function writeManifest(manifest: FirstRoundManifest): string {
   ensureDir(MANIFESTS_DIR)
-  const outPath = join(MANIFESTS_DIR, `${manifest.workoutId}.json`)
+  // Technique-vocabulary manifests live beside the numeric ones under a
+  // suffixed name — the numeric file stays the canonical default the
+  // existing drives load.
+  const suffix = manifest.vocabulary === 'techniques' ? '.techniques' : ''
+  const outPath = join(MANIFESTS_DIR, `${manifest.workoutId}${suffix}.json`)
   ensureDir(dirname(outPath))
   writeFileSync(outPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8')
   return outPath
@@ -380,32 +391,42 @@ function summarize(m: FirstRoundManifest): string {
   ].join('\n')
 }
 
-function parseArgs(argv: string[]): { all: boolean; workouts: SampleWorkoutKey[] } {
+function parseArgs(argv: string[]): {
+  all: boolean
+  workouts: SampleWorkoutKey[]
+  vocabulary: 'numbers' | 'techniques'
+} {
   const all = argv.includes('--all')
   const workoutArg = argv.find((a) => a.startsWith('--workout='))
   const single = workoutArg?.slice('--workout='.length) as SampleWorkoutKey | undefined
+  const vocabArg = argv.find((a) => a.startsWith('--vocab='))?.slice('--vocab='.length)
+  const vocabulary = vocabArg === 'techniques' ? ('techniques' as const) : ('numbers' as const)
+  if (vocabArg !== undefined && vocabArg !== 'numbers' && vocabArg !== 'techniques') {
+    throw new Error(`--vocab must be numbers or techniques, got '${vocabArg}'`)
+  }
   if (all && single) {
     throw new Error('Pass either --all or --workout=<id>, not both.')
   }
   if (!all && !single) {
     throw new Error(
-      'Usage: npx tsx tools/analysis/first-round-manifest.ts (--all | --workout=<id>)',
+      'Usage: npx tsx tools/analysis/first-round-manifest.ts (--all | --workout=<id>) [--vocab=techniques]',
     )
   }
   if (all) {
     return {
       all: true,
       workouts: listSampleWorkouts().map((s) => s.key),
+      vocabulary,
     }
   }
-  return { all: false, workouts: [single as SampleWorkoutKey] }
+  return { all: false, workouts: [single as SampleWorkoutKey], vocabulary }
 }
 
 function main(): void {
   const argv = process.argv.slice(2)
-  const { workouts } = parseArgs(argv)
+  const { workouts, vocabulary } = parseArgs(argv)
   for (const key of workouts) {
-    const manifest = buildFirstRoundManifest(key)
+    const manifest = buildFirstRoundManifest(key, vocabulary)
     const outPath = writeManifest(manifest)
     console.log(summarize(manifest))
     console.log(`  wrote ${outPath}`)
