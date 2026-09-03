@@ -185,6 +185,15 @@ export interface VoiceOutputExpoOptions {
   cancelScheduled?: (handle: unknown) => void
   /** Player factory, so tests need no native binding. */
   createPlayer?: (source: number) => AudioPlayer
+  /**
+   * Factory for the CACHED click-script players specifically. Production
+   * passes `downloadFirst: true`: these players live for the whole
+   * workout and are re-seeked every bar, and in a dev client the default
+   * factory streams over HTTP from Metro — where a seek is a byte-range
+   * round trip that can truncate. One up-front download makes every
+   * seek local. Tests inject the same mock as `createPlayer`.
+   */
+  createClickScriptPlayer?: (source: number) => AudioPlayer
   speaker?: Pick<typeof Speech, 'speak' | 'stop'>
   setAudioMode?: typeof setAudioModeAsync
   /**
@@ -268,6 +277,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly schedule: (fn: () => void, delayMs: number) => unknown
   private readonly cancelScheduled: (handle: unknown) => void
   private readonly makePlayer: (source: number) => AudioPlayer
+  private readonly makeClickScriptPlayer: (source: number) => AudioPlayer
   private readonly speaker: Pick<typeof Speech, 'speak' | 'stop'>
   private readonly setAudioMode: typeof setAudioModeAsync
 
@@ -617,6 +627,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.schedule = opts.schedule ?? ((fn, ms) => setTimeout(fn, ms))
     this.cancelScheduled = opts.cancelScheduled ?? ((h) => clearTimeout(h as never))
     this.makePlayer = opts.createPlayer ?? ((source) => createAudioPlayer(source))
+    this.makeClickScriptPlayer =
+      opts.createClickScriptPlayer ??
+      opts.createPlayer ??
+      ((source) => createAudioPlayer(source, { downloadFirst: true }))
     this.speaker = opts.speaker ?? Speech
     this.setAudioMode = opts.setAudioMode ?? setAudioModeAsync
     const latency = opts.calibratedAudioOutputLatencyMs
@@ -1001,20 +1015,54 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // and is never removed mid-corpus; replaying the SAME motif simply
       // restarts its clip, which is the per-bar cycling by definition.
       let player = this.clickScriptPlayers.get(clip.module)
+      const reused = player !== undefined
       if (!player) {
-        player = this.makePlayer(clip.module)
+        player = this.makeClickScriptPlayer(clip.module)
         this.clickScriptPlayers.set(clip.module, player)
       }
       this.clickScriptPlayer = player
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
-      player.seekTo(0)
-      player.play()
       this.markBusy(clip.durationMs)
-      logger.info('puncheokie.voice.play', 'click-script playing', {
-        kind: safe('click-script'),
-        text: safe(clip.text),
-        durationMs: safe(clip.durationMs),
-      })
+      // A reused player is parked at end-of-stream, and `seekTo` is
+      // ASYNC — firing `play()` before the rewind lands plays the
+      // buffered ~50-100ms tail at EOS and stops (the 2026-09-03
+      // "shllck": every re-dispatch truncated once a cold Metro made
+      // seeks slow enough to lose the race every time). The rewind is
+      // therefore SERIALIZED: play only after seekTo resolves, with a
+      // scheduled fallback so a pathologically stalled seek degrades to
+      // the old race rather than to silence. Fresh players are already
+      // at 0 and play immediately.
+      const target = player
+      const dispatchedAt = this.clock()
+      const speak = (path: string): void => {
+        target.play()
+        logger.info('puncheokie.voice.play', 'click-script playing', {
+          kind: safe('click-script'),
+          text: safe(clip.text),
+          durationMs: safe(clip.durationMs),
+          rewindMs: safe(Math.round(this.clock() - dispatchedAt)),
+          path: safe(path),
+        })
+      }
+      if (!reused) {
+        speak('fresh')
+      } else {
+        let spoken = false
+        const once = (path: string): void => {
+          if (spoken) return
+          spoken = true
+          speak(path)
+        }
+        const fallback = this.schedule(() => once('seek-stalled'), 750)
+        // Promise.resolve tolerates a seam-injected mock whose seekTo
+        // returns void; the native player returns a real Promise.
+        void Promise.resolve(target.seekTo(0))
+          .catch(() => undefined)
+          .then(() => {
+            this.cancelScheduled(fallback)
+            once('rewound')
+          })
+      }
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'click-script did not play', {
         text: safe(clip.text),

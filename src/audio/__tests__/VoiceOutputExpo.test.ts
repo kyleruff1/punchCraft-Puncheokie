@@ -1094,3 +1094,98 @@ describe('scheduled combination calls are additive (the burst-refire fix)', () =
     expect(h.plays.filter((p) => p.source !== undefined)).toHaveLength(0)
   })
 })
+
+describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', () => {
+  // A cached player reused for a per-bar call parks at end-of-stream;
+  // `seekTo` is async. Firing `play()` before the rewind resolves plays
+  // the ~50-100ms buffered tail at EOS and stops. The contract: a
+  // REUSED player never receives play() before its seek resolves — with
+  // a scheduled fallback so a stalled seek degrades to the old race,
+  // never to silence.
+  function rig() {
+    const plays: number[] = []
+    let clock = 1_000
+    const timers: Array<{ at: number; fn: () => void; id: number }> = []
+    let nextId = 1
+    let resolveSeek: (() => void) | null = null
+    let seekCalls = 0
+    const output = new VoiceOutputExpo({
+      clock: () => clock,
+      schedule: (fn, delayMs) => {
+        const id = nextId++
+        timers.push({ at: clock + delayMs, fn, id })
+        return id
+      },
+      cancelScheduled: (handle) => {
+        const i = timers.findIndex((t) => t.id === handle)
+        if (i >= 0) timers.splice(i, 1)
+      },
+      createClickScriptPlayer: ((source: number) =>
+        ({
+          volume: 1,
+          seekTo: () => {
+            seekCalls += 1
+            return new Promise<void>((resolve) => {
+              resolveSeek = resolve
+            })
+          },
+          play: () => plays.push(source),
+          remove: () => {},
+        }) as never) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+    const advance = (ms: number): void => {
+      clock += ms
+      for (const t of [...timers].sort((a, b) => a.at - b.at)) {
+        if (t.at > clock) break
+        timers.splice(timers.indexOf(t), 1)
+        t.fn()
+      }
+    }
+    const clip = { text: 'One, two!', module: 77, durationMs: 700 }
+    return {
+      output,
+      plays,
+      advance,
+      clip,
+      finishSeek: async () => {
+        resolveSeek?.()
+        resolveSeek = null
+        await Promise.resolve()
+        await Promise.resolve()
+        await Promise.resolve()
+      },
+      get seekCalls() {
+        return seekCalls
+      },
+    }
+  }
+
+  it('a fresh player plays immediately — no seek round trip on first use', () => {
+    const h = rig()
+    h.output.playClickScript(h.clip)
+    expect(h.plays).toEqual([77])
+    expect(h.seekCalls).toBe(0)
+  })
+
+  it('a reused player does NOT play until its rewind resolves', async () => {
+    const h = rig()
+    h.output.playClickScript(h.clip)
+    expect(h.plays).toEqual([77])
+    h.output.playClickScript(h.clip) // reuse — parked at EOS
+    expect(h.plays).toEqual([77]) // play NOT fired yet: seek pending
+    await h.finishSeek()
+    expect(h.plays).toEqual([77, 77]) // fired after the rewind landed
+  })
+
+  it('a stalled rewind falls back after 750ms and never double-plays', async () => {
+    const h = rig()
+    h.output.playClickScript(h.clip)
+    h.output.playClickScript(h.clip)
+    expect(h.plays).toEqual([77])
+    h.advance(800) // fallback fires — degraded to the old race, not silence
+    expect(h.plays).toEqual([77, 77])
+    await h.finishSeek() // the late seek resolution must not re-play
+    expect(h.plays).toEqual([77, 77])
+  })
+})

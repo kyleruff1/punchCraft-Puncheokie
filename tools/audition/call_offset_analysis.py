@@ -34,6 +34,11 @@ loud = np.percentile(env_ms, 99)
 thresh = noise + 0.10 * (loud - noise)
 
 # Voice segments: above threshold, min 250ms, joined across gaps < 120ms.
+# MIN_SEGMENT_MS is overridable (--min-segment-ms=): the 2026-09-03
+# "shllck" truncations are 50-100ms fragments the 250ms floor would
+# silently drop as NO-AUDIO-MATCH instead of reporting a tiny span/clip.
+import sys as _sys
+MIN_SEGMENT_MS = next((int(a.split('=')[1]) for a in _sys.argv if a.startswith('--min-segment-ms=')), 250)
 above = env_ms > thresh
 segments = []
 start = None
@@ -47,7 +52,7 @@ for i, a in enumerate(above):
         gap += 1
         if gap > 40:  # 400ms — join across inter-word gaps
             end = i - gap
-            if (end - start) * 10 >= 250:
+            if (end - start) * 10 >= MIN_SEGMENT_MS:
                 segments.append((start * 10, (end - start) * 10))
             start = None
 if start is not None:
