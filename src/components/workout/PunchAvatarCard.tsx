@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   // screen's left border by half the centered gap (Kyle, final direction
   // call after one on-glass round-trip each way).
   leftSpacer: { flex: 1 },
-  rightSpacer: { flex: 3 },
+  rightSpacer: { flex: 5 },
   card: { height: CARD_HEIGHT, maxWidth: '96%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
