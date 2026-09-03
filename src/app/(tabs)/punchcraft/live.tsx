@@ -208,11 +208,14 @@ export default function LiveScreen(): React.JSX.Element {
   }, [])
 
   // Backdrop impulses only while punches are being thrown; between
-  // phases the darkness overlay simply stops receiving bumps and its
-  // per-vsync decay clears the pane in ~2.5s.
+  // phases the water calms rather than cutting — a bell stills it over
+  // a second (the scene eases toward `calm`), pause leaves a near-still
+  // sheen under the overlay.
   React.useEffect(() => {
     backdropBus.setActive(live.phase === 'work')
   }, [backdropBus, live.phase])
+  const backdropCalm =
+    live.phase === 'work' ? 1 : live.phase === 'countdown' || live.phase === 'rest' ? 0.35 : 0.15
 
   // The workout to run: a library pick when the athlete chose one, otherwise a
   // workout generated from the current recipe (M35). The generation is
@@ -586,16 +589,22 @@ export default function LiveScreen(): React.JSX.Element {
           accessibilityLabel=""
         />
         {/* The reactive layer draws OVER the art and UNDER the scrim, so
-            the §31.3 contrast floor caps everything it can ever do.
-            Standard tier is now PummelDarkness — a compositor-only
-            Reanimated overlay (see PummelDarkness.tsx). No Skia, no
-            per-vsync uniform pack, no per-pixel shader. Safe to run
-            alongside the walk worklet even under click-set voiceMode. */}
-        <BackdropRenderer
-          bus={backdropBus}
-          quality={backdropQuality}
-          reducedMotion={reducedMotion}
-        />
+            the §31.3 contrast floor caps everything it can ever do. */}
+        {/* EXPERIMENT (GH #305): the walk census shows ~20 UI-thread frame
+            gaps per round (max ~0.9s) swallowing walk steps, and the Skia
+            membrane repaints every frame on that same thread. Click sets
+            (voiceMode minimal — the walk IS the product) run without the
+            reactive layer for one verdict round: multi-jumps -> ~0
+            convicts the backdrop; unchanged exonerates it. Static art +
+            scrim remain either way. */}
+        {workout.recipe.voiceMode === 'minimal' ? null : (
+          <BackdropRenderer
+            bus={backdropBus}
+            quality={backdropQuality}
+            calm={backdropCalm}
+            reducedMotion={reducedMotion}
+          />
+        )}
         <View style={styles.backdropScrim} />
       </View>
 
