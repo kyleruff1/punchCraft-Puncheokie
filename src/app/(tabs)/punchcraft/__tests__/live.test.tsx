@@ -40,17 +40,26 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 // Node), runOnUI executes inline, and Skia becomes inert null
 // components — the scene mounts, draws nothing, and the style walks
 // below see straight through it.
-jest.mock('react-native-reanimated', () => ({
-  useReducedMotion: () => false,
-  useSharedValue: <T,>(init: T) => ({ value: init }),
-  useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
-  runOnUI:
-    <A extends unknown[]>(fn: (...args: A) => void) =>
-    (...args: A) =>
-      fn(...args),
-  withTiming: <T,>(value: T) => value,
-  useFrameCallback: () => ({ setActive: () => {} }),
-}))
+jest.mock('react-native-reanimated', () => {
+  const noOpStyle = (): object => ({})
+  return {
+    __esModule: true,
+    default: { View: 'Animated.View' },
+    useReducedMotion: () => false,
+    useSharedValue: <T,>(init: T) => ({ value: init }),
+    useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+    useAnimatedStyle: (_fn: () => object) => noOpStyle(),
+    runOnUI:
+      <A extends unknown[]>(fn: (...args: A) => void) =>
+      (...args: A) =>
+        fn(...args),
+    withTiming: <T,>(value: T) => value,
+    withSpring: <T,>(value: T) => value,
+    interpolate: (v: number) => v,
+    Extrapolation: { CLAMP: 'clamp' },
+    useFrameCallback: () => ({ setActive: () => {} }),
+  }
+})
 jest.mock('@shopify/react-native-skia', () => {
   const Null = () => null
   return {

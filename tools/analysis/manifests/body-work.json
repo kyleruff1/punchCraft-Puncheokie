@@ -1,6 +1,7 @@
 {
   "workoutId": "body-work",
   "workoutName": "Body Work",
+  "vocabulary": "numbers",
   "roundIndex": 0,
   "workDurationMs": 240000,
   "bpm": 100,

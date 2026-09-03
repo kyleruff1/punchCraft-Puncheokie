@@ -12,13 +12,13 @@
  * window inside it is naturally session-scoped.
  */
 import type { BackdropImpulsePort, BackdropPunchImpulse } from '@domain/effects/BackdropImpulsePort'
-import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/membraneMath'
+import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/handCodes'
 import { createImpulseScaler } from '@domain/effects/impulseScale'
 import { logger, safe } from '@diagnostics/logger'
 
 /** What a scene receives: worklet-friendly plain numbers only. */
 export interface BackdropSinkImpulse {
-  /** HAND_LEFT / HAND_RIGHT / HAND_NEUTRAL from the hydroPulse module. */
+  /** HAND_LEFT / HAND_RIGHT / HAND_NEUTRAL from `@domain/effects/handCodes`. */
   handCode: number
   /** Normalized 0..1 intensity for this athlete, this session. */
   v01: number

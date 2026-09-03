@@ -1,5 +1,5 @@
 import { createBackdropBus, type BackdropSinkImpulse } from '../backdropBus'
-import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/membraneMath'
+import { HAND_LEFT, HAND_NEUTRAL, HAND_RIGHT } from '@domain/effects/handCodes'
 
 describe('backdropBus', () => {
   function activeBus() {

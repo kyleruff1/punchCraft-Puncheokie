@@ -1,40 +1,34 @@
 /**
  * Tier matrix: which backdrop actually renders for each (quality,
- * reducedMotion) pair. The scene's contents are not under test — Skia
- * and reanimated are inert mocks — only the §31.4 gating is.
+ * reducedMotion) pair. The scene's contents are not under test — the
+ * Reanimated hooks are inert mocks — only the §31.4 gating is.
+ *
+ * Standard tier is now PummelDarkness (Skia membrane retired). Reduced
+ * tier is unchanged (StaticGlow).
  */
 import React from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
 
-jest.mock('react-native-reanimated', () => ({
-  useReducedMotion: () => false,
-  useSharedValue: <T,>(init: T) => ({ value: init }),
-  useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
-  useFrameCallback: () => ({ setActive: () => {} }),
-  runOnUI:
-    <A extends unknown[]>(fn: (...args: A) => void) =>
-    (...args: A) =>
-      fn(...args),
-  withTiming: <T,>(value: T) => value,
-}))
-jest.mock('@shopify/react-native-skia', () => {
-  const Null = () => null
+jest.mock('react-native-reanimated', () => {
+  const noOpStyle = () => ({})
   return {
-    Canvas: Null,
-    Fill: Null,
-    Shader: Null,
-    ImageShader: Null,
-    FilterMode: { Nearest: 0, Linear: 1 },
-    MipmapMode: { None: 0 },
-    TileMode: { Clamp: 0 },
-    useImage: () => null,
-    useClock: () => ({ value: 0 }),
-    Skia: {
-      RuntimeEffect: { Make: () => ({}) },
-      Surface: { MakeOffscreen: () => null },
-      Paint: () => ({ setColor: () => {}, setShader: () => {} }),
-      Color: () => 0,
+    __esModule: true,
+    default: {
+      View: 'Animated.View',
     },
+    useReducedMotion: () => false,
+    useSharedValue: <T,>(init: T) => ({ value: init }),
+    useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+    useAnimatedStyle: (_fn: () => object) => noOpStyle(),
+    useFrameCallback: () => ({ setActive: () => {} }),
+    runOnUI:
+      <A extends unknown[]>(fn: (...args: A) => void) =>
+      (...args: A) =>
+        fn(...args),
+    withTiming: <T,>(value: T) => value,
+    withSpring: <T,>(value: T) => value,
+    interpolate: (v: number) => v,
+    Extrapolation: { CLAMP: 'clamp' },
   }
 })
 
@@ -48,7 +42,6 @@ function mount(quality: 'off' | 'reduced' | 'standard', reducedMotion = false) {
       <BackdropRenderer
         bus={createBackdropBus()}
         quality={quality}
-        calm={1}
         reducedMotion={reducedMotion}
       />,
     )
@@ -79,26 +72,23 @@ describe('BackdropRenderer', () => {
     tree.unmount()
   })
 
-  it('reduced renders the still glow, never the canvas', () => {
+  it('reduced renders the still glow, never the darkness overlay', () => {
     const tree = mount('reduced')
     expect(has(tree, 'live-backdrop')).toBe(true)
     expect(has(tree, 'backdrop-static-glow')).toBe(true)
-    expect(has(tree, 'hydro-pulse-canvas')).toBe(false)
-    tree.unmount()
+    expect(has(tree, 'pummel-darkness')).toBe(false)
   })
 
-  it('standard mounts the HydroPulse scene', () => {
+  it('standard mounts the PummelDarkness overlay', () => {
     const tree = mount('standard')
     expect(has(tree, 'live-backdrop')).toBe(true)
-    expect(has(tree, 'hydro-pulse-canvas')).toBe(true)
+    expect(has(tree, 'pummel-darkness')).toBe(true)
     expect(has(tree, 'backdrop-static-glow')).toBe(false)
-    tree.unmount()
   })
 
   it('reduced motion forces the still tier even at standard (§31.4)', () => {
     const tree = mount('standard', true)
     expect(has(tree, 'backdrop-static-glow')).toBe(true)
-    expect(has(tree, 'hydro-pulse-canvas')).toBe(false)
-    tree.unmount()
+    expect(has(tree, 'pummel-darkness')).toBe(false)
   })
 })

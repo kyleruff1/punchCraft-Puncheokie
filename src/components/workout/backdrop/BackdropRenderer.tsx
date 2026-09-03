@@ -4,17 +4,17 @@
  *
  * Owns exactly one decision: which tier actually renders. `off` is
  * today's static screen, `reduced` is a still glow (also what reduced
- * motion forces, §31.4), `standard` is the HydroPulse scene. The
- * live screen passes the persisted quality and the motion preference;
- * nothing else about the backdrop leaks out of this directory.
+ * motion forces, §31.4), `standard` is the PummelDarkness overlay
+ * (frugal compositor-only replacement for the retired Skia membrane;
+ * see PROVENANCE in PummelDarkness.tsx header). The live screen passes
+ * the persisted quality and the motion preference; nothing else about
+ * the backdrop leaks out of this directory.
  */
 import React from 'react'
 import { StyleSheet, View } from 'react-native'
 
 import type { BackdropQuality } from '@domain/effects/backdropSettings'
-import type { PummelSensitivity } from '@domain/effects/membraneMath'
-import type { MembraneTuning } from '@domain/effects/membraneShader'
-import { HydroPulseScene, type MembranePresetName } from './HydroPulseScene'
+import { PummelDarkness } from './PummelDarkness'
 import { StaticGlow } from './StaticGlow'
 import type { BackdropBus } from './backdropBus'
 
@@ -37,23 +37,11 @@ export function resolveBackdropQuality(
 export function BackdropRenderer({
   bus,
   quality,
-  calm,
   reducedMotion = false,
-  tuning,
-  preset,
-  sensitivity,
 }: {
   bus: BackdropBus
   quality: BackdropQuality
-  /** Phase-driven damping target, forwarded to the scene. */
-  calm: number
   reducedMotion?: boolean
-  /** Lab knob: membrane tuning overrides, forwarded to the scene. */
-  tuning?: Partial<MembraneTuning>
-  /** Lab knob: behavior preset, forwarded to the scene. */
-  preset?: MembranePresetName
-  /** Pummel Sensitivity, forwarded to the scene. */
-  sensitivity?: PummelSensitivity
 }): React.JSX.Element | null {
   const effective = resolveBackdropQuality(quality, reducedMotion)
   if (effective === 'off') return null
@@ -62,13 +50,7 @@ export function BackdropRenderer({
       {effective === 'reduced' ? (
         <StaticGlow />
       ) : (
-        <HydroPulseScene
-          bus={bus}
-          calm={calm}
-          {...(tuning ? { tuning } : {})}
-          {...(preset ? { preset } : {})}
-          {...(sensitivity ? { sensitivity } : {})}
-        />
+        <PummelDarkness bus={bus} reducedMotion={reducedMotion} />
       )}
     </View>
   )
