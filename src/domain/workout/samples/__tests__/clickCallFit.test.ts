@@ -29,22 +29,12 @@ function minStrides(): Map<string, number> {
   return strides
 }
 
-/**
- * Both vocabularies carry the same guarantee. Techniques run under the
- * numbers fallback until its bank renders, so the presence pin for that
- * vocabulary activates only once at least one technique call is on disk —
- * a partial techniques render is then a failure, never a silent fallback.
- */
-describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabulary) => {
+describe('loop-call fit', () => {
   const strides = minStrides()
-  const bankRendered = [...strides.keys()].some(
-    (motif) => findClickScript(`call/${motif}`, vocabulary)?.vocabulary === vocabulary,
-  )
 
   it('every map motif has a rendered call clip', () => {
-    if (vocabulary === 'techniques' && !bankRendered) return // bank not rendered yet
     const missing = [...strides.keys()].filter(
-      (motif) => findClickScript(`call/${motif}`, vocabulary)?.vocabulary !== vocabulary,
+      (motif) => findClickScript(`call/${motif}`) === undefined,
     )
     expect(missing).toEqual([])
   })
@@ -52,8 +42,8 @@ describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabul
   it('every call clip fits the tightest stride its motif runs at', () => {
     const overruns: string[] = []
     for (const [motif, strideMs] of strides) {
-      const clip = findClickScript(`call/${motif}`, vocabulary)
-      if (clip?.vocabulary !== vocabulary) continue // reported by the presence test above
+      const clip = findClickScript(`call/${motif}`)
+      if (!clip) continue // reported by the presence test above
       if (clip.durationMs > strideMs - 100) {
         overruns.push(`${motif}: ${clip.durationMs}ms > stride ${strideMs}ms − 100`)
       }

@@ -18,7 +18,6 @@
  */
 import { CLICK_MAPS, SETUP_GAP_MEASURES, breathBeats, measuresPerRep, rowMeasures, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
 import { parseCombo, punchTokens } from '../../src/domain/workout/WorkoutTokens'
-import { spokenFor } from '../voice/prosody.mjs'
 
 const NAMES: Record<string, string> = {
   'three-round-fundamentals': 'Three-Round Fundamentals',
@@ -63,116 +62,6 @@ const WORDS: Record<string, string> = {
   '1b': 'one-bee', '2b': 'two-bee', '3b': 'three-bee', '4b': 'four-bee', '5b': 'five-bee', '6b': 'six-bee',
 }
 
-// ---------------------------------------------------------------------------
-// Technique vocabulary (Kyle, 2026-09-02) — the same authored copy with the
-// numeric cue words translated through prosody's technique tables. Full
-// forms in lead-ins/rests ("Lead uppercut"), compact in per-bar calls
-// ("Lead upper") — shouts compress, setup copy stays articulate.
-// ---------------------------------------------------------------------------
-
-const NUM_TO_DIGIT: Record<string, string> = {
-  one: '1', two: '2', three: '3', four: '4', five: '5', six: '6',
-}
-const NUM_WORD = '(?:one|two|three|four|five|six)'
-
-/** Full technique name for a numeric cue word ("two" → "cross"). */
-const techFull = (numWord: string): string =>
-  spokenFor(NUM_TO_DIGIT[numWord.toLowerCase()]!, { vocabulary: 'techniques', cadence: 'steady' }).toLowerCase()
-
-/** Compact technique name for a motif token ("5" → "Lead upper", "2b" → "Body cross"). */
-const techCompact = (token: string): string =>
-  spokenFor(token, { vocabulary: 'techniques', cadence: 'sprint' })
-
-const matchCase = (replacement: string, original: string): string =>
-  /^[A-Z]/.test(original) ? replacement.charAt(0).toUpperCase() + replacement.slice(1) : replacement
-
-/**
- * Translate one authored numeric text into the technique vocabulary.
- *
- * The copy embeds cue words inside coaching prose, so translation is
- * rule-scoped, not blanket — a bare number word is only a cue when the
- * text uses it like one:
- *
- *   1. "head X"        → "head <technique>"        (level qualifier kept)
- *   2. "body X-bee"    → "body <technique>"        (qualifier absorbed —
- *                         never "body body cross")
- *   3. comma-runs of 2+ cue words → member-wise    ("one, two-bee, three")
- *   4. residual "X-bee" anywhere  → "body <technique>" (-bee is only ever a cue)
- *   5. "the X" prose references   → "the <technique>" ("let the two arrive
- *                         behind the one") — flagged for review, since "the
- *                         one" can be a pronoun in other copy.
- *
- * Everything else ("thirteen bars", "page two", "four-count") stays. Any
- * leftover bare cue word is reported for Kyle's read — the transform
- * would rather under-translate loudly than mis-translate silently.
- */
-function techniqueText(text: string, notes: string[]): string {
-  let result = text
-
-  // 1. "head X"
-  result = result.replace(new RegExp(`\\b(head)(\\s+)(${NUM_WORD})\\b`, 'gi'), (_, head, ws, num) => `${head}${ws}${techFull(num)}`)
-
-  // 2. "body X-bee" — absorb the existing qualifier.
-  result = result.replace(new RegExp(`\\b(body)(\\s+)(${NUM_WORD})-bee\\b`, 'gi'), (_, body, ws, num) => `${body}${ws}${techFull(num)}`)
-
-  // 2b. Plural cue groups — the pump copy's "ones only" / "one-bees only".
-  //     Pluralize the technique's last word: "jabs", "body jabs", "lead hooks".
-  result = result.replace(new RegExp(`\\b(${NUM_WORD})-bees\\b`, 'gi'), (m, num) => matchCase(`body ${techFull(num)}s`, m))
-  result = result.replace(new RegExp(`\\b(${NUM_WORD})s\\b`, 'gi'), (m, num) => {
-    notes.push(`plural: "${m}" → "${techFull(num)}s"`)
-    return matchCase(`${techFull(num)}s`, m)
-  })
-
-  // 3. Comma-separated cue runs (members numeric or -bee).
-  const CUE = `${NUM_WORD}(?:-bee)?`
-  result = result.replace(new RegExp(`\\b${CUE}(?:,\\s+${CUE})+`, 'gi'), (run) =>
-    run
-      .split(/,\s+/)
-      .map((member, i) => {
-        const bee = /-bee$/i.test(member)
-        const num = member.replace(/-bee$/i, '')
-        const word = bee ? `body ${techFull(num)}` : techFull(num)
-        return i === 0 ? matchCase(word, member) : word
-      })
-      .join(', '),
-  )
-
-  // 4. Residual "-bee" forms outside runs.
-  result = result.replace(new RegExp(`\\b(${NUM_WORD})-bee\\b`, 'gi'), (m, num) => matchCase(`body ${techFull(num)}`, m))
-
-  // 5. "the X" prose references (guarded against "the four-count").
-  result = result.replace(new RegExp(`\\b(the)(\\s+)(${NUM_WORD})\\b(?!-)`, 'gi'), (m, the, ws, num) => {
-    notes.push(`prose-ref: "${m.trim()}" → "${the} ${techFull(num)}"`)
-    return `${the}${ws}${techFull(num)}`
-  })
-
-  // Residual bare cue words — report, don't guess. Counting prose stays
-  // numeric ("thirteen bars", "two slow breaths", "six times through");
-  // the whitelist tolerates one adjective between the number and its noun.
-  const residual = result.match(new RegExp(`\\b${NUM_WORD}\\b`, 'gi')) ?? []
-  const COUNT_NOUN =
-    '(?:count|minute|minutes|round|rounds|bar|bars|beat|beats|hundred|twenty|page|pages|slot|slots|speed|speeds|punch|punches|breath|breaths|shot|shots|time|times|more|straight|set|sets)'
-  const PROSE_OK = new RegExp(
-    `\\b${NUM_WORD}[- ](?:\\w+ )?${COUNT_NOUN}|(?:page|round|slot|speed)s?\\s+${NUM_WORD}\\b`,
-    'gi',
-  )
-  const proseHits = new Set((result.match(PROSE_OK) ?? []).flatMap((m) => m.toLowerCase().match(new RegExp(NUM_WORD, 'g')) ?? []))
-  for (const word of residual) {
-    if (!proseHits.has(word.toLowerCase())) notes.push(`RESIDUAL numeric "${word}" — review`)
-  }
-  return result
-}
-
-/** Compact-form call text for a motif ("1-2b" → "Jab, body cross!"). */
-function callTextTechnique(motif: string): string {
-  const words = motif
-    .split('-')
-    .filter((t) => t !== '.')
-    .map((t) => techCompact(t))
-    .map((w, i) => (i === 0 ? w : w.toLowerCase()))
-  return `${words.join(', ')}!`
-}
-
 function sectionKind(motif: string): string {
   const toks = motif.split('-')
   const punches = toks.filter((t) => t !== '.')
@@ -202,17 +91,6 @@ function barAscii(motif: string, rate: number): string {
 /** Spoken corpus rows collected during the walk — `--corpus` emits these as JSON. */
 const corpusLeadIns: Array<{ slot: string; text: string }> = []
 const corpusRests: Array<{ slot: string; text: string }> = []
-const techLeadIns: Array<{ slot: string; text: string }> = []
-const techRests: Array<{ slot: string; text: string }> = []
-/** Per-slot transform record for Kyle's read — every prose-ref and residual. */
-const techniqueReview: Array<{ slot: string; numeric: string; technique: string; notes: string[] }> = []
-
-function collectTechnique(slot: string, numeric: string, into: Array<{ slot: string; text: string }>): void {
-  const notes: string[] = []
-  const technique = techniqueText(numeric, notes)
-  into.push({ slot, text: technique })
-  techniqueReview.push({ slot, numeric, technique, notes })
-}
 /**
  * Loop-call corpus: one entry per unique motif across every map — the
  * [[COMPONENT HITS]] rows realized as per-bar calls ("One, two, one,
@@ -220,7 +98,7 @@ function collectTechnique(slot: string, numeric: string, into: Array<{ slot: str
  * the render tool fits the clip under it so call N+1 can never pile on
  * call N.
  */
-const corpusCalls = new Map<string, { motif: string; text: string; techniqueText: string; minStrideMs: number }>()
+const corpusCalls = new Map<string, { motif: string; text: string; minStrideMs: number }>()
 
 /**
  * The per-bar call text for a motif — punches only, urgent, no "go!".
@@ -245,7 +123,7 @@ function noteCall(motif: string, rate: ClickRate, bpm: number): void {
     existing.minStrideMs = Math.min(existing.minStrideMs, strideMs)
     return
   }
-  corpusCalls.set(motif, { motif, text: callText(motif), techniqueText: callTextTechnique(motif), minStrideMs: strideMs })
+  corpusCalls.set(motif, { motif, text: callText(motif), minStrideMs: strideMs })
 }
 
 const out: string[] = []
@@ -292,7 +170,6 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       out.push('')
       const leadText = row.leadIn
       corpusLeadIns.push({ slot: `lead-in/${key}/r${ri + 1}s${i + 1}`, text: leadText })
-      collectTechnique(`lead-in/${key}/r${ri + 1}s${i + 1}`, leadText, techLeadIns)
       noteCall(row.motif, row.rate, map.bpm)
       out.push('```text')
       out.push(`<<SINGLE CLIP  lead-in/${key}/r${ri + 1}s${i + 1}>>`)
@@ -313,7 +190,6 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       out.push('')
       const restText = round.rest
       corpusRests.push({ slot: `rest/${key}/r${ri + 1}`, text: restText })
-      collectTechnique(`rest/${key}/r${ri + 1}`, restText, techRests)
       out.push('```text')
       out.push(`<<SINGLE CLIP  rest/${key}/r${ri + 1}>>`)
       out.push(restText)
@@ -347,8 +223,6 @@ out.push('Fused-body rule rides along: every `-bee` component renders from hyphe
 if (process.argv.includes('--corpus')) {
   // Machine-readable spoken corpus for the render run — same strings the
   // markdown shows, so the script bible and the clips can never drift.
-  // `techniques` mirrors the numeric families slot-for-slot in the
-  // technique vocabulary (calls carry both texts on the same row).
   console.log(
     JSON.stringify(
       {
@@ -358,25 +232,11 @@ if (process.argv.includes('--corpus')) {
           ...c,
           minStrideMs: Math.round(c.minStrideMs),
         })),
-        techniques: { leadIns: techLeadIns, rests: techRests },
-        techniqueReview,
       },
       null,
       2,
     ),
   )
-} else if (process.argv.includes('--technique-review')) {
-  // Human-readable transform audit — Kyle's checkpoint before the render.
-  for (const r of techniqueReview) {
-    const flagged = r.notes.length > 0
-    console.log(`${flagged ? '⚑' : ' '} ${r.slot}`)
-    console.log(`    N: ${r.numeric}`)
-    console.log(`    T: ${r.technique}`)
-    for (const n of r.notes) console.log(`    ! ${n}`)
-  }
-  const flaggedCount = techniqueReview.filter((r) => r.notes.length > 0).length
-  console.log(`\n${techniqueReview.length} slots translated, ${flaggedCount} flagged for review`)
-  for (const c of corpusCalls.values()) console.log(`call ${c.motif}: "${c.text}" → "${c.techniqueText}"`)
 } else {
   console.log(out.join('\n'))
 }

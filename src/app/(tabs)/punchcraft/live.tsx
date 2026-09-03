@@ -150,9 +150,6 @@ export default function LiveScreen(): React.JSX.Element {
   // the overrun reporting already tolerates.)
   const [liveVocabulary, setLiveVocabulary] = useState<'numbers' | 'names' | null>(null)
   const effectiveVocabulary = liveVocabulary ?? recipe.voiceVocabulary
-  // The click-script bank's spelling of the same choice (the policy names
-  // it `names`; the rendered library names it `techniques`).
-  const clickVocabulary = effectiveVocabulary === 'names' ? ('techniques' as const) : ('numbers' as const)
 
   React.useEffect(() => {
     // Preload during the countdown, not at the first cue: M34-01 measured a
@@ -277,7 +274,7 @@ export default function LiveScreen(): React.JSX.Element {
   // the memo), so the coach finishes before the first bell and the rhythm
   // map never moves. Voice off, or no rendered segments, falls back to the
   // default 5-second lead-in.
-  const intro = useMemo(() => planIntro(workout, undefined, clickVocabulary), [workout, clickVocabulary])
+  const intro = useMemo(() => planIntro(workout), [workout])
   // The countdown is a CAP, not the schedule: planned speech plus slack
   // for dev-client load stalls. The intro's completion callback skips the
   // remainder, so the bell follows the coach's actual last word.
@@ -360,14 +357,14 @@ export default function LiveScreen(): React.JSX.Element {
     // joins the warn ceremony — theme, then the opening combo call, then
     // "get ready… three, two, one" onto the bell. The runner's in-round
     // scheduler skips s1 to match.
-    const nextLead = findClickScript(`lead-in/${workout.id}/r${live.roundIndex + 2}s1`, clickVocabulary)
+    const nextLead = findClickScript(`lead-in/${workout.id}/r${live.roundIndex + 2}s1`)
     warnRef.current.prepare(
       live.roundIndex + 2,
       workout.schedule[live.roundIndex + 1]?.theme,
       nextLead ? { module: nextLead.module, durationMs: nextLead.durationMs } : undefined,
     )
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
-  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule, clickVocabulary])
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
   // Inter-round recovery walkthrough — the cornerman works the corner
@@ -400,10 +397,8 @@ export default function LiveScreen(): React.JSX.Element {
       // The ACTUAL pre-bell opener clip for this rest's next round (same
       // known-at-plan-time reasoning as the theme above) — the warn
       // playlist now carries it between theme and countdown core.
-      // Budgeted at the compile-time vocabulary; a longer techniques lead
-      // after a mid-workout flip eats margin, which the 500ms floor absorbs.
       const leadMs =
-        findClickScript(`lead-in/${workout.id}/r${restIndex + 2}s1`, clickVocabulary)?.durationMs ?? 0
+        findClickScript(`lead-in/${workout.id}/r${restIndex + 2}s1`)?.durationMs ?? 0
       // openerMax + 350 breath + theme + 350 breath + lead(+350 when
       // present) + core + 400 slack + 500 margin.
       const warnWorstMs =
@@ -417,7 +412,7 @@ export default function LiveScreen(): React.JSX.Element {
       workout.recipe.seed,
       { maxTotalMsFor },
     )
-  }, [workout.id, workout.recipe.seed, workout.schedule, clickVocabulary])
+  }, [workout.id, workout.recipe.seed, workout.schedule])
 
   // Pre-bell hold indicator (Script Bible v2): HOW a round starts — its
   // opening bar's slots + rate — shown while the coach calls it out
@@ -461,7 +456,7 @@ export default function LiveScreen(): React.JSX.Element {
     // tail either way). Wrapped as a one-segment RecoveryScript so the
     // whole bell-clearance / pause-in-place / playIfDue machinery is
     // inherited rather than duplicated.
-    const clickRest = findClickScript(`rest/${workout.id}/r${live.roundIndex + 1}`, clickVocabulary)
+    const clickRest = findClickScript(`rest/${workout.id}/r${live.roundIndex + 1}`)
     const script: RecoveryScript | undefined = clickRest
       ? {
           scriptId: clickRest.id,
@@ -495,13 +490,12 @@ export default function LiveScreen(): React.JSX.Element {
     recoveryPlan,
     workout.id,
     workout.schedule,
-    clickVocabulary,
   ])
   React.useEffect(() => () => recoveryRef.current?.stop(), [])
 
   React.useEffect(() => {
-    runner.setVocabulary(clickVocabulary)
-  }, [runner, clickVocabulary])
+    runner.setVocabulary(effectiveVocabulary === 'names' ? 'techniques' : 'numbers')
+  }, [runner, effectiveVocabulary])
 
   const startedRef = useRef(false)
 

@@ -91,7 +91,6 @@ const BROADCAST_BASE = {
   focusHz: 500,
   limitRelease: 25,
   baseI: -14,
-  echo: true,
 }
 
 function broadcastChain({ single, finalAccentDb }, o) {
@@ -103,9 +102,7 @@ function broadcastChain({ single, finalAccentDb }, o) {
     shelf(2600, o.presence),
     shelf(5000, -3),
     parallelSaturation({ preGain: o.preGain, param: o.param, mix: o.mix, focusHz: o.focusHz }),
-    // The aecho taps compound when a clip's timbre already carries them from
-    // its reference (the 2026-09-02 echo diagnosis) — dry variants drop them.
-    ...(o.echo === false ? [] : [room(single)]),
+    room(single),
     `alimiter=limit=0.95:attack=1:release=${o.limitRelease}`,
     `loudnorm=I=${(o.baseI + finalAccentDb * 0.3).toFixed(1)}:TP=-1.2:LRA=6`,
     'afade=t=in:st=0:d=0.004',
@@ -206,26 +203,6 @@ export const TEXTURES = {
 
   /** The corner shouting over a PA: band-limited, mid-forward, very loud. */
   broadcast: ({ single, finalAccentDb }) => broadcastChain({ single, finalAccentDb }, BROADCAST_BASE),
-
-  /**
-   * The same PA, without the small box: broadcast with the aecho taps
-   * removed. For clips cloned from a clean pre-texture reference, the
-   * room the athlete hears should come from ONE pass — and Kyle's ruling
-   * (2026-09-02) is that the broadcast character stays, the echo goes.
-   */
-  'broadcast-dry': ({ single, finalAccentDb }) =>
-    broadcastChain({ single, finalAccentDb }, { ...BROADCAST_BASE, echo: false }),
-
-  /**
-   * Dry and slightly unclenched: with the compounded generations gone the
-   * 12:1 wall may be over-gluing a clean take, so this backs the
-   * compressor off to 8:1 @ -28 with matching makeup. Bake-off candidate.
-   */
-  'broadcast-dry-gentle': ({ single, finalAccentDb }) =>
-    broadcastChain(
-      { single, finalAccentDb },
-      { ...BROADCAST_BASE, echo: false, threshold: -28, ratio: 8, makeup: 6 },
-    ),
 
   /**
    * Weathered rasp — a voice that has shouted across gyms for thirty years.

@@ -71,7 +71,6 @@ export interface IntroPlan {
 export function planIntro(
   workout: GeneratedWorkout,
   manifest: Readonly<Record<string, IntroSegment>> = INTRO_SEGMENTS,
-  vocabulary: 'numbers' | 'techniques' = 'numbers',
 ): IntroPlan {
   const ids: string[] = ['intro-hello']
 
@@ -87,7 +86,7 @@ export function planIntro(
   // then the opening combo call, then the send-off — so the bell releases
   // straight into punches. The runner's in-round scheduler skips s1 to
   // match. Workouts without click-script clips are untouched.
-  const opener = findClickScript(`lead-in/${workout.id}/r1s1`, vocabulary)
+  const opener = findClickScript(`lead-in/${workout.id}/r1s1`)
   if (opener) {
     segments.push({
       id: opener.id,
