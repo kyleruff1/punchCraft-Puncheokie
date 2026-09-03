@@ -518,7 +518,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       cursor: -1,
     }
   }, [])
+  /**
+   * The click-script vocabulary, snapshotted per round: schedules compile
+   * with the vocabulary current at round start, so a mid-round radio flip
+   * applies from the following round — same precedent as the announcer's
+   * placement margins. Numbers fallback lives in findClickScript itself.
+   */
+  const clickVocabularyRef = useRef<'numbers' | 'techniques'>(
+    voice?.policy.vocabulary === 'names' ? 'techniques' : 'numbers',
+  )
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
+    const vocabulary = clickVocabularyRef.current
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
     type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
@@ -535,7 +545,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // releases straight into punches (Kyle, 2026-09-01).
         if (seenBlocks.size > 1) {
           const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
-          const clip = findClickScript(slot)
+          const clip = findClickScript(slot, vocabulary)
           if (clip) {
             leadIns.push({
               kind: 'lead-in',
@@ -557,7 +567,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
-      const clip = findClickScript(`call/${motif}`)
+      const clip = findClickScript(`call/${motif}`, vocabulary)
       if (!clip) continue
       calls.push({
         kind: 'call',
@@ -1831,6 +1841,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       },
       setVocabulary: (vocabulary: 'numbers' | 'techniques') => {
         announcerRef.current?.setVocabulary(vocabulary)
+        // Click-script schedules read this at their next round build.
+        clickVocabularyRef.current = vocabulary
       },
       skipCountdown: () => {
         // The intro finished ahead of its padded cap; ring the bell now

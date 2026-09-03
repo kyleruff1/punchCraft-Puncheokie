@@ -97,7 +97,7 @@ function hash8(text) {
 }
 
 /** kind: 'lead-in' | 'rest' | 'call'. Dedupe by exact text; carry every slot. */
-function assemble(kind, rows, prefix, plan) {
+function assemble(kind, rows, prefix, plan, vocabulary = 'numbers') {
   const byText = new Map()
   for (const row of rows) {
     const existing = byText.get(row.text)
@@ -112,6 +112,7 @@ function assemble(kind, rows, prefix, plan) {
     byText.set(row.text, {
       id: `${prefix}-${hash8(row.text)}`,
       kind,
+      vocabulary,
       text: row.text,
       slots: [row.slot],
       ...plan(row),
@@ -124,68 +125,76 @@ function assemble(kind, rows, prefix, plan) {
 // call N+1 can never pile on call N (Pillar 2 by construction).
 const CALL_WINDOW_PAD_MS = 150
 
-const allJobs = [
-  ...assemble('lead-in', corpus.leadIns, 'li', (row) => ({
+// Syllable-unit budget per word: technique words run longer than digits
+// ("uppercut" is three syllables to "five"'s one), and the call cap must
+// know it or every uppercut motif renders against a numeric-sized window.
+const UNIT_WORDS = { uppercut: 3, upper: 2, body: 2 }
+const syllableUnits = (text) =>
+  text
+    .split(/[ ,!]+/)
+    .filter(Boolean)
+    .reduce((a, w) => a + (w.includes('-bee') ? 2 : (UNIT_WORDS[w.toLowerCase()] ?? 1)), 0)
+
+const leadInPlan = (row) => ({
+  performance: 'work',
+  plan: compileAdlib(row.text, {
     performance: 'work',
-    plan: compileAdlib(row.text, {
-      performance: 'work',
-      expression: PRODUCTION_EXPRESSION,
-      finish: 'land',
-    }),
-    minDurationMs: 800,
-    maxDurationMs: 9_000,
-  })),
-  ...assemble('rest', corpus.rests, 'rr', (row) => ({
+    expression: PRODUCTION_EXPRESSION,
+    finish: 'land',
+  }),
+  minDurationMs: 800,
+  maxDurationMs: 9_000,
+})
+
+const restPlan = (row) => ({
+  performance: 'teach',
+  plan: compileAdlib(row.text, {
     performance: 'teach',
-    plan: compileAdlib(row.text, {
-      performance: 'teach',
-      expression: PRODUCTION_EXPRESSION,
-      finish: 'land',
-    }),
-    minDurationMs: 3_000,
-    maxDurationMs: 16_000,
-  })),
-  ...assemble(
-    'call',
-    (corpus.calls ?? []).map((c) => ({
-      slot: `call/${c.motif}`,
-      text: c.text,
-      windowMs: c.minStrideMs - CALL_WINDOW_PAD_MS,
-    })),
-    'cc',
-    (row) => ({
-      performance: 'push',
-      plan: compileAdlib(row.text, {
-        performance: 'push',
-        expression: PRODUCTION_EXPRESSION,
-        finish: 'shout',
-      }),
-      minDurationMs: 250,
-      // A call must live in the BREATH, not blanket the previous bar's
-      // punches: at body-work's 4.8s stride a 3.1s call started 1.2s
-      // AFTER the bar it named and read as "the coach is a second late"
-      // (Kyle on-glass, 2026-09-02). Budget by syllable units — a fused
-      // "-bee" token is two — clamped to [800ms, the stride window].
-      // ~250ms/unit + 300 is the clipped-urgent corner call the original
-      // loop-call design specified (~1s for a plain pair).
-      maxDurationMs: Math.min(
-        row.windowMs,
-        Math.max(
-          800,
-          300 +
-            250 *
-              row.text
-                .split(/[ ,!]+/)
-                .filter(Boolean)
-                .reduce((a, w) => a + (w.includes('-bee') ? 2 : 1), 0),
-        ),
-      ),
-      // Token-exact ASR: a call that loses a word ("Six, five, two" heard
-      // as "the 652") is worse than a slower take — the athlete throws
-      // what they hear (caught on-glass 2026-09-01).
-      asrExact: true,
-    }),
-  ),
+    expression: PRODUCTION_EXPRESSION,
+    finish: 'land',
+  }),
+  minDurationMs: 3_000,
+  maxDurationMs: 16_000,
+})
+
+const callPlan = (row) => ({
+  performance: 'push',
+  plan: compileAdlib(row.text, {
+    performance: 'push',
+    expression: PRODUCTION_EXPRESSION,
+    finish: 'shout',
+  }),
+  minDurationMs: 250,
+  // A call must live in the BREATH, not blanket the previous bar's
+  // punches: at body-work's 4.8s stride a 3.1s call started 1.2s
+  // AFTER the bar it named and read as "the coach is a second late"
+  // (Kyle on-glass, 2026-09-02). Budget by syllable units — a fused
+  // "-bee" token is two, technique words per UNIT_WORDS — clamped to
+  // [800ms, the stride window]. ~250ms/unit + 300 is the clipped-urgent
+  // corner call the original loop-call design specified.
+  maxDurationMs: Math.min(row.windowMs, Math.max(800, 300 + 250 * syllableUnits(row.text))),
+  // Token-exact ASR: a call that loses a word ("Six, five, two" heard
+  // as "the 652") is worse than a slower take — the athlete throws
+  // what they hear (caught on-glass 2026-09-01).
+  asrExact: true,
+})
+
+const callRows = (textOf) =>
+  (corpus.calls ?? []).map((c) => ({
+    slot: `call/${c.motif}`,
+    text: textOf(c),
+    windowMs: c.minStrideMs - CALL_WINDOW_PAD_MS,
+  }))
+
+const allJobs = [
+  ...assemble('lead-in', corpus.leadIns, 'li', leadInPlan),
+  ...assemble('rest', corpus.rests, 'rr', restPlan),
+  ...assemble('call', callRows((c) => c.text), 'cc', callPlan),
+  // The technique vocabulary (Kyle, 2026-09-02): same slots, same intensity
+  // logic, translated copy — compact call forms, full names in prose.
+  ...assemble('lead-in', corpus.techniques?.leadIns ?? [], 'lt', leadInPlan, 'techniques'),
+  ...assemble('rest', corpus.techniques?.rests ?? [], 'rt', restPlan, 'techniques'),
+  ...assemble('call', callRows((c) => c.techniqueText).filter((r) => r.text), 'ct', callPlan, 'techniques'),
 ].map((job) => ({ ...job, wav: join(process.cwd(), OUT_ROOT, `${job.id}.wav`) }))
 
 if (process.argv.includes('--list')) {
@@ -347,6 +356,8 @@ function writeManifest() {
     'export interface ClickScriptClip {',
     '  id: string',
     "  kind: 'lead-in' | 'rest' | 'call'",
+    '  /** Which calling vocabulary the copy speaks. */',
+    "  vocabulary: 'numbers' | 'techniques'",
     '  /** The exact rendered text — what the ASR gate scored against. */',
     '  text: string',
     '  /** Every script-bible slot this clip covers. */',
@@ -363,6 +374,7 @@ function writeManifest() {
     const durationMs = measureDuration(clip.wav)
     lines.push(
       `  { id: '${clip.id}', kind: '${clip.kind}', ` +
+        `vocabulary: '${clip.vocabulary}', ` +
         `text: ${JSON.stringify(clip.text)}, ` +
         `slots: ${JSON.stringify(clip.slots)}, ` +
         `module: require('../../../assets/voice/click-scripts/${PERSONA.id}/${clip.id}.wav'), ` +
@@ -372,9 +384,22 @@ function writeManifest() {
   lines.push(
     ']',
     '',
-    '/** The clip covering a script-bible slot, or undefined when unrendered. */',
-    'export function findClickScript(slot: string): ClickScriptClip | undefined {',
-    '  return CLICK_SCRIPT_CLIPS.find((c) => c.slots.includes(slot))',
+    '/**',
+    ' * The clip covering a script-bible slot, or undefined when unrendered.',
+    ' * Vocabulary is a second lookup dimension with a numbers fallback, so a',
+    ' * partially rendered techniques bank degrades to the numeric copy',
+    ' * rather than to silence.',
+    ' */',
+    'export function findClickScript(',
+    '  slot: string,',
+    "  vocabulary: 'numbers' | 'techniques' = 'numbers',",
+    '): ClickScriptClip | undefined {',
+    '  return (',
+    '    CLICK_SCRIPT_CLIPS.find((c) => c.vocabulary === vocabulary && c.slots.includes(slot)) ??',
+    "    (vocabulary === 'techniques'",
+    "      ? CLICK_SCRIPT_CLIPS.find((c) => c.vocabulary === 'numbers' && c.slots.includes(slot))",
+    '      : undefined)',
+    '  )',
     '}',
     '',
     '/* eslint-enable @typescript-eslint/no-require-imports */',
