@@ -1,11 +1,34 @@
 /**
  * PummelDarkness — smoke test that the overlay mounts and the bus →
- * charge hop is wired. The classic Animated.Value's per-tick opacity
- * math is verified visually on-glass; this suite pins only the
- * structural invariants that would silently regress.
+ * charge hop is wired. Reanimated worklet math (spring arrival,
+ * exponential decay) is verified visually on-glass; this suite pins
+ * only the structure that would silently regress and the mount seam
+ * that keeps the bus subscription alive.
  */
 import React from 'react'
 import { act, create, type ReactTestRenderer } from 'react-test-renderer'
+
+jest.mock('react-native-reanimated', () => {
+  const noOpStyle = (): object => ({})
+  return {
+    __esModule: true,
+    default: {
+      View: 'Animated.View',
+    },
+    useSharedValue: <T,>(init: T) => ({ value: init }),
+    useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+    useAnimatedStyle: (_fn: () => object) => noOpStyle(),
+    useFrameCallback: () => ({ setActive: () => {} }),
+    runOnUI:
+      <A extends unknown[]>(fn: (...args: A) => void) =>
+      (...args: A) =>
+        fn(...args),
+    withSpring: <T,>(value: T) => value,
+    withTiming: <T,>(value: T) => value,
+    interpolate: (v: number) => v,
+    Extrapolation: { CLAMP: 'clamp' },
+  }
+})
 
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: 'LinearGradient' }))
 
@@ -25,14 +48,6 @@ function has(tree: ReactTestRenderer, testID: string): boolean {
 }
 
 describe('PummelDarkness — mount + bus wiring', () => {
-  beforeEach(() => jest.useFakeTimers())
-  afterEach(() => {
-    act(() => {
-      jest.runOnlyPendingTimers()
-    })
-    jest.useRealTimers()
-  })
-
   it('mounts with a testID even before any punch lands', () => {
     const bus = createBackdropBus()
     const tree = mount(bus)
@@ -41,6 +56,8 @@ describe('PummelDarkness — mount + bus wiring', () => {
   })
 
   it('subscribes to the bus while active — a punch never throws', () => {
+    // The bus swallows sink errors silently; we're proving the sink is
+    // in place and the payload shape (v01) is accepted end-to-end.
     const bus = createBackdropBus()
     bus.setActive(true)
     const tree = mount(bus)
@@ -51,6 +68,9 @@ describe('PummelDarkness — mount + bus wiring', () => {
   })
 
   it('reducedMotion skips the bus subscription — punches never reach the overlay', () => {
+    // The bus's sink set stays empty when reduced motion is on, so a
+    // bumped impulse is dropped silently — never crosses into the
+    // worklet. This is the §31.4 "reduced motion forces still" contract.
     const bus = createBackdropBus()
     bus.setActive(true)
     const tree = mount(bus, /* reducedMotion */ true)
@@ -58,7 +78,7 @@ describe('PummelDarkness — mount + bus wiring', () => {
     tree.unmount()
   })
 
-  it('unmount tears down the bus subscription and the decay interval cleanly', () => {
+  it('unmount tears down the bus subscription cleanly', () => {
     const bus = createBackdropBus()
     bus.setActive(true)
     const tree = mount(bus)
