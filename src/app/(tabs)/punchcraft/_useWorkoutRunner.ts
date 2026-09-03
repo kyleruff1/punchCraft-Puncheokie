@@ -47,6 +47,7 @@ import type { RoundWalkPlan } from '@/components/workout/useRingBeatClock'
 import { type SharedWorkClock } from '@domain/timing/SharedWorkClock'
 import { instructionClipFor } from '@audio/voiceAssets/instructionManifest'
 import { findClickScript } from '@audio/voiceAssets/clickScriptManifest'
+import { avatarTargetIndex, buildAvatarTrack, type AvatarTrackEntry } from '@domain/programs/avatarTrack'
 import { compileRoundRhythmMap } from '@domain/programs/RhythmMap'
 import {
   compileRoundSpine,
@@ -105,6 +106,14 @@ export const LEAD_IN_PAD_MS = 250
  * previous audio allows; the pad is the target, the busy check the law.
  */
 export const CALL_PAD_MS = 500
+
+/**
+ * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
+ * flip track plays this far AHEAD of the walk — "a trainer training,
+ * between the voice and the avatar showing." A pure time-shift of the
+ * full track each round, never an acceleration. The single tuning knob.
+ */
+export const AVATAR_LEAD_MS = 750
 /**
  * Store write ceiling. Was 100ms (spec §15.3's 10Hz) — but bag testing
  * found Pressables dead DURING work while fine in idle: the 10Hz
@@ -186,7 +195,7 @@ export interface WorkoutRunner {
   /** Live vocabulary switch (numbers ⇄ techniques) — next call speaks it. */
   setVocabulary(vocabulary: 'numbers' | 'techniques'): void
   /** Cue views for the stage, kept out of the store (they hold token objects). */
-  readCues(): { current?: CueView; next?: CueView; walkPlan?: RoundWalkPlan; freeWork?: boolean }
+  readCues(): { current?: CueView; next?: CueView; walkPlan?: RoundWalkPlan; freeWork?: boolean; avatar?: { cue: CueInstance; tokenIndex: number } }
   /** Settled matching so far. Read by M33-03 grading and M33-08 persistence. */
   readResults(): WorkoutRunnerResults
 }
@@ -490,6 +499,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       state: 'pending' | 'played' | 'skipped'
     }>
   } | null>(null)
+  /**
+   * The avatar's lead track (2026-09-02): the round's punch schedule,
+   * sampled at workElapsed + AVATAR_LEAD_MS so the figure demonstrates
+   * each form before its node lights. Cursor is monotonic — O(1)/read,
+   * can trail under load, can never run ahead of the authored lead.
+   */
+  const avatarTrackRef = useRef<{ roundIndex: number; entries: AvatarTrackEntry[]; cursor: number } | null>(null)
+  const buildAvatarLeadTrack = useCallback((roundIndex: number): void => {
+    avatarTrackRef.current = {
+      roundIndex,
+      entries: buildAvatarTrack(timelineRef.current[roundIndex]?.cues ?? []),
+      cursor: -1,
+    }
+  }, [])
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
@@ -1171,6 +1194,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           freezeRef.current.beginRound(transition.roundIndex)
           buildWalkPlan(transition.roundIndex)
           buildLeadInSchedule(transition.roundIndex)
+          buildAvatarLeadTrack(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
 
           // Install the round's compiled rhythm map (M2): from here the map
@@ -1810,17 +1834,36 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         syncFromEngine()
         pushStore(true)
       },
-      readCues: () => ({
+      readCues: () => {
+        // Avatar lead target: the punch the figure demonstrates at
+        // now + AVATAR_LEAD_MS. Feeding a long-stale entry is harmless —
+        // the card's cycle has parked on guard by then.
+        let avatar: { cue: CueInstance; tokenIndex: number } | undefined
+        const track = avatarTrackRef.current
+        if (track && track.roundIndex === (sessionRef.current?.snapshot()?.roundIndex ?? -1)) {
+          track.cursor = avatarTargetIndex(
+            track.entries,
+            workElapsedMsRef.current,
+            AVATAR_LEAD_MS,
+            track.cursor,
+          )
+          const entry = track.entries[track.cursor]
+          const cue = entry ? cuesById.get(entry.cueId) : undefined
+          if (entry && cue) avatar = { cue, tokenIndex: entry.tokenIndex }
+        }
+        return {
         ...(currentRef.current ? { current: currentRef.current } : {}),
         ...(nextRef.current ? { next: nextRef.current } : {}),
         ...(walkPlanRef.current ? { walkPlan: walkPlanRef.current } : {}),
         ...(freeWorkRef.current ? { freeWork: true } : {}),
-      }),
+        ...(avatar ? { avatar } : {}),
+        }
+      },
       readResults: () => ({
         cueResults: matcherRef.current?.results() ?? [],
         ...(lastScoreRef.current ? { lastScore: lastScoreRef.current } : {}),
       }),
     }),
-    [applyTransitions, clock, pushStore, source, syncFromEngine],
+    [applyTransitions, clock, pushStore, source, syncFromEngine, cuesById],
   )
 }

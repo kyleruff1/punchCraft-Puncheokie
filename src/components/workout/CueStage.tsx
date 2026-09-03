@@ -83,6 +83,13 @@ export interface CueStageProps {
    */
   upNext?: { tokens: readonly string[]; rateWord?: string }
   /**
+   * The avatar's LEAD target (2026-09-02): the punch the figure should be
+   * demonstrating at now + AVATAR_LEAD_MS — the runner's time-shifted
+   * track. Present -> overrides the reactive current-cue feed; absent
+   * (tests, legacy workouts) -> the card follows the lit token as before.
+   */
+  avatar?: { cue: CueInstance; tokenIndex: number }
+  /**
    * Optional shared transport anchor (M39-V2 Phase W0-b-iii, Kyle
    * 2026-08-30). Passed through to `PunchAvatarCard`, which uses it
    * to drive its flip from a `useFrameCallback` worklet instead of
@@ -316,8 +323,31 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
   )
   const walked = workClock !== undefined
 
+  // The card's feed: the runner's LEAD target when present (the trainer
+  // demonstrating 750ms ahead), else the reactive lit-token pair. With
+  // neither, the cue-less card parks on GUARD — which is also how the
+  // countdown shows the figure the moment "Hit It" is tapped.
+  const avatarCue = props.avatar?.cue ?? current?.cue
+  const avatarIndex = props.avatar
+    ? props.avatar.tokenIndex
+    : current
+      ? current.tokenStates.findIndex(
+          (state, i) => state === 'active' && current.cue.tokens[i]?.kind === 'punch',
+        )
+      : -1
+
   return (
     <View style={styles.root} testID="cue-stage">
+      {/* The trainer box (Kyle, 2026-09-02): left panel, full stage
+          height, partitioned like the KPI rail. Always mounted — guard
+          fills every quiet moment including the countdown. */}
+      <PunchAvatarCard
+        {...(avatarCue ? { cue: avatarCue } : {})}
+        activeTokenIndex={avatarIndex}
+        reducedMotion={reducedMotion}
+        {...(avatarAnchor ? { anchor: avatarAnchor } : {})}
+      />
+      <View style={styles.zones}>
       <View style={styles.nextZone}>
         {next ? (
           <>
@@ -337,18 +367,6 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
       <View style={styles.currentZone}>
         {current ? (
           <>
-            {/* Rendered first so it paints BEHIND the token row — behind the
-                numbered circles, but still far above the backdrop and its
-                effects, which live in an earlier sibling of this whole
-                subtree and cannot reach a view up here. */}
-            <PunchAvatarCard
-              cue={current.cue}
-              activeTokenIndex={current.tokenStates.findIndex(
-                (state, i) => state === 'active' && current.cue.tokens[i]?.kind === 'punch',
-              )}
-              reducedMotion={reducedMotion}
-              {...(avatarAnchor ? { anchor: avatarAnchor } : {})}
-            />
             <CueRow
               view={current}
               size="stage"
@@ -379,18 +397,30 @@ function CueStageInner(props: CueStageProps): React.JSX.Element {
               <Text style={styles.upNextRate}>{props.upNext.rateWord}</Text>
             ) : null}
           </View>
-        ) : (
+        ) : idleLabel ? (
+          // Free-work keeps its line; the bare countdown "Ready" is gone —
+          // the guard-parked trainer IS the ready state (Kyle, 2026-09-02).
           <Text style={styles.idle} testID="cue-stage-idle">
-            {idleLabel ?? 'Ready'}
+            {idleLabel}
           </Text>
-        )}
+        ) : null}
+      </View>
       </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  root: { flex: 1 },
+  // Stage content lives to the RIGHT of the trainer box — centered in
+  // the remaining space, never under the figure (Kyle, screenshot).
+  zones: {
+    flex: 1,
+    marginLeft: '35%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
   nextZone: { minHeight: 90, alignItems: 'center', justifyContent: 'flex-start', gap: 2 },
   nextLabel: {
     fontSize: sizes.micro,

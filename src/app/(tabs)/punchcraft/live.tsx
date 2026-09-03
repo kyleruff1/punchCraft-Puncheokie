@@ -650,6 +650,7 @@ export default function LiveScreen(): React.JSX.Element {
               {...(cues.current ? { current: cues.current } : {})}
               {...(cues.next ? { next: cues.next } : {})}
               {...(live.phase === 'countdown' && upNextHold ? { upNext: upNextHold } : {})}
+              {...(cues.avatar ? { avatar: cues.avatar } : {})}
               {...(cues.freeWork ? { idleLabel: 'Free work — keep your hands moving' } : {})}
               reducedMotion={reducedMotion}
               avatarAnchor={avatarAnchor}

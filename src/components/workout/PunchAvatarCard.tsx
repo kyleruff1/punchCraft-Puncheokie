@@ -18,10 +18,11 @@
  * from the same token the punch nodes render.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Image, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { Image, StyleSheet, View } from 'react-native'
 import type { SharedValue } from 'react-native-reanimated'
 
 import { GUARD_FRAME, findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
+import { colors } from '@/theme/colors'
 import { useAvatarFrameClock } from './useAvatarFrameClock'
 import type { CueInstance } from '@domain/programs/CueTimeline'
 import type { SharedTransportAnchor } from '@domain/timing/SharedTransportAnchor'
@@ -55,18 +56,6 @@ const CARD_ASPECT = 1024 / 1536
  * competing with the token row.
  */
 const CARD_HEIGHT = 480
-/**
- * Placement offset from the layer's flexbox center (Kyle 2026-08-30
- * live observation): the token row + metrics rail leave more room on
- * the right and top of the stage than on the left/bottom, so the
- * central figure gets pushed off-center to breathe.
- *
- * Percentages of the CURRENT stage size (via useWindowDimensions);
- * portrait/landscape and tablet/phone all offset the same fraction of
- * the frame, not a fixed pixel count that would drift with viewport.
- */
-const RIGHT_SHIFT_PCT = 0.2
-const UP_SHIFT_PCT = 0.05
 /**
  * How often the flip clock is sampled. Well under the shortest frame
  * (MIN_FRAME_MS 90) so a strike can never be skipped, and cheap: it
@@ -151,7 +140,6 @@ export function PunchAvatarCard(props: {
   anchor?: SharedValue<SharedTransportAnchor>
 }): React.JSX.Element | null {
   const { cue, activeTokenIndex, reducedMotion = false, anchor } = props
-  const { width: viewportWidth, height: viewportHeight } = useWindowDimensions()
 
   // Every punch in the combination, in order. The card walks these.
   const punchIndexes = useMemo(
@@ -324,17 +312,7 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
-      <View
-        style={[
-          styles.card,
-          {
-            transform: [
-              { translateX: viewportWidth * RIGHT_SHIFT_PCT },
-              { translateY: -viewportHeight * UP_SHIFT_PCT },
-            ],
-          },
-        ]}
-      >
+      <View style={styles.card}>
         {/* Both frames stay mounted and toggle opacity — swapping a single
             source would risk a decode hitch mid-combination.
             fadeDuration={0} (GH #305): RN Android defaults to a 300 ms
@@ -373,17 +351,22 @@ export function PunchAvatarCard(props: {
 }
 
 const styles = StyleSheet.create({
+  // The trainer box (Kyle, 2026-09-02): left panel, ~35% of the stage,
+  // full height, partitioned by the SAME 1px colors.border line the KPI
+  // rail draws — "so he's in a box." Watermark opacity stays settled.
   layer: {
     position: 'absolute',
     top: 0,
-    right: 0,
     bottom: 0,
     left: 0,
+    width: '35%',
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     opacity: CARD_OPACITY,
   },
-  card: { height: CARD_HEIGHT, aspectRatio: CARD_ASPECT },
+  card: { height: CARD_HEIGHT, maxWidth: '96%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },
   frameOff: { opacity: 0 },

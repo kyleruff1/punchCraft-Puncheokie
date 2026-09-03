@@ -115,9 +115,15 @@ describe('CueStage', () => {
     expect(allText(tree)).toContain('Next')
   })
 
-  it('shows an idle state with no current cue', () => {
+  it('shows the guard-parked trainer with no current cue — no READY text', () => {
+    // Kyle, 2026-09-02: the countdown shows the GUARD avatar from the
+    // moment Hit It is tapped; the grey 'Ready' label is gone. A supplied
+    // idleLabel (free work) still renders as text.
     const tree = render(<CueStage />)
-    expect(() => tree.root.findByProps({ testID: 'cue-stage-idle' })).not.toThrow()
+    expect(() => tree.root.findByProps({ testID: 'cue-stage-idle' })).toThrow()
+    expect(() => tree.root.findByProps({ testID: 'punch-avatar-guard' })).not.toThrow()
+    const labeled = render(<CueStage idleLabel="Free work" />)
+    expect(() => labeled.root.findByProps({ testID: 'cue-stage-idle' })).not.toThrow()
   })
 
   it('keeps the whole combination visible so it can be anticipated', () => {
