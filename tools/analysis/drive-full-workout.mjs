@@ -13,8 +13,13 @@ import { join } from 'node:path'
 const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
 const workoutId = arg('workout')
 const deviceId = arg('device') ?? process.env.ANDROID_SERIAL ?? '192.168.86.59:37979'
+const vocab = arg('vocab') ?? 'numbers'
 if (!workoutId) {
-  console.error('usage: node tools/analysis/drive-full-workout.mjs --workout=<id>')
+  console.error('usage: node tools/analysis/drive-full-workout.mjs --workout=<id> [--vocab=techniques]')
+  process.exit(1)
+}
+if (vocab !== 'numbers' && vocab !== 'techniques') {
+  console.error(`--vocab must be numbers or techniques, got '${vocab}'`)
   process.exit(1)
 }
 
@@ -40,6 +45,23 @@ function findTapTarget(xml, resourceId) {
   return null
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// The vocab radio has no resource-id, only an accessibilityLabel
+// (content-desc). Match on that so a full session can be driven in
+// techniques from round one.
+function findByContentDesc(xml, substr) {
+  const nodeRe = /<node[^>]*>/g
+  let match
+  while ((match = nodeRe.exec(xml)) !== null) {
+    const node = match[0]
+    if (!node.match(new RegExp(`content-desc="[^"]*${substr}[^"]*"`))) continue
+    const b = node.match(/bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/)
+    if (!b) continue
+    const [, x1, y1, x2, y2] = b.map(Number)
+    return { x: Math.round((x1 + x2) / 2), y: Math.round((y1 + y2) / 2) }
+  }
+  return null
+}
 
 async function tapWhenVisible(resourceId, timeoutMs = 30_000) {
   const until = Date.now() + timeoutMs
@@ -78,8 +100,16 @@ await tapWhenVisible(`preset-${workoutId}`)
 await sleep(2500)
 await tapWhenVisible('quick-start')
 await sleep(3500)
+// Flip the vocabulary BEFORE Hit It so every round compiles in it.
+if (vocab === 'techniques') {
+  const radio = findByContentDesc(dumpUi(), 'Technique callouts')
+  if (!radio) throw new Error('Technique callouts radio not found on the live screen')
+  log(`tapping Techniques radio at ${radio.x},${radio.y}`)
+  adbShell(`input tap ${radio.x} ${radio.y}`)
+  await sleep(800)
+}
 await tapWhenVisible('start-workout')
-log('workout started — running to completion (no cutoff)')
+log(`workout started (${vocab}) — running to completion (no cutoff)`)
 
 // Poll the captured stream for the completion transition. Generous cap:
 // longest workout is 4x4min + 3x1min + walkout ~= 20.5min.
