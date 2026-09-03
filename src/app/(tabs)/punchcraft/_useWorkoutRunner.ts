@@ -108,6 +108,18 @@ export const LEAD_IN_PAD_MS = 250
 export const CALL_PAD_MS = 500
 
 /**
+ * Technique-vocabulary track lead (Kyle, on-glass 2026-09-03): the whole
+ * technique click-script schedule — lead-ins AND per-bar calls — dispatches
+ * this much EARLIER than numbers, a pure time-shift of the track. Kyle's
+ * ear on a live technique session: the calls ran ~0.5s late, universally,
+ * ~0.25s past his lead tolerance; his call was "shift the whole track
+ * forward a half second, technique audio only, nothing else changed."
+ * Numbers are untouched (offset 0). The single tuning knob for the
+ * technique track's placement.
+ */
+export const TECHNIQUE_TRACK_LEAD_MS = 500
+
+/**
  * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
  * flip track plays this far AHEAD of the walk — "a trainer training,
  * between the voice and the avatar showing." A pure time-shift of the
@@ -529,6 +541,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   )
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
     const vocabulary = clickVocabularyRef.current
+    // Technique track rides half a second ahead of numbers (Kyle,
+    // 2026-09-03) — a pure time-shift of every dispatch in this round's
+    // schedule, applied only when the round compiled in techniques.
+    const trackLeadMs = vocabulary === 'techniques' ? TECHNIQUE_TRACK_LEAD_MS : 0
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
     type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
@@ -553,7 +569,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               text: clip.text,
               module: clip.module,
               durationMs: clip.durationMs,
-              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS),
+              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS - trackLeadMs),
               giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
               state: 'pending',
             })
@@ -575,7 +591,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS),
+        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS - trackLeadMs),
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
         giveUpAtMs: cue.scheduledStartMs + 500,
