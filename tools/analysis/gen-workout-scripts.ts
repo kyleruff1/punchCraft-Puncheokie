@@ -174,7 +174,33 @@ function techniqueText(text: string, notes: string[]): string {
 }
 
 /** Compact-form call text for a motif ("1-2b" → "Jab, body cross!"). */
+/**
+ * Compressed technique calls for the six motifs whose default compact
+ * copy cannot finish inside its tightest stride even after the 1.3x
+ * rubberband (Kyle, 2026-09-03). The compression is a coach's real
+ * shorthand for a REPEATED bar, and it never loses information the
+ * athlete throws on:
+ *   - a pump of one body shot becomes the plural collective;
+ *   - an all-body bar states "body" once as a governing prefix;
+ *   - a mixed bar factors "body" across only an ADJACENT same-level run
+ *     (hyphenated — one breath, pauses removed), flanks stay per-punch;
+ *   - "lead uppercut" → "lead upper" (the hand is kept; never bare
+ *     "upper", which would drop lead-vs-rear).
+ * Level and hand survive every entry; the hyphen removes spoken pauses,
+ * not syllables (the render tool counts hyphen-joined words honestly).
+ */
+const CALL_TECHNIQUE_OVERRIDES: Record<string, string> = {
+  '1b-1b-1b-1b': 'Body jabs!',
+  '1b-2-1-2': 'Body jab, cross-jab-cross!',
+  '1-2-5-2': 'Jab-cross-lead-upper-cross!',
+  '1-2b-3b-2': 'Jab, body cross-hook, cross!',
+  '1b-2b-3b-2b': 'Body: jab, cross, hook, cross!',
+  '1-2b-5b-2': 'Jab, body cross-lead-upper, cross!',
+}
+
 function callTextTechnique(motif: string): string {
+  const override = CALL_TECHNIQUE_OVERRIDES[motif]
+  if (override) return override
   const words = motif
     .split('-')
     .filter((t) => t !== '.')

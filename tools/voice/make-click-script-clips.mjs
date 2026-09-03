@@ -129,12 +129,19 @@ const CALL_WINDOW_PAD_MS = 150
 // Syllable-unit budget per word: technique words run longer than digits
 // ("uppercut" is three syllables to "five"'s one), and the call cap must
 // know it or every uppercut motif renders against a numeric-sized window.
+// Hyphens split like spaces (except the fused "-bee" body token): a
+// hyphenated same-level run ("cross-jab-cross") is a pause-removed breath,
+// NOT one short word — counting it as one unit would set a too-tight cap
+// and the rubberband would crush the audio (Kyle's compressed calls,
+// 2026-09-03). The hyphen buys removed pauses at render, not a smaller
+// syllable budget.
 const UNIT_WORDS = { uppercut: 3, upper: 2, body: 2 }
 const syllableUnits = (text) =>
   text
-    .split(/[ ,!]+/)
+    .replace(/-bee/g, 'bee') // shield the fused body token from the hyphen split
+    .split(/[ ,!-]+/)
     .filter(Boolean)
-    .reduce((a, w) => a + (w.includes('-bee') ? 2 : (UNIT_WORDS[w.toLowerCase()] ?? 1)), 0)
+    .reduce((a, w) => a + (w.includes('bee') ? 2 : (UNIT_WORDS[w.toLowerCase()] ?? 1)), 0)
 
 const leadInPlan = (row) => ({
   performance: 'work',

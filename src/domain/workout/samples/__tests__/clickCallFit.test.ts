@@ -36,21 +36,20 @@ function minStrides(): Map<string, number> {
  * a partial techniques render is then a failure, never a silent fallback.
  */
 /**
- * PENDING KYLE'S RULING (2026-09-03): six technique calls are TEXT-LEVEL
- * too long for their tightest strides even in compact forms after the
- * 1.3x rubberband cap — e.g. "Body jab, body jab, body jab, body jab!"
- * is 12 syllables against a 1.9s stride. Options on the table: compress
- * the call copy for these motifs, allow a harder stretch, or rebalance
- * the rows. Until ruled, they are a TRACKED exception, not a pass.
+ * Compressed 2026-09-03: five of the six over-stride technique calls now
+ * fit after a coach-shorthand rewrite (pump→plural "Body jabs!", all-body
+ * factored to one "Body:" prefix, adjacent same-level runs hyphenated to
+ * one breath, "lead uppercut"→"lead upper" keeping the hand). See
+ * CALL_TECHNIQUE_OVERRIDES in gen-workout-scripts.ts.
+ *
+ * ONE resists: `1b-2-1-2` (body jab + head cross-jab-cross). A lone body
+ * shot among head shots blocks factoring, so the copy is already minimal,
+ * yet the clip renders ~2.05s against a 1.9s stride (longer than the
+ * stride itself). Copy cannot fix it — it needs a STRUCTURAL decision
+ * (rebalance the row to a wider stride, accept the numbers fallback for
+ * this one bar, or allow a harder per-clip stretch). Tracked until ruled.
  */
-const PENDING_OVER_STRIDE_TECHNIQUES = new Set([
-  '1b-1b-1b-1b',
-  '1b-2-1-2',
-  '1-2-5-2',
-  '1-2b-3b-2',
-  '1b-2b-3b-2b',
-  '1-2b-5b-2',
-])
+const PENDING_OVER_STRIDE_TECHNIQUES = new Set(['1b-2-1-2'])
 
 describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabulary) => {
   const strides = minStrides()
