@@ -698,7 +698,7 @@ export default function LiveScreen(): React.JSX.Element {
           tileValues={{
             'combo-completion': `${live.counts.inCue}/${live.counts.inCueExpected}`,
             'punches-last-15s': live.punchesLast15s ?? 0,
-            ...(live.peakVelocity ? { 'peak-velocity': Math.round(live.peakVelocity.value) } : {}),
+            ...(live.peakVelocity ? { 'peak-velocity': live.peakVelocity.value.toFixed(2) } : {}),
             ...(live.degraded === undefined ? { 'connection-completeness': 'OK' } : {}),
             ...(live.projectedTotal === undefined
               ? {}

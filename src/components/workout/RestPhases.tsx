@@ -294,7 +294,11 @@ function ResultView(props: {
 }): React.JSX.Element {
   const { frozen } = props
   const outcome = gradeRound(frozen.actual, frozen.target).outcome
-  const round = (n: number): string => String(Math.round(n))
+  // Two-decimal for a "precise reading" look on the grade tiles (Kyle
+  // 2026-09-02). The spoken accessibility text at line 158 still uses
+  // Math.round — TTS reading "sixty-eight" beats "sixty-eight point
+  // four zero" — this helper is displayed-text only.
+  const round = (n: number): string => n.toFixed(2)
 
   return (
     <View style={styles.body} testID="rest-phase-result">
@@ -350,7 +354,7 @@ function RecoveryView(props: {
     : frozen.bestVelocity
       ? {
           label: `Best ${frozen.bestVelocity.label}`,
-          value: String(Math.round(frozen.bestVelocity.value)),
+          value: frozen.bestVelocity.value.toFixed(2),
         }
       : undefined
 

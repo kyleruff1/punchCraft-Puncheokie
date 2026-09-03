@@ -208,8 +208,8 @@ describe('result phase — the round grade card (D25)', () => {
     // one row, no verdict.
     const tree = render({ restElapsedMs: AT.result })
     expect(textOf(tree.root.findByProps({ testID: 'grade-punches' }))).toContain('246')
-    expect(textOf(tree.root.findByProps({ testID: 'grade-max-velocity' }))).toContain('92')
-    expect(textOf(tree.root.findByProps({ testID: 'grade-avg-velocity' }))).toContain('68')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-max-velocity' }))).toContain('92.10')
+    expect(textOf(tree.root.findByProps({ testID: 'grade-avg-velocity' }))).toContain('68.40')
     expect(textOf(tree.root.findByProps({ testID: 'grade-precision' }))).toContain('34')
   })
 

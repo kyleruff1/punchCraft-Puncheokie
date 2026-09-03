@@ -310,7 +310,7 @@ describe('MetricsRail', () => {
     const tree = render(
       <MetricsRail {...base} avgVelocity={velocity(9.6)} lastVelocity={velocity(12.2)} />,
     )
-    expect(textOf(tree.root.findByProps({ testID: 'metric-avg-velocity' }))).toContain('10')
+    expect(textOf(tree.root.findByProps({ testID: 'metric-avg-velocity' }))).toContain('9.60')
     expect(allText(tree)).toContain('tracker-reported velocity')
   })
 

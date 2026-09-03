@@ -196,13 +196,13 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
           <Metric
             testID="metric-avg-velocity"
             label="Avg velocity"
-            value={avgVelocity === undefined ? EM_DASH : String(Math.round(avgVelocity.value))}
+            value={avgVelocity === undefined ? EM_DASH : avgVelocity.value.toFixed(2)}
             caption="tracker-reported velocity"
           />
           <Metric
             testID="metric-last-velocity"
             label="Last velocity"
-            value={lastVelocity === undefined ? EM_DASH : String(Math.round(lastVelocity.value))}
+            value={lastVelocity === undefined ? EM_DASH : lastVelocity.value.toFixed(2)}
             caption="tracker-reported velocity"
           />
         </>
