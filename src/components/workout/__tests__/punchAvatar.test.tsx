@@ -241,9 +241,9 @@ describe('PunchAvatarCard — the flip repeats', () => {
 
   it('sizes the card in fixed points, so a layout change cannot resize the figure', () => {
     const tree = render(<PunchAvatarCard cue={cue([punch(1)])} activeTokenIndex={0} />)
-    const card = tree.root
-      .findAllByProps({ testID: 'punch-avatar-card' }, { deep: false })[0]!
-      .props.children
+    // The figure sits between the position spacers now, so it is queried
+    // by its own testID rather than as the layer's only child.
+    const card = tree.root.findAllByProps({ testID: 'punch-avatar-figure' }, { deep: false })[0]!
     // The inner card carries a numeric height — never a percentage, which
     // tracked the cue zone and made the avatar jump between two sizes.
     const style = [card.props.style].flat()[0]

@@ -311,10 +311,10 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
-      {/* 1:3 spacers put a quarter of the free width on his left —
-          shifted toward the border by half the centered gap (Kyle). */}
+      {/* 1:5 spacers put a sixth of the free width on his left — the
+          "smidge further left" Kyle settled on-glass (2026-09-02). */}
       <View style={styles.leftSpacer} />
-      <View style={styles.card}>
+      <View style={styles.card} testID="punch-avatar-figure">
         {/* Both frames stay mounted and toggle opacity — swapping a single
             source would risk a decode hitch mid-combination.
             fadeDuration={0} (GH #305): RN Android defaults to a 300 ms
