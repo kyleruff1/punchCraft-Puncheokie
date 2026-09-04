@@ -122,7 +122,10 @@ export const PERSONAS = {
     // top-end "air" and output raised to 48kHz — his C pick from the
     // quality bake-off ("make it sound nice and high bit rate"). Same
     // dry-gentle character underneath, one texture pass.
-    version: 'cornerman3-2',
+    // v3 (Kyle, 2026-09-04): the WALKOUT gets its growl back — a separate
+    // punchy intro texture (broadcast-bright-punch) + the wired shout
+    // ending; the per-bar calls keep dry-gentle-bright.
+    version: 'cornerman3-3',
     engine: 'chatterbox',
     reference: 'tools/voice/reference/cornerman3-selfref-30s.wav',
     intensity: {
@@ -135,6 +138,8 @@ export const PERSONAS = {
     expression: 'theatrical',
     finish: 'shout',
     texture: 'broadcast-dry-gentle-bright',
+    /** The walkout/intro texture — full broadcast punch at the bright ceiling (Kyle's attitude ask). */
+    introTexture: 'broadcast-bright-punch',
     /** Output sample rate; the model synthesizes at 24k but 48k is the shipped container (Kyle's hi-fi ask). */
     sampleRate: 48000,
   },

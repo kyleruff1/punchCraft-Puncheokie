@@ -244,6 +244,17 @@ export const TEXTURES = {
     ),
 
   /**
+   * The WALKOUT voice (Kyle, 2026-09-04): the growly, mean-but-enthusiastic
+   * snap he liked in the earlier broadcast Jonathan, at the new bright/48k
+   * quality. Restores the full broadcast punch — the 12:1 wall + room echo
+   * of BROADCAST_BASE — but with the band-limit opened to 10500 like the
+   * bright call texture. Used for the intro/walkout only (persona
+   * `introTexture`); the per-bar calls keep dry-gentle-bright.
+   */
+  'broadcast-bright-punch': ({ single, finalAccentDb }) =>
+    broadcastChain({ single, finalAccentDb }, { ...BROADCAST_BASE, lowpass: 10500 }),
+
+  /**
    * Weathered rasp — a voice that has shouted across gyms for thirty years.
    *
    * More parallel saturation, driven lower into the body of the voice so the

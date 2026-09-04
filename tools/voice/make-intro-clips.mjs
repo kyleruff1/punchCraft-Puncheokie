@@ -48,6 +48,17 @@ const REFERENCE_VOICE = PERSONA.reference
 const RENDERER = rendererId(PERSONA)
 const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? 24000)
 const RENDER_ATTEMPTS = Number(process.argv.find((a) => a.startsWith('--attempts='))?.slice('--attempts='.length) ?? 8)
+// The walkout texture — full broadcast punch at the bright ceiling (Kyle's
+// growl ask, 2026-09-04). Falls back to the persona's call texture.
+const INTRO_TEXTURE = PERSONA.introTexture ?? PERSONA.texture
+// A gentle aged wobble on the walkout — enough for character, not so much
+// it reads as frail (Kyle wants mean/enthusiastic, not old).
+const INTRO_DRIFT_SEMITONES = 0.12
+const INTRO_DRIFT_HZ = 4.2
+// power-strikes is a calm mid-round instruction ("slow down a bit"), not a
+// shout — it keeps the eased call texture + a landing finish; everything
+// else (walkout + round-start warnings) gets the punch + rising shout.
+const isCalmSegment = (id) => id === 'power-strikes'
 
 const OUT_DIR = join('assets', 'voice', 'numbers', 'standalone')
 
@@ -171,10 +182,11 @@ const manifestOnly = process.argv.includes('--manifest-only')
 const jobs = manifestOnly
   ? []
   : SEGMENTS.filter((s) => !only || only.has(s.id)).map((segment) => {
+  const calm = isCalmSegment(segment.id)
   const plan = compileAdlib(segment.text, {
-    performance: 'work',
+    performance: calm ? 'teach' : 'push',
     expression: PRODUCTION_EXPRESSION,
-    finish: 'land',
+    finish: calm ? 'land' : 'shout',
   })
   return { ...segment, plan, wav: join(process.cwd(), OUT_DIR, `${segment.id}.wav`) }
 })
@@ -188,7 +200,7 @@ const renderOut = execFileSync(CHATTERBOX_PYTHON, [join('tools', 'voice', 'chatt
     jobs: jobs.map((j) => ({
       path: j.wav,
       text: j.plan.renderedText,
-      ...(EXAGGERATION.work ?? {}),
+      ...(EXAGGERATION[isCalmSegment(j.id) ? 'teach' : 'push'] ?? EXAGGERATION.work ?? {}),
       minDurationMs: 900,
       maxDurationMs: 14_000,
       expectText: j.plan.renderedText,
@@ -202,11 +214,48 @@ for (const line of renderOut.split(/\r?\n/)) {
   if (line.startsWith('FAIL ') || line.startsWith('OK ')) console.log(`  ${line}`)
 }
 
-console.log('Trimming and texturing…')
+console.log('Trimming…')
 for (const job of jobs) {
   if (!existsSync(job.wav)) continue
   trimEnds(job.wav, { tailMs: 120 })
-  const filters = textureChain(PRODUCTION_TEXTURE, { profile: 'single', finalAccentDb: 0 })
+}
+
+// Apply the pitch contour + finish shape — the rising, enthusiastic shout
+// ending Kyle wants on the walkout. Previously the intro discarded these
+// (compileAdlib computes them but the pipeline never ran pitch_contour),
+// so finish:'shout' was inert. Praat via the voice venv (parselmouth).
+console.log('Applying pitch contour + shout finish…')
+const contourOut = execFileSync(
+  CHATTERBOX_PYTHON,
+  [join('tools', 'voice', 'pitch_contour.py')],
+  {
+    input: JSON.stringify(
+      jobs
+        .filter((j) => existsSync(j.wav))
+        .map((j) => ({
+          path: j.wav,
+          contour: j.plan.pitchContourSemitones,
+          shiftSemitones: j.plan.pitchShiftSemitones,
+          finish: j.plan.finishShape,
+          driftSemitones: INTRO_DRIFT_SEMITONES,
+          driftHz: INTRO_DRIFT_HZ,
+        })),
+    ),
+    encoding: 'utf8',
+    maxBuffer: 32 * 1024 * 1024,
+  },
+)
+for (const line of contourOut.split(/\r?\n/)) {
+  if (line.startsWith('FAIL ')) console.error(`  ${line}`)
+}
+
+console.log('Texturing…')
+for (const job of jobs) {
+  if (!existsSync(job.wav)) continue
+  // Walkout + warnings get the punch texture; the calm power-strikes keeps
+  // the eased call texture.
+  const texName = isCalmSegment(job.id) ? PRODUCTION_TEXTURE : INTRO_TEXTURE
+  const filters = textureChain(texName, { profile: 'single', finalAccentDb: 0 })
   const temp = `${job.wav}.p.wav`
   execFileSync(
     FFMPEG,
