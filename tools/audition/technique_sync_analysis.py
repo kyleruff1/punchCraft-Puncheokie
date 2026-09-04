@@ -77,24 +77,31 @@ if work_epoch is None or not calls or not nodes:
 for m in nodes:
     nodes[m].sort()
 
-# --- pair each call to the next same-motif token0 node after dispatch -------
+# --- pair each call to the node it ANNOUNCES ---------------------------------
+# The bar's node lights shortly AFTER the call finishes (the call ends a
+# breath before the shot). So pair each call to the same-motif token0 node
+# nearest its own END, not the first node after dispatch — a long call at a
+# tight stride dispatches BEFORE its own bar's node, and "first node after
+# dispatch" then mis-pairs it one rep early (false negatives). Consume each
+# node once, in call order.
 used = {m: 0 for m in nodes}
 per_motif = {}
 for c in sorted(calls, key=lambda c: c["devMs"]):
     lst = nodes.get(c["motif"], [])
-    k = used.get(c["motif"], 0)
-    while k < len(lst) and lst[k] < c["devMs"]:
-        k += 1
-    if k >= len(lst):
-        continue
-    node = lst[k]
-    used[c["motif"]] = k + 1
-    # Reject cross-section/cross-round mismatches: a call's bar node lights
-    # within one stride (widest ~8.5s) of its dispatch. Beyond that the
-    # walk has jumped a gap (interrupted capture) — skip, don't pollute.
-    if node - c["devMs"] > 11000:
-        continue
+    start = used.get(c["motif"], 0)
     call_end = c["devMs"] + c["rewindMs"] + PLAYER_LATENCY_MS + c["durMs"]
+    # nearest unconsumed node to call_end, searching from the cursor
+    best_k, best_d = None, None
+    for k in range(start, len(lst)):
+        d = abs(lst[k] - call_end)
+        if best_d is None or d < best_d:
+            best_k, best_d = k, d
+        elif lst[k] > call_end and d > best_d:
+            break  # moving away past call_end — nearest already found
+    if best_k is None or best_d > 6000:
+        continue  # no plausible node within a stride+ — skip (gap)
+    node = lst[best_k]
+    used[c["motif"]] = best_k + 1
     per_motif.setdefault(c["motif"], []).append(node - call_end)
 
 flat = [b for v in per_motif.values() for b in v]
