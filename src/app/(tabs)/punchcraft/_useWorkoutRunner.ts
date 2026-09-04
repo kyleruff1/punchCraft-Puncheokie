@@ -123,6 +123,15 @@ export const CALL_PAD_MS = 500
 export const TECHNIQUE_CALL_LEAD_MS = 250
 /** Lead-ins (the setup-pause whisper) keep the original lead — not the "too early" complaint. */
 export const TECHNIQUE_LEADIN_LEAD_MS = 500
+/**
+ * Numbers CALL lead (Kyle, 2026-09-04): the same measure-and-promote pass
+ * on numbers found it already tight (~525ms breath, Kyle liked it) but
+ * with one marginal late (-31ms worst on the long 1-2b-3b-2 body motif
+ * after the bright/pre-arm re-render). A small nudge guarantees the
+ * never-late floor (-31 -> +69 worst) without pushing numbers to
+ * technique's wider breath. Numbers lead-ins stay at 0.
+ */
+export const NUMBERS_CALL_LEAD_MS = 100
 
 /**
  * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
@@ -550,7 +559,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // a pure time-shift, applied only when the round compiled in
     // techniques. Calls and lead-ins have independent leads (calls pulled
     // back to a quarter-second breath by mic measurement; lead-ins kept).
-    const callLeadMs = vocabulary === 'techniques' ? TECHNIQUE_CALL_LEAD_MS : 0
+    const callLeadMs = vocabulary === 'techniques' ? TECHNIQUE_CALL_LEAD_MS : NUMBERS_CALL_LEAD_MS
     const leadInLeadMs = vocabulary === 'techniques' ? TECHNIQUE_LEADIN_LEAD_MS : 0
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
