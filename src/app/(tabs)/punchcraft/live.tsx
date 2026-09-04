@@ -153,6 +153,15 @@ export default function LiveScreen(): React.JSX.Element {
   // The click-script bank's spelling of the same choice (the policy names
   // it `names`; the rendered library names it `techniques`).
   const clickVocabulary = effectiveVocabulary === 'names' ? ('techniques' as const) : ('numbers' as const)
+  // The vocabulary the round-1 pre-bell opener (intro plan) is built in.
+  // It MUST come from the recipe, not the live radio: the intro drives
+  // `countdownMs`, which is a dependency of the engine-build effect, so if
+  // it changed on a live flip the whole engine would rebuild and reset the
+  // workout to "Hit It" (regression, Kyle 2026-09-04). A mid-round flip
+  // already applies from the next round everywhere else; round 1's opener
+  // is pre-flip by definition, so the recipe's starting vocabulary is
+  // exactly right and stays stable across flips.
+  const startClickVocabulary = recipe.voiceVocabulary === 'names' ? ('techniques' as const) : ('numbers' as const)
 
   React.useEffect(() => {
     // Preload during the countdown, not at the first cue: M34-01 measured a
@@ -277,7 +286,7 @@ export default function LiveScreen(): React.JSX.Element {
   // the memo), so the coach finishes before the first bell and the rhythm
   // map never moves. Voice off, or no rendered segments, falls back to the
   // default 5-second lead-in.
-  const intro = useMemo(() => planIntro(workout, undefined, clickVocabulary), [workout, clickVocabulary])
+  const intro = useMemo(() => planIntro(workout, undefined, startClickVocabulary), [workout, startClickVocabulary])
   // The countdown is a CAP, not the schedule: planned speech plus slack
   // for dev-client load stalls. The intro's completion callback skips the
   // remainder, so the bell follows the coach's actual last word.
