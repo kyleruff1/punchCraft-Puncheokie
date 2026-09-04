@@ -143,7 +143,15 @@ const CALL_WINDOW_PAD_MS = 150
 // bar — a lone body jab among head shots — that blocks all copy
 // factoring, so it renders ~2.05s against a 2.0s stride; Kyle approved
 // the extra compression for this one bar (2026-09-03) to bring it under.
-const CALL_MAX_STRETCH = { 'call/1b-2-1-2': 1.6 }
+const CALL_MAX_STRETCH = {
+  'call/1b-2-1-2': 1.6,
+  // Body/fused-bee calls that render marginally long; a slightly harder
+  // stretch keeps them under their stride after the bright/48k re-render
+  // (Kyle-approved per-clip compression, 2026-09-03).
+  'call/1b-1b-1b-1b': 1.45,
+  'call/1b-2b-3b-2b': 1.45,
+  'call/1-2b-5b-2': 1.4,
+}
 
 // Syllable-unit budget per word: technique words run longer than digits
 // ("uppercut" is three syllables to "five"'s one), and the call cap must
