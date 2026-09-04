@@ -1069,13 +1069,23 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           rewindMs: safe(Math.round(this.clock() - dispatchedAt)),
           path: safe(path),
         })
-        // Re-arm for the next bar: once this call has finished, seek back
-        // to 0 during the idle gap so the repeat plays immediately. Guarded
-        // by the play generation so a player that has since replayed is
-        // never seeked mid-clip (which would cut it). PRE_ARM_PAD clears
-        // the clip's own duration first.
+        // Re-arm for the next bar: once this call has finished, park the
+        // player back at 0 during the idle gap so the repeat plays
+        // immediately. PAUSE FIRST, then seek — a player parked "playing"
+        // at end-of-stream RESUMES on a lone seekTo(0), replaying the clip
+        // unlogged and stacking sections over each other (Kyle's "voice
+        // storm", 2026-09-04; worst in dense sections where the replays
+        // fill every gap). Pausing makes the seek a silent reposition. The
+        // shllck path never exposed this because its seek is followed
+        // immediately by play(). Generation-guarded so a re-dispatched
+        // player is never touched; PRE_ARM_PAD clears the clip first.
         this.schedule(() => {
           if (this.clickScriptGen.get(module) !== gen) return
+          try {
+            target.pause()
+          } catch {
+            // Already stopped at EOS — nothing to pause.
+          }
           void Promise.resolve(target.seekTo(0))
             .catch(() => undefined)
             .then(() => {

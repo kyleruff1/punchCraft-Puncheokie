@@ -1109,6 +1109,8 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
     let nextId = 1
     let resolveSeek: (() => void) | null = null
     let seekCalls = 0
+    let pauseCalls = 0
+    const seekOrder: string[] = []
     const output = new VoiceOutputExpo({
       clock: () => clock,
       schedule: (fn, delayMs) => {
@@ -1125,11 +1127,16 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
           volume: 1,
           seekTo: () => {
             seekCalls += 1
+            seekOrder.push('seek')
             return new Promise<void>((resolve) => {
               resolveSeek = resolve
             })
           },
           play: () => plays.push(source),
+          pause: () => {
+            pauseCalls += 1
+            seekOrder.push('pause')
+          },
           remove: () => {},
         }) as never) as never,
       setAudioMode: (async () => {}) as never,
@@ -1158,6 +1165,10 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
       get seekCalls() {
         return seekCalls
       },
+      get pauseCalls() {
+        return pauseCalls
+      },
+      seekOrder,
     }
   }
 
@@ -1196,7 +1207,12 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
     const h = rig()
     h.output.playClickScript(h.clip) // fresh → plays, schedules pre-arm at duration+200
     expect(h.plays).toEqual([77])
-    h.advance(950) // fire the pre-arm (700+200=900): it seeks to 0…
+    h.advance(950) // fire the pre-arm (700+200=900): it PAUSES then seeks to 0…
+    // The pre-arm must PAUSE before it seeks — a lone seek on a player parked
+    // "playing" at EOS resumes it, replaying the clip unlogged (the voice
+    // storm). Pause-first makes the re-arm a silent reposition.
+    expect(h.pauseCalls).toBe(1)
+    expect(h.seekOrder).toEqual(['pause', 'seek'])
     await h.finishSeek() // …and the seek resolves → module is now armed
     const seeksBefore = h.seekCalls
     h.output.playClickScript(h.clip) // reused BUT armed → immediate, no new rewind
