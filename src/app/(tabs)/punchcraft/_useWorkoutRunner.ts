@@ -108,6 +108,14 @@ export const LEAD_IN_PAD_MS = 250
 export const CALL_PAD_MS = 500
 
 /**
+ * How many reps before a section ends to start previewing the NEXT distinct
+ * block's opening pills (Kyle, 2026-09-04: the preview should lead in with
+ * the section's whisper, not flash in on the final rep). ~2 reps ≈ the
+ * lead-in whisper + setup-pause window at typical strides.
+ */
+export const PREVIEW_LEAD_REPS = 2
+
+/**
  * Technique-vocabulary lead: per-bar CALLS and section LEAD-INS dispatch
  * this much EARLIER than numbers (a pure time-shift of the technique
  * track; numbers stay at 0). Split into two knobs so the shot-calling
@@ -819,15 +827,38 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const isActive = snap.status === 'active' || snap.status === 'accepting'
     freeWorkRef.current = snap.freeWork === true
     currentRef.current = renderStateFor(snap.current, states(snap.current, isActive))
-    // Hide "Next" while a repeated combo runs: the engine's next is just the
-    // next rep of the same block, so showing it duplicates what is already on
-    // screen. The next *distinct* block previews normally once the reps finish.
-    const nextIsSameBlock =
-      snap.next !== undefined && snap.next.blockId === snap.current?.blockId
-    nextRef.current = nextIsSameBlock ? null : renderStateFor(snap.next)
+    // "Next" preview. While a repeated combo runs, the engine's next is just
+    // the next rep of the SAME block — hidden, or it duplicates the screen.
+    // But revealing the upcoming DISTINCT block only on the final rep made
+    // the preview flash in too late (Kyle, 2026-09-04): the section's lead-in
+    // whisper is already playing while the pills are still hidden. So once the
+    // current block is within its last PREVIEW_LEAD_REPS reps, look ahead in
+    // the round timeline to the next distinct block's opening cue and preview
+    // THAT — the pills now lead in alongside the whisper and hold through the
+    // setup pause.
+    const cur = snap.current
+    let leadInPreview: CueInstance | undefined
+    if (cur) {
+      const total = repeatTotals.get(cur.blockId) ?? 1
+      const repsRemaining = total - cur.repeatIndex - 1
+      if (repsRemaining <= PREVIEW_LEAD_REPS) {
+        const roundIdx = sessionRef.current?.snapshot()?.roundIndex ?? -1
+        const roundCues = roundIdx >= 0 ? (timelineRef.current[roundIdx]?.cues ?? []) : []
+        const firstIdx = roundCues.findIndex((c) => c.blockId === cur.blockId)
+        // Block cues are contiguous (repeatIndex 0..total-1), so the cue right
+        // after the block's last rep is the next distinct block's opener.
+        if (firstIdx >= 0) leadInPreview = roundCues[firstIdx + total]
+      }
+    }
+    const nextIsSameBlock = snap.next !== undefined && snap.next.blockId === cur?.blockId
+    nextRef.current = leadInPreview
+      ? renderStateFor(leadInPreview)
+      : nextIsSameBlock
+        ? null
+        : renderStateFor(snap.next)
     // GH #305 v3: the walk plan is round-scoped and consumed whole by
     // the UI thread (see useRingBeatClock). Nothing per-rep remains here.
-  }, [renderStateFor])
+  }, [renderStateFor, repeatTotals])
 
   // -------------------------------------------------------------------------
 
