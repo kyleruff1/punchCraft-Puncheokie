@@ -108,16 +108,21 @@ export const LEAD_IN_PAD_MS = 250
 export const CALL_PAD_MS = 500
 
 /**
- * Technique-vocabulary track lead (Kyle, on-glass 2026-09-03): the whole
- * technique click-script schedule — lead-ins AND per-bar calls — dispatches
- * this much EARLIER than numbers, a pure time-shift of the track. Kyle's
- * ear on a live technique session: the calls ran ~0.5s late, universally,
- * ~0.25s past his lead tolerance; his call was "shift the whole track
- * forward a half second, technique audio only, nothing else changed."
- * Numbers are untouched (offset 0). The single tuning knob for the
- * technique track's placement.
+ * Technique-vocabulary lead: per-bar CALLS and section LEAD-INS dispatch
+ * this much EARLIER than numbers (a pure time-shift of the technique
+ * track; numbers stay at 0). Split into two knobs so the shot-calling
+ * calls tune independently of the setup-pause lead-ins.
+ *
+ * CALL lead settled by mic measurement (Kyle, 2026-09-04): at 500 the
+ * call ended ~1s before the shot across every extreme set (body-work
+ * +1053, uppercut +984, speed-combos +1091 mean; 0 late) — his "too
+ * early." Pulling back a quarter second lands a comfortable breath while
+ * the tightest set (speed-combos, +445 worst at 500) stays safely
+ * never-late (~+195 worst). His "we need a quarter-second delay."
  */
-export const TECHNIQUE_TRACK_LEAD_MS = 500
+export const TECHNIQUE_CALL_LEAD_MS = 250
+/** Lead-ins (the setup-pause whisper) keep the original lead — not the "too early" complaint. */
+export const TECHNIQUE_LEADIN_LEAD_MS = 500
 
 /**
  * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
@@ -541,10 +546,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   )
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
     const vocabulary = clickVocabularyRef.current
-    // Technique track rides half a second ahead of numbers (Kyle,
-    // 2026-09-03) — a pure time-shift of every dispatch in this round's
-    // schedule, applied only when the round compiled in techniques.
-    const trackLeadMs = vocabulary === 'techniques' ? TECHNIQUE_TRACK_LEAD_MS : 0
+    // Technique dispatches ride ahead of numbers (Kyle, 2026-09-03/04) —
+    // a pure time-shift, applied only when the round compiled in
+    // techniques. Calls and lead-ins have independent leads (calls pulled
+    // back to a quarter-second breath by mic measurement; lead-ins kept).
+    const callLeadMs = vocabulary === 'techniques' ? TECHNIQUE_CALL_LEAD_MS : 0
+    const leadInLeadMs = vocabulary === 'techniques' ? TECHNIQUE_LEADIN_LEAD_MS : 0
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
     type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
@@ -569,7 +576,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               text: clip.text,
               module: clip.module,
               durationMs: clip.durationMs,
-              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS - trackLeadMs),
+              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS - leadInLeadMs),
               giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
               state: 'pending',
             })
@@ -591,7 +598,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS - trackLeadMs),
+        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS - callLeadMs),
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
         giveUpAtMs: cue.scheduledStartMs + 500,
