@@ -142,6 +142,67 @@ export const TECHNIQUE_LEADIN_LEAD_MS = 500
 export const NUMBERS_CALL_LEAD_MS = 100
 
 /**
+ * Set-aware call breath (Kyle, 2026-09-04). The old breath (node − call-end)
+ * was a fixed `CALL_PAD_MS + callLead` = 600ms(numbers)/750ms(techniques),
+ * tuned by mic on DENSE 4-node combos only. On a dense bar the call's words
+ * fill that pre-node window at combo tempo → "snaps to perfect." On a 1-2
+ * node SLOW bar (wide inter-node interval) the same short call ends the full
+ * 600ms early and then sparse punches unfold under a long silence → Kyle's
+ * "offset by a delay too much." So the breath now SHRINKS as the bar's
+ * inter-node interval (slotMs) widens past the dense reference, degenerating
+ * to the exact old constant on tight bars (dense combos unchanged, still
+ * snap). `breath = clamp(DENSE − GAIN·max(0, slotMs − REF), MIN, DENSE)`.
+ * All knobs are mic-tunable via tools/audition/call_offset_analysis.py.
+ */
+export const DENSE_BREATH_MS = {
+  numbers: CALL_PAD_MS + NUMBERS_CALL_LEAD_MS, // 600 — the value tuned on dense numbers combos
+  techniques: CALL_PAD_MS + TECHNIQUE_CALL_LEAD_MS, // 750 — dense techniques
+} as const
+/** Inter-node interval the dense breath was tuned at (dense combos run ~250-333ms slots); at/below this, breath = the full dense value. */
+export const BREATH_REF_SLOT_MS = 300
+/** How hard the breath shrinks per ms the bar's inter-node interval exceeds the reference. */
+export const BREATH_TRACK_GAIN = 1.0
+/** Floor: the call still finishes at least this far before the bar's first shot, on the widest/slowest bars. */
+export const MIN_BREATH_MS = 150
+/**
+ * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
+ * by design — the escape hatch when the mic says a specific bucket wants a
+ * bespoke breath the formula doesn't nail. A value here replaces the formula.
+ */
+export const CALL_BREATH_OVERRIDES: Record<string, number> = {}
+
+/**
+ * The breath (node − call-end) for one bar's call, and the offset of the
+ * bar's first PUNCH (a bar may open on a rest slot, so anchor to the punch,
+ * not scheduledStartMs). Breath shrinks as the inter-node interval widens
+ * past BREATH_REF_SLOT_MS; a single-punch bar has no interval → floors to
+ * MIN_BREATH_MS. An override for the call slot wins outright.
+ */
+export function breathForBar(
+  cue: Pick<CueInstance, 'tokens' | 'tokenOffsetsMs'>,
+  vocabulary: 'numbers' | 'techniques',
+  slot: string,
+): { breathMs: number; firstPunchOffsetMs: number } {
+  const punchIdx: number[] = []
+  cue.tokens.forEach((t, i) => {
+    if (t.kind === 'punch') punchIdx.push(i)
+  })
+  const firstPunchOffsetMs = punchIdx.length > 0 ? (cue.tokenOffsetsMs[punchIdx[0]!] ?? 0) : 0
+  const dense = DENSE_BREATH_MS[vocabulary]
+  const override = CALL_BREATH_OVERRIDES[slot]
+  if (override !== undefined) return { breathMs: override, firstPunchOffsetMs }
+  const slotMs =
+    punchIdx.length >= 2
+      ? (cue.tokenOffsetsMs[punchIdx[1]!] ?? 0) - firstPunchOffsetMs
+      : Number.POSITIVE_INFINITY
+  const breathMs = Math.max(
+    MIN_BREATH_MS,
+    Math.min(dense, dense - BREATH_TRACK_GAIN * Math.max(0, slotMs - BREATH_REF_SLOT_MS)),
+  )
+  return { breathMs, firstPunchOffsetMs }
+}
+
+/**
  * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
  * flip track plays this far AHEAD of the walk — "a trainer training,
  * between the voice and the avatar showing." A pure time-shift of the
@@ -563,11 +624,9 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   )
   const buildLeadInSchedule = useCallback((roundIndex: number): void => {
     const vocabulary = clickVocabularyRef.current
-    // Technique dispatches ride ahead of numbers (Kyle, 2026-09-03/04) —
-    // a pure time-shift, applied only when the round compiled in
-    // techniques. Calls and lead-ins have independent leads (calls pulled
-    // back to a quarter-second breath by mic measurement; lead-ins kept).
-    const callLeadMs = vocabulary === 'techniques' ? TECHNIQUE_CALL_LEAD_MS : NUMBERS_CALL_LEAD_MS
+    // Lead-ins ride ahead of numbers by a fixed lead (Kyle, 2026-09-03);
+    // per-bar calls use the set-aware breath (breathForBar) instead, folded
+    // from the same tuned dense values via DENSE_BREATH_MS.
     const leadInLeadMs = vocabulary === 'techniques' ? TECHNIQUE_LEADIN_LEAD_MS : 0
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
@@ -607,18 +666,25 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
-      const clip = findClickScript(`call/${motif}`, vocabulary)
+      const slot = `call/${motif}`
+      const clip = findClickScript(slot, vocabulary)
       if (!clip) continue
+      // Set-aware breath: on a dense bar this equals the old fixed
+      // CALL_PAD+lead; on a slow/sparse bar it shrinks so the short call
+      // stops ending a full 600/750ms before a wide-strided first shot.
+      // Anchor to the first PUNCH (a bar may open on a rest).
+      const { breathMs, firstPunchOffsetMs } = breathForBar(cue, vocabulary, slot)
+      const firstNodeMs = cue.scheduledStartMs + firstPunchOffsetMs
       calls.push({
         kind: 'call',
-        slot: `call/${motif}`,
+        slot,
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS - callLeadMs),
+        dispatchAtMs: Math.max(0, firstNodeMs - clip.durationMs - breathMs),
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
-        giveUpAtMs: cue.scheduledStartMs + 500,
+        giveUpAtMs: firstNodeMs + 500,
         state: 'pending',
       })
     }
