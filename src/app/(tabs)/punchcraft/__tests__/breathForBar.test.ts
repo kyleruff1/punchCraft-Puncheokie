@@ -16,7 +16,7 @@ const punch = { kind: 'punch' as const, number: 1 }
 const rest = { kind: 'rest' as const }
 
 /** Build a fake cue: punches at the given ms offsets, optional leading rest. */
-function bar(offsets: number[], opts: { leadRest?: number } = {}) {
+function bar(offsets: number[], opts: { leadRest?: boolean } = {}) {
   const tokens = opts.leadRest ? [rest, ...offsets.map(() => punch)] : offsets.map(() => punch)
   const tokenOffsetsMs = opts.leadRest ? [0, ...offsets] : offsets
   return { tokens, tokenOffsetsMs }
