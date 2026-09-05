@@ -22,6 +22,16 @@ export default function PunchCraftLanding() {
   const selectSample = useWorkoutStore((s) => s.selectSample)
   const startNewBuild = useWorkoutStore((s) => s.startNewBuild)
 
+  // The middle button (Kyle 2026-09-04): roll a random designed workout.
+  // Always lands on a DIFFERENT preset than the current selection, so every
+  // tap visibly re-rolls the grid; quickstart then runs the pick.
+  const selectRandom = (): void => {
+    const keys = samples.map((s) => s.key as SampleWorkoutKey)
+    const pool = keys.filter((k) => k !== selectedSampleKey)
+    const pick = pool[Math.floor(Math.random() * pool.length)] ?? keys[0]
+    if (pick) selectSample(pick)
+  }
+
   return (
     <PickerProvider>
       <ScrollView style={styles.root} contentContainerStyle={styles.container}>
@@ -38,23 +48,9 @@ export default function PunchCraftLanding() {
           }}
         />
 
-        <Link href="/(tabs)/punchcraft/recipe" asChild>
-          {/* The authored art IS the button — pill, icon, chevron and neon
-              rim are baked into the PNG, so no ForgedButton chrome here. */}
-          <ActionButton
-            action="buildAWorkout"
-            testID="setup-workout"
-            // Mint a fresh seed and drop any library pick, so the recipe opens on
-            // a new generated workout rather than the last one built or picked.
-            onPress={() => startNewBuild()}
-            style={styles.primaryActionSpacing}
-          />
-        </Link>
-
-        {/* Designed workouts — the no-build path. An always-visible grid
-            (no popout): tap a preset to select it, and the small chrome
-            start button jumps STRAIGHT to the live screen running it —
-            no recipe detour, no seed minting. */}
+        {/* Designed workouts LEAD the page (Kyle 2026-09-04) — the library
+            is the menu; both action buttons sit in one row beneath it. An
+            always-visible grid (no popout): tap a preset to select it. */}
         <View style={styles.presetCard} testID="designed-workouts">
           <Text style={styles.presetLabel}>Designed workouts</Text>
           <View style={styles.presetGrid}>
@@ -89,16 +85,48 @@ export default function PunchCraftLanding() {
               )
             })}
           </View>
+        </View>
+
+        {/* The action row (Kyle 2026-09-04): build-a-workout hard against the
+            LEFT edge, quickstart hard against the RIGHT, equal pill sizes —
+            the prominent-banner era is over. Between them, "random workout"
+            is DELIBERATELY bare — just text on a transparent backdrop,
+            distinctly different from the authored chrome. */}
+        <View style={styles.actionsRow}>
+          <Link href="/(tabs)/punchcraft/recipe" asChild>
+            <ActionButton
+              action="buildAWorkout"
+              fit="pill"
+              height={60}
+              testID="setup-workout"
+              // Mint a fresh seed and drop any library pick, so the recipe opens on
+              // a new generated workout rather than the last one built or picked.
+              onPress={() => startNewBuild()}
+            />
+          </Link>
           <Link href="/(tabs)/punchcraft/live" asChild>
-            {/* The landing's own authored art (Kyle 2026-08-29) — "start
-                workout" stays the recipe screen's button. */}
+            {/* Selects a random preset AND starts it — the label promises a
+                SESSION, so a tap goes straight to the live screen running
+                the roll (Kyle 2026-09-04: "it hasn't started yet"). */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start a random workout"
+              onPress={selectRandom}
+              style={({ pressed }) => [styles.randomAction, pressed && styles.randomActionPressed]}
+              testID="random-workout"
+            >
+              <Text style={styles.randomActionText}>Randomized PunchCraft Session</Text>
+            </Pressable>
+          </Link>
+          <Link href="/(tabs)/punchcraft/live" asChild>
+            {/* Jumps STRAIGHT to the live screen running the selected preset —
+                no recipe detour, no seed minting. */}
             <ActionButton
               action="quickstartWorkout"
               fit="pill"
               height={60}
               disabled={selectedSampleKey === undefined}
               testID="quick-start"
-              style={styles.quickStart}
             />
           </Link>
         </View>
@@ -126,7 +154,16 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.textPrimary,
   },
-  primaryActionSpacing: { marginTop: 4 },
+  actionsRow: {
+    // Build-a-workout hard against the LEFT edge, quickstart hard against
+    // the RIGHT — "extreme justified" (Kyle 2026-09-04) — equal pills
+    // under the library. Wraps rather than clips on a narrow window.
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 16,
+  },
   presetCard: {
     // Chrome-rim motif: lit top edge, dark bottom, pill-adjacent radius.
     borderWidth: 1,
@@ -178,7 +215,34 @@ const styles = StyleSheet.create({
     lineHeight: 14,
     color: colors.textSecondary,
   },
-  quickStart: { alignSelf: 'center' },
+  randomAction: {
+    // Transparent backdrop, styled INTO the forged motif (Kyle 2026-09-04):
+    // the sporty italic the authored art carries, chrome metal, a dark
+    // under-shadow for bevel depth — now framed by a ROUNDED chrome rim
+    // (lit top edge, dark bottom, same recipe as the preset card). No
+    // fill, so it still never competes with the pills.
+    height: 60,
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+    // Rounded silver ring, built on the SAME recipe as the spike button
+    // below (the one border that provably renders on this tablet):
+    // integer width, moderate radius, no explicit background — Android's
+    // border drawable drops fractional widths + half-height radii over a
+    // 'transparent' fill (two invisible attempts, Kyle 2026-09-04).
+    borderWidth: 2,
+    borderRadius: 16,
+    borderColor: punch.silver,
+  },
+  randomActionPressed: { opacity: 0.7 },
+  randomActionText: {
+    fontFamily: fonts.heading,
+    fontSize: 18,
+    letterSpacing: 1.2,
+    color: punch.chrome,
+    textShadowColor: punch.black,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
+  },
   spikeAction: {
     marginTop: 8,
     paddingVertical: 12,

@@ -71,7 +71,14 @@ const config: ExpoConfig = {
     'expo-sqlite',
     'expo-secure-store',
     'expo-font',
-    'expo-splash-screen',
+    // Punch-black through the WHOLE launch chain (Kyle 2026-09-04): the
+    // Android 12+ system splash (icon on windowSplashScreenBackground) AND
+    // our splash window both sat on the stock white. The android/ res is
+    // gitignored (prebuild-managed), so this config is the durable source —
+    // the same values were also hand-applied to the current android/ tree
+    // (colors.xml splashscreen_background, values-v31 styles, a layer-list
+    // under the logo so no decode/transition frame can flash light).
+    ['expo-splash-screen', { backgroundColor: '#0B0D0E' }],
     'expo-status-bar',
     'expo-screen-orientation',
     // M34-01 voice spike: cached-clip playback and TTS. `expo-audio` needs a
