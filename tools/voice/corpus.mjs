@@ -53,10 +53,14 @@ export function combinationsFromCorpus() {
   // the same lowercase clip-key form the scan produces.
   for (const notation of corpusV1().notations) found.add(notation)
   // SINGLES (2026-09-05): the "one punch is a standalone clip" assumption
-  // above was false at runtime — the announcer requests form 'combo' for
-  // lone punches too, and uppercut-clinic's 1-6b-3-2 section went SILENT
-  // on 'no manifest entry for numbers/combo/6b' (both vocabs). Render the
-  // full single family so no bare punch can ever fall through again.
+  // above was false at runtime — cue-previewing warms form 'combo' for
+  // every token (CueAnnouncer preloadBothVocabsFor), and fused-body ids
+  // ship only in numbers/standalone, so uppercut-clinic's 1-6b-3-2 logged
+  // 'no manifest entry for numbers/combo/6b' per rep (harmless warm-up
+  // noise, NOT the round-4 silence — that trail led elsewhere). Rendering
+  // the single family closes the announce library over bare punches so a
+  // lone-punch announce-then-work block can never fall to the per-word
+  // path that has no fused-body combo form.
   for (const n of ['1', '2', '3', '4', '5', '6', '1b', '2b', '3b', '4b', '5b', '6b']) {
     found.add(n)
   }
