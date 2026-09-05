@@ -2493,6 +2493,17 @@
           "priority": "P2",
           "size": "L",
           "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-12",
+          "milestoneKey": "M40",
+          "type": "spike",
+          "title": "Tracker sensitivity floor: probe config chars + modes for a lower transmit threshold",
+          "body": "## Context\n\nSoft punches produce NO frame at all: the firmware punch-detection threshold is set by init command 17 (vendor log “Set new Threshold to 30”) and the write carries no argument — the value is firmware-fixed. Kyle’s jam feedback (2026-09-05): low-velocity play needs feedback. High-sensitivity scaling now covers detected punches; this spike hunts a lever for the floor itself.\n\n## Acceptance criteria\n\n- [ ] READ ca281074/75/76 on both trackers (safe reads first) and document contents; correlate with threshold behavior\n- [ ] Candidate writes tested on ONE tracker only (cradle-reset recovery plan; wrong-length-write clock-scramble precedent respected)\n- [ ] Modes 2 (Gym), 4 (Test), 5 (Normal Kick) probed for different detection floors\n- [ ] Verdict: achievable sensitivity range, or documented dead end",
+          "areaSlug": "protocol",
+          "priority": "P1",
+          "size": "M",
+          "sprint": "sprint-2"
         }
       ]
     }
