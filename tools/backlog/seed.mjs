@@ -53,8 +53,11 @@ if (!existsSync(ISSUES_FILE)) {
 }
 const ISSUES_DOC = JSON.parse(readFileSync(ISSUES_FILE, 'utf8'))
 const FRAGMENTS = (ISSUES_DOC.fragments || []).filter(Boolean)
-if (FRAGMENTS.length !== 8) {
-  console.error(`[seed] Expected 8 phase fragments, got ${FRAGMENTS.length}. Aborting.`)
+// The original backlog is exactly 8 phase fragments (0..7); later arcs
+// append (Phase 8 = Puncheoke instrument). Fewer than 8 means a truncated
+// file — abort; more is legitimate growth.
+if (FRAGMENTS.length < 8) {
+  console.error(`[seed] Expected >= 8 phase fragments, got ${FRAGMENTS.length}. Aborting.`)
   process.exit(2)
 }
 let PROJECT = null

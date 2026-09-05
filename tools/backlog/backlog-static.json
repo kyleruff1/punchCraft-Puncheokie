@@ -67,6 +67,10 @@
           {
             "name": "Phase 7",
             "color": "PURPLE"
+          },
+          {
+            "name": "Phase 8",
+            "color": "PINK"
           }
         ]
       },
@@ -335,6 +339,11 @@
       "name": "blocked",
       "color": "111827",
       "description": "Waiting on another issue, decision, or external event"
+    },
+    {
+      "name": "phase:8",
+      "color": "e9d5ff",
+      "description": "Phase 8 — Puncheoke instrument (Note Cube + PunchBridge)"
     }
   ],
   "milestones": [
@@ -575,6 +584,11 @@
       "title": "M38: Workout backdrop & ambience library",
       "phase": 5,
       "description": "Selectable animated backdrops for every workout presentation: BackdropTheme contracts and mood taxonomy, the contrast scrim that guarantees foreground legibility, a bundled licence-recorded starter library, the renderer with still/subtle/active motion and auto-degrade, and seed-stable recipe-level selection. The backdrop carries no information and is fully independent of audio (D12). Spec §31; Puncheokie doc §19, §25."
+    },
+    {
+      "key": "M40",
+      "title": "M40: Puncheoke instrument — Note Cube & PunchBridge",
+      "description": "The punch-driven sample-and-hold instrument: event plumbing, desktop MIDI bridge, Note Cube domain model, jam screen, visuals, guided articulations. Design authority: docs/puncheoke/instrument-design.md + note-cube-design.md."
     }
   ]
 }
