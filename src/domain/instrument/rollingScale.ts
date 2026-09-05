@@ -71,6 +71,36 @@ export const ACCELERATION_SCALE_DEFAULTS: RollingScaleOptions = {
   highPercentile: 0.9,
 }
 
+/**
+ * High-sensitivity variants for the instrument (Kyle, on-glass
+ * 2026-09-05: soft play needs feedback). The firmware's transmit floor
+ * (~threshold 30, cmd 17) still swallows the softest touches — that
+ * lever is a protocol spike — but every punch that DOES arrive spreads
+ * across the full musical range: anchors sit near the soft end of the
+ * observed corpus (velocity bytes 2..10 mode 6-7; accel ~130..620), so a
+ * relaxed jab reads mid-zone instead of pinning zone 0. Tighter
+ * percentiles keep the top reachable without a haymaker.
+ */
+export const HIGH_SENSITIVITY_VELOCITY_DEFAULTS: RollingScaleOptions = {
+  window: 40,
+  warmLow: 2,
+  warmHigh: 9,
+  warmSamples: 12,
+  minSpread: 3,
+  lowPercentile: 0.1,
+  highPercentile: 0.85,
+}
+
+export const HIGH_SENSITIVITY_ACCELERATION_DEFAULTS: RollingScaleOptions = {
+  window: 40,
+  warmLow: 80,
+  warmHigh: 350,
+  warmSamples: 12,
+  minSpread: 50,
+  lowPercentile: 0.1,
+  highPercentile: 0.85,
+}
+
 /** Where the low/high references come from (calibration seam). */
 export interface RollingScaleReferenceSource {
   observe(hand: PunchHand, raw: number): void

@@ -35,6 +35,8 @@ import {
 import {
   ACCELERATION_SCALE_DEFAULTS,
   createRollingScaler,
+  HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
+  HIGH_SENSITIVITY_VELOCITY_DEFAULTS,
   VELOCITY_SCALE_DEFAULTS,
 } from '@domain/instrument/rollingScale'
 import { getTrackerKeepaliveSource } from '@protocol/trackerKeepalive'
@@ -48,6 +50,8 @@ const SPREADS = [
   { label: 'Wide (+2 oct)', octaves: 2 },
   { label: 'Close (+1 oct)', octaves: 1 },
 ] as const
+
+type Sensitivity = 'high' | 'standard'
 
 interface JamOverrides {
   rootPitchClass?: number
@@ -91,12 +95,31 @@ export default function JamScreen(): React.JSX.Element {
   const patch = useMemo(() => effectivePatch(base, overrides), [base, overrides])
   const cubeMap = useMemo(() => compilePunchPatch(patch), [patch])
 
+  // High sensitivity by default: the boxer should hear soft play. The
+  // firmware's own transmit floor (cmd-17 threshold) still gates the very
+  // softest touches — tracked separately as a protocol spike.
+  const [sensitivity, setSensitivity] = useState<Sensitivity>('high')
   const bridgeRef = useRef<BridgeClient | null>(null)
   const sessionRef = useRef<InstrumentSessionState>(emptySessionState())
   const scalersRef = useRef({
-    velocity: createRollingScaler(VELOCITY_SCALE_DEFAULTS),
-    acceleration: createRollingScaler(ACCELERATION_SCALE_DEFAULTS),
+    velocity: createRollingScaler(HIGH_SENSITIVITY_VELOCITY_DEFAULTS),
+    acceleration: createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS),
   })
+
+  useEffect(() => {
+    // Fresh windows on a sensitivity change — mixed-anchor history would
+    // make the first few punches read inconsistently.
+    scalersRef.current =
+      sensitivity === 'high'
+        ? {
+            velocity: createRollingScaler(HIGH_SENSITIVITY_VELOCITY_DEFAULTS),
+            acceleration: createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS),
+          }
+        : {
+            velocity: createRollingScaler(VELOCITY_SCALE_DEFAULTS),
+            acceleration: createRollingScaler(ACCELERATION_SCALE_DEFAULTS),
+          }
+  }, [sensitivity])
   // The punch handler closes over the LATEST patch/map through this ref —
   // Next-Punch semantics fall out: the held latch survives, the next
   // punch compiles against the new map.
@@ -214,6 +237,11 @@ export default function JamScreen(): React.JSX.Element {
       value: patch.transition.mode,
       onPress: () =>
         setOverrides((o) => ({ ...o, transitionMode: cycle(TRANSITIONS, patch.transition.mode) })),
+    },
+    {
+      label: 'SENSITIVITY',
+      value: sensitivity,
+      onPress: () => setSensitivity((s) => (s === 'high' ? 'standard' : 'high')),
     },
   ]
 
