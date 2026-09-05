@@ -1062,6 +1062,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       const dispatchedAt = this.clock()
       const speak = (path: string): void => {
         target.play()
+        // RE-STAMP the busy window from the moment audio actually starts
+        // (Kyle 2026-09-04, "calls out about every other set"): the
+        // serialized rewind ran 460-700ms under load, so a window stamped
+        // at DISPATCH expired while the clip was still talking — the next
+        // call then launched over it and the overlapped pair garbled. The
+        // dispatch-time stamp above still guards the rewind gap itself;
+        // this one covers the real tail.
+        this.markBusy(clip.durationMs)
         logger.info('puncheokie.voice.play', 'click-script playing', {
           kind: safe('click-script'),
           text: safe(clip.text),

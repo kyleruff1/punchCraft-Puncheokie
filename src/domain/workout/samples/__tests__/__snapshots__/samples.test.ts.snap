@@ -33,7 +33,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
       {
         "id": "bw1-b3",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 28,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -57,7 +57,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
         ],
       },
     ],
-    "target": 250,
+    "target": 242,
     "theme": "Find the downstairs line",
   },
   {
@@ -78,7 +78,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
       {
         "id": "bw2-b2",
         "kind": "repeated-combo",
-        "repeat": 28,
+        "repeat": 26,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -115,7 +115,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
         ],
       },
     ],
-    "target": 228,
+    "target": 222,
     "theme": "Dig and come back up",
   },
   {
@@ -166,7 +166,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
       {
         "id": "bw3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -177,7 +177,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
         ],
       },
     ],
-    "target": 241,
+    "target": 235,
     "theme": "Mix the floors",
   },
   {
@@ -198,7 +198,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
       {
         "id": "bw4-b2",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -235,7 +235,7 @@ exports[`token streams are stable fixtures body-work token stream snapshot 1`] =
         ],
       },
     ],
-    "target": 218,
+    "target": 214,
     "theme": "Body finish",
   },
 ]
@@ -274,7 +274,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       {
         "id": "jab1-b3",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 16,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -311,7 +311,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 271,
+    "target": 263,
     "theme": "The jab is home",
   },
   {
@@ -358,7 +358,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       {
         "id": "jab2-b4",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 28,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -369,7 +369,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 252,
+    "target": 244,
     "theme": "Double and angle",
   },
   {
@@ -394,7 +394,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       {
         "id": "jab3-b2",
         "kind": "repeated-combo",
-        "repeat": 29,
+        "repeat": 27,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -431,7 +431,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 273,
+    "target": 265,
     "theme": "Jab to body and head",
   },
   {
@@ -452,7 +452,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
       {
         "id": "jab4-b2",
         "kind": "repeated-combo",
-        "repeat": 40,
+        "repeat": 38,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -476,7 +476,7 @@ exports[`token streams are stable fixtures establish-the-jab-20 token stream sna
         ],
       },
     ],
-    "target": 250,
+    "target": 244,
     "theme": "Own the range",
   },
 ]
@@ -528,7 +528,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh1-b4",
         "kind": "repeated-combo",
-        "repeat": 26,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -552,7 +552,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 246,
+    "target": 240,
     "theme": "Build the power line",
   },
   {
@@ -616,7 +616,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh2-b5",
         "kind": "repeated-combo",
-        "repeat": 24,
+        "repeat": 22,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -627,7 +627,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 306,
+    "target": 300,
     "theme": "Hooks off the line",
   },
   {
@@ -648,7 +648,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh3-b2",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -685,7 +685,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 269,
+    "target": 263,
     "theme": "Power in layers",
   },
   {
@@ -710,7 +710,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
       {
         "id": "hh4-b2",
         "kind": "repeated-combo",
-        "repeat": 26,
+        "repeat": 24,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -747,7 +747,7 @@ exports[`token streams are stable fixtures heavy-hands token stream snapshot 1`]
         ],
       },
     ],
-    "target": 292,
+    "target": 286,
     "theme": "Heavy finish",
   },
 ]
@@ -773,7 +773,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp1-b2",
         "kind": "repeated-combo",
-        "repeat": 39,
+        "repeat": 37,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -797,7 +797,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 194,
+    "target": 190,
     "theme": "The one-two ladder",
   },
   {
@@ -818,7 +818,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp2-b2",
         "kind": "repeated-combo",
-        "repeat": 31,
+        "repeat": 29,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -855,7 +855,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 274,
+    "target": 268,
     "theme": "Ladder the double one",
   },
   {
@@ -876,7 +876,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp3-b2",
         "kind": "repeated-combo",
-        "repeat": 25,
+        "repeat": 23,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -913,7 +913,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 259,
+    "target": 253,
     "theme": "Ladder the hook",
   },
   {
@@ -938,7 +938,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
       {
         "id": "pp4-b2",
         "kind": "repeated-combo",
-        "repeat": 22,
+        "repeat": 20,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -988,7 +988,7 @@ exports[`token streams are stable fixtures pace-pusher token stream snapshot 1`]
         ],
       },
     ],
-    "target": 372,
+    "target": 364,
     "theme": "All rates at once",
   },
 ]
@@ -1014,7 +1014,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
       {
         "id": "pb1-b2",
         "kind": "repeated-combo",
-        "repeat": 28,
+        "repeat": 26,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1038,7 +1038,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
         ],
       },
     ],
-    "target": 260,
+    "target": 254,
     "theme": "Build the entry",
   },
   {
@@ -1072,7 +1072,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
       {
         "id": "pb2-b3",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 28,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1083,7 +1083,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
         ],
       },
     ],
-    "target": 222,
+    "target": 214,
     "theme": "Add the two",
   },
   {
@@ -1104,7 +1104,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
       {
         "id": "pb3-b2",
         "kind": "repeated-combo",
-        "repeat": 30,
+        "repeat": 28,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1128,7 +1128,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
         ],
       },
     ],
-    "target": 249,
+    "target": 241,
     "theme": "Add the three",
   },
   {
@@ -1153,7 +1153,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
       {
         "id": "pb4-b2",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 17,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1181,7 +1181,7 @@ exports[`token streams are stable fixtures progressive-buildup token stream snap
         ],
       },
     ],
-    "target": 282,
+    "target": 278,
     "theme": "Build the chain",
   },
 ]
@@ -1246,7 +1246,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
       {
         "id": "pc1-b5",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1257,7 +1257,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
         ],
       },
     ],
-    "target": 192,
+    "target": 184,
     "theme": "Pump, then breathe",
   },
   {
@@ -1317,7 +1317,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
       {
         "id": "pc2-b5",
         "kind": "repeated-combo",
-        "repeat": 15,
+        "repeat": 13,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1328,7 +1328,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
         ],
       },
     ],
-    "target": 165,
+    "target": 159,
     "theme": "Change the pump",
   },
   {
@@ -1366,7 +1366,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
       {
         "id": "pc3-b3",
         "kind": "repeated-combo",
-        "repeat": 29,
+        "repeat": 27,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1390,7 +1390,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
         ],
       },
     ],
-    "target": 246,
+    "target": 238,
     "theme": "Two-page pump",
   },
   {
@@ -1424,7 +1424,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
       {
         "id": "pc4-b3",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1448,7 +1448,7 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
         ],
       },
     ],
-    "target": 218,
+    "target": 212,
     "theme": "Big pump home",
   },
 ]
@@ -1487,7 +1487,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp1-b3",
         "kind": "repeated-combo",
-        "repeat": 28,
+        "repeat": 26,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1524,7 +1524,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 260,
+    "target": 256,
     "theme": "Fast hands, clean stops",
   },
   {
@@ -1549,7 +1549,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp2-b2",
         "kind": "repeated-combo",
-        "repeat": 36,
+        "repeat": 34,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1586,7 +1586,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 292,
+    "target": 286,
     "theme": "Doubles at pace",
   },
   {
@@ -1620,7 +1620,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp3-b3",
         "kind": "repeated-combo",
-        "repeat": 27,
+        "repeat": 25,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1661,7 +1661,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 313,
+    "target": 307,
     "theme": "Pages at speed",
   },
   {
@@ -1708,7 +1708,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
       {
         "id": "sp4-b4",
         "kind": "repeated-combo",
-        "repeat": 32,
+        "repeat": 30,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -1719,7 +1719,7 @@ exports[`token streams are stable fixtures speed-combos token stream snapshot 1`
         ],
       },
     ],
-    "target": 308,
+    "target": 302,
     "theme": "Empty the tank cleanly",
   },
 ]
@@ -1771,7 +1771,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
       {
         "id": "sw1-b4",
         "kind": "repeated-combo",
-        "repeat": 17,
+        "repeat": 15,
         "stance": "orthodox",
         "targetPunches": null,
         "tokens": [
@@ -1782,7 +1782,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
         ],
       },
     ],
-    "target": 183,
+    "target": 177,
     "theme": "Orthodox base",
   },
   {
@@ -1803,7 +1803,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
       {
         "id": "sw2-b2",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 16,
         "stance": "southpaw",
         "targetPunches": null,
         "tokens": [
@@ -1840,7 +1840,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
         ],
       },
     ],
-    "target": 202,
+    "target": 194,
     "theme": "Southpaw mirror",
   },
   {
@@ -1891,7 +1891,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
       {
         "id": "sw3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "orthodox",
         "targetPunches": null,
         "tokens": [
@@ -1902,7 +1902,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
         ],
       },
     ],
-    "target": 194,
+    "target": 188,
     "theme": "Orthodox pressure",
   },
   {
@@ -1949,7 +1949,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
       {
         "id": "sw4-b4",
         "kind": "repeated-combo",
-        "repeat": 21,
+        "repeat": 19,
         "stance": "southpaw",
         "targetPunches": null,
         "tokens": [
@@ -1960,7 +1960,7 @@ exports[`token streams are stable fixtures switch-by-round token stream snapshot
         ],
       },
     ],
-    "target": 207,
+    "target": 201,
     "theme": "Southpaw finish",
   },
 ]
@@ -2012,7 +2012,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
       {
         "id": "trf1-b4",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 16,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2062,7 +2062,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
         ],
       },
     ],
-    "target": 243,
+    "target": 237,
     "theme": "Build the base",
   },
   {
@@ -2113,7 +2113,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
       {
         "id": "trf2-b4",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 16,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2150,7 +2150,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
         ],
       },
     ],
-    "target": 298,
+    "target": 290,
     "theme": "Change levels",
   },
   {
@@ -2197,7 +2197,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
       {
         "id": "trf3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2225,7 +2225,7 @@ exports[`token streams are stable fixtures three-round-fundamentals token stream
         ],
       },
     ],
-    "target": 268,
+    "target": 262,
     "theme": "Put it together",
   },
 ]
@@ -2277,7 +2277,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
       {
         "id": "uc1-b4",
         "kind": "repeated-combo",
-        "repeat": 17,
+        "repeat": 15,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2288,7 +2288,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
         ],
       },
     ],
-    "target": 191,
+    "target": 185,
     "theme": "Find the short line",
   },
   {
@@ -2309,7 +2309,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
       {
         "id": "uc2-b2",
         "kind": "repeated-combo",
-        "repeat": 18,
+        "repeat": 16,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2346,7 +2346,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
         ],
       },
     ],
-    "target": 202,
+    "target": 194,
     "theme": "Change the level",
   },
   {
@@ -2397,7 +2397,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
       {
         "id": "uc3-b4",
         "kind": "repeated-combo",
-        "repeat": 20,
+        "repeat": 18,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2408,7 +2408,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
         ],
       },
     ],
-    "target": 203,
+    "target": 197,
     "theme": "Pairs and pages",
   },
   {
@@ -2455,7 +2455,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
       {
         "id": "uc4-b4",
         "kind": "repeated-combo",
-        "repeat": 21,
+        "repeat": 19,
         "stance": "inherit",
         "targetPunches": null,
         "tokens": [
@@ -2466,7 +2466,7 @@ exports[`token streams are stable fixtures uppercut-clinic token stream snapshot
         ],
       },
     ],
-    "target": 199,
+    "target": 193,
     "theme": "Clinic finish",
   },
 ]

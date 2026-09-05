@@ -246,6 +246,43 @@ export function breathForBar(
 }
 
 /**
+ * Dim-until-called mask (Kyle 2026-09-04: "lit = spoken"). Two rules, both
+ * PRESENTATION-ONLY — the walk, matcher and scoring never read the result:
+ *
+ *  Rule 0 — ear-first window: the first ~2 measures of punching in every
+ *  round stay dim EVEN though called (Variant B calls the opener now) —
+ *  "establish a bit of a rhythm before seeing the light up node tokens."
+ *  Bar granularity: a rate-1 opener (2 measures/bar) dims exactly rep 0;
+ *  the bar that begins EXACTLY at the window's edge stays lit (−1 ms
+ *  float guard).
+ *
+ *  Rule 1 — any bar with NO call scheduled for it stays dim, so lighting
+ *  always means the coach is calling right now.
+ *
+ * Exempt entirely when the guided layer is off as a whole (`guided` false:
+ * no voice port, or mode 'off' — visuals ARE the workout then) and when
+ * the round scheduled no calls at all (unrendered bank).
+ */
+export function maskedBarIds(
+  cues: readonly { id: string; scoring: string; scheduledStartMs: number }[],
+  calledCueIds: ReadonlySet<string>,
+  guided: boolean,
+  bpm: number,
+): Set<string> {
+  const masked = new Set<string>()
+  if (!guided || calledCueIds.size === 0) return masked
+  const measureMs = 240000 / bpm
+  let sectionOneStartMs: number | undefined
+  for (const cue of cues) {
+    if (cue.scoring !== 'sequence') continue
+    sectionOneStartMs ??= cue.scheduledStartMs
+    if (!calledCueIds.has(cue.id)) masked.add(cue.id)
+    if (cue.scheduledStartMs < sectionOneStartMs + 2 * measureMs - 1) masked.add(cue.id)
+  }
+  return masked
+}
+
+/**
  * The avatar's lead over the nodes (Kyle, on-glass 2026-09-02): the whole
  * flip track plays this far AHEAD of the walk — "a trainer training,
  * between the voice and the avatar showing." A pure time-shift of the
@@ -434,6 +471,13 @@ interface CueRenderState {
   repeatTotal: number
   affirmedTokenIndexes: number[]
   comboCompleteKey?: string
+  /**
+   * Dim-until-called (Kyle 2026-09-04): this bar renders every token in
+   * its dim 'upcoming' look — no walk lighting, no ✓ marks, no flourish —
+   * because no call covers it, or it sits in the round-start ear-first
+   * window. Presentation-only.
+   */
+  masked?: boolean
   /**
    * A presentation identity stable across the reps of a block. Keyed on
    * `blockId` so the stage keeps the same nodes mounted while a repeated combo
@@ -667,8 +711,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       state: 'pending' | 'played' | 'skipped'
       /** The section's rep-0 call, sequenced right after its lead-in — exempt from the lead-in collision drop. */
       firstRep?: boolean
+      /** The bar (cue) a CALL entry covers — feeds the dim-until-called mask. */
+      cueId?: string
     }>
   } | null>(null)
+  /**
+   * Bars whose tokens render DIM for their whole rep (dim-until-called +
+   * the round-start ear-first window). Rebuilt with each round's lead-in
+   * schedule; presentation-only — the walk, matcher and scoring never
+   * read it.
+   */
+  const maskedCueIdsRef = useRef<Set<string>>(new Set())
   /**
    * The avatar's lead track (2026-09-02): the round's punch schedule,
    * sampled at workElapsed + AVATAR_LEAD_MS so the figure demonstrates
@@ -728,6 +781,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // the next bar's call is seconds away.
         giveUpAtMs: firstNodeMs + 500,
         state: 'pending',
+        cueId: cue.id,
         ...(firstRep ? { firstRep: true } : {}),
       }
     }
@@ -735,20 +789,23 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       if (cue.scoring !== 'sequence') continue
       if (cue.repeatIndex === 0 && !seenBlocks.has(cue.blockId)) {
         seenBlocks.add(cue.blockId)
+        // Kyle, 2026-09-04: the first set of every section was MUTED — the
+        // whisper described it, rep 0 threw silent, the coach entered on
+        // rep 1. Now EVERY section's rep 0 gets its call — including the
+        // round opener (Variant B, "fit in the missing audio for the first
+        // rep"): each round's first row now carries an authored
+        // setupMeasures pad (fit-round-openers.mjs), so the bell releases
+        // into a breath, the rep-0 call, then the first punches. The
+        // opener is still NAMED pre-bell (round 1 in the intro sequence,
+        // rounds 2+ in the warn playlist) — that ceremony is unchanged;
+        // only the per-bar call was missing.
+        const rep0Call = buildCall(cue, true)
+        if (rep0Call) calls.push(rep0Call)
         // Section index is the block's ORDER in the round, not its id —
         // blockId prefixes ('jab1-b2') do not match workout ids. Section 1
-        // (the round opener) is voiced PRE-BELL (round 1 in the intro
-        // sequence, rounds 2+ in the warn playlist), so the bell releases
-        // straight into punches — no lead-in, no rep-0 call here.
+        // has NO mid-round lead-in whisper (pre-bell ceremony owns that);
+        // sections 2+ sequence whisper → rep-0 call inside their pads.
         if (seenBlocks.size > 1) {
-          // Kyle, 2026-09-04: the first set of every section was MUTED — the
-          // whisper described it, rep 0 threw silent, the coach entered on
-          // rep 1. Now rep 0 gets its call too, sequenced AFTER the whisper:
-          // the rep-0 call fits inside the existing setup pad, and the
-          // whisper is retargeted to FINISH before the rep-0 call (it still
-          // overlaps the previous section's tail, as it always has).
-          const rep0Call = buildCall(cue, true)
-          if (rep0Call) calls.push(rep0Call)
           const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
           const clip = findClickScript(slot, vocabulary)
           if (clip) {
@@ -789,7 +846,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     })
     const entries = [...leadIns, ...survivors].sort((a, b) => a.dispatchAtMs - b.dispatchAtMs)
     leadInScheduleRef.current = { roundIndex, entries }
-  }, [workout.id])
+
+    const calledIds = new Set(
+      survivors.filter((e) => e.cueId !== undefined).map((e) => e.cueId as string),
+    )
+    maskedCueIdsRef.current = maskedBarIds(
+      cues,
+      calledIds,
+      !!voice && voice.policy.mode !== 'off',
+      bpm,
+    )
+  }, [workout.id, voice, bpm])
   /**
    * Round-scoped audible-metronome schedule (W2, Kyle 2026-09-04 "roll
    * into the grid"). One loop for the round opener plus a per-SECTION
@@ -905,6 +972,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         repeatTotal: repeatTotals.get(cue.blockId) ?? 1,
         affirmedTokenIndexes: [...affirmedRef.current],
         presentationKey: cue.blockId,
+        ...(maskedCueIdsRef.current.has(cue.id) ? { masked: true } : {}),
         // Present (and equal to the cue id) exactly when this cue was just
         // completed in sequence, so the stage fires a one-shot flourish and
         // re-fires it for each completed rep.
@@ -2029,8 +2097,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             // so a mid-round playback change is honoured.
             if (!voiceAllowed(voice.policy, playbackActiveRef.current)) continue
             const audibleUntilMs = voice.output.audibleUntilMs?.() ?? 0
-            if (audibleUntilMs > 0) {
-              // Busy lane: EVERYTHING retries until its giveUp. Calls
+            // A section's rep-0 call OWNS its pad by construction (Variant
+            // B: the opener pad fits bell-clear + call + breath; mid-round
+            // pads sequence whisper → rep-0 call). The only audio it can
+            // overlap is the round bell's ring-out (section 1) or the last
+            // syllable of a whisper that ran a hair long — both intended
+            // gym texture. Waiting behind them is what made long opener
+            // calls land LATE past the first node, so firstRep dispatches
+            // on schedule instead of retrying.
+            if (audibleUntilMs > 0 && !entry.firstRep) {
+              // Busy lane: EVERYTHING else retries until its giveUp. Calls
               // originally yielded on first contact, but at 2s strides a
               // single tick-late call left the lane busy at the next
               // call's dispatch instant and the skips CASCADED — measured
@@ -2180,9 +2256,25 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         pushStore(true)
       },
       setVocabulary: (vocabulary: 'numbers' | 'techniques') => {
+        if (clickVocabularyRef.current === vocabulary) return
         announcerRef.current?.setVocabulary(vocabulary)
-        // Click-script schedules read this at their next round build.
         clickVocabularyRef.current = vocabulary
+        // MID-SET flip (Kyle 2026-09-04: "switched it to technique and it's
+        // still running on numeric a whole minute later"): rebuild the
+        // CURRENT round's schedule in the new vocabulary, then retire
+        // everything already in the past so nothing back-fires — the next
+        // due call speaks the new set. Both banks fit every stride
+        // (clickCallFit) and preload keeps both warm, so the swap is safe
+        // mid-round.
+        const snapshot = sessionRef.current?.snapshot()
+        if (!snapshot || snapshot.phase !== 'work') return
+        buildLeadInSchedule(snapshot.roundIndex)
+        const schedule = leadInScheduleRef.current
+        if (schedule) {
+          for (const entry of schedule.entries) {
+            if (entry.dispatchAtMs <= snapshot.workElapsedMs) entry.state = 'skipped'
+          }
+        }
       },
       skipCountdown: () => {
         // The intro finished ahead of its padded cap; ring the bell now
@@ -2221,6 +2313,6 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         ...(lastScoreRef.current ? { lastScore: lastScoreRef.current } : {}),
       }),
     }),
-    [applyTransitions, clock, pushStore, source, syncFromEngine, cuesById],
+    [applyTransitions, buildLeadInSchedule, clock, pushStore, source, syncFromEngine, cuesById],
   )
 }

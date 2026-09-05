@@ -75,6 +75,31 @@ describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabul
     expect(overruns).toEqual([])
   })
 
+  it('every round opener pad fits its rep-0 call (Variant B, Kyle 2026-09-04)', () => {
+    // The bell releases into an authored setupMeasures pad on each round's
+    // first row (fit-round-openers.mjs); the rep-0 call plays inside it and
+    // must END at least a minimum breath before the first node — never
+    // late. This trips at render time if a future clip re-render outgrows
+    // its round's pad, instead of on Kyle's ear.
+    const MIN_BREATH_MS = 150 // mirrors _useWorkoutRunner.MIN_BREATH_MS (RN module — not importable here)
+    const overruns: string[] = []
+    for (const [id, map] of Object.entries(CLICK_MAPS)) {
+      const measureMs = 4 * (60_000 / map.bpm)
+      map.rounds.forEach((round, r) => {
+        const opener = round.rows[0]!
+        const padMs = (opener.setupMeasures ?? 0) * measureMs
+        const clip = findClickScript(`call/${opener.motif}`, vocabulary)
+        if (clip?.vocabulary !== vocabulary) return // presence pinned above
+        if (padMs < clip.durationMs + MIN_BREATH_MS) {
+          overruns.push(
+            `${id} r${r + 1} ${opener.motif}: pad ${padMs}ms < call ${clip.durationMs}ms + ${MIN_BREATH_MS}`,
+          )
+        }
+      })
+    }
+    expect(overruns).toEqual([])
+  })
+
   it('the pending over-stride list only shrinks — a ruled motif comes OFF it', () => {
     if (vocabulary !== 'techniques' || !bankRendered) return
     // Every listed motif must still actually bust — an entry that now fits

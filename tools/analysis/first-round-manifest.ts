@@ -327,12 +327,20 @@ export function buildFirstRoundManifest(
       .filter((e) => e.kind === 'lead-in')
       .map((e) => ({ start: e.expectedStartMs - 500, end: e.expectedStartMs + e.durationMs }))
     for (const cue of round0.cues) {
-      if (cue.repeatIndex === 0) continue
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
       const clip = findClickScript(`call/${motif}`, vocabulary)
       if (!clip) continue
+      // Rep-0 bars are CALLED since W3 (mid-round sections) and Variant B
+      // (the round opener rides its authored setupMeasures pad,
+      // 2026-09-04). They are firstRep entries in the runner — exempt
+      // from the lead-in collision prune AND the busy retry — so they
+      // always count.
+      if (cue.repeatIndex === 0) {
+        expectedCallBars += 1
+        continue
+      }
       const dispatchAt = Math.max(0, cue.scheduledStartMs - clip.durationMs - CALL_PAD_MS)
       const end = dispatchAt + clip.durationMs
       const pruned = leadWindows.some((w) => dispatchAt < w.end && end > w.start)

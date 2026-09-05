@@ -37,6 +37,14 @@ export interface CueView {
   /** One state per entry in `cue.tokens`, same order. */
   tokenStates: TokenVisualState[]
   /**
+   * Dim-until-called (Kyle 2026-09-04): render the whole bar in the dim
+   * 'upcoming' look — no walk lighting, no ✓ marks, no flourish. Set by
+   * the runner for bars without a scheduled call and for the round-start
+   * ear-first window ("establish a rhythm before seeing the light up
+   * node tokens"). Presentation-only; the avatar still demonstrates.
+   */
+  masked?: boolean
+  /**
    * Token indexes whose punch earned the form affirmation — landed with
    * the right hand AND a device-local type byte that agreed with the
    * prescribed technique. Reward only; absence is never rendered.
@@ -228,7 +236,9 @@ function CueRow(props: {
     <View style={styles.cueRow} testID={testID}>
       {size === 'stage' ? (
         <ComboFlourish
-          {...(view.comboCompleteKey === undefined ? {} : { fireKey: view.comboCompleteKey })}
+          {...(view.comboCompleteKey === undefined || view.masked
+            ? {}
+            : { fireKey: view.comboCompleteKey })}
           reducedMotion={reducedMotion}
         />
       ) : null}
@@ -238,12 +248,17 @@ function CueRow(props: {
             token,
             index,
             cue,
-            view.tokenStates[index] ?? 'upcoming',
+            // A masked bar holds every token at the dim 'upcoming' look —
+            // and omitting the walk ordinal below keeps the UI-thread
+            // overlays from lighting it either. The walk/matcher still run;
+            // only the paint is withheld (dim-until-called + the ear-first
+            // round open).
+            view.masked ? 'upcoming' : (view.tokenStates[index] ?? 'upcoming'),
             size,
             reducedMotion,
-            view.affirmedTokenIndexes?.includes(index) ?? false,
+            view.masked ? false : (view.affirmedTokenIndexes?.includes(index) ?? false),
             presentationKey,
-            walkOrdinal,
+            view.masked ? undefined : walkOrdinal,
           ),
         )}
       </View>

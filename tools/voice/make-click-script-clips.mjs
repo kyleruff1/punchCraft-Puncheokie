@@ -145,6 +145,10 @@ const CALL_WINDOW_PAD_MS = 150
 // the extra compression for this one bar (2026-09-03) to bring it under.
 const CALL_MAX_STRETCH = {
   'call/1b-2-1-2': 1.6,
+  // The paired four-count (Kyle 2026-09-04): the 1.20x squeeze of a slow
+  // take crushed the FOURTH "one" — cap compression near-unity so only a
+  // naturally quick take can ship; pair with high --attempts.
+  'call/1-1-1-1': 1.08,
   // Body/fused-bee calls that render marginally long; a slightly harder
   // stretch keeps them under their stride after the bright/48k re-render
   // (Kyle-approved per-clip compression, 2026-09-03).

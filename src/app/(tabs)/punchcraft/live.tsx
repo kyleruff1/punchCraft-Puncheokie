@@ -315,6 +315,18 @@ export default function LiveScreen(): React.JSX.Element {
     clickAudible: clickEnabled,
   })
 
+  // THE missing wire (Kyle 2026-09-04: flipped the radio, "still running
+  // on numeric a whole minute later"): the radio only ever set screen
+  // state — the runner was never told. Push every flip down; the runner
+  // rebuilds the current round's call schedule in the new vocabulary so
+  // the next due call speaks it mid-set. Runs harmlessly on mount (the
+  // runner no-ops when the vocabulary is unchanged).
+  React.useEffect(() => {
+    runner.setVocabulary(clickVocabulary)
+    // `runner` is a fresh object per render; the flip is the only trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clickVocabulary])
+
   // The walkout announcement: players buffer during the lobby (the first
   // monitored run measured ~16s of cold-load silence when loading began at
   // the countdown), then play() during the extended countdown runs the

@@ -112,10 +112,14 @@ describe('multi-round dispatch (the blocker-2 regression)', () => {
     // The final round never fires a single slot — its band sits far
     // above anything a round-relative clock can reach.
     expect(fired.get(lastRound)?.length ?? 0).toBe(0)
-    // And round 0 fires MORE than its own share, because its cursor
-    // runs up into round 1's band before its work phase ends.
-    const ownedByRound0 = SCORE.coachSlots.filter((s) => s.roundIndex === 0).length
-    expect(fired.get(0)?.length ?? 0).toBeGreaterThan(ownedByRound0)
+    // And the middle round is starved of its own share: its round-relative
+    // cursor can only reach the slice of its band that overlaps round 0's
+    // duration. (Round 0 used to overrun into round 1's band as well, but
+    // the Variant-B opener pads moved every round's first slot past the
+    // exact boundary the un-offset cursor stops at — the starvation half
+    // is the durable shape.)
+    const ownedByRound1 = SCORE.coachSlots.filter((s) => s.roundIndex === 1).length
+    expect(fired.get(1)?.length ?? 0).toBeLessThan(ownedByRound1)
   })
 
   it('every slot fires exactly once across the workout', () => {

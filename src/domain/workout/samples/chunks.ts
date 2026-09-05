@@ -88,11 +88,17 @@ export const CHUNKS: Record<string, SectionChunk> = {
   'jab-jab-cross-th-x18': { id: 'jab-jab-cross-th-x18', motif: '1-1-2-.', rate: 1.5, reps: 18 },
   'jab-jab-cross-dt-x18': { id: 'jab-jab-cross-dt-x18', motif: '1-1-2-.', rate: 2, reps: 18 },
   'jab-jab-jab-jab-x9': { id: 'jab-jab-jab-jab-x9', motif: '1-1-1-1', rate: 1, reps: 9 },
-  'jab-rear-upper-hook-th-x20': { id: 'jab-rear-upper-hook-th-x20', motif: '1-6-3-.', rate: 1.5, reps: 20 },
-  'body-jab-pump-dt-x29': { id: 'body-jab-pump-dt-x29', motif: '1b-1b-1b-1b', rate: 2, reps: 29 },
+  // Reps below track the Variant-B opener-pad rebalance (fit-round-openers,
+  // 2026-09-04): both occurrences of each spot were trimmed symmetrically, so
+  // the tuples moved rather than vanished.
+  'jab-rear-upper-hook-th-x18': { id: 'jab-rear-upper-hook-th-x18', motif: '1-6-3-.', rate: 1.5, reps: 18 },
+  'body-jab-pump-dt-x27': { id: 'body-jab-pump-dt-x27', motif: '1b-1b-1b-1b', rate: 2, reps: 27 },
   'body-jab-jab-cross-th-x18': { id: 'body-jab-jab-cross-th-x18', motif: '1b-1-2-.', rate: 1.5, reps: 18 },
-  'jab-cross-hook-dt-x26': { id: 'jab-cross-hook-dt-x26', motif: '1-2-3-.', rate: 2, reps: 26 },
+  'jab-cross-hook-dt-x24': { id: 'jab-cross-hook-dt-x24', motif: '1-2-3-.', rate: 2, reps: 24 },
   'jab-cross-hook-dt-x22': { id: 'jab-cross-hook-dt-x22', motif: '1-2-3-.', rate: 2, reps: 22 },
+  // Minted by the same rebalance: pace-pusher r4's trim landed on an
+  // existing 1-2-3-2 time-and-a-half row's dose, making a new shared spot.
+  'jab-cross-hook-cross-th-x20': { id: 'jab-cross-hook-cross-th-x20', motif: '1-2-3-2', rate: 1.5, reps: 20 },
 }
 
 /** Look a chunk up by its minute ID, failing loudly on an unknown one. */

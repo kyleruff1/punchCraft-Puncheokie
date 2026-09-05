@@ -264,7 +264,28 @@ const corpusCalls = new Map<string, { motif: string; text: string; techniqueText
  * single punch (Kyle, on-glass 2026-09-01, reversing the earlier
  * single-word reading).
  */
+/**
+ * Numbers-call phrasing overrides (peer of CALL_TECHNIQUE_OVERRIDES).
+ * `1-1-1-1` (Kyle, on-glass 2026-09-04): Chatterbox collapses four
+ * identical words — "it only knows how to do two or three of them in a
+ * row" — so the pump bar is grouped as two pairs; the sentence break
+ * gives the model a rhythmic reset and four distinct ones come out.
+ * ASR still hears "one one one one", so the exact gate holds.
+ */
+const CALL_NUMBER_OVERRIDES: Record<string, string> = {
+  // Escalated to four hard stops (Kyle 2026-09-04): both paired takes still
+  // collapsed the fourth "one" to the ear — full sentence breaks give the
+  // model four independent resets.
+  '1-1-1-1': 'One! One! One! One!',
+  // Same trailing-repeat collapse (Kyle, on-glass 2026-09-04): the second
+  // "two-bee" lost its bee — "1, 2b, 1, 2". The pair break resets the
+  // model so the last body syllable lands.
+  '1-2b-1-2b': 'One, two-bee. One, two-bee!',
+}
+
 function callText(motif: string): string {
+  const override = CALL_NUMBER_OVERRIDES[motif]
+  if (override) return override
   const words = motif
     .split('-')
     .filter((t) => t !== '.')
