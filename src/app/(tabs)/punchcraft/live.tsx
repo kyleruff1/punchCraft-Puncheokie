@@ -167,13 +167,22 @@ export default function LiveScreen(): React.JSX.Element {
   // exactly right and stays stable across flips.
   const startClickVocabulary = recipe.voiceVocabulary === 'names' ? ('techniques' as const) : ('numbers' as const)
 
+  // Click-minimal workouts never speak per-word clips — warming 20 word
+  // players for them was a third of the 44-live-session pile-up that
+  // starved round-4 audio (leak hunt 2026-09-05). Light preload keeps just
+  // bells + tones warm.
+  const preloadLight =
+    (selectedSampleKey
+      ? getSampleWorkout(selectedSampleKey).workout.recipe.voiceMode
+      : recipe.voiceMode) === 'minimal'
+
   React.useEffect(() => {
     // Preload during the countdown, not at the first cue: M34-01 measured a
     // cold clip at roughly twice the jitter of a preloaded one. Re-runs on a
     // vocabulary change; preload also warms the OTHER vocabulary's openers.
     output.setVocabulary(effectiveVocabulary)
-    void output.preload()
-  }, [output, effectiveVocabulary])
+    void output.preload({ light: preloadLight })
+  }, [output, effectiveVocabulary, preloadLight])
 
   React.useEffect(() => {
     output.setVolumes(volumes)

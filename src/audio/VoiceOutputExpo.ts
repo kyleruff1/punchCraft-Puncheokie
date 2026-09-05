@@ -279,6 +279,23 @@ export const FALLBACK_CLIP_MS = 320
  */
 export const MAX_RESIDENT_PLAYERS = 24
 
+/**
+ * Resident cap for the click-script player cache (leak hunt 2026-09-05).
+ *
+ * Uncapped, the cache grew one native ExoPlayer + MediaSession per module
+ * touched all workout (~19 by uppercut-clinic round 4). Together with the
+ * word pool and one-shot leaks the app was carrying 44 live sessions —
+ * hard against the ~48 that broke this device (see MAX_RESIDENT_PLAYERS)
+ * — and the starved playback threads swallowed calls whole while the JS
+ * side logged perfect dispatches. Eight covers a round's motifs with room;
+ * a motif returning from rounds ago pays one fresh load on the already-
+ * handled 'fresh' path.
+ */
+export const CLICK_SCRIPT_RESIDENT_CAP = 8
+
+/** Clearance after a one-shot clip's end before its player is released. */
+const ONE_SHOT_RELEASE_PAD_MS = 1_500
+
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
   private vocabulary: VoiceVocabulary
@@ -858,7 +875,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * workout: it is logged and left absent, so the coach loses one word rather
    * than its voice.
    */
-  async preload(): Promise<void> {
+  async preload(opts?: { light?: boolean }): Promise<void> {
     try {
       // 'mixWithOthers' until something is actually audible — asking for
       // focus while silent would duck the athlete's music for nothing.
@@ -874,14 +891,21 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // Warm the clips a round actually opens with, not every clip in every
     // form: the pool cap means preloading everything would only evict most of
     // it again, and holding that many tracks is what exhausted the device.
+    //
+    // `light` (leak hunt 2026-09-05): a click-minimal workout speaks no
+    // per-word clips at all — its calls come from the click-script bank —
+    // so the 1-6 combo warm × both vocabs was 20 resident native players
+    // doing nothing. Light keeps just the round furniture warm.
     const warm: Array<[VoiceAssetId, PhraseForm]> = [
       ['bell', 'standalone'],
       ['tone-ready', 'standalone'],
       ['tone-repeat', 'standalone'],
       ['tone-warning', 'standalone'],
-      ...(['1', '2', '3', '4', '5', '6'] as VoiceAssetId[]).map(
-        (id) => [id, 'combo'] as [VoiceAssetId, PhraseForm],
-      ),
+      ...(opts?.light
+        ? []
+        : (['1', '2', '3', '4', '5', '6'] as VoiceAssetId[]).map(
+            (id) => [id, 'combo'] as [VoiceAssetId, PhraseForm],
+          )),
     ]
 
     let loaded = 0
@@ -892,10 +916,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // Both tracks loaded (Kyle's live vocabulary switch): warm the OTHER
     // vocabulary's same opening set, so the radio flip is instant. The
     // pool is keyed by vocabulary, so these coexist with the primary's.
-    const primary = this.vocabulary
-    this.vocabulary = primary === 'numbers' ? 'names' : 'numbers'
-    for (const [id, form] of warm) this.playerFor(id, form)
-    this.vocabulary = primary
+    // Light skips it — bells and tones don't change with the vocab flip.
+    if (!opts?.light) {
+      const primary = this.vocabulary
+      this.vocabulary = primary === 'numbers' ? 'names' : 'numbers'
+      for (const [id, form] of warm) this.playerFor(id, form)
+      this.vocabulary = primary
+    }
 
     if (loaded === 0) {
       this.failed = true
@@ -974,6 +1001,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.requestFocus()
     try {
       const player = this.makePlayer(clip.module)
+      this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
       player.play()
@@ -1005,6 +1033,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.requestFocus()
     try {
       const player = this.makePlayer(clip.module)
+      this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
       player.play()
@@ -1031,23 +1060,43 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * the queue-only cancels leave a sounding script alone, same as every
    * other sounding clip.
    */
-  playClickScript(clip: { text: string; module: number; durationMs: number }): void {
+  playClickScript(
+    clip: { text: string; module: number; durationMs: number },
+    opts?: { oneShot?: boolean },
+  ): void {
     if (this.failed) return
     this.requestFocus()
+    const oneShot = opts?.oneShot === true
     try {
       // Players are CACHED per module and reused via seekTo(0). The
       // original fresh-player-per-call design put ~100-200ms of load
       // latency on every call's start, which pushed real audio past the
       // markBusy window — the next call's cleanup then cut a still-
       // sounding tail (Kyle on-glass 2026-09-01: "there is a pause, but
-      // the clip is truncated"). A cached player starts near-instantly
-      // and is never removed mid-corpus; replaying the SAME motif simply
-      // restarts its clip, which is the per-bar cycling by definition.
+      // the clip is truncated"). A cached player starts near-instantly;
+      // replaying the SAME motif simply restarts its clip, which is the
+      // per-bar cycling by definition.
+      //
+      // LEAK HUNT (2026-09-05, uppercut-clinic round-4 silence): "never
+      // removed mid-corpus" let the cache grow one native ExoPlayer +
+      // MediaSession per module ALL WORKOUT (~19 by round 4; 44 live
+      // sessions app-wide starved the playback threads and the calls
+      // went silent while logging "playing"). Two bounds now:
+      //   - a one-shot clip (section lead-in) releases its player right
+      //     after it finishes — no repeat is ever coming;
+      //   - repeatable call players live in an LRU capped at
+      //     CLICK_SCRIPT_RESIDENT_CAP; a motif returning from rounds ago
+      //     pays one fresh load, which the 'fresh' path already handles.
       let player = this.clickScriptPlayers.get(clip.module)
       const reused = player !== undefined
-      if (!player) {
+      if (player) {
+        // LRU touch: re-insert so Map order tracks recency, not birth.
+        this.clickScriptPlayers.delete(clip.module)
+        this.clickScriptPlayers.set(clip.module, player)
+      } else {
         player = this.makeClickScriptPlayer(clip.module)
         this.clickScriptPlayers.set(clip.module, player)
+        this.evictClickScriptPlayers(clip.module)
       }
       // A reused player is parked at end-of-stream, and `seekTo` is
       // ASYNC — firing `play()` before the rewind lands plays the
@@ -1109,6 +1158,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // player is never touched; PRE_ARM_PAD clears the clip first.
         this.schedule(() => {
           if (this.clickScriptGen.get(module) !== gen) return
+          if (oneShot) {
+            // A lead-in never repeats: free the native player + media
+            // session the moment the clip is done instead of parking it.
+            // Gen-guarded above, so a busy-lane retry that re-dispatched
+            // this module only releases on the LAST dispatch's timer.
+            this.clickScriptPlayers.delete(module)
+            this.clickScriptArmed.delete(module)
+            this.clickScriptGen.delete(module)
+            if (this.clickScriptPlayer === target) this.clickScriptPlayer = null
+            try {
+              target.remove()
+            } catch {
+              // Already gone.
+            }
+            return
+          }
           try {
             target.pause()
           } catch {
@@ -1146,6 +1211,52 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         error: safe(String(err)),
       })
     }
+  }
+
+  /**
+   * Trim the click-script cache to its resident cap, oldest-first.
+   *
+   * Skips the module just inserted and whatever player is currently
+   * sounding — evicting those would cut audio mid-clip. Everything else
+   * (a pre-armed player included) reloads cleanly on its next dispatch.
+   */
+  private evictClickScriptPlayers(justInserted: number): void {
+    if (this.clickScriptPlayers.size <= CLICK_SCRIPT_RESIDENT_CAP) return
+    for (const [module, player] of this.clickScriptPlayers) {
+      if (this.clickScriptPlayers.size <= CLICK_SCRIPT_RESIDENT_CAP) break
+      if (module === justInserted) continue
+      if (player === this.clickScriptPlayer) continue
+      this.clickScriptPlayers.delete(module)
+      this.clickScriptArmed.delete(module)
+      this.clickScriptGen.delete(module)
+      try {
+        player.remove()
+      } catch {
+        // Already gone.
+      }
+    }
+  }
+
+  /**
+   * One-shot players (instructions, combo-announces) awaiting release.
+   *
+   * These used to be fire-and-forget: `makePlayer` per call, no handle
+   * kept, native player + media session leaked until teardown — the
+   * second contributor to the 44-session pile-up. Tracked here so each
+   * frees itself after its clip and `release()` can sweep stragglers.
+   */
+  private readonly oneShotPlayers = new Set<AudioPlayer>()
+
+  private trackOneShot(player: AudioPlayer, durationMs: number): void {
+    this.oneShotPlayers.add(player)
+    this.schedule(() => {
+      this.oneShotPlayers.delete(player)
+      try {
+        player.remove()
+      } catch {
+        // Already gone.
+      }
+    }, durationMs + ONE_SHOT_RELEASE_PAD_MS)
   }
 
   playAsset(id: VoiceAssetId, atMs?: number): void {
@@ -1528,6 +1639,14 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.clickScriptArmed.clear()
     this.clickScriptGen.clear()
     this.clickScriptPlayer = null
+    for (const player of this.oneShotPlayers) {
+      try {
+        player.remove()
+      } catch {
+        // Already gone; nothing to do.
+      }
+    }
+    this.oneShotPlayers.clear()
     // Tear the metronome loop down alongside every other native
     // handle — a stranded loop after `release()` would keep clicking
     // over the summary screen.

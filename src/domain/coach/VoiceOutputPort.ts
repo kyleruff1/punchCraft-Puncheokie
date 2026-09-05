@@ -453,7 +453,19 @@ export interface VoiceOutputPort {
    * Optional: implementations that predate Bible v2 no-op silently —
    * the click sets simply stay coach-minimal there.
    */
-  playClickScript?(clip: { text: string; module: number; durationMs: number }): void
+  playClickScript?(
+    clip: { text: string; module: number; durationMs: number },
+    opts?: {
+      /**
+       * The clip plays once this workout (a section lead-in) — the backend
+       * releases its native player after the clip ends instead of caching
+       * it for a repeat that never comes. Leak hunt 2026-09-05: 16 cached
+       * one-shot lead-ins were a third of the 44 live media sessions that
+       * starved round 4's audio.
+       */
+      oneShot?: boolean
+    },
+  ): void
   /**
    * The metronome track (M39-V1b / #280). The 3rd audio track — a
    * boxing-flavored one-bar loop that anchors every ring and voice

@@ -2113,11 +2113,18 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               continue
             }
             entry.state = 'played'
-            voice.output.playClickScript?.({
-              text: entry.text,
-              module: entry.module,
-              durationMs: entry.durationMs,
-            })
+            voice.output.playClickScript?.(
+              {
+                text: entry.text,
+                module: entry.module,
+                durationMs: entry.durationMs,
+              },
+              // A lead-in whisper plays once a workout; its native player
+              // releases after the clip instead of parking in the cache
+              // (leak hunt 2026-09-05). Calls repeat per bar and stay
+              // cached.
+              { oneShot: entry.kind !== 'call' },
+            )
             logger.info('puncheokie.clickScript.dispatch', 'click script dispatched', {
               kind: safe(entry.kind),
               slot: safe(entry.slot),

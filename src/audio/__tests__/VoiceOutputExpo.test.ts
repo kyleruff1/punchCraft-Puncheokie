@@ -29,6 +29,8 @@ jest.mock('expo-audio', () => ({
 jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
 import {
+  CLICK_SCRIPT_PREARM_PAD_MS,
+  CLICK_SCRIPT_RESIDENT_CAP,
   COACH_LANE_RELEASE_GRACE_MS,
   DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
   FALLBACK_CLIP_MS,
@@ -1218,5 +1220,144 @@ describe('playClickScript — the rewind is serialized (shllck, 2026-09-03)', ()
     h.output.playClickScript(h.clip) // reused BUT armed → immediate, no new rewind
     expect(h.plays).toEqual([77, 77])
     expect(h.seekCalls).toBe(seeksBefore) // no pre-play seek on the armed path
+  })
+})
+
+describe('leak hunt (2026-09-05) — native players are bounded and released', () => {
+  // 44 live media sessions by uppercut-clinic round 4 — hard against the
+  // ~48 that broke this device — starved the playback threads until calls
+  // played silently while the JS side logged perfect dispatches. Three
+  // populations paid for it: an unbounded click-script cache, untracked
+  // one-shot players, and a 20-player word warm on workouts that never
+  // speak a word. These tests pin each bound.
+  function rig() {
+    let clock = 1_000
+    const timers: Array<{ at: number; fn: () => void; id: number }> = []
+    let nextId = 1
+    const removed: number[] = []
+    const live = new Set<number>()
+    const makeFake = (source: number) =>
+      ({
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          removed.push(source)
+          live.delete(source)
+        },
+      }) as never
+    const output = new VoiceOutputExpo({
+      clock: () => clock,
+      schedule: (fn, delayMs) => {
+        const id = nextId++
+        timers.push({ at: clock + delayMs, fn, id })
+        return id
+      },
+      cancelScheduled: (handle) => {
+        const i = timers.findIndex((t) => t.id === handle)
+        if (i >= 0) timers.splice(i, 1)
+      },
+      createPlayer: (source: number) => {
+        live.add(source)
+        return makeFake(source)
+      },
+      createClickScriptPlayer: ((source: number) => {
+        live.add(source)
+        return makeFake(source)
+      }) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+    const advance = (ms: number): void => {
+      clock += ms
+      for (const t of [...timers].sort((a, b) => a.at - b.at)) {
+        if (t.at > clock) break
+        timers.splice(timers.indexOf(t), 1)
+        t.fn()
+      }
+    }
+    const clip = (module: number, durationMs = 700) => ({
+      text: `clip ${module}`,
+      module,
+      durationMs,
+    })
+    return { output, advance, removed, live, clip }
+  }
+
+  it('a one-shot lead-in releases its player after the clip instead of parking it', () => {
+    const h = rig()
+    h.output.playClickScript(h.clip(500), { oneShot: true })
+    expect(h.live.has(500)).toBe(true)
+    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    expect(h.removed).toEqual([500])
+    expect(h.live.has(500)).toBe(false)
+  })
+
+  it('a re-dispatched one-shot releases once, on the LAST dispatch schedule', async () => {
+    const h = rig()
+    h.output.playClickScript(h.clip(501), { oneShot: true })
+    h.advance(300)
+    h.output.playClickScript(h.clip(501), { oneShot: true }) // busy-lane retry
+    await Promise.resolve() // let the retry's rewind settle
+    await Promise.resolve()
+    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1) // first timer fires mid-way: gen mismatch
+    h.advance(400) // second timer fires
+    expect(h.removed).toEqual([501])
+  })
+
+  it('per-bar calls stay cached but the cache never exceeds its resident cap', () => {
+    const h = rig()
+    const total = CLICK_SCRIPT_RESIDENT_CAP + 3
+    for (let m = 1; m <= total; m += 1) {
+      h.output.playClickScript(h.clip(m))
+    }
+    // The three oldest were evicted and released; the newest survive.
+    expect(h.removed).toEqual([1, 2, 3])
+    for (let m = 4; m <= total; m += 1) expect(h.live.has(m)).toBe(true)
+  })
+
+  it('a cache hit refreshes recency — the re-played module survives eviction', () => {
+    const h = rig()
+    for (let m = 1; m <= CLICK_SCRIPT_RESIDENT_CAP; m += 1) {
+      h.output.playClickScript(h.clip(m))
+    }
+    h.output.playClickScript(h.clip(1)) // touch the oldest
+    h.output.playClickScript(h.clip(90)) // overflow by one
+    expect(h.removed).toEqual([2]) // module 1 was refreshed; 2 is now oldest
+    expect(h.live.has(1)).toBe(true)
+  })
+
+  it('instruction and combo-announce players release after their clips', () => {
+    const h = rig()
+    h.output.playInstruction({ text: 'aside', module: 600, durationMs: 900 })
+    h.output.playComboAnnounce({ text: 'One, go!', module: 601, durationMs: 800 })
+    expect(h.live.has(600)).toBe(true)
+    expect(h.live.has(601)).toBe(true)
+    h.advance(900 + 1_500 + 1)
+    expect(h.live.has(600)).toBe(false)
+    expect(h.live.has(601)).toBe(false)
+  })
+
+  it('release() sweeps tracked one-shots that have not timed out yet', () => {
+    const h = rig()
+    h.output.playInstruction({ text: 'aside', module: 610, durationMs: 5_000 })
+    h.output.release()
+    expect(h.live.has(610)).toBe(false)
+  })
+
+  it('light preload warms only round furniture — no word players', async () => {
+    const h = harness()
+    await h.output.preload({ light: true })
+    // bell + three tones; the 1-6 combo warm (x both vocabs, 20 players)
+    // is skipped — a click-minimal workout never speaks a word clip.
+    expect(h.created).toHaveLength(4)
+  })
+
+  it('full preload still warms both vocabularies for the live radio flip', async () => {
+    const h = harness()
+    await h.output.preload()
+    expect(h.created).toHaveLength(20)
   })
 })
