@@ -143,11 +143,23 @@ const CALL_WINDOW_PAD_MS = 150
 // bar — a lone body jab among head shots — that blocks all copy
 // factoring, so it renders ~2.05s against a 2.0s stride; Kyle approved
 // the extra compression for this one bar (2026-09-03) to bring it under.
+/**
+ * Per-slot syllable-budget overrides (Kyle 2026-09-04, third strike on the
+ * four-count): every ASR-clean 1-1-1-1 take died in the rubberband — the
+ * fourth "one" survives Whisper but not the ear at 1.2-1.3x. The stride
+ * law allows ~2300ms for this motif (tightest occurrence 2400ms), so the
+ * budget yields and the take ships (near-)unsqueezed. The syllable cap is
+ * a punchiness PREFERENCE; clickCallFit's stride law stays the LAW.
+ */
+const CALL_WINDOW_OVERRIDES = {
+  'call/1-1-1-1': 2200,
+}
+
 const CALL_MAX_STRETCH = {
   'call/1b-2-1-2': 1.6,
-  // The paired four-count (Kyle 2026-09-04): the 1.20x squeeze of a slow
-  // take crushed the FOURTH "one" — cap compression near-unity so only a
-  // naturally quick take can ship; pair with high --attempts.
+  // (Kept for history; the window override above supersedes it for the
+  // four-count. Note this table is Math.max'd against 1.3 — it can only
+  // RAISE the cap, never lower it.)
   'call/1-1-1-1': 1.08,
   // Body/fused-bee calls that render marginally long; a slightly harder
   // stretch keeps them under their stride after the bright/48k re-render
@@ -211,7 +223,11 @@ const callPlan = (row) => ({
   // "-bee" token is two, technique words per UNIT_WORDS — clamped to
   // [800ms, the stride window]. ~250ms/unit + 300 is the clipped-urgent
   // corner call the original loop-call design specified.
-  maxDurationMs: Math.min(row.windowMs, Math.max(800, 300 + 250 * syllableUnits(row.text))),
+  maxDurationMs: Math.min(
+    row.windowMs,
+    CALL_WINDOW_OVERRIDES[`call/${row.motif}`] ??
+      Math.max(800, 300 + 250 * syllableUnits(row.text)),
+  ),
   // Token-exact ASR: a call that loses a word ("Six, five, two" heard
   // as "the 652") is worse than a slower take — the athlete throws
   // what they hear (caught on-glass 2026-09-01).

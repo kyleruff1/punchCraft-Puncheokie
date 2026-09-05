@@ -507,6 +507,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         this.metronomeLastSampleMs = 0
         this.metronomeTransport.start(baseBpm)
       }
+      // MUTE-ONLY refinement (Kyle 2026-09-04, the round-open spike): a
+      // muted click (volume 0 — the removable-click default) keeps the
+      // logical TRANSPORT (markers / avatar clock) but never builds the
+      // native playlist. A zero-volume loop bought nothing and its
+      // createAudioPlaylist churn landed exactly at work-entered — the same
+      // instant the opener call and first bars play — feeding the 460-977ms
+      // seek stalls that mangled early-round audio. Per-section swaps at
+      // volume 0 become free no-ops for the same reason.
+      if (volume <= 0) return
       const observer: MetronomePlayerObserver | undefined =
         baseBpm === undefined
           ? undefined
