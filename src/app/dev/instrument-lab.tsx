@@ -15,7 +15,7 @@
  */
 import React, { useEffect, useRef, useState } from 'react'
 import { Stack } from 'expo-router'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
@@ -25,7 +25,11 @@ import {
   createRollingScaler,
   VELOCITY_SCALE_DEFAULTS,
 } from '@domain/instrument/rollingScale'
+import { BridgeClient, type BridgeStatus } from '@/instrument/bridgeClient'
 import { getTrackerKeepaliveSource } from '@protocol/trackerKeepalive'
+
+/** The dev PC's LAN address (Metro host); PunchBridge listens on :8787. */
+const DEFAULT_BRIDGE_URL = 'ws://192.168.86.35:8787'
 
 interface LabRow {
   key: string
@@ -45,6 +49,11 @@ export default function InstrumentLabScreen(): React.JSX.Element {
   const [rows, setRows] = useState<readonly LabRow[]>([])
   const [liveCount, setLiveCount] = useState(0)
   const [recoveredCount, setRecoveredCount] = useState(0)
+  const [bridgeUrl, setBridgeUrl] = useState(DEFAULT_BRIDGE_URL)
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
+  const [bridgeDetail, setBridgeDetail] = useState('')
+  const [rttMs, setRttMs] = useState<number | null>(null)
+  const bridgeRef = useRef<BridgeClient | null>(null)
   const scalersRef = useRef({
     velocity: createRollingScaler(VELOCITY_SCALE_DEFAULTS),
     acceleration: createRollingScaler(ACCELERATION_SCALE_DEFAULTS),
@@ -89,6 +98,28 @@ export default function InstrumentLabScreen(): React.JSX.Element {
     return shared.subscribe((event) => onPunch.current(event))
   }, [])
 
+  useEffect(() => {
+    const client = new BridgeClient({
+      onStatus: (status, detail) => {
+        setBridgeStatus(status)
+        setBridgeDetail(detail ?? '')
+      },
+      onRtt: (rtt) => setRttMs(Math.round(rtt)),
+    })
+    bridgeRef.current = client
+    return () => client.disconnect()
+  }, [])
+
+  const toggleBridge = (): void => {
+    const client = bridgeRef.current
+    if (!client) return
+    if (bridgeStatus === 'idle' || bridgeStatus === 'closed' || bridgeStatus === 'error') {
+      client.connect(bridgeUrl.trim(), `lab-${Date.now()}`)
+    } else {
+      client.disconnect()
+    }
+  }
+
   const synthetic = (hand: 'left' | 'right', velocityRaw: number, accelerationRaw: number): void => {
     syntheticSeq.current += 1
     const nowMonotonic = globalThis.performance.now()
@@ -115,6 +146,50 @@ export default function InstrumentLabScreen(): React.JSX.Element {
       <View style={styles.summaryRow}>
         <Text style={styles.summary}>{`live ${liveCount}`}</Text>
         <Text style={styles.summary}>{`recovered ${recoveredCount}`}</Text>
+      </View>
+      <View style={styles.bridgeRow}>
+        <TextInput
+          value={bridgeUrl}
+          onChangeText={setBridgeUrl}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="ws://host:8787"
+          placeholderTextColor={colors.textSecondary}
+          style={styles.bridgeInput}
+          testID="lab-bridge-url"
+        />
+        <Pressable onPress={toggleBridge} style={styles.bridgeBtn} testID="lab-bridge-toggle">
+          <Text style={styles.padText}>
+            {bridgeStatus === 'open' ? 'Disconnect' : 'Connect'}
+          </Text>
+        </Pressable>
+      </View>
+      <View style={styles.bridgeRow}>
+        <Text style={styles.summary}>{`bridge ${bridgeStatus}${bridgeDetail ? ` · ${bridgeDetail}` : ''}`}</Text>
+        <Text style={styles.summary}>{rttMs == null ? 'rtt —' : `rtt ${rttMs}ms`}</Text>
+      </View>
+      <View style={styles.padRow}>
+        <Pressable
+          onPress={() => bridgeRef.current?.sendTestNote('left')}
+          style={[styles.pad, styles.leftPad]}
+          testID="lab-note-left"
+        >
+          <Text style={styles.padText}>Note L</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => bridgeRef.current?.sendTestNote('right')}
+          style={[styles.pad, styles.rightPad]}
+          testID="lab-note-right"
+        >
+          <Text style={styles.padText}>Note R</Text>
+        </Pressable>
+        <Pressable
+          onPress={() => bridgeRef.current?.sendPanic()}
+          style={styles.pad}
+          testID="lab-panic"
+        >
+          <Text style={styles.padText}>Panic</Text>
+        </Pressable>
       </View>
       <View style={styles.padRow}>
         <Pressable
@@ -176,6 +251,27 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 10 },
   summaryRow: { flexDirection: 'row', gap: 16 },
   summary: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
+  bridgeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  bridgeInput: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    color: colors.textPrimary,
+    fontSize: sizes.label,
+    fontFamily: fonts.label,
+  },
+  bridgeBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSurface,
+  },
   padRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   pad: {
     paddingVertical: 12,

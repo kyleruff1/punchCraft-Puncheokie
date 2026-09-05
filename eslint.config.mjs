@@ -28,6 +28,9 @@ export default [
         performance: 'readonly',
         require: 'readonly',
         Buffer: 'readonly',
+        // RN runtime globals used by the Puncheoke bridge client.
+        WebSocket: 'readonly',
+        WebSocketMessageEvent: 'readonly',
         // Expo inlines `process.env.EXPO_PUBLIC_*` at bundle time — the
         // documented way to read a build-time flag in app code.
         process: 'readonly',
