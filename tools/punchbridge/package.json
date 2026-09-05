@@ -8,7 +8,7 @@
     "bridge": "tsx src/index.ts",
     "test-note": "tsx src/testNote.ts",
     "ports": "tsx src/ports.ts",
-    "test": "tsx --test src/server.test.ts",
+    "test": "tsx --test src/server.test.ts src/bendRamp.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

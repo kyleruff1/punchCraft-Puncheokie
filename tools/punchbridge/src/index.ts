@@ -18,6 +18,7 @@ interface Args {
   port: number
   midiPreferred: string[]
   watchdogMs: number
+  profile: string | null
 }
 
 function parseArgs(argv: readonly string[]): Args {
@@ -25,6 +26,7 @@ function parseArgs(argv: readonly string[]): Args {
     port: 8787,
     midiPreferred: [],
     watchdogMs: 4000,
+    profile: null,
   }
   for (let i = 0; i < argv.length; i += 1) {
     const flag = argv[i]
@@ -37,6 +39,9 @@ function parseArgs(argv: readonly string[]): Args {
       i += 1
     } else if (flag === '--watchdog' && value) {
       args.watchdogMs = Number.parseInt(value, 10)
+      i += 1
+    } else if (flag === '--profile' && value) {
+      args.profile = value
       i += 1
     }
   }
@@ -64,6 +69,11 @@ function main(): void {
     console.log('  MIDI Services) and pass --midi "<port>" to route into Studio One.')
   }
 
+  // Profile: explicit flag wins; otherwise the GM fallback when we ended
+  // up on the Windows synth, else the Studio One conventions.
+  const profile = args.profile ?? (/wavetable/i.test(midi.portName) ? 'gs-fallback' : 'studio-one-stock')
+  console.log(`punchbridge: instrument profile "${profile}"`)
+
   const clock = { now: () => performance.now() }
   const wss = new WebSocketServer({ port: args.port })
   console.log(`punchbridge: listening on ws://0.0.0.0:${args.port}`)
@@ -76,7 +86,7 @@ function main(): void {
         send: (data) => socket.send(data),
         close: () => socket.close(),
       },
-      { midi, clock, watchdogMs: args.watchdogMs, log: (m) => console.log(m) },
+      { midi, clock, watchdogMs: args.watchdogMs, profile, log: (m) => console.log(m) },
     )
     const watchdog = setInterval(() => session.checkWatchdog(), 1000)
     socket.on('message', (data) => session.onText(data.toString()))

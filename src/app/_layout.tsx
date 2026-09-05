@@ -22,6 +22,7 @@ import { onKeepaliveBattery, startTrackerKeepalive } from '@protocol/trackerKeep
 import { noteSlotBattery } from '@state/useTrackerStore'
 import { useVoiceSettingsOnLaunch } from '@state/loadVoiceSettings'
 import { useBackdropSettingsOnLaunch } from '@state/loadBackdropSettings'
+import { useInstrumentSettingsOnLaunch } from '@state/loadInstrumentSettings'
 import { colors } from '@/theme/colors'
 import { fonts } from '@/theme/typography'
 
@@ -60,6 +61,7 @@ export default function RootLayout() {
   // against defaults the athlete has already changed.
   useVoiceSettingsOnLaunch()
   useBackdropSettingsOnLaunch()
+  useInstrumentSettingsOnLaunch()
 
   if (!fontsLoaded) return null
 

@@ -313,15 +313,18 @@ describe('punchCraft landing — the workout home', () => {
   })
 })
 
-describe('Puncheokie landing — not shipped', () => {
-  it('is a placeholder and offers no workout routes', () => {
+describe('Puncheokie landing — the instrument', () => {
+  it('opens the jam and offers no workout routes', () => {
     const tree = render(<PuncheokieLanding />)
-    expect(() => tree.root.findByProps({ testID: 'coming-soon' })).not.toThrow()
+    expect(() => tree.root.findByProps({ testID: 'open-jam' })).not.toThrow()
     expect(tree.root.findAllByProps({ testID: 'setup-workout' }, { deep: false })).toHaveLength(0)
   })
 
-  it('points at punchCraft for building and running a workout', () => {
+  it('lists the launch patches with the default selected', () => {
     const tree = render(<PuncheokieLanding />)
-    expect(allText(tree)).toContain('use the punchCraft tab')
+    expect(() =>
+      tree.root.findByProps({ testID: 'patch-two-handed-pentatonic' }),
+    ).not.toThrow()
+    expect(allText(tree)).toContain('Two-Handed Pentatonic')
   })
 })

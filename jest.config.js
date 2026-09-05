@@ -28,6 +28,9 @@ module.exports = {
     '/.expo/',
     '/.claude/worktrees/',
     '/__tests__/helpers/',
+    // PunchBridge is its own package with node:test suites — run them
+    // with `npm test` in tools/punchbridge, not under the app's jest.
+    '/tools/punchbridge/',
   ],
   modulePathIgnorePatterns: ['<rootDir>/.claude/worktrees/'],
   moduleNameMapper: {

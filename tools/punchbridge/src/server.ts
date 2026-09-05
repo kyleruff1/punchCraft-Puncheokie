@@ -14,6 +14,7 @@ import {
   type PunchBridgeMessage,
 } from '../../../src/domain/instrument/gestureSchema'
 import type { MidiOutputBackend } from './midiBackend'
+import type { InstrumentProfile } from './instrumentProfiles'
 import { VoiceRenderer } from './gestureToMidi'
 
 export interface BridgeClock {
@@ -31,6 +32,8 @@ export interface BridgeSessionOptions {
   clock: BridgeClock
   /** Watchdog fires if no message arrives within this window; 0 disables. */
   watchdogMs?: number
+  /** Which synth's CC/bend conventions to render with. */
+  profile?: InstrumentProfile | string
   log?: (msg: string) => void
 }
 
@@ -52,7 +55,7 @@ export class BridgeSession {
     private readonly socket: BridgeSocketLike,
     opts: BridgeSessionOptions,
   ) {
-    this.renderer = new VoiceRenderer(opts.midi)
+    this.renderer = new VoiceRenderer(opts.midi, opts.profile ?? 'studio-one-stock')
     this.clock = opts.clock
     this.watchdogMs = opts.watchdogMs ?? 0
     this.log = opts.log ?? (() => {})

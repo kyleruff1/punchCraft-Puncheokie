@@ -54,6 +54,10 @@ export const SETTINGS_KEYS = {
    * loop volume, never `recipe.metronome.enabled` or the visual grid.
    */
   click: 'click.enabled',
+  /** Puncheoke instrument: `{ patchId }` — the selected PunchPatch. */
+  instrumentPatch: 'instrument.patch',
+  /** Puncheoke instrument: `{ url }` — the PunchBridge WebSocket address. */
+  instrumentBridge: 'instrument.bridge',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

@@ -33,6 +33,7 @@ export class BridgeClient {
   private ws: WebSocket | null = null
   private url = ''
   private sessionId = ''
+  private mapHash = DEV_MAP_HASH
   private sequence = 0
   private heartbeat: ReturnType<typeof setInterval> | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -41,11 +42,31 @@ export class BridgeClient {
 
   constructor(private readonly cb: BridgeClientCallbacks = {}) {}
 
-  connect(url: string, sessionId: string): void {
+  connect(url: string, sessionId: string, mapHash: string = DEV_MAP_HASH): void {
     this.url = url
     this.sessionId = sessionId
+    this.mapHash = mapHash
     this.wantOpen = true
     this.openSocket()
+  }
+
+  /**
+   * A patch change produces a new hash; the bridge accepts the latest
+   * hello's hash, so re-hello keeps the session validated (Next-Punch
+   * patch-change semantics — no reconnect, no note interruption).
+   */
+  setMapHash(mapHash: string): void {
+    if (this.mapHash === mapHash) return
+    this.mapHash = mapHash
+    if (this.isOpen()) {
+      this.raw({
+        type: 'hello',
+        schemaVersion: INSTRUMENT_SCHEMA_VERSION,
+        sessionId: this.sessionId,
+        mapHash,
+        heartbeatMs: HEARTBEAT_MS,
+      })
+    }
   }
 
   disconnect(): void {
@@ -125,7 +146,7 @@ export class BridgeClient {
         type: 'hello',
         schemaVersion: INSTRUMENT_SCHEMA_VERSION,
         sessionId: this.sessionId,
-        mapHash: DEV_MAP_HASH,
+        mapHash: this.mapHash,
         heartbeatMs: HEARTBEAT_MS,
       })
       this.startHeartbeat()
