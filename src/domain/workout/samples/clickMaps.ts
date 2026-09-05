@@ -54,6 +54,16 @@ export interface ClickRow {
   reps: number
   /** Authored spoken lead-in for this section (numerals spelled out). */
   leadIn: string
+  /**
+   * Setup pad (whole measures) reserved BEFORE this section, so the lead-in
+   * whisper finishes and the coach can CALL the first set before the shots
+   * (Kyle, 2026-09-04: no more muted first rep). Sized per-section by
+   * tools/voice/fit-click-pads.mjs to fit the section's whisper-tail +
+   * rep-0 call. When absent, defaults to the legacy fixed gap (2 measures
+   * on sections after a round's first, 0 on the opener). Whole measures
+   * keep each section on a downbeat and the round budget integer.
+   */
+  setupMeasures?: number
 }
 
 export interface ClickRound {
@@ -96,11 +106,22 @@ export function rowMeasures(row: ClickRow): number {
  */
 export const SETUP_GAP_MEASURES = 2
 
+/**
+ * Setup pad (whole measures) reserved before a section. Explicit
+ * `row.setupMeasures` wins (set by fit-click-pads.mjs to fit the whisper +
+ * rep-0 call); otherwise the legacy default — 2 measures on every section
+ * after a round's first, none on the opener.
+ */
+export function setupMeasuresForRow(row: ClickRow, index: number): number {
+  return row.setupMeasures ?? (index > 0 ? SETUP_GAP_MEASURES : 0)
+}
+
 /** Lower one round's rows to BlockSpecs. */
 export function clickSpecs(prefix: string, roundIndex: number, round: ClickRound): BlockSpec[] {
   return round.rows.map((row, i) => {
     const slots = slotCount(row.motif)
     const step = 1 / row.rate
+    const setupM = setupMeasuresForRow(row, i)
     return {
       id: `${prefix}${roundIndex + 1}-b${i + 1}`,
       kind: 'repeated-combo' as const,
@@ -113,7 +134,7 @@ export function clickSpecs(prefix: string, roundIndex: number, round: ClickRound
       // filled ~12% and ended ~30s of dead air before the bell.
       gapBeats: breathBeats(slots, row.rate) + step,
       repeat: row.reps,
-      ...(i > 0 ? { leadInBeats: SETUP_GAP_MEASURES * 4 } : {}),
+      ...(setupM > 0 ? { leadInBeats: setupM * 4 } : {}),
       ...(round.stance ? { stance: round.stance } : {}),
     }
   })
@@ -201,9 +222,10 @@ export function clickMapsSelfCheck(): string[] {
       if (round.rest && /\d/.test(round.rest)) {
         problems.push(`${key} R${r + 1}: digits in spoken rest script (spell them out)`)
       }
-      // Budget now includes the setup pauses: rows + 2 measures per
-      // section transition must land EXACTLY on the round's measures.
-      const gaps = SETUP_GAP_MEASURES * Math.max(0, round.rows.length - 1)
+      // Budget now includes the setup pauses (per-section, variable): rows +
+      // each section's setup measures must land EXACTLY on the round's
+      // measures.
+      const gaps = round.rows.reduce((a, row, i) => a + setupMeasuresForRow(row, i), 0)
       if (sum + gaps !== budget) {
         problems.push(
           `${key} R${r + 1}: ${sum} row measures + ${gaps} setup-gap measures = ${sum + gaps}, budget ${budget}`,

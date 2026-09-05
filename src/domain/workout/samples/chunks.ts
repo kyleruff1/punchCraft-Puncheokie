@@ -44,6 +44,8 @@ export interface SectionRef {
   chunk: string
   /** Authored spoken lead-in for this spot (numerals spelled out), as on ClickRow. */
   leadIn: string
+  /** Setup pad (whole measures) for THIS spot — a per-spot property like leadIn, not chunk identity. */
+  setupMeasures?: number
 }
 
 /** A round authored by linking chunks instead of literal rows. */
@@ -112,7 +114,13 @@ export function resolveRound(ref: ClickRoundRef): ClickRound {
     ...(ref.rest ? { rest: ref.rest } : {}),
     rows: ref.sections.map((s): ClickRow => {
       const c = getChunk(s.chunk)
-      return { motif: c.motif, rate: c.rate, reps: c.reps, leadIn: s.leadIn }
+      return {
+        motif: c.motif,
+        rate: c.rate,
+        reps: c.reps,
+        leadIn: s.leadIn,
+        ...(s.setupMeasures !== undefined ? { setupMeasures: s.setupMeasures } : {}),
+      }
     }),
   }
 }

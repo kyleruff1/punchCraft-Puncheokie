@@ -179,7 +179,7 @@ export const CALL_BREATH_OVERRIDES: Record<string, number> = {}
  * MIN_BREATH_MS. An override for the call slot wins outright.
  */
 export function breathForBar(
-  cue: Pick<CueInstance, 'tokens' | 'tokenOffsetsMs'>,
+  cue: { tokens: readonly { kind: string }[]; tokenOffsetsMs: readonly number[] },
   vocabulary: 'numbers' | 'techniques',
   slot: string,
 ): { breathMs: number; firstPunchOffsetMs: number } {
@@ -597,6 +597,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       /** Past this, the clip is no longer useful — skip. */
       giveUpAtMs: number
       state: 'pending' | 'played' | 'skipped'
+      /** The section's rep-0 call, sequenced right after its lead-in — exempt from the lead-in collision drop. */
+      firstRep?: boolean
     }>
   } | null>(null)
   /**
@@ -633,49 +635,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
     const leadIns: Entry[] = []
     const calls: Entry[] = []
-    for (const cue of cues) {
-      if (cue.scoring !== 'sequence') continue
-      if (cue.repeatIndex === 0 && !seenBlocks.has(cue.blockId)) {
-        seenBlocks.add(cue.blockId)
-        // Section index is the block's ORDER in the round, not its id —
-        // blockId prefixes ('jab1-b2') do not match workout ids. Section 1
-        // is SKIPPED: every round's opener is called PRE-BELL (round 1 in
-        // the intro sequence, rounds 2+ in the warn playlist), so the bell
-        // releases straight into punches (Kyle, 2026-09-01).
-        if (seenBlocks.size > 1) {
-          const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
-          const clip = findClickScript(slot, vocabulary)
-          if (clip) {
-            leadIns.push({
-              kind: 'lead-in',
-              slot,
-              text: clip.text,
-              module: clip.module,
-              durationMs: clip.durationMs,
-              dispatchAtMs: Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS - leadInLeadMs),
-              giveUpAtMs: cue.scheduledStartMs + clip.durationMs,
-              state: 'pending',
-            })
-          }
-        }
-        continue
-      }
-      // Per-bar loop call (Kyle, 2026-09-01: "call every bar"): every rep
-      // after the block's first gets its motif called so it FINISHES as
-      // the bar starts. Rep 0 is named by the lead-in / pre-bell opener.
+    // Build the per-bar call entry for one cue (its motif named so it
+    // FINISHES a set-aware breath before the bar's first shot). Anchored to
+    // the first PUNCH (a bar may open on a rest). `firstRep` marks a
+    // section's rep-0 call so the collision filter leaves it beside its
+    // lead-in.
+    const buildCall = (cue: CueInstance, firstRep: boolean): Entry | null => {
       const motif = cue.tokens
         .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
         .join('-')
       const slot = `call/${motif}`
       const clip = findClickScript(slot, vocabulary)
-      if (!clip) continue
-      // Set-aware breath: on a dense bar this equals the old fixed
-      // CALL_PAD+lead; on a slow/sparse bar it shrinks so the short call
-      // stops ending a full 600/750ms before a wide-strided first shot.
-      // Anchor to the first PUNCH (a bar may open on a rest).
+      if (!clip) return null
       const { breathMs, firstPunchOffsetMs } = breathForBar(cue, vocabulary, slot)
       const firstNodeMs = cue.scheduledStartMs + firstPunchOffsetMs
-      calls.push({
+      return {
         kind: 'call',
         slot,
         text: clip.text,
@@ -686,13 +660,58 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // the next bar's call is seconds away.
         giveUpAtMs: firstNodeMs + 500,
         state: 'pending',
-      })
+        ...(firstRep ? { firstRep: true } : {}),
+      }
+    }
+    for (const cue of cues) {
+      if (cue.scoring !== 'sequence') continue
+      if (cue.repeatIndex === 0 && !seenBlocks.has(cue.blockId)) {
+        seenBlocks.add(cue.blockId)
+        // Section index is the block's ORDER in the round, not its id —
+        // blockId prefixes ('jab1-b2') do not match workout ids. Section 1
+        // (the round opener) is voiced PRE-BELL (round 1 in the intro
+        // sequence, rounds 2+ in the warn playlist), so the bell releases
+        // straight into punches — no lead-in, no rep-0 call here.
+        if (seenBlocks.size > 1) {
+          // Kyle, 2026-09-04: the first set of every section was MUTED — the
+          // whisper described it, rep 0 threw silent, the coach entered on
+          // rep 1. Now rep 0 gets its call too, sequenced AFTER the whisper:
+          // the rep-0 call fits inside the existing setup pad, and the
+          // whisper is retargeted to FINISH before the rep-0 call (it still
+          // overlaps the previous section's tail, as it always has).
+          const rep0Call = buildCall(cue, true)
+          if (rep0Call) calls.push(rep0Call)
+          const slot = `lead-in/${workout.id}/r${roundIndex + 1}s${seenBlocks.size}`
+          const clip = findClickScript(slot, vocabulary)
+          if (clip) {
+            // End before the rep-0 call starts (fallback: before the first
+            // shot, the old target, if there is no rep-0 call).
+            const endBy = rep0Call ? rep0Call.dispatchAtMs : cue.scheduledStartMs
+            leadIns.push({
+              kind: 'lead-in',
+              slot,
+              text: clip.text,
+              module: clip.module,
+              durationMs: clip.durationMs,
+              dispatchAtMs: Math.max(0, endBy - clip.durationMs - LEAD_IN_PAD_MS - leadInLeadMs),
+              giveUpAtMs: endBy,
+              state: 'pending',
+            })
+          }
+        }
+        continue
+      }
+      const call = buildCall(cue, false)
+      if (call) calls.push(call)
     }
     // Deterministic collision resolution: a call whose window overlaps a
     // lead-in's (padded) window is dropped at BUILD time, so the coach
     // lane is guaranteed free when the lead-in comes due — lead-ins must
     // never starve behind call-saturated busy checks.
     const survivors = calls.filter((call) => {
+      // The rep-0 call is deliberately sequenced right after its section's
+      // lead-in — never drop it as a "collision" with that lead-in.
+      if (call.firstRep) return true
       const callEnd = call.dispatchAtMs + call.durationMs
       return !leadIns.some((li) => {
         const liStart = li.dispatchAtMs - 500

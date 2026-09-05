@@ -42,13 +42,18 @@ export interface ComposedWorkoutDef {
 /** Measures a round's linked sections occupy, what the 4:00 round budgets, and the gap. */
 export function roundBudget(
   bpm: number,
-  sections: readonly { chunk: string }[],
+  sections: readonly { chunk: string; setupMeasures?: number }[],
 ): { usedMeasures: number; budgetMeasures: number; remainingMeasures: number } {
   const rows = sections.map((s) => {
     const c = getChunk(s.chunk)
     return rowMeasures({ motif: c.motif, rate: c.rate, reps: c.reps, leadIn: '' })
   })
-  const setupGaps = SETUP_GAP_MEASURES * Math.max(0, sections.length - 1)
+  // Per-section setup pad: explicit setupMeasures wins, else the legacy
+  // default (2 measures on every section after the first, 0 on the opener).
+  const setupGaps = sections.reduce(
+    (a, s, i) => a + (s.setupMeasures ?? (i > 0 ? SETUP_GAP_MEASURES : 0)),
+    0,
+  )
   const usedMeasures = rows.reduce((a, m) => a + m, 0) + setupGaps
   return { usedMeasures, budgetMeasures: bpm, remainingMeasures: bpm - usedMeasures }
 }
