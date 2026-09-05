@@ -129,11 +129,12 @@ export function TrackerLamp(props: {
           !lit && styles.lampUnlit,
         ]}
       />
-      {batteryPct === undefined ? null : (
-        <Text style={styles.lampBattery} testID={`tracker-battery-${hand}`}>
-          {`${Math.round(batteryPct)}%`}
-        </Text>
-      )}
+      {/* Always rendered (Kyle 2026-09-05): a lamp with no reading shows
+          a static "--%" so the pair stays level — one missing percent was
+          re-flowing the whole header cluster. */}
+      <Text style={styles.lampBattery} testID={`tracker-battery-${hand}`}>
+        {batteryPct === undefined ? '--%' : `${Math.round(batteryPct)}%`}
+      </Text>
     </View>
   )
 }

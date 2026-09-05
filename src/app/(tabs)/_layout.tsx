@@ -99,13 +99,71 @@ function wordmarkTabButton(app: WordmarkApp) {
  */
 function HeaderRoundClock(): React.JSX.Element {
   const live = useLive()
+  // Clock only — the round counter moved to its own badge on the right
+  // (Kyle 2026-09-05, workout-page markup).
   return (
     <View style={styles.headerClockBlock}>
-      <Text style={styles.headerRound} testID="round-counter">
-        {`Round ${live.roundIndex + 1}/${live.roundCount}`}
-      </Text>
       <Text style={styles.headerCountdown} testID="round-countdown">
         {formatCountdown(live.roundRemainingMs)}
+      </Text>
+    </View>
+  )
+}
+
+/** Is a session on screen (any phase that owns the live layout)? */
+function useSessionRunning(): boolean {
+  const live = useLive()
+  return (
+    live.phase === 'countdown' ||
+    live.phase === 'work' ||
+    live.phase === 'rest' ||
+    live.phase === 'paused'
+  )
+}
+
+/**
+ * Workout identity, centred between the wordmark and the clock (Kyle
+ * 2026-09-05, workout-page markup): the workout's name with its one-line
+ * description underneath. Same motif as the rest of the chrome — no new
+ * colours. Renders nothing while idle so the other tabs keep a clean
+ * header.
+ */
+function HeaderWorkoutTitle(): React.JSX.Element | null {
+  const live = useLive()
+  const running = useSessionRunning()
+  if (!running || !live.workoutName) return null
+  return (
+    <View style={styles.headerTitleBlock}>
+      <Text style={styles.headerWorkoutName} numberOfLines={1} testID="header-workout-name">
+        {live.workoutName}
+      </Text>
+      {live.workoutDescription ? (
+        <Text
+          style={styles.headerWorkoutDescription}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          testID="header-workout-description"
+        >
+          {live.workoutDescription}
+        </Text>
+      ) : null}
+    </View>
+  )
+}
+
+/**
+ * "Round N of N", right of the clock (Kyle 2026-09-05 markup) — its own
+ * zone so the countdown stays the loud number and the round reads as the
+ * label beside it.
+ */
+function HeaderRoundBadge(): React.JSX.Element | null {
+  const live = useLive()
+  const running = useSessionRunning()
+  if (!running || live.roundCount <= 0) return null
+  return (
+    <View style={styles.headerRoundBadge}>
+      <Text style={styles.headerRound} testID="round-counter">
+        {`Round ${live.roundIndex + 1} of ${live.roundCount}`}
       </Text>
     </View>
   )
@@ -216,7 +274,9 @@ function headerWordmark(app: WordmarkApp) {
         <View style={landscape ? styles.headerBrandLandscape : styles.headerBrandPortrait}>
           <Wordmark app={app} size="hdr" />
         </View>
+        <HeaderWorkoutTitle />
         <HeaderRightZone />
+        <HeaderRoundBadge />
       </View>
     )
   }
@@ -362,5 +422,35 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
+  },
+  // Workout identity, centred on the 50% line between the wordmark and
+  // the clock (Kyle 2026-09-05 markup).
+  headerTitleBlock: {
+    position: 'absolute',
+    left: '50%',
+    transform: [{ translateX: -230 }],
+    width: 460,
+    alignItems: 'center',
+    gap: 2,
+  },
+  headerWorkoutName: {
+    fontSize: 24,
+    fontFamily: fonts.heading,
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  headerWorkoutDescription: {
+    fontSize: sizes.label,
+    fontFamily: fonts.body,
+    color: colors.textSecondary,
+  },
+  // "Round N of N", centred on the 88% line — right of the clock, clear
+  // of the settings gear.
+  headerRoundBadge: {
+    position: 'absolute',
+    left: '88%',
+    transform: [{ translateX: -110 }],
+    width: 220,
+    alignItems: 'center',
   },
 })

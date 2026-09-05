@@ -226,31 +226,34 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
+  // Enlarged (Kyle 2026-09-05, markup: "enlarge this KPI box") — the rail
+  // is the tablet's between-combinations read, so it grew a size class:
+  // wider column, bigger figures, same motif.
   root: {
     borderLeftWidth: 1,
     borderLeftColor: colors.border,
     backgroundColor: colors.background,
-    minWidth: 180,
-    maxWidth: 220,
+    minWidth: 240,
+    maxWidth: 290,
   },
-  content: { gap: 10, padding: 12, paddingBottom: 28 },
+  content: { gap: 14, padding: 16, paddingBottom: 28 },
   metric: { gap: 1 },
   metricLabel: {
-    fontSize: sizes.micro,
+    fontSize: sizes.label,
     fontFamily: fonts.label,
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     color: colors.textMuted,
     textTransform: 'uppercase',
   },
   metricValue: {
-    fontSize: 20,
+    fontSize: 28,
     fontFamily: fonts.heading,
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
   },
-  metricValueEmphasis: { fontSize: sizes.hero, fontFamily: fonts.display, color: colors.accent },
-  metricCaption: { fontSize: 10, fontFamily: fonts.body, color: colors.textMuted },
-  tiles: { gap: 10, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 },
+  metricValueEmphasis: { fontSize: 44, fontFamily: fonts.display, color: colors.accent },
+  metricCaption: { fontSize: 12, fontFamily: fonts.body, color: colors.textMuted },
+  tiles: { gap: 14, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
 })
 
 /**

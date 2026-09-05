@@ -413,8 +413,9 @@ export function PunchAvatarCard(props: {
 
   return (
     <View style={styles.layer} pointerEvents="none" testID="punch-avatar-card">
-      {/* 1:5 spacers put a sixth of the free width on his left — the
-          "smidge further left" Kyle settled on-glass (2026-09-02). */}
+      {/* 2:3 spacers — two fifths of the free width on his left: a slight
+          left-of-centre stand (Kyle 2026-09-05 markup, "a little more
+          centered" with the arrow pointing left). */}
       <View style={styles.leftSpacer} />
       <View style={styles.card} testID="punch-avatar-figure">
         {/* Both frames stay mounted and toggle opacity — swapping a single
@@ -471,11 +472,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     opacity: CARD_OPACITY,
   },
-  // 1:3 — a quarter of the free width on his left: shifted TOWARD the
-  // screen's left border by half the centered gap (Kyle, final direction
-  // call after one on-glass round-trip each way).
-  leftSpacer: { flex: 1 },
-  rightSpacer: { flex: 1 },
+  // 2:3 — the figure stands slightly left of his box's centre (Kyle
+  // 2026-09-05; earlier ratios in the history: 1:5, 1:3, then 1:1).
+  leftSpacer: { flex: 2 },
+  rightSpacer: { flex: 3 },
   card: { height: CARD_HEIGHT, maxWidth: '96%', aspectRatio: CARD_ASPECT },
   frame: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, width: '100%', height: '100%' },
   frameOn: { opacity: 1 },

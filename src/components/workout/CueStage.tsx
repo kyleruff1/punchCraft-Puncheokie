@@ -437,7 +437,11 @@ const styles = StyleSheet.create({
     // whole column off the figure (Kyle, 2026-09-03: nodes were crowding
     // the partition). Partition itself is unmoved.
     marginLeft: '38%',
-    paddingHorizontal: 24,
+    // Asymmetric inset (Kyle 2026-09-05, markup): the column read a touch
+    // right-of-centre once the KPI rail widened — the extra right padding
+    // walks the bars and the Next preview slightly left together.
+    paddingLeft: 24,
+    paddingRight: 56,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
@@ -452,8 +456,9 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   // Dimmed rather than hidden: preparable, but not competing with the
-  // combination currently being thrown.
-  nextDim: { opacity: 0.55 },
+  // combination currently being thrown. 0.4 (Kyle 2026-09-05): the preview
+  // now persists for the whole block, so it recedes further.
+  nextDim: { opacity: 0.4 },
   currentZone: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   cueRow: { alignItems: 'center', gap: 8 },
   // `nowrap`, deliberately. A bar that wraps onto a second line stops being

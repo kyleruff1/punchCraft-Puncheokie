@@ -242,6 +242,14 @@ export interface LiveState {
    * already stopped moving, which is the whole point of freezing it.
    */
   frozenRoundResult?: FrozenRoundResult
+  /**
+   * Workout identity for the tabs header (Kyle 2026-09-05, workout-page
+   * markup): the header lives OUTSIDE the live screen's tree, so the name
+   * and one-line description ride the store. Set by the live screen when a
+   * session arms; absent on idle so the other tabs keep a clean header.
+   */
+  workoutName?: string
+  workoutDescription?: string
 }
 
 export const INITIAL_LIVE: LiveState = {

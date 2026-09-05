@@ -47,7 +47,7 @@ import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { getSampleWorkout } from '@domain/workout/samples'
 import { generateWorkout } from '@domain/workout/generateWorkout'
-import { useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
+import { setLive, useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
@@ -281,7 +281,20 @@ export default function LiveScreen(): React.JSX.Element {
           }),
     })
   }, [recipe])
-  const workout = selectedSampleKey ? getSampleWorkout(selectedSampleKey).workout : generated
+  const sample = selectedSampleKey ? getSampleWorkout(selectedSampleKey) : undefined
+  const workout = sample ? sample.workout : generated
+
+  // Workout identity for the tabs header (Kyle 2026-09-05 markup): name +
+  // description ride the live store because the header renders outside this
+  // tree. A generated session gets an honest generic identity.
+  React.useEffect(() => {
+    setLive({
+      workoutName: sample?.name ?? 'Custom Session',
+      workoutDescription:
+        sample?.description ??
+        `${workout.recipe.durationMinutes} minutes, generated from your recipe.`,
+    })
+  }, [sample, workout])
 
   // The walkout announcement: "Hello! Welcome to punch craft. I'm your
   // coach, Jonathan punch craft…" — workout details, a double breath, the
