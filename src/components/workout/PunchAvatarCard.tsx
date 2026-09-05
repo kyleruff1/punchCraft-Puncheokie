@@ -19,7 +19,23 @@
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Image, StyleSheet, View } from 'react-native'
-import type { SharedValue } from 'react-native-reanimated'
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated'
+
+/**
+ * On device the real `Animated.Image` carries the UI-thread opacity; the
+ * jest-expo reanimated mock has neither `Animated.Image` nor
+ * `createAnimatedComponent`, but its `useAnimatedStyle` degrades to a plain
+ * computed style object per render — so a plain `Image` renders the same
+ * opacity under tests.
+ */
+const AnimatedImage = ((Animated as { Image?: unknown }).Image ??
+  (typeof Animated.createAnimatedComponent === 'function'
+    ? Animated.createAnimatedComponent(Image)
+    : Image)) as typeof Animated.Image
 
 import { GUARD_FRAME, findPunchAvatar, type PunchAvatarFrames } from './punchAvatarManifest'
 import { colors } from '@/theme/colors'
@@ -68,6 +84,12 @@ interface Shown {
   windowMs: number
   isLast: boolean
   startedAt: number
+  /**
+   * Repeated-same-punch adoption (Kyle 2026-09-04): the cycle LEADS with a
+   * flip-frame of the punch's own RETRACTED card before striking again, so
+   * a pumping jab visibly re-throws instead of holding one extension.
+   */
+  pump: boolean
 }
 
 /**
@@ -192,6 +214,16 @@ export function PunchAvatarCard(props: {
   const occurrenceKey = requested ? `${cueId}:${tokenIndex}` : null
   const adoptedOccurrenceRef = useRef<string | null>(null)
 
+  // A deferred occurrence that has NOT painted yet (its promote timer is
+  // pending). Kept in a ref so the NEXT occurrence's effect run can flush
+  // it instead of silently dropping it — the old cleanup-clears-timer
+  // behaviour ate the middle punch of a fast triple (`1-1-2` read as "one
+  // jab then a cross", Kyle 2026-09-04).
+  const pendingAdoptRef = useRef<{
+    req: NonNullable<ReturnType<typeof requestedFor>>
+    occurrenceKey: string | null
+  } | null>(null)
+
   // Adopt the requested punch, honouring the minimum hold so a fast
   // sequence can never show half a flip.
   useEffect(() => {
@@ -203,27 +235,52 @@ export function PunchAvatarCard(props: {
     if (current && current.key === req.key && adoptedOccurrenceRef.current === occurrenceKey)
       return
 
-    const adopt = (): void => {
-      adoptedOccurrenceRef.current = occurrenceKey
-      setShown({ ...req, startedAt: Date.now() })
+    const adoptNow = (
+      next: NonNullable<ReturnType<typeof requestedFor>>,
+      nextOccurrence: string | null,
+      prevArtKey: string | undefined,
+    ): Shown => {
+      // PUMP (repeats only, Kyle 2026-09-04): same punch art re-adopted —
+      // lead with the retract card so the re-throw is visible.
+      const pump = prevArtKey === next.frames.key
+      adoptedOccurrenceRef.current = nextOccurrence
+      pendingAdoptRef.current = null
+      const adopted: Shown = { ...next, pump, startedAt: Date.now() }
+      setShown(adopted)
       // Strike-first (2026-09-02): the identity frame lands ON the beat
-      // the node lights; the drivers walk it to retract, then guard.
-      setStep('step1')
+      // the node lights; a pump paints its retract lead instead and the
+      // drivers walk it to the strike.
+      setStep(pump ? 'step2' : 'step1')
+      return adopted
     }
     if (!current) {
-      adopt()
+      adoptNow(req, occurrenceKey, undefined)
       return
     }
-    const hold = minHoldMs(current.windowMs, current.isLast)
-    const heldFor = Date.now() - current.startedAt
+    // NEVER DROP THE MIDDLE PUNCH: if a previous occurrence is still
+    // waiting on its promote timer when this newer one arrives, flush it
+    // to the card NOW (it already waited out a hold) and defer the newer
+    // one behind ITS minimum instead. Every occurrence paints at least a
+    // minimum hold; the card skips ahead only after painting. `setShown`
+    // is async, so the flushed adoption is tracked LOCALLY — shownRef
+    // still holds the pre-flush punch until the next render.
+    const pending = pendingAdoptRef.current
+    const now = pending
+      ? adoptNow(pending.req, pending.occurrenceKey, current.frames.key)
+      : current
+    const hold = minHoldMs(now.windowMs, now.isLast)
+    const heldFor = Date.now() - now.startedAt
     if (heldFor >= hold) {
-      adopt()
+      adoptNow(req, occurrenceKey, now.frames.key)
       return
     }
-    // Inside the hold: land it the moment the flip completes. A newer token
-    // arriving first simply re-schedules this, dropping the stale one.
+    // Inside the hold: land it the moment the flip completes.
+    pendingAdoptRef.current = { req, occurrenceKey }
     if (promoteRef.current) clearTimeout(promoteRef.current)
-    promoteRef.current = setTimeout(adopt, hold - heldFor)
+    promoteRef.current = setTimeout(
+      () => adoptNow(req, occurrenceKey, shownRef.current?.frames.key),
+      hold - heldFor,
+    )
     return () => {
       if (promoteRef.current) clearTimeout(promoteRef.current)
       promoteRef.current = null
@@ -259,19 +316,19 @@ export function PunchAvatarCard(props: {
     // is guard -> strike -> settle-to-guard, once. The old modulo wrap
     // re-threw the same punch every beat through rests and pauses. Once
     // settled the interval clears itself — still means ZERO timers.
+    const flip = flipFrameMs(shown.windowMs)
+    const lead = shown.pump ? flip : 0
     const settleAtMs =
-      Math.max(MIN_FRAME_MS, shown.windowMs - flipFrameMs(shown.windowMs)) +
-      flipFrameMs(shown.windowMs) +
-      FLIP_TICK_MS
+      Math.max(lead + MIN_FRAME_MS, shown.windowMs - flip) + flip + FLIP_TICK_MS
     const id = setInterval(() => {
       // Deterministic handoff: if the transport starts mid-adoption the
       // worklet takes over; two writers on `step` would fight.
       if (anchor !== undefined && anchor.value.ticksPerMillisecond > 0) return
       const elapsed = Date.now() - shown.startedAt
-      setStep(avatarFrameAt(elapsed, shown.windowMs, shown.isLast))
+      setStep(avatarFrameAt(elapsed, shown.windowMs, shown.isLast, shown.pump))
       if (elapsed >= settleAtMs) clearInterval(id)
     }, FLIP_TICK_MS)
-    setStep(avatarFrameAt(Date.now() - shown.startedAt, shown.windowMs, shown.isLast))
+    setStep(avatarFrameAt(Date.now() - shown.startedAt, shown.windowMs, shown.isLast, shown.pump))
     return () => clearInterval(id)
   }, [shown, reducedMotion, anchor])
 
@@ -288,13 +345,33 @@ export function PunchAvatarCard(props: {
   // flip phase was being re-zeroed several times a second during a flurry.
   // THE dominant avatar jank, and it was React, not the transport.
   const clockShown = useMemo(
-    () => (shown ? { key: shown.key, windowMs: shown.windowMs, isLast: shown.isLast } : null),
-    // Keyed on the three primitives the clock consumes; `shown` itself is
+    () =>
+      shown
+        ? { key: shown.key, windowMs: shown.windowMs, isLast: shown.isLast, pump: shown.pump }
+        : null,
+    // Keyed on the primitives the clock consumes; `shown` itself is
     // a fresh object per adoption and would defeat the memo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shown?.key, shown?.windowMs, shown?.isLast],
+    [shown?.key, shown?.windowMs, shown?.isLast, shown?.pump],
   )
-  useAvatarFrameClock(clockShown, reducedMotion, anchor, setStep)
+  // UI-THREAD paint channel (Phase 5-i, Kyle on-glass 2026-09-04): the
+  // worklet writes the frame index here and `workletOwns` says when it is
+  // the authoritative driver; the layers' animated opacity reads whichever
+  // source owns the frame. The React `step` state remains the fallback
+  // (no anchor / transport stopped / tests) — mirrored into `fallbackStep`
+  // below so ONE animated style is the sole opacity writer and the two
+  // drivers can never fight over the same pixels.
+  const stepShared = useSharedValue(2) // 0=step1, 1=step2, 2=guard
+  const workletOwns = useSharedValue(false)
+  useAvatarFrameClock(
+    clockShown,
+    reducedMotion,
+    anchor,
+    setStep,
+    undefined,
+    stepShared,
+    workletOwns,
+  )
 
   // THE GUARD STANCE (Kyle, on-glass 2026-09-02): whenever no punch is
   // lit — round start, combo-end breaths, rest slots, bar boundaries,
@@ -307,6 +384,31 @@ export function PunchAvatarCard(props: {
   const holding = requested === null
   const frames = shown?.frames ?? null
   const visible: AvatarStep = reducedMotion || holding ? 'guard' : step
+  // The animated styles below are the SOLE opacity writers: sourced from
+  // the worklet's channel while it owns the paint, and from this
+  // render-computed index otherwise. A plain closure capture (with an
+  // explicit dep) — NOT a shared-value mirror — so the fallback is correct
+  // in the same render it was computed (the jest mock evaluates styles per
+  // render; an effect-written mirror lagged one frame).
+  const fallbackIdx = visible === 'step1' ? 0 : visible === 'step2' ? 1 : 2
+  const step1Style = useAnimatedStyle(
+    () => ({
+      opacity: (workletOwns.value ? stepShared.value : fallbackIdx) === 0 ? 1 : 0,
+    }),
+    [fallbackIdx],
+  )
+  const step2Style = useAnimatedStyle(
+    () => ({
+      opacity: (workletOwns.value ? stepShared.value : fallbackIdx) === 1 ? 1 : 0,
+    }),
+    [fallbackIdx],
+  )
+  const guardStyle = useAnimatedStyle(
+    () => ({
+      opacity: (workletOwns.value ? stepShared.value : fallbackIdx) === 2 ? 1 : 0,
+    }),
+    [fallbackIdx],
+  )
   if (!frames && visible !== 'guard') return null
 
   return (
@@ -323,26 +425,26 @@ export function PunchAvatarCard(props: {
             GHOSTED in over 300 ms — on top of a 90-220 ms stop-motion
             frame. The flip must be a hard cut. */}
         {frames ? (
-          <Image
+          <AnimatedImage
             source={frames.step1}
-            style={[styles.frame, visible === 'step1' ? styles.frameOn : styles.frameOff]}
+            style={[styles.frame, step1Style]}
             resizeMode="contain"
             fadeDuration={0}
             testID="punch-avatar-step1"
           />
         ) : null}
         {frames ? (
-          <Image
+          <AnimatedImage
             source={frames.step2}
-            style={[styles.frame, visible === 'step2' ? styles.frameOn : styles.frameOff]}
+            style={[styles.frame, step2Style]}
             resizeMode="contain"
             fadeDuration={0}
             testID="punch-avatar-step2"
           />
         ) : null}
-        <Image
+        <AnimatedImage
           source={GUARD_FRAME}
-          style={[styles.frame, visible === 'guard' ? styles.frameOn : styles.frameOff]}
+          style={[styles.frame, guardStyle]}
           resizeMode="contain"
           fadeDuration={0}
           testID="punch-avatar-guard"

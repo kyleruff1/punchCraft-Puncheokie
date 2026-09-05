@@ -97,6 +97,7 @@ export function avatarFrameAt(
   elapsedMs: number,
   windowMs: number,
   isLast: boolean = false,
+  pump: boolean = false,
 ): AvatarStep {
   // STRIKE-FIRST, GUARD ON ALL SIDES (Kyle, on-glass 2026-09-02: "per
   // punch should be extended, then flip to retracted — reversed — but
@@ -108,12 +109,22 @@ export function avatarFrameAt(
   // last-punch special case ("guard is designed to be parked on"). The
   // strike is floored at MIN_FRAME_MS so a degenerate window still shows
   // the throw.
+  //
+  // PUMP (Kyle 2026-09-04, repeats only): a REPEATED same punch — `1-1`,
+  // a pumping jab — re-adopts the same art, so a plain step1 reset reads
+  // as one held extension ("it only knows how to do two or three of them
+  // in a row"). With `pump`, the cycle LEADS with one flip-frame of the
+  // punch's own RETRACTED card before striking again — extend → retract →
+  // extend — "we should at least see some retracting when we have a
+  // double punch". The strike keeps its MIN_FRAME floor after the lead.
   // NOTE the frame names are LEGACY-INVERTED (punchAvatarManifest.ts:
   // step1 = the STRIKE art, step2 = the RETRACTED art).
   void isLast
   const t = Math.max(0, elapsedMs)
   const flip = flipFrameMs(windowMs)
-  const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flip)
+  const lead = pump ? flip : 0
+  if (t < lead) return 'step2'
+  const strikeEnd = Math.max(lead + MIN_FRAME_MS, windowMs - flip)
   if (t < strikeEnd) return 'step1'
   if (t < strikeEnd + flip) return 'step2'
   return 'guard'

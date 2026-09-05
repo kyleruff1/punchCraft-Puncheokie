@@ -239,6 +239,130 @@ describe('PunchAvatarCard — the flip repeats', () => {
     }
   })
 
+  it('a repeated SAME punch pumps — the re-adoption leads with the RETRACT card (Kyle 2026-09-04)', () => {
+    // "We should at least see some retracting when we have a double punch
+    // like a pumping jab": `1-1` must read extend → retract → extend, not
+    // one held extension.
+    const combo = cue([punch(1), punch(1), punch(2)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
+    const opacityOf = (id: string): number => {
+      const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
+      const flat = [node.props.style].flat()
+      return flat.reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+    }
+    const sourceOf = (id: string): unknown =>
+      tree.root.findAllByProps({ testID: id }, { deep: false })[0]!.props.source
+    expect(opacityOf('punch-avatar-step1')).toBe(1) // first jab strikes on the beat
+    // Past the first jab's min hold, the second jab (same art) adopts…
+    act(() => {
+      jest.advanceTimersByTime(minHoldMs(400) + 20)
+    })
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
+    })
+    // …and PAINTS THE RETRACT first — the visible pump.
+    expect(opacityOf('punch-avatar-step2')).toBe(1)
+    expect(sourceOf('punch-avatar-step2')).toBe(findPunchAvatar(1, false)?.step2)
+    // One flip-frame later the re-throw lands.
+    act(() => {
+      jest.advanceTimersByTime(120)
+    })
+    expect(opacityOf('punch-avatar-step1')).toBe(1)
+    expect(sourceOf('punch-avatar-step1')).toBe(findPunchAvatar(1, false)?.step1)
+  })
+
+  it('a DIFFERENT next punch keeps the tuned strike-to-strike flow (no pump lead)', () => {
+    const combo = cue([punch(1), punch(2)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
+    act(() => {
+      jest.advanceTimersByTime(minHoldMs(400) + 20)
+    })
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
+    })
+    const step1 = tree.root.findAllByProps({ testID: 'punch-avatar-step1' }, { deep: false })[0]!
+    const flat = [step1.props.style].flat()
+    const opacity = flat.reduce(
+      (acc: number, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc),
+      0,
+    )
+    expect(opacity).toBe(1) // strikes immediately, as tuned
+    expect(step1.props.source).toBe(findPunchAvatar(2, false)?.step1)
+  })
+
+  it('a fast triple never drops the middle punch — the deferred jab flushes when the third arrives', () => {
+    // `1-1-2` used to read "one jab then a cross": the second jab's
+    // deferred adoption was CANCELLED by the third token's arrival. Now a
+    // pending occurrence flushes to the card the moment a newer one lands.
+    const combo = cue([punch(1), punch(1), punch(2)])
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
+    const sourceOf = (id: string): unknown =>
+      tree.root.findAllByProps({ testID: id }, { deep: false })[0]!.props.source
+    // Second jab arrives INSIDE the first's hold — deferred, not shown.
+    act(() => {
+      jest.advanceTimersByTime(50)
+    })
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
+    })
+    // Third token arrives while the second is still pending…
+    act(() => {
+      jest.advanceTimersByTime(50)
+    })
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={2} />)
+    })
+    // …and the pending SECOND JAB paints (pump lead: its retract card),
+    // instead of being silently dropped.
+    expect(sourceOf('punch-avatar-step2')).toBe(findPunchAvatar(1, false)?.step2)
+    // After the second jab's own hold, the cross lands.
+    act(() => {
+      jest.advanceTimersByTime(minHoldMs(400) + 40)
+    })
+    expect(sourceOf('punch-avatar-step1')).toBe(findPunchAvatar(2, false)?.step1)
+  })
+
+  it('QUADRUPLE JAB REPRO (Kyle on-glass 2026-09-04): all four pumps strike — the last one included', () => {
+    // Establish-the-jab's 1-1-1-1 @1x: four same-art punches, 600ms slots.
+    // On glass the FOURTH pump never showed. Walk the card exactly as the
+    // lead track does (token index advancing every 600ms) and assert a
+    // STRIKE (step1 visible) is painted for every one of the four.
+    const combo = cue(
+      [punch(1), punch(1), punch(1), punch(1)],
+      { tokenOffsetsMs: [0, 600, 1200, 1800], scheduledEndMs: 14_800, windowEndMs: 14_800 },
+    )
+    const tree = render(<PunchAvatarCard cue={combo} activeTokenIndex={0} />)
+    const opacityOf = (id: string): number => {
+      const node = tree.root.findAllByProps({ testID: id }, { deep: false })[0]!
+      const flat = [node.props.style].flat()
+      return flat.reduce((acc, s) => (s && typeof s.opacity === 'number' ? s.opacity : acc), 0)
+    }
+    const strikesSeen: number[] = []
+    const sampleUntil = (ms: number, tokenIndex: number): void => {
+      for (let t = 0; t < ms; t += 30) {
+        act(() => {
+          jest.advanceTimersByTime(30)
+        })
+        if (opacityOf('punch-avatar-step1') === 1 && !strikesSeen.includes(tokenIndex))
+          strikesSeen.push(tokenIndex)
+      }
+    }
+    sampleUntil(600, 0)
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={1} />)
+    })
+    sampleUntil(600, 1)
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={2} />)
+    })
+    sampleUntil(600, 2)
+    act(() => {
+      tree.update(<PunchAvatarCard cue={combo} activeTokenIndex={3} />)
+    })
+    sampleUntil(1200, 3)
+    expect(strikesSeen).toEqual([0, 1, 2, 3])
+  })
+
   it('sizes the card in fixed points, so a layout change cannot resize the figure', () => {
     const tree = render(<PunchAvatarCard cue={cue([punch(1)])} activeTokenIndex={0} />)
     // The figure sits between the position spacers now, so it is queried

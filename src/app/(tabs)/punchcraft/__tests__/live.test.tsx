@@ -44,7 +44,14 @@ jest.mock('react-native-reanimated', () => ({
   useReducedMotion: () => false,
   useSharedValue: <T,>(init: T) => ({ value: init }),
   useDerivedValue: <T,>(fn: () => T) => ({ value: fn() }),
+  // Phase 5-i avatar paint: computed per render like the jest-expo mock,
+  // so the card's fallback opacity stays assertable.
+  useAnimatedStyle: <T,>(fn: () => T) => fn(),
   runOnUI:
+    <A extends unknown[]>(fn: (...args: A) => void) =>
+    (...args: A) =>
+      fn(...args),
+  runOnJS:
     <A extends unknown[]>(fn: (...args: A) => void) =>
     (...args: A) =>
       fn(...args),

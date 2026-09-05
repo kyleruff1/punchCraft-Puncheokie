@@ -42,20 +42,23 @@ describe('avatarFrameAtWorklet ↔ domain avatarFrameAt equivalence', () => {
   // negative, so 0 is a valid input.
   const windows = [0, 30, 90, 120, 200, 240, 300, 500, 800, 1_200, 2_000]
 
-  it('matches the domain function for every window × elapsed × isLast triple', () => {
+  it('matches the domain function for every window × elapsed × isLast × pump tuple', () => {
     for (const windowMs of windows) {
       const beat = Math.max(windowMs, minHoldMs(windowMs, false))
       const step = Math.max(1, Math.floor(beat / 40))
       for (let elapsed = -20; elapsed <= beat + 100; elapsed += step) {
         for (const isLast of [false, true]) {
-          const domain = avatarFrameAt(elapsed, windowMs, isLast)
-          const workletVal = avatarFrameAtWorklet(elapsed, windowMs, isLast)
-          expect([elapsed, windowMs, isLast, workletVal]).toEqual([
-            elapsed,
-            windowMs,
-            isLast,
-            domain,
-          ])
+          for (const pump of [false, true]) {
+            const domain = avatarFrameAt(elapsed, windowMs, isLast, pump)
+            const workletVal = avatarFrameAtWorklet(elapsed, windowMs, isLast, pump)
+            expect([elapsed, windowMs, isLast, pump, workletVal]).toEqual([
+              elapsed,
+              windowMs,
+              isLast,
+              pump,
+              domain,
+            ])
+          }
         }
       }
     }

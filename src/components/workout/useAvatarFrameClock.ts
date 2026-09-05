@@ -80,16 +80,21 @@ export function avatarFrameAtWorklet(
   elapsedMs: number,
   windowMs: number,
   isLast: boolean,
+  pump: boolean = false,
 ): AvatarStep {
   'worklet'
   // Mirror of `avatarFrameAt` — STRIKE-FIRST with guard on all sides
   // (2026-09-02): strike(step1) on the beat, a flip-frame of
-  // retract(step2), then the universal guard. Frame names are
+  // retract(step2), then the universal guard. With `pump` (a repeated
+  // same punch, Kyle 2026-09-04) the cycle LEADS with one flip-frame of
+  // retract so a pumping jab visibly re-throws. Frame names are
   // legacy-inverted (see punchAvatar.ts).
   void isLast
   const t = Math.max(0, elapsedMs)
   const flip = flipFrameMsWorklet(windowMs)
-  const strikeEnd = Math.max(MIN_FRAME_MS, windowMs - flip)
+  const lead = pump ? flip : 0
+  if (t < lead) return 'step2'
+  const strikeEnd = Math.max(lead + MIN_FRAME_MS, windowMs - flip)
   if (t < strikeEnd) return 'step1'
   if (t < strikeEnd + flip) return 'step2'
   return 'guard'
@@ -101,6 +106,8 @@ export interface AvatarClockShown {
   key: string
   windowMs: number
   isLast: boolean
+  /** Repeated-same-punch adoption: lead the cycle with a retract (pump). */
+  pump: boolean
 }
 
 /**
@@ -126,12 +133,25 @@ export function useAvatarFrameClock(
   anchor: SharedValue<SharedTransportAnchor> | undefined,
   setStep: (step: AvatarStep) => void,
   nowFrameTimestampMs: () => number = defaultNow,
+  /**
+   * UI-THREAD paint channel (Phase 5-i, Kyle on-glass 2026-09-04: strike
+   * frames were being swallowed — the runOnJS→setState→re-render hop
+   * starved under load and 90ms strikes never painted). When provided,
+   * the worklet writes the frame INDEX here (0=step1, 1=step2, 2=guard)
+   * and never calls runOnJS at all — the card's layers read it via
+   * animated opacity. `owns` flips true while this worklet is the
+   * authoritative driver (anchor running + a punch shown), so the card
+   * knows when to defer its React-state fallback.
+   */
+  stepShared?: SharedValue<number>,
+  owns?: SharedValue<boolean>,
 ): void {
   // The shared values below let the worklet read authored params
   // without capturing the React closure — cross-runtime safe.
   const startedAtTick = useSharedValue(0)
   const windowMs = useSharedValue(0)
   const isLast = useSharedValue(false)
+  const pump = useSharedValue(false)
   const active = useSharedValue(false)
   const lastStep = useSharedValue<AvatarStep>('step1')
   const shownKey = shown?.key ?? null
@@ -139,6 +159,8 @@ export function useAvatarFrameClock(
   useEffect(() => {
     if (!shown || !anchor) {
       active.value = false
+      if (owns) owns.value = false
+      if (stepShared) stepShared.value = 2 // park the paint channel on guard
       return
     }
     // Sample the transport's tick at the adoption moment in the
@@ -148,9 +170,17 @@ export function useAvatarFrameClock(
     startedAtTick.value = sharedAnchorCurrentTick(anchor.value, nowFrameTimestampMs())
     windowMs.value = shown.windowMs
     isLast.value = shown.isLast
-    // Strike-first: the card's adoption already painted step1, so the
-    // worklet's first emission is the RETRACT flip, not a redundant strike.
-    lastStep.value = 'step1'
+    pump.value = shown.pump
+    // Strike-first: the card's adoption already painted step1 (step2 for a
+    // pump's retract lead), so the worklet's first emission is the next
+    // flip, not a redundant repaint.
+    lastStep.value = shown.pump ? 'step2' : 'step1'
+    // PRIME the paint channel with the adoption pose (Kyle on-glass
+    // 2026-09-04, "avatar wasn't moving much"): the worklet writes only on
+    // CHANGE, so without this the strike phase — the very state adoption
+    // starts in — never reached the screen and the card sat on guard.
+    if (stepShared) stepShared.value = shown.pump ? 1 : 0
+    if (owns) owns.value = true
     active.value = true
     // Deps are the PRIMITIVES, deliberately not `shown` (GH #305): this
     // effect re-samples `startedAtTick` and resets the cycle to step1, so
@@ -159,23 +189,40 @@ export function useAvatarFrameClock(
     // screen's store churn. A new adoption is a new `shownKey`; a
     // re-render is not.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shownKey, shown?.windowMs, shown?.isLast, anchor, active, startedAtTick, windowMs, isLast, lastStep, nowFrameTimestampMs])
+  }, [shownKey, shown?.windowMs, shown?.isLast, shown?.pump, anchor, active, startedAtTick, windowMs, isLast, pump, lastStep, nowFrameTimestampMs])
 
   const cb = useFrameCallback(({ timestamp }) => {
     'worklet'
-    if (!active.value || !anchor) return
+    if (!active.value || !anchor) {
+      if (owns) owns.value = false
+      return
+    }
     const ticksPerMs = anchor.value.ticksPerMillisecond
-    if (ticksPerMs <= 0) return // transport stopped → freeze at last frame
+    if (ticksPerMs <= 0) {
+      // Transport stopped → freeze at last frame; hand the paint back to
+      // the card's React fallback.
+      if (owns) owns.value = false
+      return
+    }
+    if (owns) owns.value = true
     const elapsedTicks = sharedAnchorCurrentTick(anchor.value, timestamp) - startedAtTick.value
     const elapsedMs = elapsedTicks / ticksPerMs
     // RAW elapsed, never wrapped (stillness rule, 2026-09-02): once the
     // cycle settles to guard the callback goes quiescent until the next
     // adoption resamples `startedAtTick`. The old modulo wrap re-threw
     // the same punch every beat through rest slots and pauses.
-    const step = avatarFrameAtWorklet(elapsedMs, windowMs.value, isLast.value)
+    const step = avatarFrameAtWorklet(elapsedMs, windowMs.value, isLast.value, pump.value)
     if (step !== lastStep.value) {
       lastStep.value = step
-      runOnJS(setStep)(step)
+      if (stepShared) {
+        // UI-thread paint (Phase 5-i, 2026-09-04): write the frame index
+        // directly — no runOnJS hop, so a 90ms strike can never be
+        // coalesced away by a busy JS thread ("the avatar does nothing
+        // except squat and stand up").
+        stepShared.value = step === 'step1' ? 0 : step === 'step2' ? 1 : 2
+      } else {
+        runOnJS(setStep)(step)
+      }
     }
   })
 

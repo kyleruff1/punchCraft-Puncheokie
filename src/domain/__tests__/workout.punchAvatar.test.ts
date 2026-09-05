@@ -106,6 +106,47 @@ describe('avatarFrameAt — one flip per node', () => {
   })
 })
 
+describe('avatarFrameAt — the pump lead (repeated same punch, Kyle 2026-09-04)', () => {
+  // A pumping jab ("1-1") re-adopts the SAME art; without a visible
+  // retract between the strikes the pair reads as one held extension.
+  // `pump` leads the cycle with one flip-frame of the punch's own
+  // RETRACTED card: retract → strike → retract → guard.
+  const windows = [120, 200, 300, 400, 600, 900]
+
+  it.each(windows)('window %sms opens on the RETRACT, then strikes', (windowMs) => {
+    const flip = flipFrameMs(windowMs)
+    expect(avatarFrameAt(0, windowMs, false, true)).toBe('step2')
+    expect(avatarFrameAt(flip - 1, windowMs, false, true)).toBe('step2')
+    expect(avatarFrameAt(flip, windowMs, false, true)).toBe('step1')
+  })
+
+  it.each(windows)('window %sms keeps the strike floored and retract-tails to guard', (windowMs) => {
+    const flip = flipFrameMs(windowMs)
+    const strikeEnd = Math.max(flip + MIN_FRAME_MS, windowMs - flip)
+    expect(avatarFrameAt(strikeEnd - 1, windowMs, false, true)).toBe('step1')
+    expect(avatarFrameAt(strikeEnd, windowMs, false, true)).toBe('step2')
+    expect(avatarFrameAt(strikeEnd + flip, windowMs, false, true)).toBe('guard')
+  })
+
+  it('pump=false stays byte-identical to the plain cycle — every existing call site untouched', () => {
+    for (const windowMs of [0, 50, 120, 300, 600, 1500]) {
+      for (let t = -20; t <= windowMs + 400; t += 15) {
+        expect(avatarFrameAt(t, windowMs, false, false)).toBe(avatarFrameAt(t, windowMs))
+      }
+    }
+  })
+
+  it('even a degenerate window shows retract AND strike on a pump', () => {
+    for (const windowMs of [0, 40, 90]) {
+      const seen = new Set<string>()
+      for (let t = 0; t <= 3 * MIN_FRAME_MS + 40; t += 5)
+        seen.add(avatarFrameAt(t, windowMs, false, true))
+      expect(seen.has('step2')).toBe(true)
+      expect(seen.has('step1')).toBe(true)
+    }
+  })
+})
+
 describe('avatarWindowMs', () => {
   const due = [0, 400, 900]
 
