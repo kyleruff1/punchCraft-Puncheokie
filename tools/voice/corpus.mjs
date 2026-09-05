@@ -52,6 +52,14 @@ export function combinationsFromCorpus() {
   // Kyle's corpus v1 is the second source: combos plus ladder stages, in
   // the same lowercase clip-key form the scan produces.
   for (const notation of corpusV1().notations) found.add(notation)
+  // SINGLES (2026-09-05): the "one punch is a standalone clip" assumption
+  // above was false at runtime — the announcer requests form 'combo' for
+  // lone punches too, and uppercut-clinic's 1-6b-3-2 section went SILENT
+  // on 'no manifest entry for numbers/combo/6b' (both vocabs). Render the
+  // full single family so no bare punch can ever fall through again.
+  for (const n of ['1', '2', '3', '4', '5', '6', '1b', '2b', '3b', '4b', '5b', '6b']) {
+    found.add(n)
+  }
   return [...found].sort()
 }
 

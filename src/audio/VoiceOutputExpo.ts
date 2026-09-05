@@ -1070,6 +1070,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       const module = clip.module
       const dispatchedAt = this.clock()
       const speak = (path: string): void => {
+        // ARMED-LIE TRACER (2026-09-05): position at the instant of play.
+        // The re-arm chain swallows seek failures yet still marks the
+        // player armed — a wedged seek leaves it at end-of-stream, and
+        // play() from there is an inaudible instant-finish that still
+        // logs "playing" at correct stride. positionMs ≈ durationMs on a
+        // silent rep is that wedge, named.
+        const positionMs = Math.round((target.currentTime ?? 0) * 1000)
         target.play()
         // RE-STAMP the busy window from the moment audio actually starts
         // (Kyle 2026-09-04, "calls out about every other set"): the
@@ -1084,6 +1091,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           text: safe(clip.text),
           durationMs: safe(clip.durationMs),
           rewindMs: safe(Math.round(this.clock() - dispatchedAt)),
+          // Dispatch-time volume (L1067): 0 = born under a duck window and
+          // never restored — the line prints, the athlete hears nothing.
+          volume: safe(target.volume),
+          positionMs: safe(positionMs),
           path: safe(path),
         })
         // Re-arm for the next bar: once this call has finished, park the
@@ -1587,7 +1598,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         const key = this.keyFor(id, form)
         const measured = this.durations.get(key)
           ?? CALLOUT_CLIPS[id as CalloutClipId]?.durationMs
+        // CASCADE TRACER (2026-09-05, uppercut-clinic r4 "35s left, totally
+        // silent"): record how much of a PREVIOUS duck window was still
+        // unspent when this arm landed. Chained arms with remainingMs > 0
+        // are the rolling-mute signature — calls born inside any window are
+        // born at volume 0 (L977/1008/1067) and only the phrase player is
+        // ever restored, so a rolling chain silences every call it covers
+        // while each still logs "playing".
+        const remainingMs = Math.max(0, Math.round(this.callsMutedUntil - this.clock()))
         this.muteCallsFor(measured ?? 2_500)
+        logger.info('puncheokie.voice.duck', 'duck armed', {
+          asset: safe(id),
+          measuredMs: safe(measured ?? 2_500),
+          remainingMs: safe(remainingMs),
+        })
       }
       // Success-path record for the QA loop — see playCombination's note.
       logger.info('puncheokie.voice.play', 'clip playing', {
@@ -1595,6 +1619,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         form: safe(form),
         vocabulary: safe(this.vocabulary),
         priority: safe(priority),
+        // volume 0 here = born inside a duck window: audibly SILENT even
+        // though this success line printed (the 35s-silence tell).
+        volume: safe(player.volume),
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'clip did not play', {
