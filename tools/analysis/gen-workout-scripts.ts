@@ -194,7 +194,7 @@ const CALL_TECHNIQUE_OVERRIDES: Record<string, string> = {
   '1b-2-1-2': 'Body jab, cross-jab-cross!',
   '1-2-5-2': 'Jab-cross-lead-upper-cross!',
   '1-2b-3b-2': 'Jab, body cross-hook, cross!',
-  '1b-2b-3b-2b': 'Body: jab, cross, hook, cross!',
+  '1b-2b-3b-2b': 'Body jab-cross, body hook-cross!',
   '1-2b-5b-2': 'Jab, body cross-lead-upper, cross!',
 }
 
