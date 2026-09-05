@@ -2504,6 +2504,17 @@
           "priority": "P1",
           "size": "M",
           "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-13",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Whammy + formant + Ampire wah — the deferred expression backends",
+          "body": "## Context\n\ntransition-design.md ships the first implementation (legato glide + elastic ornament + synth-filter wah). Deferred expression work: Whammy Rise/Dive (full-octave bends on PEAK events only, 200-500ms), Punch Scoop (-1..-2 semitones into center), formant wah (Mai Tai Talky/Voxil, second CC to Character Sound), and the Ampire Pedalboard wah backend (requires Studio One >= 4.6 + Ampire license; Control Link mapping).\n\n## Acceptance criteria\n\n- [ ] Whammy transition preset: scoop on hard punches, octave rise only on a new-peak event\n- [ ] PitchTransitionProfile / WahTransitionProfile shapes from transition-design §4 in the profile schema\n- [ ] Formant backend prototype (CC -> Character Sound) behind a profile flag\n- [ ] Ampire backend documented/gated on the installed Studio One version",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "M",
+          "sprint": "sprint-2"
         }
       ]
     }
