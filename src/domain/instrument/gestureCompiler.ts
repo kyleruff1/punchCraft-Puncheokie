@@ -8,11 +8,20 @@
  * Normalization (rolling scalers) stays OUTSIDE — the caller passes
  * velocity01/acceleration01 so this stays a pure fold over state.
  */
+import { brassCellAt, type CompiledBrassCubeMap } from './brassCube'
 import { cellAt, type CompiledCubeMap } from './cubeCompiler'
-import type { CompiledPunchGesture, MusicalPunchInput } from './gestureSchema'
+import type {
+  CompiledPunchGesture,
+  ImmediateAccent,
+  MusicalPunchInput,
+  QuantizedChange,
+  WhammyAccent,
+} from './gestureSchema'
 import { INSTRUMENT_SCHEMA_VERSION } from './gestureSchema'
 import {
+  activityAt,
   activityLayerAt,
+  brassLayerFor,
   emptyActivity,
   notePunch,
   rate01At,
@@ -21,6 +30,7 @@ import {
 import { advanceVoice, emptyLatch, type InstrumentLatchState } from './latchedVoice'
 import type { ModulationDestination, PunchPatch } from './punchPatch'
 import { overshootCents, transitionDurationMs, transitionKind } from './transitions'
+import { emptyPeaks, notePeak, type PeakState } from './velocityPeak'
 import { positionInZone, quantizeZone, type ZoneState } from './zoneQuantizer'
 
 /** Alternating-hands window (instrument-design §20). */
@@ -31,16 +41,29 @@ export interface InstrumentSessionState {
   zones: { left: ZoneState | null; right: ZoneState | null }
   activity: ActivityState
   lastLive: { hand: 'left' | 'right'; atMs: number } | null
+  /** Per-hand session peaks — the whammy gate (velocityPeak.ts). */
+  peaks: PeakState
+  /** Last committed brass activity layer (hysteresis anchor). */
+  brassLayer: 0 | 1 | 2 | 3
 }
 
 export function emptySessionState(): InstrumentSessionState {
-  return { latch: emptyLatch(), zones: { left: null, right: null }, activity: emptyActivity(), lastLive: null }
+  return {
+    latch: emptyLatch(),
+    zones: { left: null, right: null },
+    activity: emptyActivity(),
+    lastLive: null,
+    peaks: emptyPeaks(),
+    brassLayer: 0,
+  }
 }
 
 export interface CompileContext {
   sessionId: string
   patch: PunchPatch
   cubeMap: CompiledCubeMap
+  /** Present for brass-cube patches; MUST agree with cubeMap's patchHash. */
+  brassMap?: CompiledBrassCubeMap
   /** Normalized readings from the caller's per-hand scalers. */
   velocity01: number
   acceleration01: number
@@ -49,6 +72,10 @@ export interface CompileContext {
 export interface CompiledResult {
   gesture: CompiledPunchGesture
   state: InstrumentSessionState
+}
+
+function clamp(lo: number, hi: number, value: number): number {
+  return Math.max(lo, Math.min(hi, value))
 }
 
 function curveValue(curve: string, t: number): number {
@@ -93,6 +120,14 @@ export function compileGesture(
 ): CompiledResult | null {
   if (input.recovered) return null
 
+  // Defensive one-map invariant: the brass map and the cube map must be
+  // compiled from the SAME patch, or MIDI and visual could disagree.
+  if (ctx.brassMap && ctx.brassMap.patchHash !== ctx.cubeMap.patchHash) {
+    throw new Error(
+      `brassMap/cubeMap patchHash mismatch (${ctx.brassMap.patchHash} vs ${ctx.cubeMap.patchHash})`,
+    )
+  }
+
   const now = input.receivedMonotonicTimeMs
   const hand = input.hand
   const zoneCount = ctx.patch.zoneCount
@@ -134,6 +169,61 @@ export function compileGesture(
 
   const duration = transitionDurationMs(advanced.zoneDistance, rate01, ctx.patch)
   const voiceDef = hand === 'left' ? ctx.patch.leftVoice : ctx.patch.rightVoice
+
+  // Peak fold — always advanced, even for patches that never fire a whammy,
+  // so switching patches mid-session cannot reset the bar.
+  const peakFold = notePeak(state.peaks, hand, input.velocityRaw, now)
+
+  // Brass blocks: the punched hand's new zone + the other hand's latched
+  // zone stage ONE cell; the bridge commits it on the next step boundary.
+  let accent: ImmediateAccent | undefined
+  let quantized: QuantizedChange | undefined
+  let brassLayer = state.brassLayer
+  let transientMultiplier = 1
+  if (ctx.patch.brassCube && ctx.brassMap) {
+    const brassCell = brassCellAt(ctx.brassMap, leftZone, rightZone)
+    const pps = activityAt(activity, now)
+    brassLayer = brassLayerFor(pps, state.brassLayer)
+    const layerDef = ctx.brassMap.activityLayers[brassLayer]
+    transientMultiplier = layerDef.transientMultiplier
+    accent = {
+      midiNote: brassCell.startMidiNote,
+      midiVelocity: clamp(1, 127, Math.round(50 + 68 * ctx.acceleration01)),
+      channel: ctx.brassMap.accentMidiChannel,
+      gateMs: ctx.brassMap.accentGateMs,
+    }
+    quantized = {
+      cubeCellId: brassCell.cellId,
+      chordName: brassCell.chordName,
+      bassMidiNote: brassCell.bassMidiNote,
+      bassChannel: ctx.brassMap.bassMidiChannel,
+      chordMidiNotes: brassCell.rotatedPool,
+      arpStartIndex: brassCell.startIndex,
+      arpPattern: brassCell.arpPattern,
+      arpChannel: ctx.brassMap.arpMidiChannel,
+      notesPerMinute: layerDef.notesPerMinute,
+      gateRatio: layerDef.gateRatio,
+      patternDepth: layerDef.patternDepth,
+      activityLayer: brassLayer,
+      activityPps: pps,
+      retrigger: ctx.brassMap.retrigger,
+      backend: ctx.brassMap.arpBackend,
+    }
+  }
+
+  // Exceptional-peak whammy — patch-gated, orthogonal to the brass blocks.
+  const whammyCfg = ctx.patch.transition.whammy
+  const whammy: WhammyAccent | undefined =
+    whammyCfg && peakFold.accent
+      ? {
+          direction: 'rise',
+          semitones: whammyCfg.semitones,
+          durationMs: Math.round(
+            whammyCfg.minDurationMs +
+              (whammyCfg.maxDurationMs - whammyCfg.minDurationMs) * ctx.acceleration01,
+          ),
+        }
+      : undefined
 
   const gesture: CompiledPunchGesture = {
     schemaVersion: INSTRUMENT_SCHEMA_VERSION,
@@ -177,7 +267,11 @@ export function compileGesture(
     },
     transient: {
       note: 36,
-      velocity: Math.round(40 + 87 * ctx.acceleration01),
+      // Brass patches scale the impact by the layer's ladder multiplier;
+      // legacy patches keep the unscaled formula byte-for-byte (R1).
+      velocity: quantized
+        ? clamp(1, 127, Math.round((40 + 87 * ctx.acceleration01) * transientMultiplier))
+        : Math.round(40 + 87 * ctx.acceleration01),
       layer: 'generic',
     },
     visual: {
@@ -195,6 +289,11 @@ export function compileGesture(
       persistenceMs: Math.round(3000 + 3000 * rate01),
       transitionRibbonMs: advanced.change === 'same-zone' ? 0 : duration,
     },
+    // Appended AFTER visual — JSON key order is part of the determinism
+    // goldens, and absent blocks keep legacy gestures byte-identical (R1).
+    ...(accent ? { accent } : {}),
+    ...(quantized ? { quantized } : {}),
+    ...(whammy ? { whammy } : {}),
   }
 
   return {
@@ -204,6 +303,8 @@ export function compileGesture(
       zones: { ...state.zones, [hand]: zoneState },
       activity,
       lastLive: { hand, atMs: now },
+      peaks: peakFold.state,
+      brassLayer,
     },
   }
 }

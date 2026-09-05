@@ -58,6 +58,11 @@ export const SETTINGS_KEYS = {
   instrumentPatch: 'instrument.patch',
   /** Puncheoke instrument: `{ url }` — the PunchBridge WebSocket address. */
   instrumentBridge: 'instrument.bridge',
+  /**
+   * Puncheoke brass-cube options: `{ patternId, retrigger, backend }` —
+   * the jam-screen selections for a brass patch (brass-cube-design).
+   */
+  instrumentBrass: 'instrument.brass',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

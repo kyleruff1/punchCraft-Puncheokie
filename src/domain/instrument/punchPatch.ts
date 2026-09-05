@@ -8,6 +8,7 @@
  * The patch is DATA; `compilePunchPatch` (cubeCompiler.ts) turns it into
  * the CompiledCubeMap every consumer shares. patchHash = mapHashOf(patch).
  */
+import { DORIAN_BRASS_CUBE_SECTION, type BrassCubeSection } from './brassCube'
 
 export type TopologyId = 'parallel' | 'bass-lead' | 'root-interval'
 
@@ -81,6 +82,12 @@ export interface PunchPatch {
     minimumMs: number
     maximumMs: number
     overshootCents: number
+    /**
+     * Peak-event whammy rise (transition-design "new velocity peak").
+     * Additive: only patches that opt in fire it — enabling it moves the
+     * patchHash, so the legacy launch patches never carry it (R1).
+     */
+    whammy?: { semitones: number; minDurationMs: number; maxDurationMs: number }
   }
   modulationRoutes: readonly [
     PunchModulationRoute,
@@ -90,6 +97,12 @@ export interface PunchPatch {
   ]
   instrumentProfileId: string
   zoneCount: ZoneCount
+  /**
+   * Brass-cube section (brass-cube-design). Present → the compiler emits
+   * the accent/quantized blocks and `compileBrassCube` builds the 36-cell
+   * map; absent → the patch is a pure latch preset, byte-identical wire.
+   */
+  brassCube?: BrassCubeSection
 }
 
 /** Soft Guard's default allowed set (§6): unison m3 M3 P4 P5 m6 M6 m7. */
@@ -149,9 +162,21 @@ export const LAUNCH_PATCHES: readonly PunchPatch[] = [
     topologyId: 'root-interval',
     harmony: { mode: 'soft-guard', allowedIntervalClasses: SOFT_GUARD_ALLOWED },
   }),
+  base('dorian-brass-cube', 'Dorian Brass Cube', {
+    rootPitchClass: 2, // D
+    pitchSetId: 'dorian-six',
+    transition: {
+      mode: 'elastic',
+      minimumMs: 35,
+      maximumMs: 320,
+      overshootCents: 12,
+      whammy: { semitones: 12, minDurationMs: 200, maxDurationMs: 450 },
+    },
+    brassCube: DORIAN_BRASS_CUBE_SECTION,
+  }),
 ]
 
-export const DEFAULT_PATCH_ID = 'two-handed-pentatonic'
+export const DEFAULT_PATCH_ID = 'dorian-brass-cube'
 
 export function launchPatchById(id: string): PunchPatch {
   const found = LAUNCH_PATCHES.find((p) => p.id === id)

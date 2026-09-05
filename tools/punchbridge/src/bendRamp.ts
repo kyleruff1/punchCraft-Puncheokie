@@ -36,6 +36,51 @@ function smooth(t: number): number {
 }
 
 /**
+ * Peak-event whammy shape (brass-cube seam plan §3a): center → ±semitones
+ * (clamped to the bend range) → exactly center. bendRampPoints is NOT
+ * reused — its origin semantics are "start at the old pitch" and its dive
+ * case has no settle phase; this generator is index-based so the peak is a
+ * GUARANTEED sample for every duration (the naive t-based curve hits the
+ * exact peak only when riseFraction·N lands on an integer sample, and the
+ * domain emits arbitrary durations like 250/325/333/450 ms).
+ */
+export interface WhammyRampSpec {
+  direction: 'rise' | 'dive'
+  semitones: number
+  durationMs: number
+  stepMs: number
+  bendRangeSemitones: number
+  /** Fraction of the duration traveling to the peak; the rest settles. */
+  riseFraction?: number // default 0.65
+}
+
+/**
+ * One 14-bit wheel position per step. points[0] is naturally 8192
+ * (self-normalizing — starting a whammy needs no preceding center
+ * message); points[iPeak] === bendValue(dir·semitones, range) exactly;
+ * points[N] is forced to center. Both directions get a real settle phase
+ * (iPeak ≤ N−1 whenever N ≥ 2), so a dive never snaps home.
+ */
+export function whammyRampPoints(spec: WhammyRampSpec): number[] {
+  const n = Math.max(1, Math.round(spec.durationMs / spec.stepMs))
+  const riseFraction = spec.riseFraction ?? 0.65
+  const iPeak = Math.max(1, Math.min(n - 1, Math.round(riseFraction * n)))
+  const dir = spec.direction === 'rise' ? 1 : -1
+  const target = dir * spec.semitones
+  const points: number[] = []
+  for (let i = 0; i <= n; i += 1) {
+    const semis =
+      i <= iPeak
+        ? smooth(i / iPeak) * target
+        : target * (1 - smooth((i - iPeak) / (n - iPeak)))
+    points.push(bendValue(semis, spec.bendRangeSemitones))
+  }
+  // Settle exactly on center regardless of rounding.
+  points[n] = PITCH_BEND_CENTER
+  return points
+}
+
+/**
  * The 14-bit wheel positions for one transition, one per step, ending at
  * exactly center. The wheel STARTS at the old note (bend = −interval,
  * clamped to the range — a jump wider than the range sweeps from the

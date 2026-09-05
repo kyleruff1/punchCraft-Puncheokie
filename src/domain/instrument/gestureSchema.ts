@@ -40,6 +40,59 @@ export type TransientLayer = 'straight' | 'hook' | 'uppercut' | 'generic'
 export type VisualQuadrant = 'upper-left' | 'lower-left' | 'upper-right' | 'lower-right'
 
 /**
+ * Who performs the arpeggio pattern (brass-cube-design "Studio One
+ * Arpeggiator versus PunchBridge arpeggiator"). The musical preset is
+ * identical either way; only the final note sequencing moves.
+ */
+export type ArpeggiatorBackend = 'studio-one-note-fx' | 'punchbridge-tick'
+
+/** How a committed punch meets the running pattern (brass-cube-design). */
+export type RetriggerPolicy = 'quantized-rotate' | 'hard-retrigger' | 'continuous-morph'
+
+/** Immediate per-punch brass stab (design "Immediate response"; R6). */
+export interface ImmediateAccent {
+  /** The staged cell's rotated entry tone — rotatedPool[0]. */
+  midiNote: number
+  /** 1..127, round(50 + 68·acceleration01) clamped (design: 50..118). */
+  midiVelocity: number
+  /** Doc-numbered channel; 4 at launch. */
+  channel: number
+  /** Gate before the accent note-off; 120 at launch. */
+  gateMs: number
+}
+
+/** Staged harmonic state, committed by the bridge on the next step boundary. */
+export interface QuantizedChange {
+  cubeCellId: string // `L${leftZone}R${rightZone}`
+  chordName: string
+  bassMidiNote: number
+  bassChannel: number // doc-numbered; 2
+  /** The ROTATED six-note pool, ascending; [0] is the entry tone. */
+  chordMidiNotes: readonly number[]
+  arpStartIndex: number // right zone 0..5
+  arpPattern: readonly number[]
+  arpChannel: number // doc-numbered; 3
+  notesPerMinute: 60 | 120 | 180 | 240
+  gateRatio: number // 0..1 fraction of the step
+  patternDepth: number // steps exposed; min'd with pattern length at emit
+  activityLayer: 0 | 1 | 2 | 3 // brass bands, not the legacy cube Z
+  /** Envelope punches/sec at this punch; the bridge decays it between gestures. */
+  activityPps: number
+  retrigger: RetriggerPolicy
+  backend: ArpeggiatorBackend
+}
+
+/**
+ * Peak-event pitch accent (transition-design §1 whammy rows, §4 "new
+ * velocity peak"). Channel-wide: rides over the arp lane if stepping.
+ */
+export interface WhammyAccent {
+  direction: 'rise' | 'dive' // launch fires only 'rise'
+  semitones: number // 12 at launch; bridge clamps to bend range
+  durationMs: number // 200..450
+}
+
+/**
  * What the compiler consumes — a live punch reduced to the trustworthy
  * fields (§3). `hand` is always resolved to left/right before compilation;
  * 'unknown' punches are dropped upstream.
@@ -108,6 +161,15 @@ export interface CompiledPunchGesture {
     persistenceMs: number
     transitionRibbonMs: number
   }
+  /**
+   * Brass-cube blocks (R1: additive — all three absent on legacy-patch
+   * gestures, so a latch stream serializes byte-identically to the
+   * pre-brass wire). JSON key order is part of the determinism goldens:
+   * these are appended AFTER `visual`.
+   */
+  accent?: ImmediateAccent
+  quantized?: QuantizedChange
+  whammy?: WhammyAccent
 }
 
 /** Tablet → bridge. */

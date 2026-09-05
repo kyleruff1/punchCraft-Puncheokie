@@ -62,3 +62,37 @@ export function activityLayerAt(state: ActivityState, nowMs: number): 0 | 1 | 2 
   if (pps < 5) return 2
   return 3
 }
+
+// ---------------------------------------------------------------------------
+// Brass activity bands (brass-cube-design "Activity controls speed") — the
+// arpeggiator's rate ladder, separate from the legacy cube Z bands above.
+// The bridge imports these too, so the tablet and the tick engine can never
+// disagree on where a layer boundary sits.
+// ---------------------------------------------------------------------------
+
+/** Lower bounds (punches/sec) of brass layers 1/2/3. */
+export const BRASS_LAYER_THRESHOLDS_PPS = [0.75, 1.75, 3.25] as const
+
+/** A fall must clear the boundary it drops through by this margin. */
+export const BRASS_LAYER_HYSTERESIS_PPS = 0.25
+
+/**
+ * Brass layer for a rate, with one-sided hysteresis: rises and holds commit
+ * immediately ("rising fast"); a fall commits only when the rate clears the
+ * previous layer's lower bound by the hysteresis margin.
+ */
+export function brassLayerFor(pps: number, previousLayer: 0 | 1 | 2 | 3): 0 | 1 | 2 | 3 {
+  const raw: 0 | 1 | 2 | 3 = pps >= 3.25 ? 3 : pps >= 1.75 ? 2 : pps >= 0.75 ? 1 : 0
+  if (raw >= previousLayer) return raw
+  const boundary = BRASS_LAYER_THRESHOLDS_PPS[previousLayer - 1] ?? 0
+  return pps < boundary - BRASS_LAYER_HYSTERESIS_PPS ? raw : previousLayer
+}
+
+/**
+ * Decay a stamped punches/sec reading across elapsed time — the same
+ * exponential the envelope itself uses, exported so the bridge winds the
+ * arp down between gestures with the domain's own curve.
+ */
+export function decayPps(pps: number, elapsedMs: number): number {
+  return pps * Math.exp(-Math.max(0, elapsedMs) / 1000 / ACTIVITY_DECAY_TAU_S)
+}

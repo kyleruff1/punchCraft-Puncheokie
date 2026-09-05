@@ -2,14 +2,18 @@
  * The Jam — Puncheoke's live instrument surface (P4, note-cube-design §1).
  *
  * Six-row patch selector (KEY / PITCH SET / CUBE LAYOUT / HARMONY /
- * SPREAD / TRANSITION) over the shared launch patch; the effective patch
- * compiles ONCE into a CompiledCubeMap whose patchHash rides every wire
- * message. Live punches from the app-wide keepalive source (subscribe
- * only — never stop) run scalers → zone quantizer → gesture compiler →
- * PunchBridge, and the same compiled gesture drives the on-screen
- * readout. Patch changes apply Next-Punch: held notes stay, each hand
- * adopts the new map on its next punch, and the client re-hellos the new
- * hash. Panic and disconnect always release every note (§23).
+ * SPREAD / TRANSITION) over the shared launch patch; a brass-cube patch
+ * (brass-cube-design) swaps those for PATTERN / RETRIGGER / BACKEND,
+ * persisted via the instrument settings store. The effective patch
+ * compiles ONCE into a CompiledCubeMap (plus the CompiledBrassCubeMap for
+ * brass patches) whose patchHash rides every wire message. Live punches
+ * from the app-wide keepalive source (subscribe only — never stop) run
+ * scalers → zone quantizer → gesture compiler → PunchBridge, and the same
+ * compiled gesture drives the on-screen readout. Patch changes apply
+ * Next-Punch: held notes stay, each hand adopts the new map on its next
+ * punch, and the client re-hellos the new hash (harmonic changes are
+ * boundary-quantized bridge-side anyway). Panic and disconnect always
+ * release every note (§23).
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { router } from 'expo-router'
@@ -18,7 +22,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { BridgeClient, type BridgeStatus } from '@/instrument/bridgeClient'
+import { compileBrassCube, type ArpPatternId } from '@domain/instrument/brassCube'
 import { cellAt, compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
+import type { ArpeggiatorBackend, RetriggerPolicy } from '@domain/instrument/gestureSchema'
 import {
   compileGesture,
   emptySessionState,
@@ -50,8 +56,21 @@ const SPREADS = [
   { label: 'Wide (+2 oct)', octaves: 2 },
   { label: 'Close (+1 oct)', octaves: 1 },
 ] as const
+const BRASS_PATTERNS: readonly ArpPatternId[] = ['punch-weave', 'up', 'down', 'fanfare', 'pendulum']
+const BRASS_RETRIGGERS: readonly RetriggerPolicy[] = [
+  'quantized-rotate',
+  'hard-retrigger',
+  'continuous-morph',
+]
+const BRASS_BACKENDS: readonly ArpeggiatorBackend[] = ['punchbridge-tick', 'studio-one-note-fx']
 
 type Sensitivity = 'high' | 'standard'
+
+interface BrassJamOptions {
+  patternId: ArpPatternId
+  retrigger: RetriggerPolicy
+  arpBackend: ArpeggiatorBackend
+}
 
 interface JamOverrides {
   rootPitchClass?: number
@@ -62,7 +81,21 @@ interface JamOverrides {
   transitionMode?: TransitionMode
 }
 
-function effectivePatch(base: PunchPatch, over: JamOverrides): PunchPatch {
+function effectivePatch(base: PunchPatch, over: JamOverrides, brass: BrassJamOptions): PunchPatch {
+  // A brass-cube patch: the legacy music rows do not apply — the chord
+  // bank IS the harmony. Only the brass selections override the section.
+  if (base.brassCube) {
+    return {
+      ...base,
+      id: `${base.id}+jam`,
+      brassCube: {
+        ...base.brassCube,
+        patternId: brass.patternId,
+        retrigger: brass.retrigger,
+        arpBackend: brass.arpBackend,
+      },
+    }
+  }
   const rightOctave = base.leftVoice.baseOctave + (over.spreadOctaves ?? 2)
   return {
     ...base,
@@ -83,6 +116,10 @@ function effectivePatch(base: PunchPatch, over: JamOverrides): PunchPatch {
 export default function JamScreen(): React.JSX.Element {
   const basePatchId = useInstrumentSettingsStore((s) => s.patchId)
   const bridgeUrl = useInstrumentSettingsStore((s) => s.bridgeUrl)
+  const brassPatternId = useInstrumentSettingsStore((s) => s.brassPatternId)
+  const brassRetrigger = useInstrumentSettingsStore((s) => s.brassRetrigger)
+  const brassBackend = useInstrumentSettingsStore((s) => s.brassBackend)
+  const setBrassOptions = useInstrumentSettingsStore((s) => s.setBrassOptions)
   const [overrides, setOverrides] = useState<JamOverrides>({})
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
   const [rttMs, setRttMs] = useState<number | null>(null)
@@ -92,8 +129,17 @@ export default function JamScreen(): React.JSX.Element {
   const [lastMove, setLastMove] = useState('')
 
   const base = useMemo(() => launchPatchById(basePatchId), [basePatchId])
-  const patch = useMemo(() => effectivePatch(base, overrides), [base, overrides])
+  const patch = useMemo(
+    () =>
+      effectivePatch(base, overrides, {
+        patternId: brassPatternId,
+        retrigger: brassRetrigger,
+        arpBackend: brassBackend,
+      }),
+    [base, overrides, brassPatternId, brassRetrigger, brassBackend],
+  )
   const cubeMap = useMemo(() => compilePunchPatch(patch), [patch])
+  const brassMap = useMemo(() => (patch.brassCube ? compileBrassCube(patch) : null), [patch])
 
   // High sensitivity by default: the boxer should hear soft play. The
   // firmware's own transmit floor (cmd-17 threshold) still gates the very
@@ -120,11 +166,11 @@ export default function JamScreen(): React.JSX.Element {
             acceleration: createRollingScaler(ACCELERATION_SCALE_DEFAULTS),
           }
   }, [sensitivity])
-  // The punch handler closes over the LATEST patch/map through this ref —
+  // The punch handler closes over the LATEST patch/maps through this ref —
   // Next-Punch semantics fall out: the held latch survives, the next
   // punch compiles against the new map.
-  const liveCtxRef = useRef({ patch, cubeMap })
-  liveCtxRef.current = { patch, cubeMap }
+  const liveCtxRef = useRef({ patch, cubeMap, brassMap })
+  liveCtxRef.current = { patch, cubeMap, brassMap }
 
   useEffect(() => {
     const client = new BridgeClient({
@@ -147,7 +193,7 @@ export default function JamScreen(): React.JSX.Element {
     if (!shared) return
     return shared.subscribe((event) => {
       if (event.hand !== 'left' && event.hand !== 'right') return
-      const { patch: livePatch, cubeMap: liveMap } = liveCtxRef.current
+      const { patch: livePatch, cubeMap: liveMap, brassMap: liveMap2 } = liveCtxRef.current
       const scalers = scalersRef.current
       const velocity01 = scalers.velocity.scale(event.hand, event.velocityRaw)
       const acceleration01 = scalers.acceleration.scale(event.hand, event.accelerationRaw)
@@ -170,6 +216,7 @@ export default function JamScreen(): React.JSX.Element {
           sessionId: 'jam',
           patch: livePatch,
           cubeMap: liveMap,
+          ...(liveMap2 ? { brassMap: liveMap2 } : {}),
           velocity01,
           acceleration01,
         },
@@ -178,10 +225,22 @@ export default function JamScreen(): React.JSX.Element {
       sessionRef.current = result.state
       bridgeRef.current?.sendGesture(result.gesture)
       const { leftZone, rightZone, activityLayer } = result.gesture.cube
+      setLiveCount((n) => n + 1)
+      const { accent, quantized } = result.gesture
+      if (accent && quantized) {
+        // Brass readout: the STAGED cell — the same numbers the bridge
+        // will commit on its next step boundary (WHAT can never disagree,
+        // only WHEN, by at most one step).
+        setDyad(`${quantized.chordName} · ${midiNoteName(quantized.chordMidiNotes[0] ?? 0)}`)
+        setCoordinate(`(${leftZone}, ${rightZone}, L${quantized.activityLayer})`)
+        setLastMove(
+          `accent ${midiNoteName(accent.midiNote)} · ${quantized.notesPerMinute}/min · cell ${quantized.cubeCellId}`,
+        )
+        return
+      }
       const cell = cellAt(liveMap, leftZone, rightZone)
       const leftHeld = result.state.latch.left.note
       const rightHeld = result.state.latch.right.note
-      setLiveCount((n) => n + 1)
       setDyad(
         `${leftHeld == null ? '—' : midiNoteName(leftHeld)} · ${rightHeld == null ? '—' : midiNoteName(rightHeld)}`,
       )
@@ -195,7 +254,36 @@ export default function JamScreen(): React.JSX.Element {
   const cycle = <T,>(list: readonly T[], current: T): T =>
     list[(list.indexOf(current) + 1) % list.length] as T
 
-  const selectorRows: Array<{ label: string; value: string; onPress: () => void }> = [
+  const sensitivityRow = {
+    label: 'SENSITIVITY',
+    value: sensitivity,
+    onPress: () => setSensitivity((s) => (s === 'high' ? 'standard' : 'high')),
+  }
+
+  // A brass-cube patch swaps the legacy music rows for the brass options
+  // (persisted store-side); SENSITIVITY applies to both patch families.
+  const brassRows: Array<{ label: string; value: string; onPress: () => void }> = patch.brassCube
+    ? [
+        {
+          label: 'PATTERN',
+          value: patch.brassCube.patternId,
+          onPress: () => setBrassOptions({ patternId: cycle(BRASS_PATTERNS, brassPatternId) }),
+        },
+        {
+          label: 'RETRIGGER',
+          value: patch.brassCube.retrigger,
+          onPress: () => setBrassOptions({ retrigger: cycle(BRASS_RETRIGGERS, brassRetrigger) }),
+        },
+        {
+          label: 'BACKEND',
+          value: patch.brassCube.arpBackend,
+          onPress: () => setBrassOptions({ backend: cycle(BRASS_BACKENDS, brassBackend) }),
+        },
+        sensitivityRow,
+      ]
+    : []
+
+  const legacyRows: Array<{ label: string; value: string; onPress: () => void }> = [
     {
       label: 'KEY',
       value: KEYS[patch.rootPitchClass] ?? 'D',
@@ -238,12 +326,10 @@ export default function JamScreen(): React.JSX.Element {
       onPress: () =>
         setOverrides((o) => ({ ...o, transitionMode: cycle(TRANSITIONS, patch.transition.mode) })),
     },
-    {
-      label: 'SENSITIVITY',
-      value: sensitivity,
-      onPress: () => setSensitivity((s) => (s === 'high' ? 'standard' : 'high')),
-    },
+    sensitivityRow,
   ]
+
+  const selectorRows = patch.brassCube ? brassRows : legacyRows
 
   return (
     <View style={styles.root}>

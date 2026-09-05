@@ -15,7 +15,7 @@ import {
 } from '../../../src/domain/instrument/gestureSchema'
 import type { MidiOutputBackend } from './midiBackend'
 import type { InstrumentProfile } from './instrumentProfiles'
-import { VoiceRenderer } from './gestureToMidi'
+import { VoiceRenderer, type RampScheduler } from './gestureToMidi'
 
 export interface BridgeClock {
   /** Monotone-ish PC clock in ms for ack stamping + watchdog. */
@@ -34,6 +34,11 @@ export interface BridgeSessionOptions {
   watchdogMs?: number
   /** Which synth's CC/bend conventions to render with. */
   profile?: InstrumentProfile | string
+  /**
+   * Timing seam for the renderer's ramps + the brass tick engine; tests
+   * pass a fake so the whole session is clock-driven deterministically.
+   */
+  scheduler?: RampScheduler
   log?: (msg: string) => void
 }
 
@@ -50,12 +55,22 @@ export class BridgeSession {
   private sessionId: string | null = null
   private lastSeenAt: number
   private closed = false
+  /**
+   * Retransmit guard (R5): a duplicated punch-gesture frame is acked but
+   * never re-rendered — an accent/whammy punch must not re-fire.
+   */
+  private lastGestureEventId: string | null = null
 
   constructor(
     private readonly socket: BridgeSocketLike,
     opts: BridgeSessionOptions,
   ) {
-    this.renderer = new VoiceRenderer(opts.midi, opts.profile ?? 'studio-one-stock')
+    this.renderer = new VoiceRenderer(
+      opts.midi,
+      opts.profile ?? 'studio-one-stock',
+      opts.scheduler,
+      opts.clock,
+    )
     this.clock = opts.clock
     this.watchdogMs = opts.watchdogMs ?? 0
     this.log = opts.log ?? (() => {})
@@ -140,7 +155,14 @@ export class BridgeSession {
           return
         }
         const at = this.clock.now()
+        if (message.gesture.eventId === this.lastGestureEventId) {
+          // Retransmitted frame: acknowledge so the tablet stops resending,
+          // but render nothing — no second accent, whammy, or stage.
+          this.ackGesture(message.sessionId, message.sequence, at)
+          return
+        }
         this.renderer.renderGesture(message.gesture)
+        this.lastGestureEventId = message.gesture.eventId
         this.ackGesture(message.sessionId, message.sequence, at)
         return
       }
