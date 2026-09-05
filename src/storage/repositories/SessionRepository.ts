@@ -288,6 +288,7 @@ interface RawPunchEvent {
   sequence: number | null
   punch_type_raw: number | null
   punch_type: string | null
+  acceleration_raw: number | null
   velocity_raw: number | null
   velocity_calibrated: number | null
   velocity_unit: string
@@ -315,6 +316,7 @@ function mapPunchEvent(r: RawPunchEvent): SessionPunchEventRow {
     sequence: r.sequence ?? undefined,
     punchTypeRaw: r.punch_type_raw ?? undefined,
     punchType: r.punch_type ?? undefined,
+    accelerationRaw: r.acceleration_raw ?? undefined,
     velocityRaw: r.velocity_raw ?? undefined,
     velocityCalibrated: r.velocity_calibrated ?? undefined,
     velocityUnit: r.velocity_unit,
@@ -587,11 +589,11 @@ export class SessionRepository {
       `INSERT OR IGNORE INTO punch_events
          (id, source_frame_id, capture_id, device_id, device_address, hand,
           tracker_timestamp_ms, received_monotonic_time_ms, received_wall_time_iso, sequence,
-          punch_type_raw, punch_type,
+          punch_type_raw, punch_type, acceleration_raw,
           velocity_raw, velocity_calibrated, velocity_unit,
           recovered, decoder_id, decoder_version, quality_flags,
           session_id, round_id, calibration_profile_id, rejection_reason)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         input.id,
         input.sourceFrameId,
@@ -605,6 +607,7 @@ export class SessionRepository {
         input.sequence ?? null,
         input.punchTypeRaw ?? null,
         input.punchType ?? null,
+        input.accelerationRaw ?? null,
         input.velocityRaw ?? null,
         input.velocityCalibrated ?? null,
         input.velocityUnit,

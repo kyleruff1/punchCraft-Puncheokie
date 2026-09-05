@@ -31,6 +31,8 @@ export interface PunchEventInsertInput {
   sequence?: number | undefined
   punchTypeRaw?: number | undefined
   punchType?: string | undefined
+  /** Peak acceleration u16, tracker-scale (migration 008). */
+  accelerationRaw?: number | undefined
   velocityRaw?: number | undefined
   velocityCalibrated?: number | undefined
   velocityUnit: string
@@ -68,10 +70,10 @@ export class PunchEventRepository {
       `INSERT OR IGNORE INTO punch_events
          (id, source_frame_id, capture_id, device_id, device_address, hand,
           tracker_timestamp_ms, received_monotonic_time_ms, received_wall_time_iso, sequence,
-          punch_type_raw, punch_type,
+          punch_type_raw, punch_type, acceleration_raw,
           velocity_raw, velocity_calibrated, velocity_unit,
           recovered, decoder_id, decoder_version, quality_flags)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     try {
       for (const e of events) {
@@ -88,6 +90,7 @@ export class PunchEventRepository {
           e.sequence ?? null,
           e.punchTypeRaw ?? null,
           e.punchType ?? null,
+          e.accelerationRaw ?? null,
           e.velocityRaw ?? null,
           e.velocityCalibrated ?? null,
           e.velocityUnit,

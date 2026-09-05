@@ -253,6 +253,7 @@ export class BleCaptureService implements CaptureSink {
         sequence: event.sequence,
         punchTypeRaw: event.punchTypeRaw,
         punchType: event.punchType,
+        accelerationRaw: event.accelerationRaw,
         velocityRaw: event.velocityRaw,
         velocityCalibrated: event.velocityCalibrated,
         velocityUnit: event.velocityUnit,

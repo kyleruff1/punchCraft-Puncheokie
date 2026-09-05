@@ -34,6 +34,12 @@ export interface TrackerPunchEvent {
   sequence?: number
   punchTypeRaw?: number
   punchType?: PunchType
+  /**
+   * Peak acceleration, verbatim u16 from the record (bytes 1-2 LE on the
+   * 9-byte layout). Tracker-scale — not validated against any physical
+   * unit; normalize per hand before use (Puncheoke instrument-design §14).
+   */
+  accelerationRaw?: number
   velocityRaw?: number
   velocityCalibrated?: number
   velocityUnit: PunchVelocityUnit
