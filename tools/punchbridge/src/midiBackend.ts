@@ -22,6 +22,7 @@ export interface MidiOutputBackend {
 export const NOTE_OFF = 0x80
 export const NOTE_ON = 0x90
 export const CONTROL_CHANGE = 0xb0
+export const PROGRAM_CHANGE = 0xc0
 export const PITCH_BEND = 0xe0
 export const CC_ALL_SOUND_OFF = 120
 export const CC_ALL_NOTES_OFF = 123
@@ -38,6 +39,11 @@ export function noteOff(channel: number, note: number): number[] {
 
 export function controlChange(channel: number, cc: number, value: number): number[] {
   return [CONTROL_CHANGE | (channel & 0x0f), cc & 0x7f, value & 0x7f]
+}
+
+/** Program change (0-indexed GM program number). */
+export function programChange(channel: number, program: number): number[] {
+  return [PROGRAM_CHANGE | (channel & 0x0f), program & 0x7f]
 }
 
 /** 14-bit pitch bend; 8192 is centered. */

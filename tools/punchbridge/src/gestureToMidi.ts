@@ -17,6 +17,7 @@ import {
   noteOff,
   noteOn,
   pitchBend,
+  programChange,
   type MidiOutputBackend,
 } from './midiBackend'
 
@@ -58,6 +59,20 @@ export class VoiceRenderer {
   ) {
     this.profile = typeof profile === 'string' ? profileById(profile) : profile
     this.scheduler = scheduler
+  }
+
+  /**
+   * Prime the voice channels for a session: on GM destinations, select
+   * the profile's voice program (thick saw by default) so the first note
+   * is not GM grand piano. A DAW profile has no program — the DAW owns
+   * the patch.
+   */
+  prepareVoices(): void {
+    const program = this.profile.voiceProgramGm
+    if (program === undefined) return
+    for (const channel of [LEFT_CHANNEL, RIGHT_CHANNEL]) {
+      this.midi.send(programChange(channel, program))
+    }
   }
 
   /** Sound a test note on a voice's channel (P2 deliverable). Latched. */

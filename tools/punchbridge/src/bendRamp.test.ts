@@ -188,3 +188,19 @@ test('panic during a ramp cancels it and centers the wheel', () => {
   assert.equal(midi.sent.length, countAtPanic, 'no messages after panic')
   assert.equal(renderer.activeCount(), 0)
 })
+
+test('gs-fallback primes both voice channels with the saw program on prepare', () => {
+  const midi = new FakeMidi()
+  const renderer = new VoiceRenderer(midi, 'gs-fallback', new FakeScheduler())
+  renderer.prepareVoices()
+  const programs = midi.sent.filter((b) => (b[0]! & 0xf0) === 0xc0)
+  assert.equal(programs.length, 2)
+  assert.ok(programs.every((b) => b[1] === 81))
+})
+
+test('studio-one profile sends no program change (the DAW owns the patch)', () => {
+  const midi = new FakeMidi()
+  const renderer = new VoiceRenderer(midi, 'studio-one-stock', new FakeScheduler())
+  renderer.prepareVoices()
+  assert.equal(midi.sent.filter((b) => (b[0]! & 0xf0) === 0xc0).length, 0)
+})

@@ -9,6 +9,12 @@ export interface InstrumentProfile {
   name: string
   /** ± semitones the synth patch's bend wheel is configured for. */
   pitchBendRangeSemitones: number
+  /**
+   * GM program (0-indexed) sent to both voice channels at session start.
+   * Only meaningful on GM destinations — a DAW profile leaves it unset
+   * because the DAW owns the patch.
+   */
+  voiceProgramGm?: number
   controls: {
     cutoffCc?: number
     expressionCc?: number
@@ -26,10 +32,13 @@ export const PROFILES: readonly InstrumentProfile[] = [
   },
   {
     // Microsoft GS Wavetable Synth: GM — expression works, CC74 is
-    // ignored; bend range fixed at ±2.
+    // ignored; bend range fixed at ±2. Voices default to GM 81
+    // "Lead 2 (sawtooth)" — the thick-saw default Kyle asked for —
+    // instead of GM's grand piano.
     id: 'gs-fallback',
     name: 'Windows GS synth (GM fallback)',
     pitchBendRangeSemitones: 2,
+    voiceProgramGm: 81,
     controls: { expressionCc: 11 },
   },
 ]

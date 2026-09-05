@@ -112,6 +112,9 @@ export class BridgeSession {
       case 'hello': {
         this.helloMapHash = message.mapHash
         this.sessionId = message.sessionId
+        // Prime GM destinations with the profile's voice program (the
+        // thick-saw default) before any note sounds.
+        this.renderer.prepareVoices()
         this.ackHello(message.sessionId, message.mapHash)
         return
       }
