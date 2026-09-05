@@ -67,7 +67,18 @@ _WORD_RE = re.compile(r"[a-z0-9']+")
 
 def normalize(text: str) -> list[str]:
     """Text -> canonical word tokens, ready for sequence comparison."""
-    raw = _WORD_RE.findall(text.lower())
+    raw = []
+    for t in _WORD_RE.findall(text.lower()):
+        # Whisper writes a fused body shot as one token ("2b" from "2B") —
+        # split it so the digit and the bee fold like their spoken forms
+        # ("Two-bee, three-bee, two-bee!" scored 0.0 against "2B, 3B, 2B.",
+        # a correct clip failing the 2026-09-04 bank audit). The exactness
+        # path already had this via _FUSED_B; scoring did not.
+        m = _FUSED_B.match(t)
+        if m:
+            raw.extend((m.group(1), "b"))
+        else:
+            raw.append(t)
     tokens = [_CANONICAL.get(t, t) for t in raw]
     # Collapse elongated fillers (ooooooh -> ooh) so every stretch of the
     # artifact lands in the same class.
