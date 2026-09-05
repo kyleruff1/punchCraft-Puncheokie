@@ -62,18 +62,36 @@ const OUT_DIR = join(REPO_ROOT, 'assets', 'audio', 'metronome')
 const SAMPLES_DIR = join(OUT_DIR, 'samples')
 const MANIFEST = join(REPO_ROOT, 'src', 'audio', 'voiceAssets', 'metronomeAssets.ts')
 
-const BASE_BPM = 60
-const BEAT_MS = 60_000 / BASE_BPM
 const SAMPLE_RATE = 24_000
 
-/** Every loop the runtime can request. Keep this in sync with the runtime's fallback rules. */
+/**
+ * Every loop the runtime can request, keyed by (baseBpm, division, swing).
+ * A loop is one MASTER BEAT long — `60000/baseBpm` ms — so `createAudioPlaylist`
+ * loops it seamlessly at that tempo.
+ *
+ * - baseBpm 60: the master frame the 120-BPM workouts run on (baseBpm 60 ×
+ *   division 2 = 120). Their per-section swap picks d2/d3/d4 here (= 2×rate),
+ *   so rate-1.5/rate-2 sections finally click on-grid. No new render.
+ * - baseBpm 100 / 85: the slow workouts, which had NO metronome because those
+ *   tempos aren't integer multiples of 60. A one-beat loop AT the tempo clicks
+ *   on-grid by construction. Per-section swap picks d1/d2/d3 (= rate 1→d1,
+ *   1.5→d3, 2→d2 on the MAP.bpm frame). Kyle, 2026-09-04 (the "denominators").
+ */
 const LOOPS = [
-  { division: 1, swing: 0.5 },
-  { division: 2, swing: 0.5 },
-  { division: 2, swing: 0.54 },
-  { division: 3, swing: 0.5 },
-  { division: 4, swing: 0.5 },
-  { division: 4, swing: 0.54 },
+  { baseBpm: 60, division: 1, swing: 0.5 },
+  { baseBpm: 60, division: 2, swing: 0.5 },
+  { baseBpm: 60, division: 2, swing: 0.54 },
+  { baseBpm: 60, division: 3, swing: 0.5 },
+  { baseBpm: 60, division: 4, swing: 0.5 },
+  { baseBpm: 60, division: 4, swing: 0.54 },
+  { baseBpm: 100, division: 1, swing: 0.5 },
+  { baseBpm: 100, division: 2, swing: 0.5 },
+  { baseBpm: 100, division: 2, swing: 0.54 },
+  { baseBpm: 100, division: 3, swing: 0.5 },
+  { baseBpm: 85, division: 1, swing: 0.5 },
+  { baseBpm: 85, division: 2, swing: 0.5 },
+  { baseBpm: 85, division: 2, swing: 0.54 },
+  { baseBpm: 85, division: 3, swing: 0.5 },
 ]
 
 function findFfmpeg() {
@@ -103,22 +121,22 @@ function findFfprobe(ffmpeg) {
 const FFMPEG = findFfmpeg()
 const FFPROBE = findFfprobe(FFMPEG)
 
-/** Grid times (ms) where the hat clicks land, given a division and swing. */
-function hatOffsetsMs(division, swing) {
+/** Grid times (ms) where the hat clicks land, given a division, swing and beat length. */
+function hatOffsetsMs(division, swing, beatMs) {
   const out = []
   if (division === 1) return out
   if (division === 2) {
-    out.push(BEAT_MS * swing)
+    out.push(beatMs * swing)
     return out
   }
   if (division === 3) {
     // Straight triplets — Kyle's spec: swing does not apply.
-    out.push(BEAT_MS / 3)
-    out.push((BEAT_MS / 3) * 2)
+    out.push(beatMs / 3)
+    out.push((beatMs / 3) * 2)
     return out
   }
   // division 4: swing applied per half-beat pair.
-  const half = BEAT_MS / 2
+  const half = beatMs / 2
   out.push(half * swing) // hat inside beat 1
   out.push(half) // downbeat of half 2 — hat too (thud only sits on the whole-beat downbeat)
   out.push(half + half * swing) // hat inside beat 2
@@ -167,16 +185,17 @@ function ensureHatWav() {
   return synth
 }
 
-function loopFileName(division, swing) {
+function loopFileName(baseBpm, division, swing) {
   // Swing rendered as an integer % for a stable filename that doesn't
-  // depend on locale float formatting: 0.54 → "54".
+  // depend on locale float formatting: 0.54 → "54". baseBpm in the name
+  // keeps the tempos from colliding.
   const s = String(Math.round(swing * 100))
-  return `metronome-d${division}-s${s}.wav`
+  return `metronome-b${baseBpm}-d${division}-s${s}.wav`
 }
 
-function renderLoop({ division, swing, thud, hat, outPath }) {
-  const beatMs = BEAT_MS
-  const hats = hatOffsetsMs(division, swing).map((ms) => Math.round(ms))
+function renderLoop({ baseBpm, division, swing, thud, hat, outPath }) {
+  const beatMs = 60_000 / baseBpm
+  const hats = hatOffsetsMs(division, swing, beatMs).map((ms) => Math.round(ms))
   // Filter graph: silence bed, thud at 0, hats at their offsets. amix
   // with normalize=0 preserves individual gains; duration=first clamps
   // the mix to exactly one beat.
@@ -227,7 +246,7 @@ function measureDurationMs(wav) {
 
 function writeManifest() {
   const rows = LOOPS
-    .map((loop) => ({ ...loop, file: loopFileName(loop.division, loop.swing) }))
+    .map((loop) => ({ ...loop, file: loopFileName(loop.baseBpm, loop.division, loop.swing) }))
     .filter((loop) => existsSync(join(OUT_DIR, loop.file)))
     .map((loop) => ({
       ...loop,
@@ -251,13 +270,15 @@ function writeManifest() {
     '/* eslint-disable @typescript-eslint/no-require-imports */',
     '',
     'export interface MetronomeLoop {',
+    '  /** Master beat tempo the loop is rendered at — one bar = 60000/baseBpm ms. */',
+    '  baseBpm: number',
     '  /** 1..4 — the number of call slots per master beat. */',
     '  division: 1 | 2 | 3 | 4',
     '  /** 0.5 (mechanical) .. 0.62 (avoid). See TimingEngine SWING_* constants. */',
     '  swing: number',
     '  /** Metro module id for the loop wav. */',
     '  module: number',
-    '  /** Measured length of one bar. Should equal 1000 ms at baseBpm 60. */',
+    '  /** Measured length of one bar (≈ 60000/baseBpm ms). */',
     '  durationMs: number',
     '}',
     '',
@@ -265,22 +286,22 @@ function writeManifest() {
   ]
   for (const row of rows) {
     lines.push(
-      `  { division: ${row.division}, swing: ${row.swing}, module: require('../../../assets/audio/metronome/${row.file}'), durationMs: ${row.durationMs} },`,
+      `  { baseBpm: ${row.baseBpm}, division: ${row.division}, swing: ${row.swing}, module: require('../../../assets/audio/metronome/${row.file}'), durationMs: ${row.durationMs} },`,
     )
   }
   lines.push(
     ']',
     '',
     '/**',
-    ' * Runtime lookup: an exact match on `(division, swing)` wins; if the',
-    ' * requested swing bucket was not rendered, fall back to the same',
-    ' * division at straight swing (0.50). Returns undefined only when no',
-    ' * loop exists for the division at all — the caller then no-ops.',
+    ' * Runtime lookup: exact `(baseBpm, division, swing)` wins; else same',
+    ' * baseBpm+division at straight swing (0.50); else undefined (caller',
+    ' * no-ops). baseBpm defaults to 60 for legacy callers.',
     ' */',
-    'export function metronomeLoopFor(division: 1 | 2 | 3 | 4, swing: number): MetronomeLoop | undefined {',
-    '  const exact = METRONOME_LOOPS.find((l) => l.division === division && Math.abs(l.swing - swing) < 0.005)',
+    'export function metronomeLoopFor(division: 1 | 2 | 3 | 4, swing: number, baseBpm = 60): MetronomeLoop | undefined {',
+    '  const at = METRONOME_LOOPS.filter((l) => l.baseBpm === baseBpm && l.division === division)',
+    '  const exact = at.find((l) => Math.abs(l.swing - swing) < 0.005)',
     '  if (exact) return exact',
-    '  return METRONOME_LOOPS.find((l) => l.division === division && Math.abs(l.swing - 0.5) < 0.005)',
+    '  return at.find((l) => Math.abs(l.swing - 0.5) < 0.005)',
     '}',
     '',
   )
@@ -302,11 +323,11 @@ mkdirSync(OUT_DIR, { recursive: true })
 const thud = ensureThudWav()
 const hat = ensureHatWav()
 
-for (const { division, swing } of LOOPS) {
-  const outPath = join(OUT_DIR, loopFileName(division, swing))
-  renderLoop({ division, swing, thud, hat, outPath })
+for (const { baseBpm, division, swing } of LOOPS) {
+  const outPath = join(OUT_DIR, loopFileName(baseBpm, division, swing))
+  renderLoop({ baseBpm, division, swing, thud, hat, outPath })
   const bytes = statSync(outPath).size
   // eslint-disable-next-line no-console
-  console.log(`  rendered ${loopFileName(division, swing)}  ${bytes} bytes`)
+  console.log(`  rendered ${loopFileName(baseBpm, division, swing)}  ${bytes} bytes`)
 }
 writeManifest()

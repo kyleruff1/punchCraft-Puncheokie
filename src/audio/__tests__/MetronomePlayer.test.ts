@@ -76,12 +76,14 @@ import type { MetronomeLoop } from '../voiceAssets/metronomeAssets'
 // A `require` id is a `number` under Metro — the fixture keeps two distinct
 // module ids so the same-vs-different-loop branch flips on identity.
 const LOOP_A: MetronomeLoop = {
+  baseBpm: 60,
   division: 2,
   swing: 0.54,
   durationMs: 1_000,
   module: 42,
 }
 const LOOP_B: MetronomeLoop = {
+  baseBpm: 60,
   division: 4,
   swing: 0.5,
   durationMs: 1_000,

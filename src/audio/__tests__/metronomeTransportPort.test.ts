@@ -79,7 +79,7 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 import { VoiceOutputExpo } from '../VoiceOutputExpo'
 import { TRANSPORT_TICKS_PER_PULSE } from '@/domain/timing/TimingEngine'
 
-const FAKE_LOOP = { module: 1, division: 4 as const, swing: 0, durationMs: 1_000 }
+const FAKE_LOOP = { baseBpm: 60, module: 1, division: 4 as const, swing: 0, durationMs: 1_000 }
 
 function buildOutput(): VoiceOutputExpo {
   let clock = 0

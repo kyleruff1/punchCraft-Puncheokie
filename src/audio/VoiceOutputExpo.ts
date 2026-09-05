@@ -493,7 +493,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   metronome = {
     start: (
-      loop: { module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number },
+      loop: { baseBpm: number; module: number; division: 1 | 2 | 3 | 4; swing: number; durationMs: number },
       volume: number,
       baseBpm?: number,
     ): void => {
