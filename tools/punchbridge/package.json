@@ -7,6 +7,7 @@
   "scripts": {
     "bridge": "tsx src/index.ts",
     "test-note": "tsx src/testNote.ts",
+    "bench": "tsx src/benchBrass.ts",
     "ports": "tsx src/ports.ts",
     "test": "tsx --test src/server.test.ts src/bendRamp.test.ts src/brassArpEngine.test.ts",
     "typecheck": "tsc --noEmit"
