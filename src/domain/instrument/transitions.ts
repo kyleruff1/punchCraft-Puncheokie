@@ -22,11 +22,16 @@ export function transitionDurationMs(
   return Math.round(Math.max(minimumMs, Math.min(maximumMs, raw)))
 }
 
-/** Overshoot ladder (§9): none / 4-7 / 8-12 / up to the patch cap. */
+/**
+ * Overshoot ladder (§9): none / 4-7 / 8-12 / up to the patch cap. Only
+ * the elastic transition mode ornaments — Clean glide and retrigger stay
+ * exactly in tune (transition-design §7 presets).
+ */
 export function overshootCents(
   acceleration01: number,
   patch: Pick<PunchPatch, 'transition'>,
 ): number {
+  if (patch.transition.mode !== 'elastic') return 0
   const cap = patch.transition.overshootCents
   const a = Math.max(0, Math.min(1, acceleration01))
   if (a < 0.33) return 0

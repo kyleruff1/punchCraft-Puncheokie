@@ -3,14 +3,17 @@
  * latch so a new note releases the old one and a disconnect never leaves
  * a stuck note (instrument-design §8, §23).
  *
- * P4 upgrade: glide/elastic transitions render as 14-bit pitch-bend ramps
- * over the gesture's own transitionDurationMs (bendRamp.ts is the pure
- * math), and the gesture's brightness/expression land on the CCs the
- * active InstrumentProfile names. The scheduler is injectable so tests
- * drive ramps without real timers.
+ * Transition layer (transition-design §1-§2): on a 'legato-glide'
+ * profile the SYNTH's portamento does the pitch travel — new Note On
+ * first, old Note Off after a short overlap — and the bend wheel only
+ * ornaments (elastic overshoot blip). On a 'bend-emulated' profile (GM
+ * destinations without glide) the travel is a full old→new bend ramp.
+ * Wah: a per-punch CC envelope (baseline → peak → baseline) on the CC
+ * the synth's mod matrix routes to cutoff.
  */
 import type { CompiledPunchGesture, VoiceId } from '../../../src/domain/instrument/gestureSchema'
 import { bendRampPoints, PITCH_BEND_CENTER } from './bendRamp'
+import { wahEnvelope, wahRampPoints } from './expression'
 import { profileById, type InstrumentProfile } from './instrumentProfiles'
 import {
   controlChange,
@@ -30,15 +33,21 @@ export const TEST_NOTE: Record<VoiceId, number> = { left: 50, right: 74 }
 
 /** Bend-wheel update cadence during a ramp. */
 export const RAMP_STEP_MS = 5
+/** Wah CC update cadence. */
+export const WAH_STEP_MS = 10
 
 export interface RampScheduler {
   setInterval(fn: () => void, ms: number): unknown
   clearInterval(handle: unknown): void
+  setTimeout(fn: () => void, ms: number): unknown
+  clearTimeout(handle: unknown): void
 }
 
 const realScheduler: RampScheduler = {
   setInterval: (fn, ms) => setInterval(fn, ms),
   clearInterval: (handle) => clearInterval(handle as Parameters<typeof clearInterval>[0]),
+  setTimeout: (fn, ms) => setTimeout(fn, ms),
+  clearTimeout: (handle) => clearTimeout(handle as Parameters<typeof clearTimeout>[0]),
 }
 
 interface LatchedVoice {
@@ -46,9 +55,17 @@ interface LatchedVoice {
   note: number
 }
 
+interface PendingOff {
+  handle: unknown
+  channel: number
+  note: number
+}
+
 export class VoiceRenderer {
   private readonly active = new Map<VoiceId, LatchedVoice>()
-  private readonly ramps = new Map<VoiceId, unknown>()
+  private readonly bendRamps = new Map<VoiceId, unknown>()
+  private readonly wahRamps = new Map<VoiceId, unknown>()
+  private readonly pendingOffs = new Map<VoiceId, PendingOff>()
   private readonly profile: InstrumentProfile
   private readonly scheduler: RampScheduler
 
@@ -62,59 +79,95 @@ export class VoiceRenderer {
   }
 
   /**
-   * Prime the voice channels for a session: on GM destinations, select
-   * the profile's voice program (thick saw by default) so the first note
-   * is not GM grand piano. A DAW profile has no program — the DAW owns
-   * the patch.
+   * Prime the voice channels for a session: GM destinations get the
+   * profile's voice program (thick saw); wah channels settle on their
+   * baseline so the first sweep starts from a known place.
    */
   prepareVoices(): void {
-    const program = this.profile.voiceProgramGm
-    if (program === undefined) return
     for (const channel of [LEFT_CHANNEL, RIGHT_CHANNEL]) {
-      this.midi.send(programChange(channel, program))
+      if (this.profile.voiceProgramGm !== undefined) {
+        this.midi.send(programChange(channel, this.profile.voiceProgramGm))
+      }
+      if (this.profile.wah) {
+        this.midi.send(
+          controlChange(channel, this.profile.wah.controllerCc, this.profile.wah.baselineValue),
+        )
+      }
     }
   }
 
   /** Sound a test note on a voice's channel (P2 deliverable). Latched. */
   testNote(voiceId: VoiceId): void {
     const channel = voiceId === 'left' ? LEFT_CHANNEL : RIGHT_CHANNEL
-    this.moveVoice(voiceId, channel, TEST_NOTE[voiceId], 100)
+    this.strikeVoice(voiceId, channel, TEST_NOTE[voiceId], 100)
   }
 
-  /**
-   * Render one compiled gesture: move the gesture's voice to its target
-   * note (latch semantics), apply profile CCs, and when the gesture
-   * carries a transition duration, sweep the bend wheel old→new over it.
-   */
+  /** Render one compiled gesture: move the voice, ornament, breathe. */
   renderGesture(gesture: CompiledPunchGesture): void {
     const { voiceId, midiChannel, targetNote, noteVelocity, brightness, expression } =
       gesture.voice
     const channel = Math.max(0, midiChannel - 1)
     const previous = this.active.get(voiceId)
 
-    // Profile CCs first, so the articulation lands with the attack.
     const { cutoffCc, expressionCc } = this.profile.controls
     if (cutoffCc !== undefined) this.midi.send(controlChange(channel, cutoffCc, brightness))
     if (expressionCc !== undefined) this.midi.send(controlChange(channel, expressionCc, expression))
 
-    this.moveVoice(voiceId, channel, targetNote, noteVelocity)
+    const isGlide =
+      gesture.voice.transition === 'glide' && previous !== undefined && previous.note !== targetNote
 
-    const durationMs = gesture.voice.transitionDurationMs
-    if (previous && durationMs > 0 && gesture.voice.transition === 'glide') {
-      this.startRamp(voiceId, channel, {
-        intervalSemitones: targetNote - previous.note,
-        overshootCents: gesture.voice.pitchOvershootCents,
-        durationMs,
-      })
+    if (isGlide && this.profile.transitionBackend === 'legato-glide') {
+      // The synth's portamento travels: overlap new-on before old-off.
+      this.legatoMove(voiceId, channel, previous, targetNote, noteVelocity)
+      if (gesture.voice.pitchOvershootCents > 0 && gesture.voice.transitionDurationMs > 0) {
+        // Elastic ornament riding on the glide: 0 → +overshoot → center.
+        this.startBendRamp(voiceId, channel, {
+          intervalSemitones: 0,
+          overshootCents: gesture.voice.pitchOvershootCents,
+          durationMs: gesture.voice.transitionDurationMs,
+        })
+      }
+    } else {
+      this.strikeVoice(voiceId, channel, targetNote, noteVelocity)
+      if (
+        isGlide &&
+        this.profile.transitionBackend === 'bend-emulated' &&
+        gesture.voice.transitionDurationMs > 0
+      ) {
+        this.startBendRamp(voiceId, channel, {
+          intervalSemitones: targetNote - previous.note,
+          overshootCents: gesture.voice.pitchOvershootCents,
+          durationMs: gesture.voice.transitionDurationMs,
+        })
+      }
+    }
+
+    // The wah breathes on every live punch — including same-zone
+    // retriggers (transition-design §4: "Same zone repeated → retrigger
+    // + wah, no pitch change").
+    if (this.profile.wah) {
+      this.startWah(voiceId, channel, gesture)
     }
   }
 
-  /** Release every latched voice + center bends (§23 panic path). */
+  /** Release every latched voice + center bends + settle wah (§6 panic). */
   panic(): void {
+    for (const [voiceId, pending] of this.pendingOffs) {
+      this.scheduler.clearTimeout(pending.handle)
+      this.midi.send(noteOff(pending.channel, pending.note))
+      void voiceId
+    }
+    this.pendingOffs.clear()
     for (const [voiceId, voice] of this.active) {
-      this.cancelRamp(voiceId)
+      this.cancelBend(voiceId)
+      this.cancelWah(voiceId)
       this.midi.send(noteOff(voice.channel, voice.note))
       this.midi.send(pitchBend(voice.channel, PITCH_BEND_CENTER))
+      if (this.profile.wah) {
+        this.midi.send(
+          controlChange(voice.channel, this.profile.wah.controllerCc, this.profile.wah.baselineValue),
+        )
+      }
     }
     this.active.clear()
     this.midi.allNotesOff()
@@ -125,18 +178,40 @@ export class VoiceRenderer {
     return this.active.size
   }
 
-  private moveVoice(voiceId: VoiceId, channel: number, note: number, velocity: number): void {
-    this.cancelRamp(voiceId)
+  /** Legato move: Note On (new) first; Note Off (old) after the overlap. */
+  private legatoMove(
+    voiceId: VoiceId,
+    channel: number,
+    previous: LatchedVoice,
+    note: number,
+    velocity: number,
+  ): void {
+    this.flushPendingOff(voiceId)
+    this.cancelBend(voiceId)
+    const vel = Math.max(1, Math.min(127, Math.round(velocity)))
+    this.midi.send(noteOn(channel, note, vel))
+    const overlap = Math.max(0, this.profile.legatoOverlapMs)
+    const handle = this.scheduler.setTimeout(() => {
+      this.pendingOffs.delete(voiceId)
+      this.midi.send(noteOff(previous.channel, previous.note))
+    }, overlap)
+    this.pendingOffs.set(voiceId, { handle, channel: previous.channel, note: previous.note })
+    this.active.set(voiceId, { channel, note })
+  }
+
+  /** Plain strike: old off (if any), wheel centered, new on. */
+  private strikeVoice(voiceId: VoiceId, channel: number, note: number, velocity: number): void {
+    this.flushPendingOff(voiceId)
+    this.cancelBend(voiceId)
     const prev = this.active.get(voiceId)
     if (prev) this.midi.send(noteOff(prev.channel, prev.note))
-    // A fresh strike starts from a centered wheel; ramps then pull it back.
     this.midi.send(pitchBend(channel, PITCH_BEND_CENTER))
     const vel = Math.max(1, Math.min(127, Math.round(velocity)))
     this.midi.send(noteOn(channel, note, vel))
     this.active.set(voiceId, { channel, note })
   }
 
-  private startRamp(
+  private startBendRamp(
     voiceId: VoiceId,
     channel: number,
     spec: { intervalSemitones: number; overshootCents: number; durationMs: number },
@@ -146,27 +221,68 @@ export class VoiceRenderer {
       stepMs: RAMP_STEP_MS,
       bendRangeSemitones: this.profile.pitchBendRangeSemitones,
     })
-    // Jump the wheel to the ramp's origin immediately (the old pitch).
     this.midi.send(pitchBend(channel, points[0] ?? PITCH_BEND_CENTER))
     let index = 1
     const handle = this.scheduler.setInterval(() => {
       const value = points[index]
       index += 1
       if (value === undefined) {
-        this.cancelRamp(voiceId)
+        this.cancelBend(voiceId)
         this.midi.send(pitchBend(channel, PITCH_BEND_CENTER))
         return
       }
       this.midi.send(pitchBend(channel, value))
     }, RAMP_STEP_MS)
-    this.ramps.set(voiceId, handle)
+    this.bendRamps.set(voiceId, handle)
   }
 
-  private cancelRamp(voiceId: VoiceId): void {
-    const handle = this.ramps.get(voiceId)
+  private startWah(voiceId: VoiceId, channel: number, gesture: CompiledPunchGesture): void {
+    const wah = this.profile.wah
+    if (!wah) return
+    this.cancelWah(voiceId)
+    const envelope = wahEnvelope(
+      gesture.source.velocity01,
+      gesture.source.acceleration01,
+      gesture.source.punchRate01,
+    )
+    envelope.baseline = wah.baselineValue
+    const points = wahRampPoints(envelope, WAH_STEP_MS)
+    let index = 0
+    const handle = this.scheduler.setInterval(() => {
+      const value = points[index]
+      index += 1
+      if (value === undefined) {
+        this.cancelWah(voiceId)
+        this.midi.send(controlChange(channel, wah.controllerCc, wah.baselineValue))
+        return
+      }
+      this.midi.send(controlChange(channel, wah.controllerCc, value))
+    }, WAH_STEP_MS)
+    this.wahRamps.set(voiceId, handle)
+  }
+
+  private flushPendingOff(voiceId: VoiceId): void {
+    const pending = this.pendingOffs.get(voiceId)
+    if (pending) {
+      this.scheduler.clearTimeout(pending.handle)
+      this.midi.send(noteOff(pending.channel, pending.note))
+      this.pendingOffs.delete(voiceId)
+    }
+  }
+
+  private cancelBend(voiceId: VoiceId): void {
+    const handle = this.bendRamps.get(voiceId)
     if (handle !== undefined) {
       this.scheduler.clearInterval(handle)
-      this.ramps.delete(voiceId)
+      this.bendRamps.delete(voiceId)
+    }
+  }
+
+  private cancelWah(voiceId: VoiceId): void {
+    const handle = this.wahRamps.get(voiceId)
+    if (handle !== undefined) {
+      this.scheduler.clearInterval(handle)
+      this.wahRamps.delete(voiceId)
     }
   }
 }
