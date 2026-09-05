@@ -108,12 +108,23 @@ function Metric(props: {
   value: string
   caption?: string
   testID: string
+  /** Type hierarchy (Kyle 2026-09-05): 'hero' matches the punch count's
+   * figure size; 'large' is the second heading size; default is the body
+   * figure. Accent colour stays the punch count's alone (`emphasis`). */
+  scale?: 'hero' | 'large'
   emphasis?: boolean
 }): React.JSX.Element {
   return (
     <View style={styles.metric} testID={props.testID}>
       <Text style={styles.metricLabel}>{props.label}</Text>
-      <Text style={[styles.metricValue, props.emphasis && styles.metricValueEmphasis]}>
+      <Text
+        style={[
+          styles.metricValue,
+          props.scale === 'hero' && styles.metricValueHero,
+          props.scale === 'large' && styles.metricValueLarge,
+          props.emphasis && styles.metricValueAccent,
+        ]}
+      >
         {props.value}
       </Text>
       {props.caption ? <Text style={styles.metricCaption}>{props.caption}</Text> : null}
@@ -173,6 +184,7 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
         testID="metric-punches"
         label="Punches"
         value={roundGoal === undefined ? String(counts.total) : `${counts.total} / ${roundGoal}`}
+        scale="hero"
         emphasis
       />
 
@@ -189,7 +201,12 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
         value={requiredPace === undefined ? EM_DASH : `${Math.round(requiredPace)}/min`}
       />
 
-      <Metric testID="metric-left-right" label="Left / right" value={`${counts.left} / ${counts.right}`} />
+      <Metric
+        testID="metric-left-right"
+        label="Left / right"
+        value={`${counts.left} / ${counts.right}`}
+        scale="large"
+      />
 
       {velocityAvailable ? (
         <>
@@ -204,6 +221,7 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
             label="Last velocity"
             value={lastVelocity === undefined ? EM_DASH : lastVelocity.value.toFixed(2)}
             caption="tracker-reported velocity"
+            scale="hero"
           />
         </>
       ) : null}
@@ -216,6 +234,9 @@ function MetricsRailInner(props: MetricsRailProps): React.JSX.Element {
               testID={`tile-${id}`}
               label={TILE_TITLE[id]}
               value={valueFor(id)}
+              // Peak velocity joins left/right on the second heading size
+              // (Kyle 2026-09-05).
+              {...(id === 'peak-velocity' ? { scale: 'large' as const } : {})}
               {...(captionFor(id) ? { caption: captionFor(id)! } : {})}
             />
           ))}
@@ -251,7 +272,12 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     fontVariant: ['tabular-nums'],
   },
-  metricValueEmphasis: { fontSize: 44, fontFamily: fonts.display, color: colors.accent },
+  // Kyle's hierarchy (2026-09-05): hero = the punch count's figure size,
+  // shared by last velocity; large = the second heading size for
+  // left/right and peak velocity. Accent stays the punch count's alone.
+  metricValueHero: { fontSize: 44, fontFamily: fonts.display },
+  metricValueLarge: { fontSize: 36, fontFamily: fonts.display },
+  metricValueAccent: { color: colors.accent },
   metricCaption: { fontSize: 12, fontFamily: fonts.body, color: colors.textMuted },
   tiles: { gap: 14, marginTop: 4, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
 })

@@ -47,7 +47,7 @@ import { nextRoundPreview } from '@domain/session/restPhases'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { getSampleWorkout } from '@domain/workout/samples'
 import { generateWorkout } from '@domain/workout/generateWorkout'
-import { setLive, useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
+import { resetLive, setLive, useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
@@ -287,7 +287,17 @@ export default function LiveScreen(): React.JSX.Element {
   // Workout identity for the tabs header (Kyle 2026-09-05 markup): name +
   // description ride the live store because the header renders outside this
   // tree. A generated session gets an honest generic identity.
-  React.useEffect(() => {
+  //
+  // useLayoutEffect, and a reset FIRST (Kyle, same day: "the previous
+  // configuration still in place for a few seconds"): the runner's own
+  // resetLive lives in its arm-effect CLEANUP, which is passive — entering
+  // this screen painted the DEAD session's store snapshot (old name, old
+  // round, old KPI figures) for the seconds the heavy arm takes. A layout
+  // effect runs before the first paint, so the screen opens on a clean
+  // slate stamped with the new identity, and the runner's armed push fills
+  // the rest in.
+  React.useLayoutEffect(() => {
+    resetLive()
     setLive({
       workoutName: sample?.name ?? 'Custom Session',
       workoutDescription:
