@@ -101,6 +101,8 @@ export default function VoiceSettingsScreen(): React.JSX.Element {
   const setPolicy = useVoiceSettingsStore((s) => s.setPolicy)
   const setOverlayOptIn = useVoiceSettingsStore((s) => s.setOverlayOptIn)
   const setVolumes = useVoiceSettingsStore((s) => s.setVolumes)
+  const clickEnabled = useVoiceSettingsStore((s) => s.clickEnabled)
+  const setClickEnabled = useVoiceSettingsStore((s) => s.setClickEnabled)
 
   const detectionAvailable = React.useMemo(() => createPlaybackDetector().available, [])
 
@@ -182,6 +184,21 @@ export default function VoiceSettingsScreen(): React.JSX.Element {
             onValueChange={(on) => setVolumes({ ...volumes, haptics: on ? 1 : 0 })}
             testID="voice-haptics"
             value={volumes.haptics > 0}
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <View style={styles.optionText}>
+            <Text style={styles.optionLabel}>Metronome click</Text>
+            <Text style={styles.optionHint}>
+              Development marker grid — an audible click on the beat. Off by default.
+            </Text>
+          </View>
+          <Switch
+            accessibilityLabel="Metronome click"
+            onValueChange={setClickEnabled}
+            testID="voice-click"
+            value={clickEnabled}
           />
         </View>
       </View>

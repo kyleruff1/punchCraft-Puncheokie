@@ -213,6 +213,48 @@ describe('a corrupt stored setting does not stop a workout', () => {
   })
 })
 
+describe('the development click defaults off and persists', () => {
+  it('starts off on a fresh install (dev instrumentation never defaults audible)', () => {
+    const h = harness()
+    expect(h.store().clickEnabled).toBe(false)
+  })
+
+  it('flips on and off through its own setter', () => {
+    const h = harness()
+    h.store().setClickEnabled(true)
+    expect(h.store().clickEnabled).toBe(true)
+    h.store().setClickEnabled(false)
+    expect(h.store().clickEnabled).toBe(false)
+  })
+
+  it('survives a restart', () => {
+    const h = harness()
+    h.store().setClickEnabled(true)
+
+    __resetVoiceSettingsForTests()
+    useVoiceSettingsStore.getState().load(h.repo)
+
+    expect(useVoiceSettingsStore.getState().clickEnabled).toBe(true)
+  })
+
+  it('falls back to off (never a surprise audible click) on a corrupt row', () => {
+    const h = harness()
+    h.db.raw
+      .prepare('INSERT OR REPLACE INTO app_settings (key, value_json, updated_at) VALUES (?, ?, ?)')
+      .run(SETTINGS_KEYS.click, '{not json', '2026-09-04T00:00:00.000Z')
+
+    __resetVoiceSettingsForTests()
+    expect(() => useVoiceSettingsStore.getState().load(h.repo)).not.toThrow()
+    expect(useVoiceSettingsStore.getState().clickEnabled).toBe(false)
+  })
+
+  it('is absent → off for an install predating the click setting', () => {
+    // No click row was ever written; the merge-over-default read returns off.
+    const h = harness()
+    expect(h.store().clickEnabled).toBe(false)
+  })
+})
+
 describe('writes reach the database immediately', () => {
   it('does not wait for a flush that might never come', () => {
     const h = harness()

@@ -118,6 +118,10 @@ export default function LiveScreen(): React.JSX.Element {
     [storePolicy, recipe.voiceMode, recipe.voiceVocabulary],
   )
   const volumes = useVoiceSettingsStore((s) => s.volumes)
+  // The audible metronome "click" is development instrumentation — off by
+  // default, flipped on when mapping/verifying markers. Gates only the click's
+  // volume in the runner; the visual grid, coach, and avatar are unaffected.
+  const clickEnabled = useVoiceSettingsStore((s) => s.clickEnabled)
   const detector = React.useMemo(() => createPlaybackDetector(), [])
   // Built once, never per render: the output owns players and a focus
   // request, and rebuilding it mid-workout would drop both.
@@ -308,6 +312,7 @@ export default function LiveScreen(): React.JSX.Element {
     voice,
     haptics,
     backdrop: backdropBus,
+    clickAudible: clickEnabled,
   })
 
   // The walkout announcement: players buffer during the lobby (the first

@@ -72,15 +72,15 @@ export const pumpAndCoast: GeneratedWorkout = {
     // MVP v2: the click IS the audio. Minimal caps the coach at bells +
     // stance + countdown; punch calls belong to the visuals.
     voiceMode: 'minimal',
-    // No loop asset exists at this tempo (85/100 BPM are not integer
-    // divisions of the 60-BPM base pulse — metronomeAssets.ts has d1-d4
-    // only). The click stays OFF until per-BPM loops are rendered
-    // (renders are disposable — follow-up batch); the WALK is unaffected,
-    // riding the session work clock, and bpmForRecipe still returns the
-    // map tempo via coachTempo below.
+    // W2 audible grid (Kyle 2026-09-04 "roll into the grid"): the click
+    // is ON. Loops now exist at this tempo (metronomeAssets b85/b100
+    // d1-d3); the runner swaps the subdivision per section so each rate
+    // lands on the grid. coachTempo keeps division 1 so
+    // bpmForRecipe === MAP.bpm — the visual node grid is byte-unchanged;
+    // only which click WAV plays changes.
     coachTempo: { baseBpm: MAP.bpm, division: 1, swing: 0.5 },
 
-    metronome: { enabled: false, volume: 0.6 },
+    metronome: { enabled: true, volume: 0.6 },
     generatorVersion: GENERATOR_VERSION,
     seed: 'pump-and-coast-2026-08-30',
   },

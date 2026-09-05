@@ -100,6 +100,10 @@ class RecordingPort implements VoiceOutputPort {
   readonly spoken: string[] = []
   cancels = 0
   readonly metronomeCalls: string[] = []
+  /** Volume passed to each metronome.start (the dev-click mute gates this). */
+  readonly metronomeStartVolumes: number[] = []
+  /** Volumes passed to metronome.setVolume (mid-session mute re-tune). */
+  readonly metronomeSetVolumes: number[] = []
 
   playAsset(id: VoiceAssetId): void {
     this.assets.push(id)
@@ -116,13 +120,16 @@ class RecordingPort implements VoiceOutputPort {
   setVolumes(_v: Volumes): void {}
 
   readonly metronome = {
-    start: (loop: { division: number; swing: number }): void => {
+    start: (loop: { division: number; swing: number }, volume: number): void => {
       this.metronomeCalls.push(`start:${loop.division}:${loop.swing}`)
+      this.metronomeStartVolumes.push(volume)
     },
     stop: (): void => {
       this.metronomeCalls.push('stop')
     },
-    setVolume: (): void => {},
+    setVolume: (volume: number): void => {
+      this.metronomeSetVolumes.push(volume)
+    },
   }
 }
 
@@ -409,7 +416,10 @@ function workoutWithMetronome(enabled: boolean): GeneratedWorkout {
   }
 }
 
-function mountWithWorkout(workout: GeneratedWorkout): Harness {
+function mountWithWorkout(
+  workout: GeneratedWorkout,
+  opts: { clickAudible?: boolean } = {},
+): Harness {
   const clock = createFakeClock()
   const port = new RecordingPort()
   const ref = React.createRef<WorkoutRunner>()
@@ -427,6 +437,7 @@ function mountWithWorkout(workout: GeneratedWorkout): Harness {
       clock,
       persistence: null,
       voice,
+      ...(opts.clickAudible === undefined ? {} : { clickAudible: opts.clickAudible }),
     })
     useImperativeHandle(ref, () => runner, [runner])
     return <View />
@@ -512,6 +523,37 @@ describe('metronome wiring (M39-V1b / #280)', () => {
     h.step(WORK_MS + TICK_INTERVAL_MS * 2)
 
     expect(h.port.metronomeCalls).toEqual([])
+    h.unmount()
+  })
+
+  it('mutes the dev click (volume 0) when clickAudible is false, but still starts the transport', async () => {
+    // Removable dev click, mute-only: the port.start STILL fires (so the
+    // logical transport / avatar clock keeps running) — only the volume is
+    // zeroed, so nothing is heard and the visual grid is untouched.
+    const h = mountWithWorkout(workoutWithMetronome(true), { clickAudible: false })
+    await h.settle()
+    h.begin()
+
+    expect(h.port.metronomeCalls[0]).toBe('start:2:0.54')
+    expect(h.port.metronomeStartVolumes[0]).toBe(0)
+    h.unmount()
+  })
+
+  it('plays the dev click at the recipe volume when clickAudible is true', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(true), { clickAudible: true })
+    await h.settle()
+    h.begin()
+
+    expect(h.port.metronomeStartVolumes[0]).toBe(0.6)
+    h.unmount()
+  })
+
+  it('defaults to audible (recipe volume) when clickAudible is omitted — back-compat', async () => {
+    const h = mountWithWorkout(workoutWithMetronome(true))
+    await h.settle()
+    h.begin()
+
+    expect(h.port.metronomeStartVolumes[0]).toBe(0.6)
     h.unmount()
   })
 

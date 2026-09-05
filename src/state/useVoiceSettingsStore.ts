@@ -35,6 +35,16 @@ export type VoicePolicyPatch = Partial<Omit<VoiceCoachPolicy, 'overlayOptIn'>>
 export interface VoiceSettingsState {
   policy: VoiceCoachPolicy
   volumes: Volumes
+  /**
+   * The audible metronome "click" — development instrumentation (an audible
+   * marker grid for verifying event/call mapping onto the beat). OFF by
+   * default: it never ships audible, and turning it off must always be a
+   * single flip. Gates only the audible loop volume in the runner — it does
+   * NOT touch `recipe.metronome.enabled` or `bpmForRecipe`, so the visual
+   * node/avatar grid, coach calls, and avatar flip are byte-identical whether
+   * the click sounds or not (mute-only semantics, Kyle 2026-09-04).
+   */
+  clickEnabled: boolean
   /** True once a load has run, so a screen never writes over unread values. */
   loaded: boolean
   load(repo: SettingsRepository): void
@@ -45,7 +55,12 @@ export interface VoiceSettingsState {
    */
   setOverlayOptIn(optIn: boolean): void
   setVolumes(v: Volumes): void
+  /** Flip the audible development click on or off (persisted). */
+  setClickEnabled(on: boolean): void
 }
+
+/** The click is dev instrumentation — it never defaults audible. */
+const DEFAULT_CLICK_ENABLED = false
 
 /**
  * The repository the store writes through.
@@ -63,9 +78,14 @@ function persistVolumes(volumes: Volumes): void {
   repository?.write(SETTINGS_KEYS.voiceVolumes, volumes)
 }
 
+function persistClick(enabled: boolean): void {
+  repository?.write(SETTINGS_KEYS.click, { enabled })
+}
+
 export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
   policy: defaultVoiceCoachPolicy(),
   volumes: { ...DEFAULT_VOLUMES },
+  clickEnabled: DEFAULT_CLICK_ENABLED,
   loaded: false,
 
   load(repo) {
@@ -85,7 +105,12 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
     if (policy !== stored) persistPolicy(policy)
 
     const volumes = repo.read<Volumes>(SETTINGS_KEYS.voiceVolumes, { ...DEFAULT_VOLUMES })
-    set({ policy, volumes, loaded: true })
+    // A pre-click install has no row → defaults off, the safe direction for
+    // dev instrumentation. A corrupt/non-object row also merges to the default.
+    const click = repo.read<{ enabled: boolean }>(SETTINGS_KEYS.click, {
+      enabled: DEFAULT_CLICK_ENABLED,
+    })
+    set({ policy, volumes, clickEnabled: click.enabled === true, loaded: true })
   },
 
   setPolicy(patch) {
@@ -110,6 +135,11 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
     set({ volumes })
     persistVolumes(volumes)
   },
+
+  setClickEnabled(on) {
+    set({ clickEnabled: on })
+    persistClick(on)
+  },
 }))
 
 /* ------------------------------------------------------ narrow selectors */
@@ -123,6 +153,7 @@ export function __resetVoiceSettingsForTests(): void {
   useVoiceSettingsStore.setState({
     policy: defaultVoiceCoachPolicy(),
     volumes: { ...DEFAULT_VOLUMES },
+    clickEnabled: DEFAULT_CLICK_ENABLED,
     loaded: false,
   })
 }

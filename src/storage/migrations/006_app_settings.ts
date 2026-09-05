@@ -47,6 +47,13 @@ export const SETTINGS_KEYS = {
   voicePolicy: 'voice.policy',
   voiceVolumes: 'voice.volumes',
   backdrop: 'backdrop.settings',
+  /**
+   * The audible metronome "click" — a DEVELOPMENT instrument (an audible
+   * marker grid for verifying event/call mapping), off by default and never
+   * load-bearing. Stored as `{ enabled: boolean }`; gates only the audible
+   * loop volume, never `recipe.metronome.enabled` or the visual grid.
+   */
+  click: 'click.enabled',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

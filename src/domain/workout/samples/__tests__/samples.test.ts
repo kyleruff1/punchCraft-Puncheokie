@@ -17,6 +17,7 @@ import {
 } from '../index'
 import { validateGeneratedWorkout } from '../../GeneratedWorkout'
 import { buildRoundSchedule } from '../../roundSchedule'
+import { CLICK_MAPS } from '../clickMaps'
 import { bpmForRecipe, msToBeats } from '../../cadence'
 import { punchTokens } from '../../WorkoutTokens'
 import { blocksSpanMs, roundPunchCount } from '../authoring'
@@ -81,6 +82,19 @@ describe.each(ALL.map((s) => [s.key, s.workout] as const))('%s', (key, workout) 
     for (const round of workout.schedule) {
       expect(blocksSpanMs(round.blocks)).toBeLessThanOrEqual(round.workDurationMs)
     }
+  })
+
+  it('keeps bpmForRecipe locked to the click-map tempo (W2 visual-grid invariant)', () => {
+    // The load-bearing law for the W2 audible grid (Kyle 2026-09-04 "roll
+    // into the grid"): enabling the metronome on the slow sets must NOT
+    // move the visual node/avatar grid. The grid tempo IS bpmForRecipe, so
+    // it must equal the click map's authored bpm for every sample —
+    // whether the click is on (baseBpm×division = MAP.bpm) or off (legacy
+    // nominalBpm path). If a future edit changes coachTempo without
+    // preserving the product, this fails before it ever reaches glass.
+    const map = CLICK_MAPS[key]
+    expect(map).toBeDefined()
+    expect(bpmForRecipe(workout.recipe)).toBe(map!.bpm)
   })
 
   it('lays blocks end to end without overlap', () => {

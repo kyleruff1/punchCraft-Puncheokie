@@ -29,7 +29,7 @@ import { CueEngine, DEFAULT_LEAD_TIMES } from '@domain/programs/CueEngine'
 import { LiveCueMatcher, type LiveMatcherEvent } from '@domain/programs/LiveCueMatcher'
 import { PacingEngine, type PacingCueText } from '@domain/programs/PacingEngine'
 import { bpmForRecipe, CADENCE_PROFILES as CADENCE } from '@domain/workout/cadence'
-import { metronomeLoopFor } from '@audio/voiceAssets/metronomeAssets'
+import { metronomeLoopFor, type MetronomeLoop } from '@audio/voiceAssets/metronomeAssets'
 import type { CueMatchResult } from '@domain/programs/CueMatcher'
 import type { CueScore } from '@domain/programs/cueScoring'
 import { expandTimeline, type CueInstance, type ExpectedPunch } from '@domain/programs/CueTimeline'
@@ -170,6 +170,49 @@ export const MIN_BREATH_MS = 150
  * bespoke breath the formula doesn't nail. A value here replaces the formula.
  */
 export const CALL_BREATH_OVERRIDES: Record<string, number> = {}
+
+/**
+ * How far before a section's first node the audible-grid loop swap is
+ * dispatched (W2, Kyle 2026-09-04 "roll into the grid"). The swap tears
+ * down and rebuilds the native click playlist (~50-200ms), so it must
+ * land inside the section's punch-free setup gap — never over a strike.
+ * A 2-measure setup gap is ≥4000ms (@120) / ≥5600ms (@85), so 400ms of
+ * lead sits comfortably inside it with the rebuild finishing before the
+ * gap's downbeat.
+ */
+export const METRONOME_SWAP_LEAD_MS = 400
+
+/**
+ * The metronome subdivision whose audible click lands on a section's node
+ * grid — WITHOUT moving the (locked) visual grid (W2, Kyle 2026-09-04).
+ *
+ * The visual grid is owned by `bpmForRecipe` and never touched here; this
+ * only chooses which loop WAV plays so its clicks fall on the section's
+ * inter-node interval (`slotMs`). A master beat is `60000/baseBpm` ms; a
+ * loop at `division` clicks every `beatMs/division` ms. We pick the
+ * COARSEST rendered division whose click interval divides `slotMs` a
+ * whole number of times (≥1 click per node) — e.g. @100 base
+ * (beatMs=600): rate-1 slot 600 → div 1 (click every node), rate-2 slot
+ * 300 → div 2, rate-1.5 slot 400 → div 3 (two clicks per node, back on
+ * grid). Returns undefined when no rendered division lands on grid (the
+ * caller falls back to the recipe's own division).
+ */
+export function audibleDivisionForSlot(
+  slotMs: number,
+  baseBpm: number,
+): 1 | 2 | 3 | 4 | undefined {
+  if (!(slotMs > 0) || !(baseBpm > 0)) return undefined
+  const beatMs = 60000 / baseBpm
+  for (const d of [1, 2, 3, 4] as const) {
+    const clickInterval = beatMs / d
+    const perSlot = slotMs / clickInterval
+    const nearest = Math.round(perSlot)
+    // ≥1 click per node, and the slot is (near) a whole multiple of the
+    // click interval — that is exactly "on the grid".
+    if (nearest >= 1 && Math.abs(perSlot - nearest) < 0.06) return d
+  }
+  return undefined
+}
 
 /**
  * The breath (node − call-end) for one bar's call, and the offset of the
@@ -356,6 +399,17 @@ export interface UseWorkoutRunnerArgs {
    * runner never waits on it, and nothing here can touch scoring.
    */
   backdrop?: BackdropImpulsePort
+  /**
+   * Whether the audible metronome "click" sounds (Kyle 2026-09-04 — the
+   * click is removable development instrumentation). Gates ONLY the click's
+   * loop volume: false plays the loop silently (mute-only) so the logical
+   * transport keeps running and the visual grid / avatar flip / coach calls
+   * stay byte-identical. Absent → true, so existing callers and tests keep
+   * today's audible behaviour; the live screen passes the persisted
+   * `clickEnabled` setting (off by default). Never gate via
+   * `recipe.metronome.enabled`, which would move the visual grid.
+   */
+  clickAudible?: boolean
 }
 
 /** What the runner reports when a workout ends. */
@@ -392,6 +446,20 @@ interface CueRenderState {
 export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   const { workout, source, stance, persistence, onSessionEnded, voice, haptics, backdrop, countdownMs } =
     args
+  // The click is dev instrumentation; absent means audible (today's
+  // behaviour) so existing callers/tests are unchanged. The live screen
+  // passes the persisted `clickEnabled` (off by default).
+  const clickAudible = args.clickAudible ?? true
+  // Read through a ref so the applyTransitions/tick closures see the latest
+  // value without being rebuilt (mid-session toggles apply at the next
+  // start/swap, and immediately via the setVolume effect below).
+  // Read through a ref so startMetronome / the swap loop see the value the
+  // setting held when the workout began, without rebuilding those closures.
+  // The click state is FIXED for the duration of a run — there is deliberately
+  // NO in-workout control to unmute (Kyle 2026-09-04); the only control is the
+  // settings toggle, applied at the next work-entered.
+  const clickAudibleRef = useRef(clickAudible)
+  clickAudibleRef.current = clickAudible
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   // M39-V1b: engine tempo when the recipe opts in (`metronome.enabled`),
@@ -722,6 +790,74 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const entries = [...leadIns, ...survivors].sort((a, b) => a.dispatchAtMs - b.dispatchAtMs)
     leadInScheduleRef.current = { roundIndex, entries }
   }, [workout.id])
+  /**
+   * Round-scoped audible-metronome schedule (W2, Kyle 2026-09-04 "roll
+   * into the grid"). One loop for the round opener plus a per-SECTION
+   * loop swap wherever the section's subdivision changes — so a slow
+   * workout's mixed rates each land an on-grid click without moving the
+   * (locked) visual node grid. `firstLoop` is what `startMetronome`
+   * plays; `swaps` fire from the tick loop during each section's
+   * punch-free setup gap. A uniform-rate workout emits zero swaps and
+   * plays one continuous loop (byte-identical to pre-W2 behaviour). Empty
+   * when the recipe's metronome is disabled.
+   */
+  const metronomeScheduleRef = useRef<{
+    roundIndex: number
+    firstLoop: MetronomeLoop | undefined
+    swaps: Array<{ dispatchAtMs: number; loop: MetronomeLoop; state: 'pending' | 'played' }>
+  } | null>(null)
+  const buildMetronomeSchedule = useCallback((roundIndex: number): void => {
+    const recipe = workout.recipe
+    if (!recipe.metronome.enabled) {
+      metronomeScheduleRef.current = { roundIndex, firstLoop: undefined, swaps: [] }
+      return
+    }
+    const baseBpm = recipe.coachTempo.baseBpm
+    const swing = recipe.coachTempo.swing
+    // The recipe's own division is the safety net for a section whose slot
+    // finds no on-grid rendered loop — never worse than pre-W2.
+    const fallback = metronomeLoopFor(recipe.coachTempo.division, swing, baseBpm)
+    const cues = timelineRef.current[roundIndex]?.cues ?? []
+    const seenBlocks = new Set<string>()
+    const swaps: Array<{ dispatchAtMs: number; loop: MetronomeLoop; state: 'pending' | 'played' }> = []
+    let firstLoop: MetronomeLoop | undefined
+    let currentModule: number | undefined
+    for (const cue of cues) {
+      if (cue.scoring !== 'sequence') continue
+      if (cue.repeatIndex !== 0 || seenBlocks.has(cue.blockId)) continue
+      seenBlocks.add(cue.blockId)
+      // slotMs = the inter-PUNCH interval on the (locked) visual grid — the
+      // same measure `breathForBar` reads. A single-punch bar has no
+      // interval → treat it as one master beat (division 1 / the base).
+      const punchIdx: number[] = []
+      cue.tokens.forEach((t, i) => {
+        if (t.kind === 'punch') punchIdx.push(i)
+      })
+      const slotMs =
+        punchIdx.length >= 2
+          ? (cue.tokenOffsetsMs[punchIdx[1]!] ?? 0) - (cue.tokenOffsetsMs[punchIdx[0]!] ?? 0)
+          : 60000 / baseBpm
+      const division = audibleDivisionForSlot(slotMs, baseBpm)
+      const loop = (division ? metronomeLoopFor(division, swing, baseBpm) : undefined) ?? fallback
+      if (!loop) continue
+      if (seenBlocks.size === 1) {
+        firstLoop = loop
+        currentModule = loop.module
+        continue
+      }
+      // Sections 2+: only emit a swap when the loop actually changes — a
+      // uniform-rate round plays one continuous loop, no rebuilds. Land it
+      // in the punch-free setup gap ahead of the section's first node.
+      if (loop.module === currentModule) continue
+      currentModule = loop.module
+      swaps.push({
+        dispatchAtMs: Math.max(0, cue.scheduledStartMs - METRONOME_SWAP_LEAD_MS),
+        loop,
+        state: 'pending',
+      })
+    }
+    metronomeScheduleRef.current = { roundIndex, firstLoop: firstLoop ?? fallback, swaps }
+  }, [workout])
   const announcerRef = useRef<CueAnnouncer | null>(null)
   /**
    * D1 third-party-playback state, mirrored out of the detector so the
@@ -1284,27 +1420,56 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // so the next work-entered restarts on the downbeat and drift can't
     // accumulate across a boundary. `metronome` is optional on the port
     // (unavailable in headless tests / older `VoiceOutputExpo` builds).
+    // The audible loop in force at `workElapsedMs` — the round opener
+    // (firstLoop) until a section swap's dispatch time has passed, then
+    // that swap's loop. Used so a resume mid-round re-anchors on the
+    // CURRENT section's subdivision, not the round opener's.
+    const metronomeLoopAt = (workElapsedMs: number): MetronomeLoop | undefined => {
+      const sched = metronomeScheduleRef.current
+      if (!sched) return undefined
+      let loop = sched.firstLoop
+      for (const s of sched.swaps) {
+        if (s.dispatchAtMs <= workElapsedMs) loop = s.loop
+        else break
+      }
+      return loop
+    }
     const startMetronome = (): void => {
       if (!workout.recipe.metronome.enabled) return
       const port = voice?.output.metronome
       if (!port) return
-      const loop = metronomeLoopFor(
-        workout.recipe.coachTempo.division,
-        workout.recipe.coachTempo.swing,
-      )
+      const atMs = sessionRef.current?.snapshot()?.workElapsedMs ?? 0
+      const loop =
+        metronomeLoopAt(atMs) ??
+        metronomeLoopFor(
+          workout.recipe.coachTempo.division,
+          workout.recipe.coachTempo.swing,
+          workout.recipe.coachTempo.baseBpm,
+        )
       if (!loop) {
         logger.warn('puncheokie.metronome', 'no loop for tempo', {
           division: safe(workout.recipe.coachTempo.division),
           swing: safe(workout.recipe.coachTempo.swing),
+          baseBpm: safe(workout.recipe.coachTempo.baseBpm),
         })
         return
       }
+      // A resume past one or more section swaps must not let those swaps
+      // re-fire from the tick loop — starting here already puts us on the
+      // right loop.
+      const sched = metronomeScheduleRef.current
+      if (sched) for (const s of sched.swaps) if (s.dispatchAtMs <= atMs) s.state = 'played'
       // baseBpm from the recipe drives the shared logical transport
       // (M39-V2 Phase W0-a) alongside the audible loop — one call,
       // both lifecycles synced. Consumers reading
       // `port.transport.snapshot()` see the fresh generation on
-      // this start.
-      port.start(loop, workout.recipe.metronome.volume, bpmForRecipe(workout.recipe))
+      // this start. The transport rate is bpmForRecipe (the locked
+      // visual clock), independent of which subdivision WAV plays.
+      // clickAudible gates ONLY the loop volume (mute-only): the transport
+      // still starts, so the avatar flip and everything else are unchanged
+      // whether the click sounds or not.
+      const clickVolume = clickAudibleRef.current ? workout.recipe.metronome.volume : 0
+      port.start(loop, clickVolume, bpmForRecipe(workout.recipe))
     }
     const stopMetronome = (): void => {
       // Gate stop on the same flag as start — a legacy recipe never
@@ -1358,6 +1523,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           buildWalkPlan(transition.roundIndex)
           buildLeadInSchedule(transition.roundIndex)
           buildAvatarLeadTrack(transition.roundIndex)
+          buildMetronomeSchedule(transition.roundIndex)
           setLive({ frozenRoundResult: undefined })
 
           // Install the round's compiled rhythm map (M2): from here the map
@@ -1885,6 +2051,32 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               dispatchAtMs: safe(entry.dispatchAtMs),
               lateMs: safe(Math.round(snapshot.workElapsedMs - entry.dispatchAtMs)),
               durationMs: safe(entry.durationMs),
+            })
+          }
+        }
+        // W2 audible grid: swap the click WAV to the next section's
+        // subdivision during its punch-free setup gap. `start` WITHOUT a
+        // baseBpm reloads only the loop — the logical transport (avatar
+        // flip clock) keeps running uninterrupted, so no generation bump
+        // and no visual hitch. Its own lane, independent of the coach
+        // busy-check above (the click floor never ducks under speech).
+        const metroSchedule = metronomeScheduleRef.current
+        const metroPort = voice?.output.metronome
+        if (metroSchedule && metroSchedule.roundIndex === snapshot.roundIndex && metroPort) {
+          for (const swap of metroSchedule.swaps) {
+            if (swap.state !== 'pending' || snapshot.workElapsedMs < swap.dispatchAtMs) continue
+            swap.state = 'played'
+            // Mute-only when the dev click is off: swap the loop silently so
+            // the grid machinery stays consistent but nothing is heard.
+            metroPort.start(
+              swap.loop,
+              clickAudibleRef.current ? workout.recipe.metronome.volume : 0,
+            )
+            logger.info('puncheokie.metronome.swap', 'section subdivision swap', {
+              dispatchAtMs: safe(swap.dispatchAtMs),
+              division: safe(swap.loop.division),
+              baseBpm: safe(swap.loop.baseBpm),
+              lateMs: safe(Math.round(snapshot.workElapsedMs - swap.dispatchAtMs)),
             })
           }
         }
