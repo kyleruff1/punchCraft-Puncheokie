@@ -1,7 +1,7 @@
 {
   "name": "punchbridge",
   "version": "1.0.0",
-  "description": "Puncheoke desktop bridge — WebSocket punch gestures to MIDI for Studio One",
+  "description": "Puncheoke desktop bridge \u2014 WebSocket punch gestures to MIDI for Studio One",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -10,7 +10,8 @@
     "bench": "tsx src/benchBrass.ts",
     "ports": "tsx src/ports.ts",
     "test": "tsx --test src/server.test.ts src/bendRamp.test.ts src/brassArpEngine.test.ts src/harmonicGrid.test.ts src/microMutation.test.ts src/persistentMotif.test.ts src/arrangementRail.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "audition": "tsx src/auditionBench.ts"
   },
   "keywords": [],
   "author": "",
