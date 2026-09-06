@@ -573,6 +573,26 @@ describe('audio hold on blur (GH #356)', () => {
     release.mockRestore()
   })
 
+  it('blur then unmount is idempotent — the second teardown cannot throw', () => {
+    // The contract for keeping this as defense-in-depth: a blur-scoped
+    // release followed by the unmount cleanup must not double-free. Both
+    // paths call output.release(), and the unmount path also touches the
+    // ceremony refs the blur path just nulled.
+    const release = spyRelease()
+    mockIsFocused = false
+    const tree = render()
+    expect(release).toHaveBeenCalled()
+    expect(() => {
+      act(() => {
+        tree.unmount()
+        mounted.splice(mounted.indexOf(tree), 1)
+      })
+    }).not.toThrow()
+    // Called again by the unmount backstop, harmlessly.
+    expect(release.mock.calls.length).toBeGreaterThanOrEqual(2)
+    release.mockRestore()
+  })
+
   it('…and frees them the moment that workout finishes', () => {
     // The other half: a workout abandoned mid-round still ends, and the
     // players must come back at that point rather than lingering for the
