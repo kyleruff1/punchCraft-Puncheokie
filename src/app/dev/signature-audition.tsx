@@ -18,12 +18,14 @@
  * Dev-only surface, instrument-lab style: local state, no stores.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { Stack } from 'expo-router'
+import { Stack, useFocusEffect } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { BridgeClient, type BridgeStatus, type PatchIdentity } from '@/instrument/bridgeClient'
+import { InstrumentVoiceOutput } from '@audio/InstrumentVoiceOutput'
+import { INSTRUMENT_TEXTURE_IDS, type InstrumentTextureId } from '@audio/voiceAssets/instrumentBankManifest'
 import { compileBrassCube } from '@domain/instrument/brassCube'
 import { compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
 import {
@@ -74,6 +76,12 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   const [leftZone, setLeftZone] = useState(0)
   const [rightZone, setRightZone] = useState(0)
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
+  // ON-DEVICE output (M40-26/28): the audition is the ear gate, and the
+  // tablet is the shipping surface — it must sound HERE, not only on the
+  // PC rig. 'tablet' is the default for exactly that reason.
+  const [output, setOutput] = useState<'tablet' | 'bridge' | 'both'>('tablet')
+  const [textureId, setTextureId] = useState<InstrumentTextureId>('brass')
+  const [voiceReady, setVoiceReady] = useState(false)
   const [rows, setRows] = useState<readonly AuditionRow[]>([])
 
   const patch = useMemo(() => launchPatchById(patchId), [patchId])
@@ -88,8 +96,31 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   )
 
   const bridgeRef = useRef<BridgeClient | null>(null)
+  const engineRef = useRef<InstrumentVoiceOutput | null>(null)
   const sessionRef = useRef<InstrumentSessionState>(emptySessionState())
   const clockRef = useRef(0)
+
+  // Focus-scoped, matching the jam screen's isolation rule: a blurred dev
+  // screen must not hold ~25 native players or sound under a workout.
+  useFocusEffect(
+    useCallback(() => {
+      if (output === 'bridge') {
+        engineRef.current?.panic()
+        return
+      }
+      if (engineRef.current === null) {
+        engineRef.current = new InstrumentVoiceOutput()
+        void engineRef.current.preload(textureId).then(() => setVoiceReady(true))
+      } else {
+        engineRef.current.setTexture(textureId)
+      }
+      return () => {
+        engineRef.current?.release()
+        engineRef.current = null
+        setVoiceReady(false)
+      }
+    }, [output, textureId]),
+  )
 
   const connect = useCallback(() => {
     bridgeRef.current?.disconnect()
@@ -144,7 +175,9 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       )
       if (!result) return
       sessionRef.current = result.state
-      bridgeRef.current?.sendGesture(result.gesture)
+      // Tee: the tablet is the shipping output, the bridge is the desk rig.
+      if (output !== 'tablet') bridgeRef.current?.sendGesture(result.gesture)
+      if (output !== 'bridge') engineRef.current?.handleGesture(result.gesture)
 
       const identity = resolveStrikeIdentity({ expectedStrikeToken: token, hand })
       const articulation = resolveStrikeArticulation(identity, hand)
@@ -165,7 +198,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         ].slice(0, 14),
       )
     },
-    [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone],
+    [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone, output],
   )
 
   const cycleRow = (
@@ -209,6 +242,24 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.controls}>
+        {cycleRow(
+          'OUTPUT',
+          output.toUpperCase() + (output !== 'bridge' && !voiceReady ? ' (loading)' : ''),
+          () => setOutput((o) => (o === 'tablet' ? 'both' : o === 'both' ? 'bridge' : 'tablet')),
+          'audition-output',
+        )}
+        {cycleRow(
+          'TEXTURE',
+          textureId,
+          () =>
+            setTextureId(
+              (t) =>
+                INSTRUMENT_TEXTURE_IDS[
+                  (INSTRUMENT_TEXTURE_IDS.indexOf(t) + 1) % INSTRUMENT_TEXTURE_IDS.length
+                ] ?? 'brass',
+            ),
+          'audition-texture',
+        )}
         {cycleRow(
           'PATCH',
           patchId,

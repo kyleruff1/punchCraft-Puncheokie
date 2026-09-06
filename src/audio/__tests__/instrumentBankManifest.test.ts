@@ -27,10 +27,17 @@ import {
 
 const LAUNCH_MAP = compileBrassCube(launchPatchById('dorian-brass-cube'))
 
-/** The accent-reachable notes: startMidiNote over all 36 compiled cells. */
-const STAB_UNION = [...new Set(LAUNCH_MAP.cells.map((cell) => cell.startMidiNote))].sort(
-  (a, b) => a - b,
-)
+/**
+ * The accent-reachable notes. Every stab ROLE resolves to some
+ * naturalPool[k], which is the entry tone of cell (chord, Rk) — so the
+ * role axis is covered by the cells' startMidiNotes. BODY shots then drop
+ * an octave (M40-25), and those notes must exist too or a body stab is
+ * silent on the tablet.
+ */
+const HEAD_NOTES = [...new Set(LAUNCH_MAP.cells.map((cell) => cell.startMidiNote))]
+const STAB_UNION = [...new Set([...HEAD_NOTES, ...HEAD_NOTES.map((n) => n - 12)])]
+  .filter((n) => n >= 0 && n <= 127)
+  .sort((a, b) => a - b)
 
 const ZONES = [0, 1, 2, 3, 4, 5] as const
 
@@ -60,9 +67,11 @@ describe.each(INSTRUMENT_TEXTURE_IDS)('bank completeness — %s', (textureId) =>
 
   it('holds a stab for exactly the accent-reachable note union', () => {
     expect(Object.keys(bank.stabs).sort()).toEqual(STAB_UNION.map((n) => stabKey(n)).sort())
-    // The verified launch golden — 18 notes (spec §2). If the domain's
-    // pools change, the render tool must be re-run; this line names it.
-    expect(STAB_UNION).toHaveLength(18)
+    // The verified launch golden: 18 head notes + their octave-down twins,
+    // deduped = 25. If the domain's pools change, the render tool must be
+    // re-run; this line names it.
+    expect(HEAD_NOTES).toHaveLength(18)
+    expect(STAB_UNION).toHaveLength(25)
   })
 
   it('holds every drum one-shot (kick, snare, rim, tom, crash)', () => {

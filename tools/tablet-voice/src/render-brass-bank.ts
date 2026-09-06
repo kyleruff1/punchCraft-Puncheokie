@@ -142,10 +142,16 @@ export function buildBankPlan(): BankPlan {
   const map = compileBrassCube(launchPatchById('dorian-brass-cube'))
   const textureIds = Object.keys(TEXTURES).sort()
 
-  // Accent-reachable notes: the stab is the only one-shot the engine plays,
-  // and it can only ever be a cell's startMidiNote (rotated notes beyond
-  // index 0 are only arpeggiated — the beds voice those).
-  const stabNotes = [...new Set(map.cells.map((cell) => cell.startMidiNote))].sort((a, b) => a - b)
+  // Accent-reachable notes. Every family's stab role resolves to some
+  // naturalPool[k], and naturalPool[k] IS the entry tone of cell (chord,
+  // Rk) — so the whole role axis is covered by the cells' startMidiNotes.
+  // BODY shots then drop an octave (M40-25), and those notes are NOT in
+  // that set, so a body stab would find no clip and sound silent. Include
+  // the octave-down range: 18 notes becomes 25, about +0.2 MB per texture.
+  const headNotes = [...new Set(map.cells.map((cell) => cell.startMidiNote))]
+  const stabNotes = [...new Set([...headNotes, ...headNotes.map((n) => n - 12)])]
+    .filter((n) => n >= 0 && n <= 127)
+    .sort((a, b) => a - b)
 
   const accentGateSamples = map.accentGateMs * 48
 

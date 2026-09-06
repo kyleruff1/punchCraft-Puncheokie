@@ -61,13 +61,14 @@ function peakOf(buffer: Float64Array): number {
 }
 
 describe('buildBankPlan', () => {
-  test('24 beds + 6 basses + 18 stabs per texture, 5 drums', () => {
+  test('24 beds + 6 basses + 25 stabs per texture, 5 drums', () => {
     expect(plan.textureIds).toEqual(['brass', 'pluck'])
     expect(plan.textures).toHaveLength(2)
     for (const texture of plan.textures) {
       expect(texture.beds).toHaveLength(24)
       expect(texture.basses).toHaveLength(6)
-      expect(texture.stabs).toHaveLength(18)
+      // 18 head notes + octave-down body twins, deduped (M40-28).
+      expect(texture.stabs).toHaveLength(25)
     }
     // Low tom added with M40-28: the uppercut's piece, so the crash can
     // be reserved for a velocity peak instead of firing on every one.
@@ -89,16 +90,22 @@ describe('buildBankPlan', () => {
     }
   })
 
-  test('stab keys equal the set of startMidiNote over the compiled cube cells', () => {
-    const compiledUnion = [...new Set(compiledMap.cells.map((cell) => cell.startMidiNote))].sort(
+  test('stab keys are the cube cells’ entry tones PLUS their octave-down body twins', () => {
+    const heads = [...new Set(compiledMap.cells.map((cell) => cell.startMidiNote))].sort(
       (a, b) => a - b,
     )
-    expect(compiledUnion).toEqual([
+    expect(heads).toEqual([
       48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 72, 74, 77, 79, 81,
     ])
+    // A body shot drops an octave (M40-25); without these the body stab
+    // would find no clip and sound silent on the tablet.
+    const expected = [...new Set([...heads, ...heads.map((n) => n - 12)])]
+      .filter((n) => n >= 0 && n <= 127)
+      .sort((a, b) => a - b)
+    expect(expected).toHaveLength(25)
     for (const texture of plan.textures) {
-      expect(texture.stabs.map((s) => s.midiNote)).toEqual(compiledUnion)
-      expect(texture.stabs.map((s) => s.key)).toEqual(compiledUnion.map((m) => `stab-${m}`))
+      expect(texture.stabs.map((s) => s.midiNote)).toEqual(expected)
+      expect(texture.stabs.map((s) => s.key)).toEqual(expected.map((m) => `stab-${m}`))
     }
   })
 })

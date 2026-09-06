@@ -38,9 +38,9 @@
  *
  * ## One-shot pool mechanics (the hard-won VoiceOutputExpo patterns)
  *
- * - Pooled preloaded players for the ACTIVE texture only (~18 stabs +
- *   4 drums ≈ 22 players + 2 playlists — far under the ~48 AudioTrack
- *   ceiling that broke this device; the jam screen runs no coach stack).
+ * - Pooled preloaded players for the ACTIVE texture only (25 stabs +
+ *   5 drums = 30 players + 2 playlists — under the ~48 AudioTrack ceiling
+ *   that broke this device; the jam screen runs no coach stack).
  *   The stab pool still wears an LRU cap (`MAX_STAB_PLAYERS`) for defense.
  * - `seekTo` is ASYNC — never `play()` after an unawaited rewind (the
  *   shllck lesson). An armed player (parked at 0) plays instantly; a
@@ -71,11 +71,15 @@ import {
 } from './voiceAssets/instrumentBankManifest'
 
 /**
- * LRU cap on the stab pool. The launch bank holds 18 stabs, so this never
- * bites today — it exists so a future, larger bank cannot recreate the
- * 48-AudioTrack exhaustion (see `MAX_RESIDENT_PLAYERS` in VoiceOutputExpo).
+ * LRU cap on the stab pool, sized to hold the whole bank with headroom.
+ * The bank grew from 18 to 25 stabs when body shots gained their
+ * octave-down notes (M40-28) — at the old cap of 24 preload EVICTED one
+ * note, so that stab took the slow recreate path on every hit. The cap
+ * still exists so a future, much larger bank cannot recreate the
+ * 48-AudioTrack exhaustion (see `MAX_RESIDENT_PLAYERS` in VoiceOutputExpo);
+ * 32 stabs + 5 drums + 2 playlists stays comfortably under it.
  */
-export const MAX_STAB_PLAYERS = 24
+export const MAX_STAB_PLAYERS = 32
 
 /**
  * Gap after a one-shot's own duration before its player is parked back at
