@@ -63,6 +63,12 @@ export const SETTINGS_KEYS = {
    * the jam-screen selections for a brass patch (brass-cube-design).
    */
   instrumentBrass: 'instrument.brass',
+  /**
+   * Puncheoke tablet instrument voice (M40-15): `{ output, texture }` —
+   * where compiled gestures sound (bridge/tablet/both) and which sample-
+   * bank texture the tablet engine plays.
+   */
+  instrumentTablet: 'instrument.tabletVoice',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

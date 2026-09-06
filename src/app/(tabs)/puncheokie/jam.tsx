@@ -21,6 +21,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
+import { InstrumentVoiceOutput } from '@audio/InstrumentVoiceOutput'
+import { INSTRUMENT_TEXTURE_IDS } from '@audio/voiceAssets/instrumentBankManifest'
 import { BridgeClient, type BridgeStatus } from '@/instrument/bridgeClient'
 import { compileBrassCube, type ArpPatternId } from '@domain/instrument/brassCube'
 import { cellAt, compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
@@ -46,7 +48,10 @@ import {
   VELOCITY_SCALE_DEFAULTS,
 } from '@domain/instrument/rollingScale'
 import { getTrackerKeepaliveSource } from '@protocol/trackerKeepalive'
-import { useInstrumentSettingsStore } from '@state/useInstrumentSettingsStore'
+import {
+  useInstrumentSettingsStore,
+  type InstrumentOutputTarget,
+} from '@state/useInstrumentSettingsStore'
 
 const KEYS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'] as const
 const TOPOLOGIES: readonly TopologyId[] = ['parallel', 'bass-lead', 'root-interval']
@@ -63,6 +68,7 @@ const BRASS_RETRIGGERS: readonly RetriggerPolicy[] = [
   'continuous-morph',
 ]
 const BRASS_BACKENDS: readonly ArpeggiatorBackend[] = ['punchbridge-tick', 'studio-one-note-fx']
+const OUTPUT_TARGETS: readonly InstrumentOutputTarget[] = ['bridge', 'tablet', 'both']
 
 type Sensitivity = 'high' | 'standard'
 
@@ -120,6 +126,10 @@ export default function JamScreen(): React.JSX.Element {
   const brassRetrigger = useInstrumentSettingsStore((s) => s.brassRetrigger)
   const brassBackend = useInstrumentSettingsStore((s) => s.brassBackend)
   const setBrassOptions = useInstrumentSettingsStore((s) => s.setBrassOptions)
+  const outputTarget = useInstrumentSettingsStore((s) => s.outputTarget)
+  const textureId = useInstrumentSettingsStore((s) => s.textureId)
+  const setOutputTarget = useInstrumentSettingsStore((s) => s.setOutputTarget)
+  const setTextureId = useInstrumentSettingsStore((s) => s.setTextureId)
   const [overrides, setOverrides] = useState<JamOverrides>({})
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
   const [rttMs, setRttMs] = useState<number | null>(null)
@@ -172,6 +182,39 @@ export default function JamScreen(): React.JSX.Element {
   const liveCtxRef = useRef({ patch, cubeMap, brassMap })
   liveCtxRef.current = { patch, cubeMap, brassMap }
 
+  // Tablet instrument voice (M40-15). The engine is created lazily on the
+  // first non-bridge OUTPUT selection and lives until unmount; the punch
+  // handler reads the routing through a ref (the liveCtxRef pattern) so
+  // the [] keepalive subscription sees every flip.
+  const engineRef = useRef<InstrumentVoiceOutput | null>(null)
+  const outputRef = useRef(outputTarget)
+  outputRef.current = outputTarget
+
+  useEffect(() => {
+    if (outputTarget === 'bridge') {
+      // Back to the PC rig: silence the tablet, keep the pools warm for
+      // the next flip.
+      engineRef.current?.panic()
+      return
+    }
+    if (engineRef.current === null) {
+      engineRef.current = new InstrumentVoiceOutput()
+      void engineRef.current.preload(textureId)
+    } else {
+      // Same-id calls no-op inside; a real change re-preloads the pools
+      // and rebuilds any sounding loops from the new texture's bank.
+      engineRef.current.setTexture(textureId)
+    }
+  }, [outputTarget, textureId])
+
+  useEffect(
+    () => () => {
+      engineRef.current?.release()
+      engineRef.current = null
+    },
+    [],
+  )
+
   useEffect(() => {
     const client = new BridgeClient({
       onStatus: (status) => setBridgeStatus(status),
@@ -223,7 +266,11 @@ export default function JamScreen(): React.JSX.Element {
       )
       if (!result) return
       sessionRef.current = result.state
-      bridgeRef.current?.sendGesture(result.gesture)
+      // Gesture tee (M40-15): default 'bridge' keeps today's path
+      // byte-for-byte; 'tablet' mutes the wire; 'both' feeds both rigs.
+      const out = outputRef.current
+      if (out !== 'tablet') bridgeRef.current?.sendGesture(result.gesture)
+      if (out !== 'bridge') engineRef.current?.handleGesture(result.gesture)
       const { leftZone, rightZone, activityLayer } = result.gesture.cube
       setLiveCount((n) => n + 1)
       const { accent, quantized } = result.gesture
@@ -260,6 +307,20 @@ export default function JamScreen(): React.JSX.Element {
     onPress: () => setSensitivity((s) => (s === 'high' ? 'standard' : 'high')),
   }
 
+  // Tablet instrument voice (M40-15) — both patch families carry these: a
+  // legacy patch on tablet output still plays drum one-shots (selection
+  // returns nulls for bed/bass/stab, which is coherent).
+  const outputRow = {
+    label: 'OUTPUT',
+    value: outputTarget.toUpperCase(),
+    onPress: () => setOutputTarget(cycle(OUTPUT_TARGETS, outputTarget)),
+  }
+  const textureRow = {
+    label: 'TEXTURE',
+    value: textureId,
+    onPress: () => setTextureId(cycle(INSTRUMENT_TEXTURE_IDS, textureId)),
+  }
+
   // A brass-cube patch swaps the legacy music rows for the brass options
   // (persisted store-side); SENSITIVITY applies to both patch families.
   const brassRows: Array<{ label: string; value: string; onPress: () => void }> = patch.brassCube
@@ -280,6 +341,8 @@ export default function JamScreen(): React.JSX.Element {
           onPress: () => setBrassOptions({ backend: cycle(BRASS_BACKENDS, brassBackend) }),
         },
         sensitivityRow,
+        outputRow,
+        textureRow,
       ]
     : []
 
@@ -327,6 +390,8 @@ export default function JamScreen(): React.JSX.Element {
         setOverrides((o) => ({ ...o, transitionMode: cycle(TRANSITIONS, patch.transition.mode) })),
     },
     sensitivityRow,
+    outputRow,
+    textureRow,
   ]
 
   const selectorRows = patch.brassCube ? brassRows : legacyRows
@@ -345,7 +410,10 @@ export default function JamScreen(): React.JSX.Element {
         <Text style={styles.meta}>{rttMs == null ? 'rtt —' : `rtt ${rttMs}ms`}</Text>
         <Text style={styles.meta}>{`punches ${liveCount}`}</Text>
         <Pressable
-          onPress={() => bridgeRef.current?.sendPanic()}
+          onPress={() => {
+            bridgeRef.current?.sendPanic()
+            engineRef.current?.panic()
+          }}
           style={styles.panicBtn}
           testID="jam-panic"
         >

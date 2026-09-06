@@ -6,6 +6,10 @@
  */
 import { create } from 'zustand'
 
+import {
+  INSTRUMENT_TEXTURE_IDS,
+  type InstrumentTextureId,
+} from '@audio/voiceAssets/instrumentBankManifest'
 import { type ArpPatternId } from '@domain/instrument/brassCube'
 import type { ArpeggiatorBackend, RetriggerPolicy } from '@domain/instrument/gestureSchema'
 import { DEFAULT_PATCH_ID, LAUNCH_PATCHES } from '@domain/instrument/punchPatch'
@@ -13,6 +17,19 @@ import { SETTINGS_KEYS } from '@storage/migrations/006_app_settings'
 import type { SettingsRepository } from '@storage/repositories/SettingsRepository'
 
 export const DEFAULT_BRIDGE_URL = 'ws://192.168.86.35:8787'
+
+/** Where compiled gestures sound (M40-15): the PC rig, the tablet, or both. */
+export type InstrumentOutputTarget = 'bridge' | 'tablet' | 'both'
+
+const OUTPUT_TARGETS: readonly InstrumentOutputTarget[] = ['bridge', 'tablet', 'both']
+
+/** The persisted tablet-voice blob (one JSON object under instrumentTablet). */
+interface InstrumentTabletBlob {
+  output: InstrumentOutputTarget
+  texture: InstrumentTextureId
+}
+
+const DEFAULT_TABLET_BLOB: InstrumentTabletBlob = { output: 'bridge', texture: 'brass' }
 
 /** The persisted brass-cube blob (one JSON object under instrumentBrass). */
 export interface BrassOptions {
@@ -46,12 +63,17 @@ export interface InstrumentSettingsState {
   brassPatternId: ArpPatternId
   brassRetrigger: RetriggerPolicy
   brassBackend: ArpeggiatorBackend
+  /** Tablet instrument voice (M40-15): gesture routing + sample texture. */
+  outputTarget: InstrumentOutputTarget
+  textureId: InstrumentTextureId
   /** True once a load has run, so a screen never writes over unread values. */
   loaded: boolean
   load(repo: SettingsRepository): void
   setPatchId(patchId: string): void
   setBridgeUrl(url: string): void
   setBrassOptions(partial: Partial<BrassOptions>): void
+  setOutputTarget(target: InstrumentOutputTarget): void
+  setTextureId(textureId: InstrumentTextureId): void
 }
 
 let repository: SettingsRepository | null = null
@@ -66,6 +88,8 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
   brassPatternId: DEFAULT_BRASS_OPTIONS.patternId,
   brassRetrigger: DEFAULT_BRASS_OPTIONS.retrigger,
   brassBackend: DEFAULT_BRASS_OPTIONS.backend,
+  outputTarget: DEFAULT_TABLET_BLOB.output,
+  textureId: DEFAULT_TABLET_BLOB.texture,
   loaded: false,
 
   load(repo) {
@@ -77,12 +101,18 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
       url: DEFAULT_BRIDGE_URL,
     })
     const brass = repo.read<BrassOptions>(SETTINGS_KEYS.instrumentBrass, DEFAULT_BRASS_OPTIONS)
+    const tablet = repo.read<InstrumentTabletBlob>(
+      SETTINGS_KEYS.instrumentTablet,
+      DEFAULT_TABLET_BLOB,
+    )
     set({
       patchId: normalizePatchId(patch.patchId),
       bridgeUrl: bridge.url,
       brassPatternId: oneOf(ARP_PATTERN_IDS, brass.patternId, DEFAULT_BRASS_OPTIONS.patternId),
       brassRetrigger: oneOf(RETRIGGER_POLICIES, brass.retrigger, DEFAULT_BRASS_OPTIONS.retrigger),
       brassBackend: oneOf(ARP_BACKENDS, brass.backend, DEFAULT_BRASS_OPTIONS.backend),
+      outputTarget: oneOf(OUTPUT_TARGETS, tablet.output, DEFAULT_TABLET_BLOB.output),
+      textureId: oneOf(INSTRUMENT_TEXTURE_IDS, tablet.texture, DEFAULT_TABLET_BLOB.texture),
       loaded: true,
     })
   },
@@ -112,6 +142,23 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
     })
     repository?.write(SETTINGS_KEYS.instrumentBrass, merged)
   },
+
+  setOutputTarget(target) {
+    set({ outputTarget: target })
+    // Merged blob, the setBrassOptions pattern: one key, both fields.
+    repository?.write(SETTINGS_KEYS.instrumentTablet, {
+      output: target,
+      texture: get().textureId,
+    } satisfies InstrumentTabletBlob)
+  },
+
+  setTextureId(textureId) {
+    set({ textureId })
+    repository?.write(SETTINGS_KEYS.instrumentTablet, {
+      output: get().outputTarget,
+      texture: textureId,
+    } satisfies InstrumentTabletBlob)
+  },
 }))
 
 /** Reset for tests — the module-level repository handle outlives a render. */
@@ -123,6 +170,8 @@ export function __resetInstrumentSettingsForTests(): void {
     brassPatternId: DEFAULT_BRASS_OPTIONS.patternId,
     brassRetrigger: DEFAULT_BRASS_OPTIONS.retrigger,
     brassBackend: DEFAULT_BRASS_OPTIONS.backend,
+    outputTarget: DEFAULT_TABLET_BLOB.output,
+    textureId: DEFAULT_TABLET_BLOB.texture,
     loaded: false,
   })
 }
