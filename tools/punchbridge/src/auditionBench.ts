@@ -160,7 +160,10 @@ async function main(): Promise<void> {
   const field = compileHarmonicField(patch.id, patch.harmonicField!, brassMap)
 
   const seedArg = arg('--seed')
-  const seed = seedArg ? Number.parseInt(seedArg, 10) : 20260906
+  // A FRESH seed per run by default, printed so any run can be replayed
+  // with --seed. A constant default would make "run it again" replay the
+  // identical order, which is worthless once you have heard it once.
+  const seed = seedArg ? Number.parseInt(seedArg, 10) : Date.now() % 100000
   // Blind by DEFAULT, and re-ordered per pass: one shared order would mean
   // that after pass 1 the listener knows every answer, and passes 2-4 stop
   // testing anything. `--fixed` restores the printed diagnostic order for
