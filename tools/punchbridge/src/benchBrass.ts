@@ -21,7 +21,8 @@ import {
   emptySessionState,
   type InstrumentSessionState,
 } from '../../../src/domain/instrument/gestureCompiler'
-import type { MusicalPunchInput } from '../../../src/domain/instrument/gestureSchema'
+import type { MusicalPunchInput, StrikeToken } from '../../../src/domain/instrument/gestureSchema'
+import { strikeSignatureKeyOf } from '../../../src/domain/instrument/strikeArticulationCatalog'
 import { compileHarmonicField } from '../../../src/domain/instrument/harmonicField'
 import { launchPatchById } from '../../../src/domain/instrument/punchPatch'
 import { openBestBackend } from './midiBackend'
@@ -40,6 +41,8 @@ interface BenchPunch {
   velocity01: number
   acceleration01: number
   velocityRaw: number
+  /** Guided-score identity (M40-20): drives the twelve signatures. */
+  token?: StrikeToken
   note?: string
 }
 
@@ -121,9 +124,66 @@ for (let i = 0; i < 10; i += 1) {
 
 const V2_PANIC_AT_MS = 30000
 
+/**
+ * The TECHNIQUE rehearsal (M40-20/21/22): guided-score tokens through the
+ * real catalog, motif compiler, and bridge — the desk-side version of the
+ * Twelve-Signature Audition. Each family is played twice in a row so its
+ * contour is unmistakable before the next one arrives, then a real
+ * combination shows the phrase becoming ONE motif rather than four
+ * unrelated hits.
+ *
+ * Every punch of a hand uses the SAME velocity, so the harmonic cell stays
+ * as still as the orbit allows and what changes is the TECHNIQUE.
+ */
+const techniqueScript: BenchPunch[] = []
+let tAt = 0
+const say = (token: StrikeToken, note?: string): void => {
+  const hand = strikeSignatureKeyOf(token).hand === 'physical-left' ? 'left' : 'right'
+  techniqueScript.push({
+    atMs: tAt,
+    hand,
+    // Constant per hand: the cell holds still, the technique does the work.
+    velocity01: hand === 'left' ? 0.42 : 0.58,
+    acceleration01: 0.7,
+    velocityRaw: hand === 'left' ? 48 : 62,
+    token,
+    ...(note ? { note } : {}),
+  })
+  tAt += 1400
+}
+
+// Establish the world, then the four families, twice each.
+say('1', 'JAB (1) — entry-tone stab, tight snap, two adjacent steps')
+say('1')
+say('2', 'CROSS (2) — fifth/anchor stab, skip and LAND, harder accent')
+say('2')
+say('3', 'HOOK (3) — lateral wah sweep, reverse into a pendulum arc')
+say('3')
+say('5', 'UPPERCUT (5) — rising scoop, octave lift, settles in the pool')
+say('5')
+// Body shots: the SAME ideas an octave lower and darker — never a new scale.
+say('2B', 'BODY CROSS (2B) — the same idea an octave down, darker, heavier')
+say('2B')
+// The combination: ONE coherent motif at phrase close, not four hits.
+// A phrase window is 960 ticks = 1000 ms, so the four punches must sit
+// inside a single window — start on a window boundary and space them
+// 220 ms apart, or the phrase splits and compiles as two motifs.
+tAt = Math.ceil((tAt + 800) / 1000) * 1000
+const comboStart = tAt
+const combo: StrikeToken[] = ['1', '2', '3', '2']
+combo.forEach((token, i) => {
+  tAt = comboStart + i * 220
+  say(token, i === 0 ? 'COMBINATION 1-2-3-2 — four punches become ONE eight-step motif' : undefined)
+})
+// Let the committed motif play for a couple of pulses before the panic.
+tAt = comboStart + 4000
+
+const TECHNIQUE_PANIC_AT_MS = tAt + 2000
+
 async function main(): Promise<void> {
   const midiArg = arg('--midi')
-  const v2 = process.argv.includes('--v2')
+  const techniqueMode = process.argv.includes('--technique')
+  const v2 = techniqueMode || process.argv.includes('--v2')
   const midi = openBestBackend([...(midiArg ? [midiArg] : []), 'punchbridge', 'loopmidi', 'wavetable'])
   const renderer = new VoiceRenderer(midi)
   renderer.prepareVoices()
@@ -137,15 +197,19 @@ async function main(): Promise<void> {
       : undefined
   let state: InstrumentSessionState = emptySessionState()
 
-  const runScript = v2 ? v2Script : script
-  const panicAt = v2 ? V2_PANIC_AT_MS : PANIC_AT_MS
+  const runScript = techniqueMode ? techniqueScript : v2 ? v2Script : script
+  const panicAt = techniqueMode
+    ? TECHNIQUE_PANIC_AT_MS
+    : v2
+      ? V2_PANIC_AT_MS
+      : PANIC_AT_MS
 
   const started = Date.now()
   const wait = (untilMs: number): Promise<void> =>
     new Promise((r) => setTimeout(r, Math.max(0, untilMs - (Date.now() - started))))
 
   console.log(
-    `punchbridge bench: ${v2 ? 'Harmonic Field v2 commit grid' : 'Dorian Brass Cube'} via "${midi.portName}" — ~${panicAt / 1000}s`,
+    `punchbridge bench: ${techniqueMode ? 'Twelve-Signature technique' : v2 ? 'Harmonic Field v2 commit grid' : 'Dorian Brass Cube'} via "${midi.portName}" — ~${Math.round(panicAt / 1000)}s`,
   )
   for (const p of runScript) {
     await wait(p.atMs)
@@ -155,6 +219,9 @@ async function main(): Promise<void> {
       receivedMonotonicTimeMs: p.atMs,
       velocityRaw: p.velocityRaw,
       recovered: false,
+      // A guided score's token is what licenses the full signature; without
+      // one the compiler stays deliberately generic (M40-20 policy).
+      ...(p.token ? { expectedStrikeToken: p.token } : {}),
     }
     const result = compileGesture(input, state, {
       sessionId: 'bench-brass',
@@ -178,6 +245,9 @@ async function main(): Promise<void> {
   if (telemetry) {
     console.log(
       `punchbridge bench telemetry: commits ${telemetry.commits}, last commit lag ${String(telemetry.lastCommitLagTicks)} ticks, skipped steps ${telemetry.skippedArpSteps}, max scheduler lateness ${telemetry.maxLatenessMs.toFixed(1)} ms`,
+    )
+    console.log(
+      `punchbridge bench technique: mutated steps ${telemetry.mutatedSteps}, superseded mutations ${telemetry.supersededMutations}, pattern commits ${telemetry.patternCommits}, scene changes ${telemetry.sceneChanges}, final scene ${telemetry.scene}`,
     )
   }
   await new Promise((r) => setTimeout(r, 300))

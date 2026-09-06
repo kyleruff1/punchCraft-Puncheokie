@@ -134,6 +134,13 @@ const PHRASE_GRID: QuantizationGrid = { phaseTick: 0, intervalTicks: PHRASE_WIND
 /** One bar — the arrangement rail's only legal transition point. */
 const BAR_GRID: QuantizationGrid = { phaseTick: 0, intervalTicks: BAR_TICKS }
 
+/**
+ * Punches a phrase must contain before it may recommit the persistent
+ * pattern (design §10 + the catalog's requiredEvidence). One punch is a
+ * micro-mutation; a PATTERN needs an argument.
+ */
+const MIN_PATTERN_EVIDENCE = 2
+
 interface CommittedState {
   cellId: string
   chordName: string
@@ -372,6 +379,12 @@ export class BrassArpEngine {
       lifetimeTicks: PHRASE_WINDOW_TICKS,
     })
     this.lastMotif = motif
+
+    // Evidence gate (design §10, "never thrash the selector"): the full
+    // topology changes only when a phrase actually ARGUES for it. A lone
+    // punch is a micro-mutation, not a new pattern — without this the
+    // selector recommits on almost every pulse.
+    if (abstract.sourceTokens.length < MIN_PATTERN_EVIDENCE) return
 
     const counts = new Map<string, number>()
     for (const token of abstract.sourceTokens) {

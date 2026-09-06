@@ -175,6 +175,27 @@ test('a ten-punch flurry in one pulse commits AT MOST one pattern', () => {
   assert.ok((engine.lastTechniqueMotif?.sourceStrikeEventIds.length ?? 0) >= 10)
 })
 
+test('a LONE punch never recommits the pattern — the selector must not thrash', () => {
+  const { scheduler, engine } = makeEngine()
+  engine.applyGesture(q(), 96, { eventId: 'p0' })
+  // One identified punch per pulse, for several pulses.
+  for (let pulse = 0; pulse < 4; pulse += 1) {
+    engine.applyGesture(q(), 96, { eventId: `solo${pulse}`, technique: technique('1') })
+    scheduler.advance(PULSE_MS)
+  }
+  assert.equal(
+    engine.telemetry().patternCommits,
+    0,
+    'a single-punch phrase recommitted the persistent pattern',
+  )
+  // Two in one pulse DOES argue for a pattern.
+  engine.applyGesture(q(), 96, { eventId: 'a', technique: technique('1') })
+  scheduler.advance(120)
+  engine.applyGesture(q(), 96, { eventId: 'b', technique: technique('1') })
+  scheduler.advance(PULSE_MS)
+  assert.equal(engine.telemetry().patternCommits, 1)
+})
+
 test('generic (free-jam) punches never commit a pattern — no technique claim', () => {
   const { scheduler, engine } = makeEngine()
   engine.applyGesture(q(), 96, { eventId: 'p0' })
