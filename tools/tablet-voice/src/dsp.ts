@@ -19,6 +19,7 @@ export const DRUM_SAMPLES = {
   kick: 19200,
   snare: 12000,
   rim: 5760,
+  tom: 21600,
   crash: 72000,
 } as const
 
@@ -216,6 +217,27 @@ export function renderKick(): Float64Array {
   }
   applyEndFade(out, 480)
   for (let n = 0; n < len; n += 1) out[n] = (out[n] ?? 0) * 0.7 + 0
+  return out
+}
+
+/**
+ * Low tom (MIDI 45): the uppercut's rise. A kick's sine sweep moved up a
+ * register and given a longer tail — pitched enough to read as a lift,
+ * dark enough not to compete with the snare; 450 ms.
+ */
+export function renderTom(): Float64Array {
+  const len = DRUM_SAMPLES.tom
+  const out = new Float64Array(len)
+  let phase = 0
+  for (let n = 0; n < len; n += 1) {
+    const t = n / SAMPLE_RATE
+    // 165 -> 88 Hz: a clear downward pitch drop, the tom's signature.
+    const f = 88 + 77 * Math.exp(-t / 0.13)
+    out[n] = Math.sin(phase) * Math.exp(-t / 0.19)
+    phase += (2 * Math.PI * f) / SAMPLE_RATE
+  }
+  applyEndFade(out, 480)
+  for (let n = 0; n < len; n += 1) out[n] = (out[n] ?? 0) * 0.62 + 0
   return out
 }
 

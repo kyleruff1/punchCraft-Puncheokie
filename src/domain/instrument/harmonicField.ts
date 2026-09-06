@@ -33,6 +33,12 @@ import {
   type CompiledBrassCubeMap,
 } from './brassCube'
 import { mapHashOf } from './gestureSchema'
+import {
+  reportStabDistinctness,
+  resolveStabRoles,
+  type ResolvedStabRoles,
+  type StabDistinctnessReport,
+} from './stabRoleResolver'
 import type { CommitIntervalTicks } from './transportGrid'
 
 /** Bump when compilation SEMANTICS change (not on layout refactors). */
@@ -326,6 +332,21 @@ export interface CompiledHarmonicField {
   brass: CompiledBrassCubeMap
   /** 36, row-major cells[x*6 + y] — same convention as the brass map. */
   cells: readonly HarmonicFieldCell[]
+  /**
+   * Per-cell family stab pitches (M40-28), row-major beside `cells`.
+   * Resolved ONCE here so the runtime does no role arithmetic: a pool may
+   * place equivalent roles in different octaves, and the entry tone is
+   * user-selected, so hardcoded pool indices collide.
+   */
+  stabRoles: readonly ResolvedStabRoles[]
+  /**
+   * Where two families were forced onto the same pitch. The compiler does
+   * not promise universal distinctness — a six-tone pool cannot always
+   * separate six families — it promises to try and to make the failures
+   * visible, so the difference can be carried by gate/filter/pan rather
+   * than by the drum channel alone.
+   */
+  stabCollisions: readonly StabDistinctnessReport[]
   /** 'fromChordId>toChordId' → target MIDI note per NATURAL-pool slot (6). */
   voiceLeadingTable: Readonly<Record<string, readonly number[]>>
 }
@@ -473,6 +494,18 @@ export function compileHarmonicField(
     }
   }
 
+  // Family stab pitches, resolved per cell against that cell's own pool and
+  // its user-selected entry tone (M40-28).
+  const stabRoles: ResolvedStabRoles[] = []
+  const stabCollisions: StabDistinctnessReport[] = []
+  for (const cell of cells) {
+    const brassCell = brassCellAt(brass, cell.x, cell.y)
+    const roles = resolveStabRoles(brassCell.naturalPool, cell.entryTone)
+    stabRoles.push(roles)
+    const report = reportStabDistinctness(cell.cellId, roles)
+    if (report.collisions.length > 0) stabCollisions.push(report)
+  }
+
   const voiceLeadingTable: Record<string, readonly number[]> = {}
   section.nodes.forEach((from, fi) => {
     const fromPool = brassCellAt(brass, fi, 0).naturalPool
@@ -506,6 +539,7 @@ export function compileHarmonicField(
     })),
     edges: section.edges,
     voiceLeading: voiceLeadingTable,
+    stabRoles,
     freedom: section.freedom,
     navigation: section.navigation,
     commitIntervalTicks: section.commitIntervalTicks,
@@ -521,8 +555,23 @@ export function compileHarmonicField(
     section,
     brass,
     cells,
+    stabRoles,
+    stabCollisions,
     voiceLeadingTable,
   }
+}
+
+/** The resolved family stab pitches for a cell, both axes clamped. */
+export function stabRolesAt(
+  field: CompiledHarmonicField,
+  x: number,
+  y: number,
+): ResolvedStabRoles {
+  const cx = Math.max(0, Math.min(5, x))
+  const cy = Math.max(0, Math.min(5, y))
+  const roles = field.stabRoles[cx * 6 + cy]
+  if (!roles) throw new Error(`harmonic field stab roles (${cx},${cy}) missing`)
+  return roles
 }
 
 /** Cell lookup, both axes clamped — mirrors brassCellAt. */

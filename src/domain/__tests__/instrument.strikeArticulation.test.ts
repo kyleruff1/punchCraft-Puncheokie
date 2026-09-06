@@ -58,7 +58,7 @@ describe('the twelve signatures (design §4)', () => {
     expect(jab.emphasis).toBe('setup')
     expect(jab.immediate).toEqual({
       stabRole: 'entry-tone',
-      baseGateMs: 110,
+      baseGateMs: 100,
       velocityGain: 1,
       filterShape: 'snap',
       drumClass: 'light',
@@ -74,7 +74,7 @@ describe('the twelve signatures (design §4)', () => {
     expect(cross.key.family).toBe('straight') // same family…
     expect(cross.emphasis).toBe('power')
     // …different stab, different contour, opposite rotation, harder accent.
-    expect(cross.immediate.stabRole).toBe('fifth-or-anchor')
+    expect(cross.immediate.stabRole).toBe('power-anchor')
     expect(jab.immediate.stabRole).toBe('entry-tone')
     expect(cross.microArp.operations).toEqual(['skip', 'land-fifth'])
     expect(cross.microArp.rotation).toBe(1)
@@ -125,11 +125,19 @@ describe('family contours (design §3)', () => {
   })
 
   it('gate widens straight → hook → uppercut, and each family has its own filter shape + drum class', () => {
+    // Gate is per-EMPHASIS (M40-25b); compare the setup variants, and pin
+    // that within a family the power variant sits LONGER than the setup —
+    // the jab/cross length difference that stops them blurring.
     const gates = (['straight', 'hook', 'uppercut'] as const).map(
-      (f) => STRIKE_FAMILY_PROFILES[f].immediate.baseGateMs,
+      (f) => STRIKE_FAMILY_PROFILES[f].setup.baseGateMs,
     )
     expect(gates[0]).toBeLessThan(gates[1]!)
     expect(gates[1]).toBeLessThan(gates[2]!)
+    for (const family of ['straight', 'hook', 'uppercut'] as const) {
+      expect(STRIKE_FAMILY_PROFILES[family].power.baseGateMs).toBeGreaterThan(
+        STRIKE_FAMILY_PROFILES[family].setup.baseGateMs,
+      )
+    }
     expect(
       (['straight', 'hook', 'uppercut'] as const).map(
         (f) => STRIKE_FAMILY_PROFILES[f].immediate.filterShape,

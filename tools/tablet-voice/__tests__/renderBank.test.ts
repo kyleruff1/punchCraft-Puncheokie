@@ -61,7 +61,7 @@ function peakOf(buffer: Float64Array): number {
 }
 
 describe('buildBankPlan', () => {
-  test('24 beds + 6 basses + 18 stabs per texture, 4 drums', () => {
+  test('24 beds + 6 basses + 18 stabs per texture, 5 drums', () => {
     expect(plan.textureIds).toEqual(['brass', 'pluck'])
     expect(plan.textures).toHaveLength(2)
     for (const texture of plan.textures) {
@@ -69,7 +69,9 @@ describe('buildBankPlan', () => {
       expect(texture.basses).toHaveLength(6)
       expect(texture.stabs).toHaveLength(18)
     }
-    expect(plan.drums.map((d) => d.key)).toEqual(['kick', 'snare', 'rim', 'crash'])
+    // Low tom added with M40-28: the uppercut's piece, so the crash can
+    // be reserved for a velocity peak instead of firing on every one.
+    expect(plan.drums.map((d) => d.key)).toEqual(['kick', 'snare', 'rim', 'tom', 'crash'])
   })
 
   test('bed loop math is sample-exact per the activity ladder', () => {

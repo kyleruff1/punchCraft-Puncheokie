@@ -12,12 +12,17 @@
 export const bedKey = (leftZone: number, layer: number): string => `bed-L${leftZone}-A${layer}`
 export const bassKey = (leftZone: number): string => `bass-L${leftZone}`
 export const stabKey = (midiNote: number): string => `stab-${midiNote}`
-export const INSTRUMENT_DRUM_KEYS = ['kick', 'snare', 'rim', 'crash'] as const
+export const INSTRUMENT_DRUM_KEYS = ['kick', 'snare', 'rim', 'tom', 'crash'] as const
 export type InstrumentDrumKey = (typeof INSTRUMENT_DRUM_KEYS)[number]
-/** gesture.transient.note -> drum. The compiler emits 36 today; 37/38/49 are forward slots. */
+/**
+ * gesture.transient.note -> drum. The family's drum class picks the piece
+ * (M40-25/28): 37 rim = jab, 36 kick = cross, 38 snare = hook, 45 low tom =
+ * uppercut. 49 crash is RESERVED for a velocity peak, never routine.
+ */
 export const DRUM_KEY_BY_MIDI: Readonly<Record<number, InstrumentDrumKey>> = {
   36: 'kick',
   37: 'rim',
   38: 'snare',
+  45: 'tom',
   49: 'crash',
 }

@@ -74,14 +74,32 @@ describe('the exit criterion: distinct immediate hits inside ONE chord', () => {
   it('each family lands its OWN drum piece', () => {
     expect(compileToken('1').transient.note).toBe(37) // rim — the jab's tick
     expect(compileToken('3').transient.note).toBe(38) // snare — the hook
-    expect(compileToken('5').transient.note).toBe(49) // crash — the uppercut
+    expect(compileToken('5').transient.note).toBe(45) // LOW TOM — the uppercut
+    // The crash is reserved for a velocity peak, never routine (M40-28).
     expect(compileToken('2').transient.note).toBe(36) // kick — the cross
   })
 
   it('each family sits for its OWN length', () => {
-    expect(compileToken('1').accent!.gateMs).toBe(110)
-    expect(compileToken('3').accent!.gateMs).toBe(180)
-    expect(compileToken('5').accent!.gateMs).toBe(210)
+    expect(compileToken('1').accent!.gateMs).toBe(100) // bright snap
+    expect(compileToken('3').accent!.gateMs).toBe(190)
+    expect(compileToken('5').accent!.gateMs).toBe(230)
+  })
+
+  it('the cross sits notably LONGER than the jab — the pair that blurred', () => {
+    const jab = compileToken('1')
+    const cross = compileToken('2')
+    expect(cross.accent!.gateMs - jab.accent!.gateMs).toBeGreaterThanOrEqual(40)
+    // …and hits materially harder, not by a few units.
+    expect(cross.accent!.midiVelocity - jab.accent!.midiVelocity).toBeGreaterThanOrEqual(15)
+  })
+
+  it('no two families share a stab pitch in the same cell — all four differ', () => {
+    // Note the arrow: a bare `.map(compileToken)` would pass the array
+    // index as the patchId argument.
+    const four = (['1', '2', '3', '5'] as const).map((t) => compileToken(t))
+    const cell = four[0]!.quantized!.cubeCellId
+    for (const g of four) expect(g.quantized!.cubeCellId).toBe(cell)
+    expect(new Set(four.map((g) => g.accent!.midiNote)).size).toBe(4)
   })
 
   it('the rear hand hits harder than the lead at the same acceleration', () => {
@@ -129,7 +147,7 @@ describe('what must NOT change', () => {
     expect(generic.technique!.identitySource).toBe('generic')
     expect(generic.technique!.token).toBeUndefined()
     // It still gets a real articulation — a straight on the punching hand.
-    expect(generic.accent!.gateMs).toBe(110)
+    expect(generic.accent!.gateMs).toBe(100)
     expect(generic.transient.note).toBe(37)
   })
 

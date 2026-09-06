@@ -32,8 +32,17 @@ export type PhysicalHand = 'physical-left' | 'physical-right'
 
 export type StrikeTarget = 'head' | 'body'
 
-/** Where the immediate stab sits in the sounding pool (never a new chord). */
-export type StabRole = 'entry-tone' | 'fifth-or-anchor' | 'rising-scoop'
+/**
+ * Where the immediate stab sits in the sounding pool (never a new chord).
+ * One role per family so no two families can collide on pitch: the jab
+ * enters, the cross takes the fifth, the hook curves through the colour
+ * tone, the uppercut reaches for the anchor.
+ */
+export type StabRole =
+  | 'entry-tone' // jab — the cell's user-selected entry tone, always
+  | 'power-anchor' // cross — harmonic WEIGHT (fifth / upper anchor / root)
+  | 'lateral-color' // hook — harmonic COLOUR, moving sideways
+  | 'upper-extension' // uppercut — the reach upward
 
 export type FilterShape = 'snap' | 'lateral-wah' | 'rising-scoop'
 
@@ -95,8 +104,27 @@ export interface PersistentPatternArticulation {
  * Emphasis is selected by the hand's entry bias, so it stays free of any
  * stance claim (am. 11).
  */
+/**
+ * How the stab MOVES (M40-28). This is what keeps the families legible
+ * with the drum channel muted — pitch and filter motion, not just pitch
+ * choice. Rendered on the accent lane by the bridge; the tablet's
+ * pre-rendered one-shots cannot express arcs today (see #355).
+ */
+export interface StabMotion {
+  /** Semitones the stab starts BELOW its target — the uppercut's scoop. */
+  scoopSemitones: number
+  /** How long the scoop takes to arrive. 0 disables it. */
+  scoopMs: number
+  /** Cents the stab approaches from ABOVE — the cross's impact settle. */
+  settleCents: number
+  /** Multiplies the wah peak: the hook's wide lateral arc. 1 = normal. */
+  filterArc: number
+}
+
 export interface EmphasisVariant {
   stabRole: StabRole
+  /** The family's pitch/filter gesture on the immediate hit. */
+  motion: StabMotion
   operations: readonly ArpOperationName[]
   maxSteps: 1 | 2 | 3
   /**
@@ -106,11 +134,20 @@ export interface EmphasisVariant {
    * piece and leave 'power' unused by anything.
    */
   drumClass: DrumClass
+  /**
+   * Gate is per-EMPHASIS too. A family-level gate made the jab and the
+   * cross sit for the identical 110 ms, which is most of why they blurred:
+   * "short bright entry-tone stab" and "strong … stab, land firmly" are
+   * different lengths, not just different pitches.
+   */
+  baseGateMs: number
+  /** Multiplies the accent on top of family character and hand strength. */
+  accentGain: number
 }
 
 export interface StrikeArticulationProfile {
   family: StrikeFamily
-  immediate: Omit<ImmediateArticulation, 'stabRole' | 'drumClass'>
+  immediate: Omit<ImmediateArticulation, 'stabRole' | 'drumClass' | 'baseGateMs'>
   /** Selected by the hand's entryBias: −1 → setup, +1 → power. */
   setup: EmphasisVariant
   power: EmphasisVariant
@@ -127,7 +164,6 @@ export const STRIKE_FAMILY_PROFILES: Readonly<Record<StrikeFamily, StrikeArticul
   straight: {
     family: 'straight',
     immediate: {
-      baseGateMs: 110,
       velocityGain: 1,
       filterShape: 'snap',
       octaveOffset: 0,
@@ -135,10 +171,29 @@ export const STRIKE_FAMILY_PROFILES: Readonly<Record<StrikeFamily, StrikeArticul
     },
     // 1 · Lead jab: "Short bright entry-tone stab" / "Step upward through
     // two adjacent legal tones".
-    setup: { stabRole: 'entry-tone', operations: ['advance', 'advance'], maxSteps: 2, drumClass: 'light' },
+    setup: {
+      stabRole: 'entry-tone',
+      operations: ['advance', 'advance'],
+      maxSteps: 2,
+      drumClass: 'light',
+      // Jab: almost no motion — a clear, dry punctuation.
+      motion: { scoopSemitones: 0, scoopMs: 0, settleCents: 0, filterArc: 0.9 },
+      baseGateMs: 100, // bright snap, driest of the four
+      accentGain: 1,
+    },
     // 2 · Rear cross: "Strong fifth/upper-anchor stab" / "Skip one pool
     // tone, then land firmly".
-    power: { stabRole: 'fifth-or-anchor', operations: ['skip', 'land-fifth'], maxSteps: 2, drumClass: 'power' },
+    power: {
+      stabRole: 'power-anchor',
+      operations: ['skip', 'land-fifth'],
+      maxSteps: 2,
+      drumClass: 'power',
+      // Cross: approaches from ~10 cents above and settles onto pitch —
+      // an impact weight, not a sweep.
+      motion: { scoopSemitones: 0, scoopMs: 90, settleCents: 10, filterArc: 1 },
+      baseGateMs: 140, // strong attack, a decisive landing
+      accentGain: 1.18,
+    },
     microArpRotationBase: 0,
     persistentPattern: { patternId: 'up', requiredEvidence: 2, commitQuantizationTicks: 960 },
   },
@@ -146,21 +201,32 @@ export const STRIKE_FAMILY_PROFILES: Readonly<Record<StrikeFamily, StrikeArticul
   hook: {
     family: 'hook',
     immediate: {
-      baseGateMs: 180,
       velocityGain: 1.08,
       filterShape: 'lateral-wah',
       octaveOffset: 0,
       stereoBias: 0,
     },
     // 3 · Lead hook: "Reverse into a short pendulum arc".
-    setup: { stabRole: 'fifth-or-anchor', operations: ['reverse', 'advance'], maxSteps: 3, drumClass: 'sweep' },
+    setup: {
+      stabRole: 'lateral-color',
+      operations: ['reverse', 'advance'],
+      maxSteps: 3,
+      drumClass: 'sweep',
+      // Hook: no pitch travel — a wide lateral filter arc instead.
+      motion: { scoopSemitones: 0, scoopMs: 0, settleCents: 0, filterArc: 1.45 },
+      baseGateMs: 190,
+      accentGain: 1,
+    },
     // 4 · Rear hook: "Mirrored pendulum, positive rotation" — the SAME
     // curve mirrored by the hand's rotation sign, with a firmer landing.
     power: {
-      stabRole: 'fifth-or-anchor',
+      stabRole: 'lateral-color',
       operations: ['reverse', 'advance', 'land-upper-anchor'],
       maxSteps: 3,
       drumClass: 'sweep',
+      motion: { scoopSemitones: 0, scoopMs: 0, settleCents: 0, filterArc: 1.55 },
+      baseGateMs: 205,
+      accentGain: 1.12,
     },
     microArpRotationBase: 0,
     persistentPattern: { patternId: 'pendulum', requiredEvidence: 2, commitQuantizationTicks: 960 },
@@ -169,7 +235,6 @@ export const STRIKE_FAMILY_PROFILES: Readonly<Record<StrikeFamily, StrikeArticul
   uppercut: {
     family: 'uppercut',
     immediate: {
-      baseGateMs: 210,
       velocityGain: 1.12,
       filterShape: 'rising-scoop',
       octaveOffset: 0,
@@ -177,17 +242,26 @@ export const STRIKE_FAMILY_PROFILES: Readonly<Record<StrikeFamily, StrikeArticul
     },
     // 5 · Lead uppercut: "Three-step rise with a brief octave pulse".
     setup: {
-      stabRole: 'rising-scoop',
+      stabRole: 'upper-extension',
       operations: ['advance', 'octave-pulse-up', 'advance'],
       maxSteps: 3,
       drumClass: 'lift',
+      // Uppercut: scoops UP into the target from two semitones below.
+      // The scoop's start may be chromatic — it is a transient bend; the
+      // DESTINATION is always a legal chord tone.
+      motion: { scoopSemitones: 2, scoopMs: 85, settleCents: 0, filterArc: 1.2 },
+      baseGateMs: 230,
+      accentGain: 1,
     },
     // 6 · Rear uppercut: "Rising phrase … forceful root/fifth landing".
     power: {
-      stabRole: 'rising-scoop',
+      stabRole: 'upper-extension',
       operations: ['advance', 'octave-pulse-up', 'land-fifth'],
       maxSteps: 3,
       drumClass: 'lift',
+      motion: { scoopSemitones: 2, scoopMs: 95, settleCents: 0, filterArc: 1.25 },
+      baseGateMs: 245,
+      accentGain: 1.12,
     },
     microArpRotationBase: 0,
     persistentPattern: { patternId: 'fanfare', requiredEvidence: 2, commitQuantizationTicks: 960 },
@@ -260,6 +334,8 @@ export interface ComposedStrikeSignature {
   key: StrikeSignatureKey
   /** Which variant the hand selected — the jab/cross difference. */
   emphasis: 'setup' | 'power'
+  /** The family's pitch/filter gesture on the immediate hit. */
+  motion: StabMotion
   immediate: ImmediateArticulation
   microArp: MicroArpArticulation
   persistentPattern: PersistentPatternArticulation
@@ -338,10 +414,17 @@ export function composeStrikeSignature(
     token,
     key,
     emphasis: hand.entryBias < 0 ? 'setup' : 'power',
+    // Body shots darken the arc along with everything else.
+    motion: {
+      ...variant.motion,
+      filterArc: round2(variant.motion.filterArc * target.brightnessMultiplier),
+    },
     immediate: {
       stabRole: variant.stabRole,
-      baseGateMs: Math.round(base.immediate.baseGateMs * target.gateMultiplier),
-      velocityGain: round2(base.immediate.velocityGain * hand.accentMultiplier),
+      baseGateMs: Math.round(variant.baseGateMs * target.gateMultiplier),
+      velocityGain: round2(
+        base.immediate.velocityGain * hand.accentMultiplier * variant.accentGain,
+      ),
       filterShape: base.immediate.filterShape,
       drumClass: variant.drumClass,
       // Body shots drop an octave; the hand's entry bias never changes the
@@ -417,37 +500,30 @@ export function physicalHandOf(hand: 'left' | 'right'): PhysicalHand {
   return hand === 'left' ? 'physical-left' : 'physical-right'
 }
 
-/**
- * Which pool tone a stab role sounds (M40-25). Roles are NATURAL-pool
- * slots (0 root · 2 fifth · 5 upper-anchor), matching harmonicField's
- * UNIFORM_ROLES; 'entry-tone' is the exception — it takes the ROTATED
- * entry tone so the right hand's rotation still colours the jab.
- *
- * Every naturalPool[k] is the entry tone of cell (chord, Rk), so all six
- * role notes already exist in the rendered 18-stab bank — the role axis
- * needs no new assets.
+/*
+ * NOTE: the old runtime `stabNoteFor` lived here. It is gone — family stab
+ * pitches are now resolved ONCE PER CELL at field-compile time by
+ * `stabRoleResolver.ts`, because a pool may place equivalent roles in
+ * different octaves and the entry tone is user-selected. A runtime
+ * fallback chain could not see the other families' choices, which is how
+ * the jab and the cross ended up on the same pitch.
  */
-export function stabNoteFor(
-  stabRole: StabRole,
-  pools: { naturalPool: readonly number[]; entryTone: number },
-): number {
-  switch (stabRole) {
-    case 'entry-tone':
-      return pools.entryTone
-    case 'fifth-or-anchor':
-      return pools.naturalPool[2] ?? pools.entryTone
-    case 'rising-scoop':
-      return pools.naturalPool[5] ?? pools.entryTone
-  }
-}
 
 /** Drum piece per family weight (M40-25): the drum carries the family too. */
 export const DRUM_NOTE_BY_CLASS: Readonly<Record<DrumClass, number>> = {
   light: 37, // rim / side stick — the jab's tick
   power: 36, // kick — the cross's weight
   sweep: 38, // snare — the hook's lateral push
-  lift: 49, // crash — the uppercut's rise
+  lift: 45, // LOW TOM — the uppercut's rise
 }
+
+/**
+ * The crash is RESERVED, not routine (M40-28): a crash on every uppercut
+ * would rapidly dominate the whole instrument. It replaces the family's
+ * own piece only on an exceptional event — today a new velocity peak, the
+ * same gate the whammy already rides.
+ */
+export const PEAK_DRUM_NOTE = 49
 
 /**
  * The articulation to actually play for one punch. A guided token composes

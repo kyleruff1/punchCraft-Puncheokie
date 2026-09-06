@@ -65,7 +65,7 @@ describe.each(INSTRUMENT_TEXTURE_IDS)('bank completeness — %s', (textureId) =>
     expect(STAB_UNION).toHaveLength(18)
   })
 
-  it('holds all four drum one-shots', () => {
+  it('holds every drum one-shot (kick, snare, rim, tom, crash)', () => {
     expect(Object.keys(bank.drums).sort()).toEqual([...INSTRUMENT_DRUM_KEYS].sort())
   })
 
@@ -87,7 +87,7 @@ describe.each(INSTRUMENT_TEXTURE_IDS)('bank completeness — %s', (textureId) =>
       ...Object.values(bank.stabs),
       ...Object.values(bank.drums),
     ]
-    expect(clips).toHaveLength(24 + 6 + STAB_UNION.length + 4)
+    expect(clips).toHaveLength(24 + 6 + STAB_UNION.length + INSTRUMENT_DRUM_KEYS.length)
     for (const clip of clips) {
       expect(Number.isInteger(clip.durationMs)).toBe(true)
       expect(clip.durationMs).toBeGreaterThan(0)

@@ -205,12 +205,14 @@ function makeHarness() {
 }
 
 // Pool creation order during preload: stab keys in manifest order, then the
-// four drums. The transformer flattens every wav module to `1`, so ORDER is
+// drums. The transformer flattens every wav module to `1`, so ORDER is
 // the only honest identity fakes can key on.
 const STAB_KEYS = Object.keys(INSTRUMENT_BANKS.brass.stabs)
+const DRUM_KEYS = Object.keys(INSTRUMENT_BANKS.brass.drums)
 const stabIndex = (key: string): number => STAB_KEYS.indexOf(key)
 const DRUM_BASE = STAB_KEYS.length
-const POOL_SIZE = STAB_KEYS.length + 4
+// Derived, not hardcoded: the drum bank grew a low tom with M40-28.
+const POOL_SIZE = STAB_KEYS.length + DRUM_KEYS.length
 
 // ---------------------------------------------------------------------------
 // Gesture fixtures

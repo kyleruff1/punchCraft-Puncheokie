@@ -31,11 +31,13 @@ import { HARMONIC_SCHEMA_VERSION, INSTRUMENT_SCHEMA_VERSION } from './gestureSch
 import type { TechniqueBlock } from './gestureSchema'
 import {
   DRUM_NOTE_BY_CLASS,
+  PEAK_DRUM_NOTE,
   resolveStrikeArticulation,
   resolveStrikeIdentity,
-  stabNoteFor,
   type ComposedStrikeSignature,
 } from './strikeArticulationCatalog'
+import { noteForVoice, type StabFamilyVoice } from './stabRoleResolver'
+import { stabRolesAt } from './harmonicField'
 import { msForTicks } from './transportGrid'
 import {
   activityAt,
@@ -103,6 +105,23 @@ export interface CompiledResult {
 
 function clamp(lo: number, hi: number, value: number): number {
   return Math.max(lo, Math.min(hi, value))
+}
+
+/**
+ * Which of the six resolved stab voices this signature sounds. Lead and
+ * rear hooks (and uppercuts) resolve to DIFFERENT pitches, so the hand is
+ * part of the key, not just the family.
+ */
+function stabVoiceOf(articulation: ComposedStrikeSignature): StabFamilyVoice {
+  const lead = articulation.key.hand === 'physical-left'
+  switch (articulation.key.family) {
+    case 'straight':
+      return lead ? 'jab' : 'cross'
+    case 'hook':
+      return lead ? 'leadHook' : 'rearHook'
+    case 'uppercut':
+      return lead ? 'leadUppercut' : 'rearUppercut'
+  }
 }
 
 function curveValue(curve: string, t: number): number {
@@ -280,13 +299,11 @@ export function compileGesture(
     // its weight, and how long it sits — that is what makes a jab and a
     // cross different on the immediate hit. Without an articulation the
     // accent stays exactly as it was (v1 byte-identity).
-    const stabNote = articulation
-      ? stabNoteFor(articulation.immediate.stabRole, {
-          naturalPool: brassCell.naturalPool,
-          entryTone: brassCell.startMidiNote,
-        }) +
-        12 * articulation.immediate.octaveOffset
-      : brassCell.startMidiNote
+    const stabNote =
+      articulation && ctx.field
+        ? noteForVoice(stabRolesAt(ctx.field, leftZone, rightZone), stabVoiceOf(articulation)) +
+          12 * articulation.immediate.octaveOffset
+        : brassCell.startMidiNote
     accent = {
       midiNote: clamp(0, 127, stabNote),
       midiVelocity: clamp(
@@ -404,9 +421,15 @@ export function compileGesture(
     },
     transient: {
       // The family picks the drum PIECE (M40-25): rim for the jab's tick,
-      // kick for the cross's weight, snare for the hook, crash for the
-      // uppercut's rise. Without an articulation it stays 36 (R1).
-      note: articulation ? DRUM_NOTE_BY_CLASS[articulation.immediate.drumClass] : 36,
+      // kick for the cross's weight, snare for the hook, low tom for the
+      // uppercut's rise. The crash is RESERVED for an exceptional event
+      // (a new velocity peak) rather than fired on every uppercut, which
+      // would swamp the mix. Without an articulation it stays 36 (R1).
+      note: articulation
+        ? peakFold.accent
+          ? PEAK_DRUM_NOTE
+          : DRUM_NOTE_BY_CLASS[articulation.immediate.drumClass]
+        : 36,
       // Brass patches scale the impact by the layer's ladder multiplier;
       // legacy patches keep the unscaled formula byte-for-byte (R1). A
       // body shot lands heavier through its transientGain.

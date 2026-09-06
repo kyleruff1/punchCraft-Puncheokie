@@ -26,6 +26,11 @@ import type {
   VoiceId,
   WhammyAccent,
 } from '../../../src/domain/instrument/gestureSchema'
+import {
+  composeAllStrikeSignatures,
+  type ComposedStrikeSignature,
+  type StabMotion,
+} from '../../../src/domain/instrument/strikeArticulationCatalog'
 import { bendRampPoints, whammyRampPoints, PITCH_BEND_CENTER } from './bendRamp'
 import { BrassArpEngine } from './brassArpEngine'
 import { wahEnvelope, wahRampPoints } from './expression'
@@ -39,6 +44,14 @@ import {
   type MidiOutputBackend,
 } from './midiBackend'
 import type { BridgeClock } from './server'
+
+/**
+ * Signature lookup by id — the catalog stays the single source of the
+ * family's motion values; the renderer only performs them.
+ */
+const SIGNATURE_BY_ID: ReadonlyMap<string, ComposedStrikeSignature> = new Map(
+  composeAllStrikeSignatures().map((s) => [s.signatureId, s]),
+)
 
 /** Default channels (0-based on the wire): left=1→ch2, right=2→ch3 doc-numbered. */
 export const LEFT_CHANNEL = 1
@@ -316,7 +329,12 @@ export class VoiceRenderer {
       this.emit(controlChange(arpChannel, expressionCc, gesture.voice.expression))
     }
 
-    if (gesture.accent) this.strikeAccent(gesture.accent)
+    // The family's motion rides the accent lane; the technique block names
+    // the signature, and the catalog owns the values (one source).
+    const signature = gesture.technique
+      ? SIGNATURE_BY_ID.get(gesture.technique.immediateSignatureId)
+      : undefined
+    if (gesture.accent) this.strikeAccent(gesture.accent, signature?.motion)
     this.renderTransient(gesture)
 
     // Stage only — the engine commits on the next boundary (or fires
@@ -348,10 +366,30 @@ export class VoiceRenderer {
     }
   }
 
-  /** Immediate ch4 brass stab (R6): the punch's anchor note, short gate. */
-  private strikeAccent(accent: ImmediateAccent): void {
+  /**
+   * Immediate brass stab (R6): the punch's role note, family gate — plus
+   * the family's PITCH MOTION (M40-28), which is what keeps jab / cross /
+   * hook / uppercut legible when the drum channel is muted:
+   *
+   *   uppercut — scoops UP into the target from ~2 semitones below
+   *   cross    — approaches from ~10 cents ABOVE and settles onto pitch
+   *   jab/hook — no pitch travel (the hook moves the filter instead)
+   *
+   * bendRampPoints starts at −intervalSemitones and travels to centre, so
+   * a positive interval IS a scoop and a negative one IS a settle.
+   */
+  private strikeAccent(accent: ImmediateAccent, motion?: StabMotion): void {
     const channel = Math.max(0, accent.channel - 1)
     const velocity = Math.max(1, Math.min(127, Math.round(accent.midiVelocity)))
+    if (motion && motion.scoopMs > 0 && (motion.scoopSemitones > 0 || motion.settleCents > 0)) {
+      // The wheel must be in place BEFORE the note sounds, or the attack
+      // starts on pitch and the gesture is inaudible.
+      this.startBendRamp('travel', channel, {
+        intervalSemitones: motion.scoopSemitones > 0 ? motion.scoopSemitones : -motion.settleCents / 100,
+        overshootCents: 0,
+        durationMs: motion.scoopMs,
+      })
+    }
     this.emit(noteOn(channel, accent.midiNote, velocity))
     this.scheduleOneShotOff(channel, accent.midiNote, Math.max(0, accent.gateMs))
   }
@@ -500,6 +538,14 @@ export class VoiceRenderer {
       gesture.source.acceleration01,
       gesture.source.punchRate01,
     )
+    // The family widens or narrows the arc (M40-28): the hook's lateral
+    // sweep is the widest, the jab's opening the briefest.
+    const arc = gesture.technique
+      ? SIGNATURE_BY_ID.get(gesture.technique.immediateSignatureId)?.motion.filterArc
+      : undefined
+    if (arc !== undefined && arc !== 1) {
+      envelope.peak = Math.max(0, Math.min(127, Math.round(envelope.peak * arc)))
+    }
     envelope.baseline = wah.baselineValue
     const points = wahRampPoints(envelope, WAH_STEP_MS)
     let index = 0

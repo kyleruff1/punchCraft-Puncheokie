@@ -56,6 +56,7 @@ import {
   renderRim,
   renderSawStack,
   renderSnare,
+  renderTom,
   wavBytes,
 } from './dsp'
 import { TEXTURES, type TextureDefinition } from './textures'
@@ -383,6 +384,8 @@ function renderDrum(entry: DrumPlanEntry): Float64Array {
       return renderSnare()
     case 'rim':
       return renderRim()
+    case 'tom':
+      return renderTom()
     case 'crash':
       return renderCrash()
   }
