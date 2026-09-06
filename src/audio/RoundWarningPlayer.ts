@@ -21,6 +21,7 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -101,7 +102,10 @@ export class RoundWarningPlayer {
         totalMs: safe(totalMs),
       })
     } catch (error) {
-      this.playlist = null
+      // Dispose rather than merely drop the reference: if the throw came
+      // from AFTER the field was assigned, nulling it would orphan a live
+      // native playlist with no handle left to free it.
+      this.dispose()
       logger.warn('puncheokie.warn', 'round warning playlist failed', {
         error: safe(String(error)),
       })
@@ -177,16 +181,9 @@ export class RoundWarningPlayer {
   }
 
   private dispose(): void {
-    try {
-      this.playlist?.pause()
-    } catch {
-      // Already stopped.
-    }
-    try {
-      this.playlist?.destroy()
-    } catch {
-      // Already gone.
-    }
+    // pause + destroy + release. `destroy()` alone is only a registry
+    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
     this.totalMs = 0
   }

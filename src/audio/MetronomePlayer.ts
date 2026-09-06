@@ -36,6 +36,7 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -127,12 +128,7 @@ export class MetronomePlayer {
     // New loop (first start of the workout, or a division change).
     if (this.playlist !== null) {
       this.detachStatusListener()
-      try {
-        this.playlist.pause()
-        this.playlist.destroy()
-      } catch {
-        // Already gone.
-      }
+      releaseAudioPlaylist(this.playlist)
       this.playlist = null
     }
     try {
@@ -151,6 +147,11 @@ export class MetronomePlayer {
         durationMs: safe(loop.durationMs),
       })
     } catch (error) {
+      // The throw may have come from the volume/play calls AFTER the field
+      // was assigned, in which case a live native playlist exists. Nulling
+      // the field without releasing it would orphan it permanently.
+      this.detachStatusListener()
+      releaseAudioPlaylist(this.playlist)
       this.available = false
       this.playlist = null
       this.loaded = null
@@ -223,19 +224,12 @@ export class MetronomePlayer {
    * accumulate across a rest.
    */
   stop(): void {
-    if (!this.available) return
+    // Deliberately NOT gated on `available`: a failed start can leave a
+    // playlist behind, and a teardown that refuses to run is how handles
+    // are stranded.
     this.detachStatusListener()
     this.observer = null
-    if (this.playlist !== null) {
-      try {
-        this.playlist.pause()
-        this.playlist.destroy()
-      } catch (error) {
-        logger.warn('puncheokie.metronome', 'stop failed', {
-          error: safe(String(error)),
-        })
-      }
-    }
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
     this.loaded = null
   }

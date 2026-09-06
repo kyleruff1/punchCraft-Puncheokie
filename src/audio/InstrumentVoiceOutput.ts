@@ -60,6 +60,7 @@ import {
 } from 'expo-audio'
 
 import { logger, safe } from '@/diagnostics/logger'
+import { releaseAudioPlayer, releaseAudioPlaylist } from './nativeAudioTeardown'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
 
 import { INSTRUMENT_DRUM_KEYS } from './instrumentBankKeys'
@@ -272,7 +273,10 @@ export class InstrumentVoiceOutput {
 
   /** Full teardown — called on unmount. The instance is done after this. */
   release(): void {
-    if (!this.availableFlag) return
+    // Deliberately NOT gated on `availableFlag`. `fail()` clears that flag and
+    // does its own cleanup, but a teardown that refuses to run once the engine
+    // is marked unavailable is exactly how handles get stranded — and both
+    // calls below are idempotent.
     this.destroyPlaylists()
     this.releasePools()
   }
@@ -443,14 +447,7 @@ export class InstrumentVoiceOutput {
       return
     }
     const previous = kind === 'bed' ? this.bedPlaylist : this.bassPlaylist
-    if (previous !== null) {
-      try {
-        previous.pause()
-        previous.destroy()
-      } catch {
-        // Already gone.
-      }
-    }
+    releaseAudioPlaylist(previous)
     if (kind === 'bed') {
       this.bedPlaylist = null
     } else {
@@ -479,13 +476,7 @@ export class InstrumentVoiceOutput {
   /** Pause+destroy both playlists and clear the committed keys. */
   private destroyPlaylists(): void {
     for (const playlist of [this.bedPlaylist, this.bassPlaylist]) {
-      if (playlist === null) continue
-      try {
-        playlist.pause()
-        playlist.destroy()
-      } catch {
-        // Already gone.
-      }
+      releaseAudioPlaylist(playlist)
     }
     this.bedPlaylist = null
     this.bassPlaylist = null
@@ -504,11 +495,7 @@ export class InstrumentVoiceOutput {
     }
     // A now-orphaned seek callback must never re-arm a removed player.
     slot.gen += 1
-    try {
-      slot.player.remove()
-    } catch {
-      // Already gone.
-    }
+    releaseAudioPlayer(slot.player)
   }
 
   /** Remove every pooled player. */

@@ -52,6 +52,7 @@ import {
 } from './voiceAssets/manifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 import { MetronomePlayer, type MetronomePlayerObserver } from './MetronomePlayer'
+import { releaseAudioPlayer } from './nativeAudioTeardown'
 import { MetronomeTransport } from './MetronomeTransport'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
@@ -1737,27 +1738,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.pending = []
     this.clearSequence()
     this.scheduledPhrases = []
-    try {
-      this.phrasePlayer?.remove()
-    } catch {
-      // Already gone.
-    }
+    releaseAudioPlayer(this.phrasePlayer)
     this.phrasePlayer = null
-    for (const player of this.players.values()) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.players.values()) releaseAudioPlayer(player)
     this.players.clear()
-    for (const player of this.clickScriptPlayers.values()) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.clickScriptPlayers.values()) releaseAudioPlayer(player)
     this.clickScriptPlayers.clear()
     this.clickScriptArmed.clear()
     // clickScriptGen is deliberately NOT cleared. It holds no native handle —
@@ -1766,13 +1751,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // so a stale timer from before the release would match a fresh generation
     // and write a dead player into the live cache.
     this.clickScriptPlayer = null
-    for (const player of this.oneShotPlayers) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.oneShotPlayers) releaseAudioPlayer(player)
     this.oneShotPlayers.clear()
     // Tear the metronome loop down alongside every other native
     // handle — a stranded loop after `release()` would keep clicking
