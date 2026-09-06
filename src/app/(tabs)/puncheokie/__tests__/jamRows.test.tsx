@@ -75,13 +75,16 @@ jest.mock('expo-audio', () => ({
   },
 }))
 
-const mockBridge = { gestures: [] as unknown[], panics: 0 }
+const mockBridge = { gestures: [] as unknown[], panics: 0, identities: [] as unknown[] }
 
 jest.mock('@/instrument/bridgeClient', () => ({
   BridgeClient: class {
     connect(): void {}
     disconnect(): void {}
     setMapHash(): void {}
+    setPatchIdentity(identity: unknown): void {
+      mockBridge.identities.push(identity)
+    }
     sendGesture(gesture: unknown): void {
       mockBridge.gestures.push(gesture)
     }
@@ -179,6 +182,7 @@ beforeEach(() => {
   mockAudio.audioModeCalls = 0
   mockBridge.gestures.length = 0
   mockBridge.panics = 0
+  mockBridge.identities.length = 0
   mockKeepalive.listener = null
 })
 
@@ -265,6 +269,86 @@ describe('the gesture tee', () => {
     punch(1_000)
     expect(mockBridge.gestures).toHaveLength(1)
     expect(mockAudio.playlists).toHaveLength(2)
+  })
+})
+
+describe('harmonic-field patch — the five-selection surface (M40-18 #322)', () => {
+  const useFieldPatch = (): void => {
+    useInstrumentSettingsStore.setState({ patchId: 'dorian-brass-v2' })
+  }
+
+  it('shows WORLD / FREEDOM / NAVIGATION / PATTERN / SOUND + ADVANCED; extras hidden until opened', async () => {
+    useFieldPatch()
+    const t = render()
+    for (const label of ['world', 'freedom', 'navigation', 'pattern', 'sound', 'advanced']) {
+      expect(node(t, `jam-row-${label}`)).toBeDefined()
+    }
+    expect(textUnder(t, 'jam-row-world')).toContain('dorian-brass')
+    expect(textUnder(t, 'jam-row-freedom')).toContain('safe-3x3')
+    expect(textUnder(t, 'jam-row-navigation')).toContain('orbit')
+    // Advanced set (incl. the locked OUTPUT + WINDOW) hidden until toggled.
+    expect(node(t, 'jam-row-output')).toBeUndefined()
+    expect(node(t, 'jam-row-window')).toBeUndefined()
+    expect(node(t, 'jam-row-retrigger')).toBeUndefined()
+
+    await press(t, 'jam-row-advanced')
+    expect(node(t, 'jam-row-window')).toBeDefined()
+    expect(textUnder(t, 'jam-row-window')).toContain('500 ms')
+    expect(node(t, 'jam-row-retrigger')).toBeDefined()
+    expect(node(t, 'jam-row-backend')).toBeDefined()
+    expect(node(t, 'jam-row-sensitivity')).toBeDefined()
+    expect(textUnder(t, 'jam-row-output')).toContain('locked')
+  })
+
+  it('a v1 brass patch renders yesterday’s rows unchanged — no WORLD, no ADVANCED', () => {
+    const t = render() // default dorian-brass-cube
+    expect(node(t, 'jam-row-world')).toBeUndefined()
+    expect(node(t, 'jam-row-freedom')).toBeUndefined()
+    expect(node(t, 'jam-row-advanced')).toBeUndefined()
+    expect(node(t, 'jam-row-pattern')).toBeDefined()
+    expect(node(t, 'jam-row-texture')).toBeDefined()
+  })
+
+  it('FREEDOM cycles ONLY capability values (guided-4×4 never appears)', async () => {
+    useFieldPatch()
+    const t = render()
+    await press(t, 'jam-row-freedom')
+    expect(useInstrumentSettingsStore.getState().harmonicFreedom).toBe('full-6x6')
+    expect(textUnder(t, 'jam-row-freedom')).toContain('full-6x6')
+    await press(t, 'jam-row-freedom')
+    expect(useInstrumentSettingsStore.getState().harmonicFreedom).toBe('safe-3x3')
+  })
+
+  it('a harmonic change bumps the generation: panic + a fresh identity with the new hash', async () => {
+    useFieldPatch()
+    const t = render()
+    const first = mockBridge.identities[0] as {
+      effectivePatchHash?: string
+      compiledFieldHash?: string
+      patchGeneration?: number
+    }
+    expect(first?.compiledFieldHash).toBeDefined()
+    expect(first?.patchGeneration).toBe(0)
+
+    await press(t, 'jam-row-freedom')
+    expect(mockBridge.panics).toBe(1)
+    const latest = mockBridge.identities[mockBridge.identities.length - 1] as {
+      effectivePatchHash?: string
+      patchGeneration?: number
+    }
+    expect(latest.patchGeneration).toBe(1)
+    expect(latest.effectivePatchHash).not.toBe(first.effectivePatchHash)
+  })
+
+  it('OUTPUT is locked to BRIDGE — pressing changes nothing and the wire still sounds', async () => {
+    useFieldPatch()
+    const t = render()
+    await press(t, 'jam-row-advanced')
+    await press(t, 'jam-row-output')
+    expect(useInstrumentSettingsStore.getState().outputTarget).toBe('bridge')
+    punch(1_000)
+    expect(mockBridge.gestures).toHaveLength(1)
+    expect(mockAudio.players).toHaveLength(0) // tablet engine never built
   })
 })
 

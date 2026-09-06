@@ -69,6 +69,13 @@ export const SETTINGS_KEYS = {
    * bank texture the tablet engine plays.
    */
   instrumentTablet: 'instrument.tabletVoice',
+  /**
+   * Puncheoke harmonic-field settings (M40-18): versioned blob
+   * `{ schemaVersion: 1, freedom, navigation, commitIntervalTicks }` —
+   * the FREEDOM/NAVIGATION/WINDOW selections a field patch folds into
+   * its section (harmonic-field-v2).
+   */
+  instrumentHarmonic: 'instrument.harmonic',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

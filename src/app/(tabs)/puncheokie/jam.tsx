@@ -23,7 +23,7 @@ import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { InstrumentVoiceOutput } from '@audio/InstrumentVoiceOutput'
 import { INSTRUMENT_TEXTURE_IDS } from '@audio/voiceAssets/instrumentBankManifest'
-import { BridgeClient, type BridgeStatus } from '@/instrument/bridgeClient'
+import { BridgeClient, type BridgeStatus, type PatchIdentity } from '@/instrument/bridgeClient'
 import { compileBrassCube, type ArpPatternId } from '@domain/instrument/brassCube'
 import { cellAt, compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
 import type { ArpeggiatorBackend, RetriggerPolicy } from '@domain/instrument/gestureSchema'
@@ -32,8 +32,15 @@ import {
   emptySessionState,
   type InstrumentSessionState,
 } from '@domain/instrument/gestureCompiler'
+import {
+  compileHarmonicField,
+  foldHarmonicSettings,
+  type HarmonicSettingsOptions,
+} from '@domain/instrument/harmonicField'
+import { msForTicks, type CommitIntervalTicks } from '@domain/instrument/transportGrid'
 import { PITCH_SETS } from '@domain/instrument/pitchSets'
 import {
+  LAUNCH_PATCHES,
   launchPatchById,
   type HarmonyMode,
   type PunchPatch,
@@ -69,6 +76,11 @@ const BRASS_RETRIGGERS: readonly RetriggerPolicy[] = [
 ]
 const BRASS_BACKENDS: readonly ArpeggiatorBackend[] = ['punchbridge-tick', 'studio-one-note-fx']
 const OUTPUT_TARGETS: readonly InstrumentOutputTarget[] = ['bridge', 'tablet', 'both']
+/** WORLD row cycles the shipped field patches (one world this slice). */
+const FIELD_PATCH_IDS: readonly string[] = LAUNCH_PATCHES.filter((p) => p.harmonicField).map(
+  (p) => p.id,
+)
+const COMMIT_WINDOWS: readonly CommitIntervalTicks[] = [240, 480, 960]
 
 type Sensitivity = 'high' | 'standard'
 
@@ -87,7 +99,30 @@ interface JamOverrides {
   transitionMode?: TransitionMode
 }
 
-function effectivePatch(base: PunchPatch, over: JamOverrides, brass: BrassJamOptions): PunchPatch {
+function effectivePatch(
+  base: PunchPatch,
+  over: JamOverrides,
+  brass: BrassJamOptions,
+  harmonic: HarmonicSettingsOptions,
+): PunchPatch {
+  // A harmonic-field patch (M40-18): the settings blob folds INTO the
+  // section — always canonical full values, clamped to the capability
+  // envelope — so patchHash covers every selection and open-and-save can
+  // never move effectivePatchHash. Brass options still apply (PATTERN is
+  // a primary v2 row).
+  if (base.harmonicField && base.brassCube) {
+    return {
+      ...base,
+      id: `${base.id}+jam`,
+      brassCube: {
+        ...base.brassCube,
+        patternId: brass.patternId,
+        retrigger: brass.retrigger,
+        arpBackend: brass.arpBackend,
+      },
+      harmonicField: foldHarmonicSettings(base.harmonicField, harmonic),
+    }
+  }
   // A brass-cube patch: the legacy music rows do not apply — the chord
   // bank IS the harmony. Only the brass selections override the section.
   if (base.brassCube) {
@@ -132,7 +167,14 @@ export default function JamScreen(): React.JSX.Element {
   const setOutputTarget = useInstrumentSettingsStore((s) => s.setOutputTarget)
   const setTextureId = useInstrumentSettingsStore((s) => s.setTextureId)
   const setVoiceMode = useInstrumentSettingsStore((s) => s.setVoiceMode)
+  const setPatchId = useInstrumentSettingsStore((s) => s.setPatchId)
+  const harmonicFreedom = useInstrumentSettingsStore((s) => s.harmonicFreedom)
+  const harmonicNavigation = useInstrumentSettingsStore((s) => s.harmonicNavigation)
+  const harmonicWindow = useInstrumentSettingsStore((s) => s.harmonicCommitIntervalTicks)
+  const harmonicGeneration = useInstrumentSettingsStore((s) => s.harmonicGeneration)
+  const setHarmonicOptions = useInstrumentSettingsStore((s) => s.setHarmonicOptions)
   const [overrides, setOverrides] = useState<JamOverrides>({})
+  const [advancedOpen, setAdvancedOpen] = useState(false)
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
   const [rttMs, setRttMs] = useState<number | null>(null)
   const [liveCount, setLiveCount] = useState(0)
@@ -143,15 +185,46 @@ export default function JamScreen(): React.JSX.Element {
   const base = useMemo(() => launchPatchById(basePatchId), [basePatchId])
   const patch = useMemo(
     () =>
-      effectivePatch(base, overrides, {
-        patternId: brassPatternId,
-        retrigger: brassRetrigger,
-        arpBackend: brassBackend,
-      }),
-    [base, overrides, brassPatternId, brassRetrigger, brassBackend],
+      effectivePatch(
+        base,
+        overrides,
+        {
+          patternId: brassPatternId,
+          retrigger: brassRetrigger,
+          arpBackend: brassBackend,
+        },
+        {
+          freedom: harmonicFreedom,
+          navigation: harmonicNavigation,
+          commitIntervalTicks: harmonicWindow,
+        },
+      ),
+    [
+      base,
+      overrides,
+      brassPatternId,
+      brassRetrigger,
+      brassBackend,
+      harmonicFreedom,
+      harmonicNavigation,
+      harmonicWindow,
+    ],
   )
   const cubeMap = useMemo(() => compilePunchPatch(patch), [patch])
   const brassMap = useMemo(() => (patch.brassCube ? compileBrassCube(patch) : null), [patch])
+  // The compiled field (M40-18): beside the brass map, same patch, same
+  // hash discipline — compileHarmonicField throws on any order drift.
+  const field = useMemo(
+    () =>
+      patch.harmonicField && brassMap
+        ? compileHarmonicField(patch.id, patch.harmonicField, brassMap)
+        : null,
+    [patch, brassMap],
+  )
+  // Field patches are BRIDGE-only until M40-23 (capability envelope) —
+  // the stored output target is honored again the moment a non-field
+  // patch is selected.
+  const effectiveOutput: InstrumentOutputTarget = patch.harmonicField ? 'bridge' : outputTarget
 
   // High sensitivity by default: the boxer should hear soft play. The
   // firmware's own transmit floor (cmd-17 threshold) still gates the very
@@ -181,16 +254,16 @@ export default function JamScreen(): React.JSX.Element {
   // The punch handler closes over the LATEST patch/maps through this ref —
   // Next-Punch semantics fall out: the held latch survives, the next
   // punch compiles against the new map.
-  const liveCtxRef = useRef({ patch, cubeMap, brassMap })
-  liveCtxRef.current = { patch, cubeMap, brassMap }
+  const liveCtxRef = useRef({ patch, cubeMap, brassMap, field })
+  liveCtxRef.current = { patch, cubeMap, brassMap, field }
 
   // Tablet instrument voice (M40-15). The engine is created lazily on the
   // first non-bridge OUTPUT selection and lives until unmount; the punch
   // handler reads the routing through a ref (the liveCtxRef pattern) so
   // the [] keepalive subscription sees every flip.
   const engineRef = useRef<InstrumentVoiceOutput | null>(null)
-  const outputRef = useRef(outputTarget)
-  outputRef.current = outputTarget
+  const outputRef = useRef(effectiveOutput)
+  outputRef.current = effectiveOutput
 
   // FOCUS-scoped, not mount-scoped (isolation audit, 2026-09-05): tabs
   // keep a once-visited screen MOUNTED on tab switch, so an unmount-only
@@ -202,7 +275,7 @@ export default function JamScreen(): React.JSX.Element {
   // rebuilds it lazily.
   useFocusEffect(
     useCallback(() => {
-      if (outputTarget === 'bridge') {
+      if (effectiveOutput === 'bridge') {
         // PC-rig mode: nothing tablet-side to build; a lingering engine
         // from an earlier flip is silenced (pools stay for this focus).
         engineRef.current?.panic()
@@ -224,8 +297,29 @@ export default function JamScreen(): React.JSX.Element {
         engineRef.current?.release()
         engineRef.current = null
       }
-    }, [outputTarget, textureId, voiceMode]),
+    }, [effectiveOutput, textureId, voiceMode]),
   )
+
+  // The wire identity (M40-17 handshake): a field patch upgrades the
+  // session to schemaVersion 2 — worldManifestHash + compiledFieldHash +
+  // effectivePatchHash (the settings-folded patch hash: the blob folds
+  // INTO the section, so patchHash IS the effective identity) +
+  // patchGeneration. A plain patch stays hash-only, wire v1 byte-equal.
+  const identity: PatchIdentity = useMemo(
+    () =>
+      field
+        ? {
+            mapHash: cubeMap.patchHash,
+            worldManifestHash: field.worldManifestHash,
+            compiledFieldHash: field.compiledFieldHash,
+            effectivePatchHash: cubeMap.patchHash,
+            patchGeneration: harmonicGeneration,
+          }
+        : { mapHash: cubeMap.patchHash },
+    [field, cubeMap.patchHash, harmonicGeneration],
+  )
+  const identityRef = useRef(identity)
+  identityRef.current = identity
 
   useFocusEffect(
     useCallback(() => {
@@ -239,7 +333,13 @@ export default function JamScreen(): React.JSX.Element {
       // the mount commit settles — a same-tick setState trips React's
       // "update on a component that hasn't mounted yet" warning.
       const connectHandle = setTimeout(() => {
-        client.connect(bridgeUrl, `jam-${Math.floor(globalThis.performance.now())}`, cubeMap.patchHash)
+        const { mapHash, ...v2Identity } = identityRef.current
+        client.connect(
+          bridgeUrl,
+          `jam-${Math.floor(globalThis.performance.now())}`,
+          mapHash,
+          v2Identity,
+        )
       }, 0)
       return () => {
         // Blur/unmount: close the socket and kill the heartbeat AND the
@@ -254,8 +354,20 @@ export default function JamScreen(): React.JSX.Element {
   )
 
   useEffect(() => {
-    bridgeRef.current?.setMapHash(cubeMap.patchHash)
-  }, [cubeMap.patchHash])
+    bridgeRef.current?.setPatchIdentity(identity)
+  }, [identity])
+
+  // A harmonic settings change is a GENERATION (review amendment): pending
+  // intents die, per-hand orbit resets, everything sounding is released,
+  // and the identity effect above re-hellos with the bumped generation.
+  const lastGenerationRef = useRef(harmonicGeneration)
+  useEffect(() => {
+    if (harmonicGeneration === lastGenerationRef.current) return
+    lastGenerationRef.current = harmonicGeneration
+    sessionRef.current = emptySessionState()
+    bridgeRef.current?.sendPanic()
+    engineRef.current?.panic()
+  }, [harmonicGeneration])
 
   useFocusEffect(
     useCallback(() => {
@@ -266,7 +378,7 @@ export default function JamScreen(): React.JSX.Element {
       // workout owns the shared punch feed.
       return shared.subscribe((event) => {
       if (event.hand !== 'left' && event.hand !== 'right') return
-      const { patch: livePatch, cubeMap: liveMap, brassMap: liveMap2 } = liveCtxRef.current
+      const { patch: livePatch, cubeMap: liveMap, brassMap: liveMap2, field: liveField } = liveCtxRef.current
       const scalers = scalersRef.current
       const velocity01 = scalers.velocity.scale(event.hand, event.velocityRaw)
       const acceleration01 = scalers.acceleration.scale(event.hand, event.accelerationRaw)
@@ -290,6 +402,7 @@ export default function JamScreen(): React.JSX.Element {
           patch: livePatch,
           cubeMap: liveMap,
           ...(liveMap2 ? { brassMap: liveMap2 } : {}),
+          ...(liveField ? { field: liveField } : {}),
           velocity01,
           acceleration01,
         },
@@ -383,6 +496,89 @@ export default function JamScreen(): React.JSX.Element {
       ]
     : []
 
+  // Harmonic-field patches (M40-18): the five primary selections —
+  // WORLD / FREEDOM / NAVIGATION / PATTERN / SOUND — cycling ONLY the
+  // section's capability values (guided-4×4 never appears; OUTPUT is
+  // LOCKED to BRIDGE until M40-23 parity), with today's full set behind
+  // an ADVANCED toggle.
+  const fieldSection = patch.harmonicField
+  const fieldRows: Array<{ label: string; value: string; onPress: () => void }> =
+    fieldSection && patch.brassCube
+      ? [
+          {
+            label: 'WORLD',
+            value: fieldSection.worldId,
+            onPress: () => setPatchId(cycle(FIELD_PATCH_IDS, basePatchId)),
+          },
+          {
+            label: 'FREEDOM',
+            value: fieldSection.freedom,
+            onPress: () =>
+              setHarmonicOptions({
+                freedom: cycle(fieldSection.capabilities.supportedFreedomModes, fieldSection.freedom),
+              }),
+          },
+          {
+            label: 'NAVIGATION',
+            value: fieldSection.navigation,
+            onPress: () =>
+              setHarmonicOptions({
+                navigation: cycle(
+                  fieldSection.capabilities.supportedNavigationModes,
+                  fieldSection.navigation,
+                ),
+              }),
+          },
+          {
+            label: 'PATTERN',
+            value: patch.brassCube.patternId,
+            onPress: () => setBrassOptions({ patternId: cycle(BRASS_PATTERNS, brassPatternId) }),
+          },
+          {
+            label: 'SOUND',
+            value: textureId,
+            onPress: () => setTextureId(cycle(INSTRUMENT_TEXTURE_IDS, textureId)),
+          },
+          {
+            label: 'ADVANCED',
+            value: advancedOpen ? 'hide' : 'show',
+            onPress: () => setAdvancedOpen((v) => !v),
+          },
+          ...(advancedOpen
+            ? [
+                {
+                  label: 'WINDOW',
+                  value: `${msForTicks(fieldSection.commitIntervalTicks)} ms`,
+                  onPress: () =>
+                    setHarmonicOptions({
+                      commitIntervalTicks: cycle(COMMIT_WINDOWS, harmonicWindow),
+                    }),
+                },
+                {
+                  label: 'RETRIGGER',
+                  value: patch.brassCube.retrigger,
+                  onPress: () =>
+                    setBrassOptions({ retrigger: cycle(BRASS_RETRIGGERS, brassRetrigger) }),
+                },
+                {
+                  label: 'BACKEND',
+                  value: patch.brassCube.arpBackend,
+                  onPress: () => setBrassOptions({ backend: cycle(BRASS_BACKENDS, brassBackend) }),
+                },
+                sensitivityRow,
+                {
+                  // Capability envelope: supportedOutputs is ['bridge']
+                  // this slice — the row states the lock, presses no-op.
+                  label: 'OUTPUT',
+                  value: 'BRIDGE (locked)',
+                  onPress: () => {},
+                },
+                modeRow,
+              ]
+            : []),
+        ]
+      : []
+
   const legacyRows: Array<{ label: string; value: string; onPress: () => void }> = [
     {
       label: 'KEY',
@@ -432,7 +628,7 @@ export default function JamScreen(): React.JSX.Element {
     modeRow,
   ]
 
-  const selectorRows = patch.brassCube ? brassRows : legacyRows
+  const selectorRows = patch.harmonicField ? fieldRows : patch.brassCube ? brassRows : legacyRows
 
   return (
     <View style={styles.root}>

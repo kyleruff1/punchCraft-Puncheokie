@@ -239,6 +239,43 @@ export const FOUNDATION_CAPABILITIES: HarmonicFieldCapabilities = {
   supportedOutputs: ['bridge'],
 }
 
+/**
+ * The user-facing harmonic settings a jam can fold into a field section
+ * (M40-18). Always the CANONICAL full triple — the fold writes every
+ * field explicitly, so an omitted/garbage stored blob and the authored
+ * defaults produce byte-identical sections (omitted ≡ stored-default
+ * hashing: open-and-save can never move effectivePatchHash).
+ */
+export interface HarmonicSettingsOptions {
+  freedom: FreedomProfileId
+  navigation: NavigationMode
+  commitIntervalTicks: CommitIntervalTicks
+}
+
+/**
+ * Fold user settings into a section, CLAMPED to the section's capability
+ * envelope — a value outside `capabilities` (stale storage, a widened
+ * type) falls back to the section's authored value, never to an
+ * unreachable mode (the placeholder-semantics gate).
+ */
+export function foldHarmonicSettings(
+  section: HarmonicFieldSection,
+  options: HarmonicSettingsOptions,
+): HarmonicFieldSection {
+  const freedom = section.capabilities.supportedFreedomModes.includes(options.freedom)
+    ? options.freedom
+    : section.freedom
+  const navigation = section.capabilities.supportedNavigationModes.includes(options.navigation)
+    ? options.navigation
+    : section.navigation
+  return {
+    ...section,
+    freedom,
+    navigation,
+    commitIntervalTicks: options.commitIntervalTicks,
+  }
+}
+
 /** The "Recommended starting configuration" section (v2 final table). */
 export const DORIAN_HARMONIC_FIELD_SECTION: HarmonicFieldSection = {
   worldId: 'dorian-brass',
