@@ -317,7 +317,18 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         )}
         {cycleRow(
           'OUTPUT',
-          output.toUpperCase() + (output !== 'bridge' && !voiceReady ? ' (loading)' : ''),
+          // preload() RESOLVES even when it failed internally (it catches
+          // and calls fail()), so a resolved promise is not evidence of a
+          // working engine — read the engine's own flag instead, or this
+          // row lies about a permanently dead instrument.
+          output.toUpperCase() +
+            (output === 'bridge'
+              ? ''
+              : !voiceReady
+                ? ' (loading)'
+                : engineRef.current?.available === false
+                  ? ' (UNAVAILABLE)'
+                  : ''),
           () => setOutput((o) => (o === 'tablet' ? 'both' : o === 'both' ? 'bridge' : 'tablet')),
           'audition-output',
         )}
