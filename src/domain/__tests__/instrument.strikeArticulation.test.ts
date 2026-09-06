@@ -135,13 +135,16 @@ describe('family contours (design §3)', () => {
         (f) => STRIKE_FAMILY_PROFILES[f].immediate.filterShape,
       ),
     ).toEqual(['snap', 'lateral-wah', 'rising-scoop'])
-    expect(
-      new Set(
-        (['straight', 'hook', 'uppercut'] as const).map(
-          (f) => STRIKE_FAMILY_PROFILES[f].immediate.drumClass,
-        ),
-      ).size,
-    ).toBe(3)
+    // The drum piece is per-EMPHASIS (M40-25), so all four classes are
+    // used and a jab and a cross never share a drum.
+    const drums = (['straight', 'hook', 'uppercut'] as const).flatMap((f) => [
+      STRIKE_FAMILY_PROFILES[f].setup.drumClass,
+      STRIKE_FAMILY_PROFILES[f].power.drumClass,
+    ])
+    expect(new Set(drums)).toEqual(new Set(['light', 'power', 'sweep', 'lift']))
+    expect(STRIKE_FAMILY_PROFILES.straight.setup.drumClass).not.toBe(
+      STRIKE_FAMILY_PROFILES.straight.power.drumClass,
+    )
   })
 
   it('each family asks for its OWN persistent pattern once it dominates', () => {

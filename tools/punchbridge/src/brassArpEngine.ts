@@ -193,6 +193,11 @@ export class BrassArpEngine {
   private stepIndex = 0
   /** The transport tick most recently observed (mutation provenance). */
   private lastTickObserved = 0
+  /**
+   * Semitone shift the CURRENT step's register op asked for (M40-25);
+   * consumed by emitStep and cleared, so it colours exactly one step.
+   */
+  private pendingOctaveShift = 0
   private readonly counters: BrassEngineTelemetry = {
     commits: 0,
     skippedArpSteps: 0,
@@ -775,9 +780,13 @@ export class BrassArpEngine {
       // Micro-mutation (M40-22A): the owning punch's operation colours THIS
       // step only — the running phase is never restarted, so the mutation
       // is audible without the pattern lurching.
+      this.pendingOctaveShift = 0
       const patternIndex = this.mutatedPatternIndex(basePatternIndex)
-      const note =
+      const poolNote =
         committed.rotatedPool[Math.min(patternIndex, committed.rotatedPool.length - 1)] ?? 0
+      // A register op shifts this step's octave without leaving the pool's
+      // pitch classes — the uppercut's lift, the body shot's drop.
+      const note = Math.max(0, Math.min(127, poolNote + this.pendingOctaveShift))
       this.flushPendingStepOff()
       this.midi.send(noteOn(this.opts.arpChannel, note, committed.noteVelocity))
       // Gate < 1 ends the step early, so the off always lands before the
@@ -852,8 +861,11 @@ export class BrassArpEngine {
       case 'octave-pulse-up':
       case 'octave-pulse-down':
       case 'lower-inversion':
-        // Register moves ride the voice, not the pattern index: the step
-        // keeps its tone here (the octave lands with M40-22B's plan).
+        // A register move keeps the pool TONE and shifts its octave
+        // (M40-25). These were no-ops, which silently degraded the
+        // uppercut's defining lift to a jab and every body shot's lower
+        // inversion to a one-step delay.
+        this.pendingOctaveShift = operation === 'octave-pulse-up' ? 12 : -12
         index = baseIndex
         break
       default:

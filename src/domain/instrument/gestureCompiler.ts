@@ -30,8 +30,11 @@ import type {
 import { HARMONIC_SCHEMA_VERSION, INSTRUMENT_SCHEMA_VERSION } from './gestureSchema'
 import type { TechniqueBlock } from './gestureSchema'
 import {
+  DRUM_NOTE_BY_CLASS,
   resolveStrikeArticulation,
   resolveStrikeIdentity,
+  stabNoteFor,
+  type ComposedStrikeSignature,
 } from './strikeArticulationCatalog'
 import { msForTicks } from './transportGrid'
 import {
@@ -245,6 +248,22 @@ export function compileGesture(
   // so switching patches mid-session cannot reset the bar.
   const peakFold = notePeak(state.peaks, hand, input.velocityRaw, now)
 
+  // Strike articulation (M40-20/25) — resolved BEFORE the accent so the
+  // technique can actually shape the immediate hit. Field patches only:
+  // its absence is what keeps v1 gestures byte-identical. The identity
+  // policy decides what may be CLAIMED (a guided token gives the full
+  // signature; free jam stays generic, hand-only).
+  const strikeIdentity =
+    fieldSection && ctx.field
+      ? resolveStrikeIdentity({
+          ...(input.expectedStrikeToken ? { expectedStrikeToken: input.expectedStrikeToken } : {}),
+          hand,
+        })
+      : null
+  const articulation: ComposedStrikeSignature | null = strikeIdentity
+    ? resolveStrikeArticulation(strikeIdentity, hand)
+    : null
+
   // Brass blocks: the punched hand's new zone + the other hand's latched
   // zone stage ONE cell; the bridge commits it on the next step boundary.
   let accent: ImmediateAccent | undefined
@@ -257,11 +276,26 @@ export function compileGesture(
     brassLayer = brassLayerFor(pps, state.brassLayer)
     const layerDef = ctx.brassMap.activityLayers[brassLayer]
     transientMultiplier = layerDef.transientMultiplier
+    // The technique picks WHICH pool tone the stab sounds, its register,
+    // its weight, and how long it sits — that is what makes a jab and a
+    // cross different on the immediate hit. Without an articulation the
+    // accent stays exactly as it was (v1 byte-identity).
+    const stabNote = articulation
+      ? stabNoteFor(articulation.immediate.stabRole, {
+          naturalPool: brassCell.naturalPool,
+          entryTone: brassCell.startMidiNote,
+        }) +
+        12 * articulation.immediate.octaveOffset
+      : brassCell.startMidiNote
     accent = {
-      midiNote: brassCell.startMidiNote,
-      midiVelocity: clamp(1, 127, Math.round(50 + 68 * ctx.acceleration01)),
+      midiNote: clamp(0, 127, stabNote),
+      midiVelocity: clamp(
+        1,
+        127,
+        Math.round((50 + 68 * ctx.acceleration01) * (articulation?.immediate.velocityGain ?? 1)),
+      ),
       channel: ctx.brassMap.accentMidiChannel,
-      gateMs: ctx.brassMap.accentGateMs,
+      gateMs: articulation?.immediate.baseGateMs ?? ctx.brassMap.accentGateMs,
     }
     // Stable sample routing (am. 6): a field patch names the chord by its
     // STABLE id and the slot its bank was rendered at, so the tension
@@ -298,17 +332,12 @@ export function compileGesture(
   // free jam stays generic (hand-only articulation, never a technique
   // name). Punch type never touches the harmony computed above.
   let technique: TechniqueBlock | undefined
-  if (fieldSection && ctx.field) {
-    const identity = resolveStrikeIdentity({
-      ...(input.expectedStrikeToken ? { expectedStrikeToken: input.expectedStrikeToken } : {}),
-      hand,
-    })
-    const articulation = resolveStrikeArticulation(identity, hand)
+  if (strikeIdentity && articulation) {
     technique = {
-      identitySource: identity.source,
+      identitySource: strikeIdentity.source,
       immediateSignatureId: articulation.signatureId,
-      ...(identity.token ? { token: identity.token } : {}),
-      ...(identity.family ? { family: identity.family } : {}),
+      ...(strikeIdentity.token ? { token: strikeIdentity.token } : {}),
+      ...(strikeIdentity.family ? { family: strikeIdentity.family } : {}),
       microMutation: {
         operations: [...articulation.microArp.operations],
         maxSteps: articulation.microArp.maxSteps,
@@ -374,13 +403,25 @@ export function compileGesture(
         advanced.change === 'same-zone' ? 0 : overshootCents(ctx.acceleration01, ctx.patch),
     },
     transient: {
-      note: 36,
+      // The family picks the drum PIECE (M40-25): rim for the jab's tick,
+      // kick for the cross's weight, snare for the hook, crash for the
+      // uppercut's rise. Without an articulation it stays 36 (R1).
+      note: articulation ? DRUM_NOTE_BY_CLASS[articulation.immediate.drumClass] : 36,
       // Brass patches scale the impact by the layer's ladder multiplier;
-      // legacy patches keep the unscaled formula byte-for-byte (R1).
+      // legacy patches keep the unscaled formula byte-for-byte (R1). A
+      // body shot lands heavier through its transientGain.
       velocity: quantized
-        ? clamp(1, 127, Math.round((40 + 87 * ctx.acceleration01) * transientMultiplier))
+        ? clamp(
+            1,
+            127,
+            Math.round(
+              (40 + 87 * ctx.acceleration01) *
+                transientMultiplier *
+                (articulation?.transientGain ?? 1),
+            ),
+          )
         : Math.round(40 + 87 * ctx.acceleration01),
-      layer: 'generic',
+      layer: articulation?.key.family ?? 'generic',
     },
     visual: {
       quadrant:
