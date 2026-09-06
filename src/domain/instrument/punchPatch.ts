@@ -9,6 +9,11 @@
  * the CompiledCubeMap every consumer shares. patchHash = mapHashOf(patch).
  */
 import { DORIAN_BRASS_CUBE_SECTION, type BrassCubeSection } from './brassCube'
+import {
+  DORIAN_HARMONIC_FIELD_SECTION,
+  TENSION_ORDERED_CHORD_BANK,
+  type HarmonicFieldSection,
+} from './harmonicField'
 
 export type TopologyId = 'parallel' | 'bass-lead' | 'root-interval'
 
@@ -103,6 +108,12 @@ export interface PunchPatch {
    * map; absent → the patch is a pure latch preset, byte-identical wire.
    */
   brassCube?: BrassCubeSection
+  /**
+   * Harmonic-field section (harmonic-field-v2). Present -> the compiler
+   * routes zones through the surface navigator (freedom bands + orbit) and
+   * stamps the commit window; absent -> brass/latch behavior unchanged.
+   */
+  harmonicField?: HarmonicFieldSection
 }
 
 /** Soft Guard's default allowed set (§6): unison m3 M3 P4 P5 m6 M6 m7. */
@@ -173,6 +184,22 @@ export const LAUNCH_PATCHES: readonly PunchPatch[] = [
       whammy: { semitones: 12, minDurationMs: 200, maxDurationMs: 450 },
     },
     brassCube: DORIAN_BRASS_CUBE_SECTION,
+  }),
+  base('dorian-brass-v2', 'Dorian Brass Field', {
+    rootPitchClass: 2, // D
+    pitchSetId: 'dorian-six',
+    transition: {
+      mode: 'elastic',
+      minimumMs: 35,
+      maximumMs: 320,
+      overshootCents: 12,
+      whammy: { semitones: 12, minDurationMs: 200, maxDurationMs: 450 },
+    },
+    // The SAME six chords, tension order (harmonic-field-v2 §5) - the
+    // brass compiler is order-agnostic, so every pool/rotation golden
+    // applies verbatim per chord.
+    brassCube: { ...DORIAN_BRASS_CUBE_SECTION, leftChordBank: TENSION_ORDERED_CHORD_BANK },
+    harmonicField: DORIAN_HARMONIC_FIELD_SECTION,
   }),
 ]
 

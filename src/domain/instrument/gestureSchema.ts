@@ -80,6 +80,27 @@ export interface QuantizedChange {
   activityPps: number
   retrigger: RetriggerPolicy
   backend: ArpeggiatorBackend
+  /**
+   * Harmonic commit grid (harmonic-field-v2 §12): present ONLY for
+   * harmonic-field patches — the bridge commits harmony on this window
+   * instead of the arp step grid. Absent → legacy arp-boundary commits.
+   */
+  commitWindowMs?: number
+}
+
+/**
+ * Punch movement intent (harmonic-field-v2 review amendment 2): the
+ * navigation facts behind this punch's staged cell, so the bridge's commit
+ * engine can aggregate a window into ONE canonical commit and telegraphing
+ * can later show requested-vs-resolved. Additive; field patches only.
+ */
+export interface HarmonicIntent {
+  /** The punched hand's freedom band. */
+  band: number
+  /** The orbit/absolute member the navigator resolved inside the band. */
+  memberIndex: number
+  /** floor(receivedMonotonicTimeMs / commitWindowMs) — the aggregation key. */
+  commitWindowIndex: number
 }
 
 /**
@@ -170,6 +191,7 @@ export interface CompiledPunchGesture {
   accent?: ImmediateAccent
   quantized?: QuantizedChange
   whammy?: WhammyAccent
+  harmonicIntent?: HarmonicIntent
 }
 
 /** Tablet → bridge. */
@@ -203,6 +225,11 @@ export interface PunchHelloMessage {
   schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
   sessionId: string
   mapHash: string
+  /**
+   * Harmonic-field patches also announce their field manifest hash
+   * (harmonic-field-v2 §2) — additive; absent for latch/brass-only patches.
+   */
+  fieldHash?: string
   /** Millis between heartbeats the tablet promises; bridge watchdog uses it. */
   heartbeatMs: number
 }

@@ -10,8 +10,18 @@
  */
 import { brassCellAt, type CompiledBrassCubeMap } from './brassCube'
 import { cellAt, type CompiledCubeMap } from './cubeCompiler'
+import type { CompiledHarmonicField } from './harmonicField'
+import {
+  advanceOrbit,
+  BAND_COUNT_BY_FREEDOM,
+  bandMembers,
+  subindexInBand,
+  ZONE_TO_SURFACE_BAND,
+  type OrbitState,
+} from './surfaceNavigator'
 import type {
   CompiledPunchGesture,
+  HarmonicIntent,
   ImmediateAccent,
   MusicalPunchInput,
   QuantizedChange,
@@ -45,6 +55,11 @@ export interface InstrumentSessionState {
   peaks: PeakState
   /** Last committed brass activity layer (hysteresis anchor). */
   brassLayer: 0 | 1 | 2 | 3
+  /**
+   * Per-hand surface orbit (harmonic-field-v2 §9) — sample-and-hold like
+   * the latch; session-only, never on the wire (R1 safe).
+   */
+  orbit: { left: OrbitState | null; right: OrbitState | null }
 }
 
 export function emptySessionState(): InstrumentSessionState {
@@ -55,6 +70,7 @@ export function emptySessionState(): InstrumentSessionState {
     lastLive: null,
     peaks: emptyPeaks(),
     brassLayer: 0,
+    orbit: { left: null, right: null },
   }
 }
 
@@ -64,6 +80,8 @@ export interface CompileContext {
   cubeMap: CompiledCubeMap
   /** Present for brass-cube patches; MUST agree with cubeMap's patchHash. */
   brassMap?: CompiledBrassCubeMap
+  /** Present for harmonic-field patches; MUST agree with cubeMap's patchHash. */
+  field?: CompiledHarmonicField
   /** Normalized readings from the caller's per-hand scalers. */
   velocity01: number
   acceleration01: number
@@ -127,6 +145,11 @@ export function compileGesture(
       `brassMap/cubeMap patchHash mismatch (${ctx.brassMap.patchHash} vs ${ctx.cubeMap.patchHash})`,
     )
   }
+  if (ctx.field && ctx.field.patchHash !== ctx.cubeMap.patchHash) {
+    throw new Error(
+      `field/cubeMap patchHash mismatch (${ctx.field.patchHash} vs ${ctx.cubeMap.patchHash})`,
+    )
+  }
 
   const now = input.receivedMonotonicTimeMs
   const hand = input.hand
@@ -137,15 +160,55 @@ export function compileGesture(
   const zoneState = quantizeZone(prevZone, ctx.velocity01, zoneCount)
   const zone = zoneState.currentZone
 
-  // Cube coordinate: punched hand takes its new zone; the other hand
-  // holds its latched zone (0 while that voice has never sounded).
-  const leftZone = hand === 'left' ? zone : (state.latch.left.zone ?? 0)
-  const rightZone = hand === 'right' ? zone : (state.latch.right.zone ?? 0)
+  // Surface navigation (harmonic-field-v2 §§4,9, review-amended): for field
+  // patches the committed zone collapses to a freedom band; ABSOLUTE lands
+  // on the zone's subindex within the band, ORBIT advances at most once per
+  // commit window (per-commit policy — flurry parity can never flip the
+  // final chord). The latch then HOLDS resolved indices, so the other
+  // hand's coordinate stays resolved too. Non-field patches skip all of
+  // this — resolvedIndex === zone and the orbit state carries through.
+  const fieldSection = ctx.patch.harmonicField
+  let orbit = state.orbit
+  let resolvedIndex = zone
+  let intentBand: number | undefined
+  let intentWindow: number | undefined
+  if (fieldSection && ctx.field) {
+    const bandCount = BAND_COUNT_BY_FREEDOM[fieldSection.freedom]
+    const band = ZONE_TO_SURFACE_BAND[bandCount][zone] ?? 0
+    // Right-axis members read the CURRENT chord node's explicit role
+    // groups; the current chord is the held (or just-punched) left index.
+    const currentLeftIndex = hand === 'left' ? undefined : (state.latch.left.zone ?? 0)
+    const roleNode =
+      hand === 'right'
+        ? (ctx.field.section.nodes[Math.max(0, Math.min(5, currentLeftIndex ?? 0))] ?? null)
+        : null
+    const members = bandMembers(hand, bandCount, band, roleNode)
+    const windowIndex = Math.floor(now / fieldSection.commitWindowMs)
+    const advancedOrbit = advanceOrbit(
+      state.orbit[hand],
+      band,
+      members.length,
+      fieldSection.navigation,
+      windowIndex,
+      subindexInBand(bandCount, zone),
+    )
+    resolvedIndex = members[advancedOrbit.memberIndex] ?? members[0] ?? 0
+    orbit = { ...state.orbit, [hand]: advancedOrbit }
+    intentBand = band
+    intentWindow = windowIndex
+  }
+
+  // Cube coordinate: punched hand takes its resolved index; the other hand
+  // holds its latched index (0 while that voice has never sounded).
+  const leftZone = hand === 'left' ? resolvedIndex : (state.latch.left.zone ?? 0)
+  const rightZone = hand === 'right' ? resolvedIndex : (state.latch.right.zone ?? 0)
   const cell = cellAt(ctx.cubeMap, leftZone, rightZone)
   const targetNote = hand === 'left' ? cell.leftMidiNote : cell.rightMidiNote
 
   // Latch + activity + alternation, all against the event's own clock.
-  const advanced = advanceVoice(state.latch, hand, zone, targetNote, now)
+  // The latch stores the RESOLVED index (=== the raw zone for non-field
+  // patches), so held coordinates and Next-Punch behavior stay coherent.
+  const advanced = advanceVoice(state.latch, hand, resolvedIndex, targetNote, now)
   const activity = notePunch(state.activity, now)
   const gapMs = state.lastLive ? Math.max(0, now - state.lastLive.atMs) : 0
   const alternating =
@@ -208,6 +271,9 @@ export function compileGesture(
       activityPps: pps,
       retrigger: ctx.brassMap.retrigger,
       backend: ctx.brassMap.arpBackend,
+      // Harmonic commit grid (v2 §12) — field patches only; its absence
+      // keeps every v1 brass gesture byte-identical.
+      ...(fieldSection ? { commitWindowMs: fieldSection.commitWindowMs } : {}),
     }
   }
 
@@ -294,6 +360,15 @@ export function compileGesture(
     ...(accent ? { accent } : {}),
     ...(quantized ? { quantized } : {}),
     ...(whammy ? { whammy } : {}),
+    ...(intentBand !== undefined && intentWindow !== undefined
+      ? {
+          harmonicIntent: {
+            band: intentBand,
+            memberIndex: orbit[hand]?.memberIndex ?? 0,
+            commitWindowIndex: intentWindow,
+          } satisfies HarmonicIntent,
+        }
+      : {}),
   }
 
   return {
@@ -305,6 +380,7 @@ export function compileGesture(
       lastLive: { hand, atMs: now },
       peaks: peakFold.state,
       brassLayer,
+      orbit,
     },
   }
 }
