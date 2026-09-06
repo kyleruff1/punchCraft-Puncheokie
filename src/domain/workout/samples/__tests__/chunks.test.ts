@@ -12,7 +12,6 @@ import {
   chunksSelfCheck,
   getChunk,
   resolveRound,
-  type SectionChunk,
 } from '../chunks'
 import { compose, resolveToClickMap, roundBudget } from '../composeFromChunks'
 
