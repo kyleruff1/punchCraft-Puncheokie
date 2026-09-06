@@ -247,24 +247,42 @@ test('one transport, two projections: a mid-window punch waits for the harmonic 
 
 test("Kyle's rate-change ambiguity: audible tick from the OLD grid; new rate anchors atomically at the audible tick", () => {
   const { scheduler, midi, engine } = makeFieldEngine()
-  engine.applyGesture(q({ chord: DM9, layer: 2 }), 96, { eventId: 'p1' }) // 320-tick grid
-  scheduler.advance(100)
+  // Open at layer 3 so the arrangement rail (M40-22C) initialises to Peak
+  // and permits the rate change under test; the rail's own bar-quantized
+  // limiting is exercised in arrangementRail.test.ts.
+  engine.applyGesture(q({ chord: DM9, layer: 3 }), 96, { eventId: 'p0' })
+  scheduler.advance(600)
+  engine.applyGesture(q({ chord: DM9, layer: 2 }), 96, { eventId: 'p1' }) // → 320-tick grid
+  scheduler.advance(600)
+  // The sounding grid is anchored where the previous commit left it.
+  const soundingPhase = engine.lastHarmonicCommit!.nextArpPhaseTick
   engine.applyGesture(q({ chord: G9, layer: 3 }), 96, { eventId: 'p2' }) // → 240-tick rate
   scheduler.advance(1200)
   const commit = engine.lastHarmonicCommit
   assert.ok(commit)
-  // Tick 480 is a boundary under the NEW 240 rate but not the sounding
-  // 320 grid — the commit must land at 640, never a retroactive 480.
-  assert.equal(commit.requestedCommitTick, 480)
-  assert.equal(commit.audibleCommitTick, 640)
+  const onGrid = (tick: number): boolean => (tick - soundingPhase) % 320 === 0
+  // The RELATIONSHIP is the rule (am. 4), not any absolute tick: the
+  // sounding grid was 320 ticks, the requested tick is NOT one of its
+  // boundaries, and the commit lands on the next one that IS — never a
+  // boundary that exists only under the incoming 240-tick rate.
   assert.equal(commit.previousArpIntervalTicks, 320)
-  assert.equal(commit.nextArpIntervalTicks, 240)
-  assert.equal(commit.nextArpPhaseTick, 640)
-  // Steps: 0, 333 (old grid), 667 = commit, then the NEW 240-tick stride.
-  assert.deepEqual(
-    midi.onsAt(2).slice(0, 5).map((o) => Math.round(o.atMs)),
-    [0, ms(320), ms(640), ms(880), ms(1120)],
+  assert.equal(onGrid(commit.requestedCommitTick), false, 'the case needs an off-grid request')
+  assert.equal(onGrid(commit.audibleCommitTick), true, 'commit landed off the SOUNDING grid')
+  assert.equal(
+    commit.audibleCommitTick,
+    soundingPhase + Math.ceil((commit.requestedCommitTick - soundingPhase) / 320) * 320,
+    'commit did not land on the FIRST sounding boundary at or after the request',
   )
+  // The new rate applies atomically there and anchors the next grid.
+  assert.equal(commit.nextArpIntervalTicks, 240)
+  assert.equal(commit.nextArpPhaseTick, commit.audibleCommitTick)
+  // Steps run on the old stride up to the commit, the new stride after it.
+  const ons = midi.onsAt(2).map((o) => Math.round(o.atMs))
+  const commitMs = ms(commit.audibleCommitTick)
+  const before = ons.filter((t) => t <= commitMs)
+  const after = ons.filter((t) => t > commitMs)
+  assert.equal(Math.round(before[before.length - 1]! - before[before.length - 2]!), ms(320))
+  assert.equal(Math.round(after[0]! - commitMs), ms(240))
 })
 
 test('flurry coalescing: six punches in one window → ONE commit carrying every eventId', () => {
@@ -337,17 +355,20 @@ test('stalled scheduler: coalesced commit, no note burst, phase continues, skips
   engine.stop()
 })
 
-test('field decay is FALL-only between commits: a staged flurry cannot lift the rate early', () => {
+test('field decay is FALL-only between commits, and the rail caps a mid-bar lift', () => {
   const { scheduler, midi, engine } = makeFieldEngine()
   engine.applyGesture(q({ chord: DM9, layer: 2 }), 96, { eventId: 'p1' }) // 320-tick grid
   scheduler.advance(100)
   engine.applyGesture(q({ chord: G9, layer: 3, pps: 50 }), 96, { eventId: 'p2' })
   scheduler.advance(600) // decay at tick 320, then the audible commit at 640
-  // Before the commit (audible 640) the grid must still be 320 ticks: the
-  // second step stays at t≈333, not a raised 250 ms stride.
+  // Before the commit the grid must still be 320 ticks: the second step
+  // stays at t≈333, not a raised 250 ms stride.
   const ons = midi.onsAt(2)
   assert.equal(Math.round(ons[1]!.atMs), ms(320))
-  assert.equal(engine.lastHarmonicCommit?.nextArpIntervalTicks, 240)
+  // And AFTER it the rate is still 320 — the rail opened at Drive, so a
+  // layer-3 request mid-bar is capped until the next bar boundary (am. 7).
+  assert.equal(engine.arrangementScene, 'drive')
+  assert.equal(engine.lastHarmonicCommit?.nextArpIntervalTicks, 320)
 })
 
 test('field stop(): total silence — every on paired, nothing after', () => {

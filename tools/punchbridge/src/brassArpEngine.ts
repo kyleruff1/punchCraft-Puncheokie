@@ -47,6 +47,16 @@ import {
 } from '../../../src/domain/instrument/patternExecutionBackend'
 import { ARP_PATTERNS } from '../../../src/domain/instrument/brassCube'
 import {
+  advanceArrangement,
+  BAR_TICKS,
+  cappedLayerFor,
+  emptyArrangementState,
+  SCENE_CEILINGS,
+  whammyAllowed,
+  type ArrangementScene,
+  type ArrangementState,
+} from '../../../src/domain/instrument/arrangementRail'
+import {
   resolveTechniqueMotif,
   type CompiledTechniqueMotif,
 } from '../../../src/domain/instrument/techniqueMotif'
@@ -112,10 +122,17 @@ export interface BrassEngineTelemetry {
   supersededMutations: number
   /** Persistent pattern commits at phrase close (M40-22B). */
   patternCommits: number
+  /** Bar-quantized arrangement scene changes (M40-22C). */
+  sceneChanges: number
+  /** The scene currently governing the arrangement. */
+  scene: ArrangementScene
 }
 
 /** One pulse — the phrase grid, a projection of the SAME transport. */
 const PHRASE_GRID: QuantizationGrid = { phaseTick: 0, intervalTicks: PHRASE_WINDOW_TICKS }
+
+/** One bar — the arrangement rail's only legal transition point. */
+const BAR_GRID: QuantizationGrid = { phaseTick: 0, intervalTicks: BAR_TICKS }
 
 interface CommittedState {
   cellId: string
@@ -177,10 +194,14 @@ export class BrassArpEngine {
     mutatedSteps: 0,
     supersededMutations: 0,
     patternCommits: 0,
+    sceneChanges: 0,
+    scene: 'pocket',
   }
   /** The open technique phrase (M40-22B); pure state, folded per punch. */
   private phrase: PhraseAccumulatorState = emptyPhraseState()
   private lastMotif: CompiledTechniqueMotif | null = null
+  /** The arrangement rail (M40-22C) — the SOLE persistent authority. */
+  private arrangement: ArrangementState = emptyArrangementState()
 
   constructor(
     private readonly midi: MidiOutputBackend,
@@ -270,6 +291,18 @@ export class BrassArpEngine {
     this.stepIndex = 0
     this.phrase = emptyPhraseState()
     this.lastMotif = null
+    this.arrangement = emptyArrangementState()
+    this.counters.scene = 'pocket'
+  }
+
+  /** The scene currently governing the arrangement (M40-22C). */
+  get arrangementScene(): ArrangementScene {
+    return this.arrangement.scene
+  }
+
+  /** Design §11: only the top scene licenses the whammy. */
+  get whammyEligible(): boolean {
+    return whammyAllowed(this.arrangement.scene)
   }
 
   get running(): boolean {
@@ -456,6 +489,13 @@ export class BrassArpEngine {
     if (obs.latenessMs > this.counters.maxLatenessMs) {
       this.counters.maxLatenessMs = obs.latenessMs
     }
+    // The bar grid — another projection of the SAME transport — is where
+    // the arrangement scene may move, and only there (am. 7). It runs
+    // BEFORE the harmonic/arp grids so a scene change is already in force
+    // for this bar's first step.
+    if (crossedBoundaryIndices(obs.previousTick, obs.currentTick, BAR_GRID).length > 0) {
+      this.advanceSceneAtBar(obs.currentTick)
+    }
     this.runGrids(obs)
     // The phrase grid is a projection of the SAME transport and must close
     // on its own boundary whether or not an arp step fell here — so it
@@ -544,11 +584,25 @@ export class BrassArpEngine {
   private applyFieldCommit(pending: FoldedHarmonicCommit, atTick: number): boolean {
     const { q, noteVelocity } = pending.winner
     const cellChanged = this.adoptStagedState(q, noteVelocity)
-    this.arpGrid = { phaseTick: atTick, intervalTicks: pending.commit.nextArpIntervalTicks }
-    this.lastCommit =
-      atTick === pending.commit.audibleCommitTick
-        ? pending.commit
-        : { ...pending.commit, audibleCommitTick: atTick, nextArpPhaseTick: atTick }
+    // M40-22C: the SCENE, not Z, decides how much of the punch's requested
+    // energy is expressed. The rail initialises from the opening punch and
+    // thereafter moves only on bar boundaries.
+    this.arrangement = advanceArrangement(this.arrangement, q.activityLayer, atTick, false)
+    this.applySceneCeilings()
+    this.arpGrid = {
+      phaseTick: atTick,
+      intervalTicks: arpIntervalTicksFor(this.committed?.notesPerMinute ?? q.notesPerMinute),
+    }
+    // The stored commit records what ACTUALLY happened: the audible tick
+    // the stall/grid produced, and the rate the arrangement rail allowed
+    // (the pure fold carries the REQUESTED rate — the scene may cap it).
+    const appliedIntervalTicks = this.arpGrid?.intervalTicks ?? pending.commit.nextArpIntervalTicks
+    this.lastCommit = {
+      ...pending.commit,
+      audibleCommitTick: atTick,
+      nextArpPhaseTick: atTick,
+      nextArpIntervalTicks: appliedIntervalTicks,
+    }
     this.counters.commits += 1
     this.counters.lastCommitLagTicks = atTick - pending.commit.requestedCommitTick
     return cellChanged
@@ -561,6 +615,50 @@ export class BrassArpEngine {
    * path (staged punches refresh lastActivity before their window folds).
    * A genuine wind-down re-anchors the arp grid at this boundary.
    */
+  /**
+   * Apply the scene's ceilings to the committed state (am. 7). The scene
+   * caps the layer; rate, gate, and maximum depth all come from here and
+   * nowhere else, so Z and Scene can never select them independently.
+   * Returns true when the sounding rate actually changed.
+   */
+  private applySceneCeilings(): boolean {
+    const committed = this.committed
+    if (!committed) return false
+    const scene = this.arrangement.scene
+    this.counters.scene = scene
+    const ceilings = SCENE_CEILINGS[scene]
+    const capped = cappedLayerFor(scene, committed.activityLayer)
+    const def = this.activityLayers[capped]
+    if (!def) return false
+    const before = committed.notesPerMinute
+    committed.notesPerMinute = Math.min(def.notesPerMinute, ceilings.notesPerMinute)
+    committed.gateRatio = Math.max(def.gateRatio, ceilings.gateRatio)
+    committed.patternDepth = Math.min(def.patternDepth, ceilings.maxPatternDepth)
+    return committed.notesPerMinute !== before
+  }
+
+  /**
+   * The bar boundary: the ONLY place the scene may move (am. 7). A flurry
+   * that raised Z mid-bar reaches the arrangement here, one level at a
+   * time — never Pocket straight to Peak.
+   */
+  private advanceSceneAtBar(atTick: number): void {
+    const committed = this.committed
+    if (!committed) return
+    const before = this.arrangement.scene
+    this.arrangement = advanceArrangement(this.arrangement, committed.activityLayer, atTick, true)
+    if (this.arrangement.scene === before) return
+    this.counters.sceneChanges += 1
+    if (this.applySceneCeilings()) {
+      // A scene rate change re-anchors the arp grid on the bar line — the
+      // same atomic-apply discipline harmonic commits use.
+      this.arpGrid = {
+        phaseTick: atTick,
+        intervalTicks: arpIntervalTicksFor(committed.notesPerMinute),
+      }
+    }
+  }
+
   private applyFieldDecay(atTick: number): void {
     const committed = this.committed
     if (!committed) return
@@ -570,11 +668,15 @@ export class BrassArpEngine {
     if (layer >= layerBefore) return
     const def = this.activityLayers[layer]
     if (!def) return
-    committed.notesPerMinute = def.notesPerMinute
-    committed.gateRatio = def.gateRatio
-    committed.patternDepth = def.patternDepth
     committed.activityLayer = layer
-    this.arpGrid = { phaseTick: atTick, intervalTicks: arpIntervalTicksFor(def.notesPerMinute) }
+    // The wind-down still passes through the SCENE's ceilings — decay may
+    // lower energy inside the current scene, never re-select the
+    // arrangement behind the rail's back (am. 7).
+    this.applySceneCeilings()
+    this.arpGrid = {
+      phaseTick: atTick,
+      intervalTicks: arpIntervalTicksFor(committed.notesPerMinute),
+    }
   }
 
   // -------------------------------------------------------------------------
