@@ -27,7 +27,8 @@ import type {
   QuantizedChange,
   WhammyAccent,
 } from './gestureSchema'
-import { INSTRUMENT_SCHEMA_VERSION } from './gestureSchema'
+import { HARMONIC_SCHEMA_VERSION, INSTRUMENT_SCHEMA_VERSION } from './gestureSchema'
+import { msForTicks } from './transportGrid'
 import {
   activityAt,
   activityLayerAt,
@@ -183,7 +184,9 @@ export function compileGesture(
         ? (ctx.field.section.nodes[Math.max(0, Math.min(5, currentLeftIndex ?? 0))] ?? null)
         : null
     const members = bandMembers(hand, bandCount, band, roleNode)
-    const windowIndex = Math.floor(now / fieldSection.commitWindowMs)
+    // Ticks are canonical (am. 3); the tablet's window key derives ms from
+    // them — 480 ticks → 500 ms, identical indices to the shipped goldens.
+    const windowIndex = Math.floor(now / msForTicks(fieldSection.commitIntervalTicks))
     const advancedOrbit = advanceOrbit(
       state.orbit[hand],
       band,
@@ -273,7 +276,7 @@ export function compileGesture(
       backend: ctx.brassMap.arpBackend,
       // Harmonic commit grid (v2 §12) — field patches only; its absence
       // keeps every v1 brass gesture byte-identical.
-      ...(fieldSection ? { commitWindowMs: fieldSection.commitWindowMs } : {}),
+      ...(fieldSection ? { commitIntervalTicks: fieldSection.commitIntervalTicks } : {}),
     }
   }
 
@@ -292,7 +295,9 @@ export function compileGesture(
       : undefined
 
   const gesture: CompiledPunchGesture = {
-    schemaVersion: INSTRUMENT_SCHEMA_VERSION,
+    // Field patches speak protocol 2 (fail-closed against pre-field
+    // bridges — am. 8); everything else stays on 1 byte-identically.
+    schemaVersion: fieldSection ? HARMONIC_SCHEMA_VERSION : INSTRUMENT_SCHEMA_VERSION,
     sessionId: ctx.sessionId,
     eventId: input.eventId,
     mapHash: ctx.cubeMap.patchHash,

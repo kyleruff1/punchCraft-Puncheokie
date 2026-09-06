@@ -33,6 +33,7 @@ import {
   type CompiledBrassCubeMap,
 } from './brassCube'
 import { mapHashOf } from './gestureSchema'
+import type { CommitIntervalTicks } from './transportGrid'
 
 /** Bump when compilation SEMANTICS change (not on layout refactors). */
 export const FIELD_COMPILER_VERSION = 'field-compiler-1'
@@ -48,8 +49,6 @@ export type MovementClass = 'stay' | 'resolve' | 'step' | 'skip' | 'tension' | '
 export type FreedomProfileId = 'safe-3x3' | 'guided-4x4' | 'full-6x6'
 
 export type NavigationMode = 'absolute' | 'orbit'
-
-export type CommitWindowMs = 250 | 500 | 1000
 
 /** Right-axis role bands (v2 §6): Foundation / Color / Air. */
 export type ToneRoleGroupId = 'foundation' | 'color' | 'air'
@@ -110,16 +109,12 @@ export interface HarmonicFieldSection {
   capabilities: HarmonicFieldCapabilities
   freedom: FreedomProfileId
   navigation: NavigationMode
-  /** Harmonic commit grid (v2 §12) as a UI value; ticks are compiled. */
-  commitWindowMs: CommitWindowMs
-}
-
-/** 60 BPM master pulse = 960 transport ticks (review amendment 1). */
-export const TRANSPORT_TICKS_PER_BEAT = 960
-
-/** Compile a commit window into transport ticks: 250→240, 500→480, 1000→960. */
-export function commitIntervalTicksOf(windowMs: CommitWindowMs): 240 | 480 | 960 {
-  return ((windowMs / 1000) * TRANSPORT_TICKS_PER_BEAT) as 240 | 480 | 960
+  /**
+   * Harmonic commit grid (v2 §12) in TRANSPORT TICKS — the canonical name
+   * everywhere (second-pass am. 3); 250/500/1000 ms exist only as UI
+   * labels derived via transportGrid's msForTicks.
+   */
+  commitIntervalTicks: CommitIntervalTicks
 }
 
 const UNIFORM_ROLES: HarmonicNode['toneRoles'] = [
@@ -252,7 +247,7 @@ export const DORIAN_HARMONIC_FIELD_SECTION: HarmonicFieldSection = {
   capabilities: FOUNDATION_CAPABILITIES,
   freedom: 'safe-3x3',
   navigation: 'orbit',
-  commitWindowMs: 500,
+  commitIntervalTicks: 480,
 }
 
 // ---------------------------------------------------------------------------
@@ -470,7 +465,7 @@ export function compileHarmonicField(
     voiceLeading: voiceLeadingTable,
     freedom: section.freedom,
     navigation: section.navigation,
-    commitIntervalTicks: commitIntervalTicksOf(section.commitWindowMs),
+    commitIntervalTicks: section.commitIntervalTicks,
   })
 
   return {

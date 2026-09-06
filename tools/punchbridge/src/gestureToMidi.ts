@@ -272,6 +272,16 @@ export class VoiceRenderer {
     return this.active.size
   }
 
+  /** The brass engine's latency/robustness counters (am. 14); null while idle. */
+  brassTelemetry(): ReturnType<BrassArpEngine['telemetry']> | null {
+    return this.engine ? this.engine.telemetry() : null
+  }
+
+  /** The last canonical harmonic commit the engine applied (field driver). */
+  lastHarmonicCommit(): BrassArpEngine['lastHarmonicCommit'] {
+    return this.engine ? this.engine.lastHarmonicCommit : null
+  }
+
   /**
    * Brass path (no strikeVoice, no latch write, no center reset): CCs on
    * the arp channel, the immediate ch4 stab, the ch10 impact transient,
@@ -311,8 +321,9 @@ export class VoiceRenderer {
 
     // Stage only — the engine commits on the next boundary (or fires
     // boundary 0 synchronously when idle: the accent + step-0 double
-    // attack on the first punch is by design, layered voices).
-    this.engine.applyGesture(q, gesture.voice.noteVelocity)
+    // attack on the first punch is by design, layered voices). The
+    // eventId feeds the field driver's commit fold (contributing ids).
+    this.engine.applyGesture(q, gesture.voice.noteVelocity, { eventId: gesture.eventId })
 
     if (gesture.whammy) {
       // The whammy rides the ARP channel for BOTH hands, so its bend range

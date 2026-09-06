@@ -9,9 +9,12 @@
  * fake socket — `handleMessage` is pure of the transport.
  */
 import {
+  HARMONIC_FIELD_REQUIRED_CAPABILITIES,
+  HARMONIC_SCHEMA_VERSION,
   INSTRUMENT_SCHEMA_VERSION,
   type PunchBridgeAck,
   type PunchBridgeMessage,
+  type PunchHelloMessage,
 } from '../../../src/domain/instrument/gestureSchema'
 import type { MidiOutputBackend } from './midiBackend'
 import type { InstrumentProfile } from './instrumentProfiles'
@@ -21,6 +24,16 @@ export interface BridgeClock {
   /** Monotone-ish PC clock in ms for ack stamping + watchdog. */
   now(): number
 }
+
+/**
+ * What THIS bridge build supports (second-pass am. 8). A v2 hello whose
+ * requiredCapabilities are not a subset is REJECTED with the missing list
+ * — silent legacy fallback is forbidden by design.
+ */
+export const BRIDGE_CAPABILITIES: readonly string[] = HARMONIC_FIELD_REQUIRED_CAPABILITIES
+
+/** The only clock authority this release (execution-backends design). */
+export const BRIDGE_CLOCK_AUTHORITY = 'punchbridge'
 
 export interface BridgeSocketLike {
   send(data: string): void
@@ -60,6 +73,9 @@ export class BridgeSession {
    * never re-rendered — an accent/whammy punch must not re-fire.
    */
   private lastGestureEventId: string | null = null
+  /** V2 negotiation state (am. 8): gestures gate on an ACCEPTED v2 hello. */
+  private acceptedV2Hello = false
+  private rejectedHelloReason: string | null = null
 
   constructor(
     private readonly socket: BridgeSocketLike,
@@ -117,14 +133,32 @@ export class BridgeSession {
     return this.renderer.activeCount()
   }
 
+  /** Brass engine latency/robustness counters (am. 14); null while idle. */
+  telemetry(): ReturnType<VoiceRenderer['brassTelemetry']> {
+    return this.renderer.brassTelemetry()
+  }
+
   private handle(message: PunchBridgeMessage): void {
-    if (message.schemaVersion !== INSTRUMENT_SCHEMA_VERSION) {
-      this.reject(message, `schema ${String(message.schemaVersion)} != ${INSTRUMENT_SCHEMA_VERSION}`)
+    // The schemaVersion IS the protocol version (am. 8): anything outside
+    // the supported set is rejected outright — which is exactly why an
+    // OLD bridge fails closed against a v2 tablet instead of silently
+    // playing legacy.
+    if (
+      message.schemaVersion !== INSTRUMENT_SCHEMA_VERSION &&
+      message.schemaVersion !== HARMONIC_SCHEMA_VERSION
+    ) {
+      this.reject(message, `schema ${String(message.schemaVersion)} != ${INSTRUMENT_SCHEMA_VERSION}|${HARMONIC_SCHEMA_VERSION}`)
       return
     }
 
     switch (message.type) {
       case 'hello': {
+        if (message.schemaVersion === HARMONIC_SCHEMA_VERSION) {
+          this.handleV2Hello(message)
+          return
+        }
+        // v1 hello — the pre-field path, byte-identical on the wire.
+        this.acceptedV2Hello = false
         this.helloMapHash = message.mapHash
         this.sessionId = message.sessionId
         // Prime GM destinations with the profile's voice program (the
@@ -150,6 +184,17 @@ export class BridgeSession {
         return
       }
       case 'punch-gesture': {
+        // V2 gestures flow ONLY after an accepted v2 hello — a rejected
+        // handshake must never degrade into silent legacy playback.
+        if (message.schemaVersion === HARMONIC_SCHEMA_VERSION && !this.acceptedV2Hello) {
+          this.reject(
+            message,
+            this.rejectedHelloReason
+              ? `hello rejected: ${this.rejectedHelloReason}`
+              : 'v2 gesture before an accepted v2 hello',
+          )
+          return
+        }
         if (this.helloMapHash !== null && message.mapHash !== this.helloMapHash) {
           this.reject(message, `mapHash ${message.mapHash} != session ${this.helloMapHash}`)
           return
@@ -171,6 +216,88 @@ export class BridgeSession {
         this.log(`punchbridge: unknown message type ${String((message as { type: string }).type)}`)
       }
     }
+  }
+
+  /**
+   * V2 hello (am. 8 + the execution-backends clock contract): validate
+   * capabilities ⊆ BRIDGE_CAPABILITIES, the identity hashes, and the
+   * clock authority; answer with an echoing accept or an explicit
+   * rejection. The tablet holds v2 gestures until the accept echoes its
+   * ACTIVE effectivePatchHash.
+   */
+  private handleV2Hello(message: PunchHelloMessage): void {
+    const failure = this.validateV2Hello(message)
+    const at = this.clock.now()
+    if (failure) {
+      this.acceptedV2Hello = false
+      this.rejectedHelloReason = failure.reason
+      this.log(`punchbridge: REJECTED v2 hello — ${failure.reason}`)
+      this.emit({
+        type: 'hello-ack',
+        sessionId: message.sessionId,
+        sequence: 0,
+        receivedAtPcMs: at,
+        midiDispatchedAtPcMs: at,
+        midiReady: true,
+        accepted: false,
+        supportedCapabilities: BRIDGE_CAPABILITIES,
+        missingCapabilities: failure.missing,
+        rejected: failure.reason,
+      })
+      return
+    }
+    this.acceptedV2Hello = true
+    this.rejectedHelloReason = null
+    this.helloMapHash = message.mapHash
+    this.sessionId = message.sessionId
+    this.renderer.prepareVoices()
+    this.emit({
+      type: 'hello-ack',
+      sessionId: message.sessionId,
+      sequence: 0,
+      receivedAtPcMs: at,
+      midiDispatchedAtPcMs: at,
+      midiReady: true,
+      accepted: true,
+      supportedCapabilities: BRIDGE_CAPABILITIES,
+      missingCapabilities: [],
+      compiledFieldHash: message.compiledFieldHash ?? '',
+      effectivePatchHash: message.effectivePatchHash ?? message.mapHash,
+      patchGeneration: message.patchGeneration ?? 0,
+    })
+  }
+
+  private validateV2Hello(
+    message: PunchHelloMessage,
+  ): { reason: string; missing: readonly string[] } | null {
+    const required = message.requiredCapabilities
+    if (!Array.isArray(required) || required.length === 0) {
+      return { reason: 'v2 hello missing requiredCapabilities', missing: [] }
+    }
+    const missing = required.filter((c) => !BRIDGE_CAPABILITIES.includes(c))
+    if (missing.length > 0) {
+      return { reason: `unsupported capabilities: ${missing.join(', ')}`, missing }
+    }
+    if (
+      typeof message.compiledFieldHash !== 'string' ||
+      typeof message.effectivePatchHash !== 'string'
+    ) {
+      return { reason: 'v2 hello missing field identity hashes', missing: [] }
+    }
+    const clock = message.clock
+    if (!clock) {
+      return { reason: 'v2 hello missing clock contract', missing: [] }
+    }
+    if (clock.authority !== BRIDGE_CLOCK_AUTHORITY) {
+      return {
+        reason: `clock authority ${String(clock.authority)} unsupported (${BRIDGE_CLOCK_AUTHORITY} only this release)`,
+        missing: [],
+      }
+    }
+    if (clock.ticksPerBeat !== 960) {
+      return { reason: `ticksPerBeat ${String(clock.ticksPerBeat)} != 960`, missing: [] }
+    }
+    return null
   }
 
   private ackHello(sessionId: string, _mapHash: string): void {

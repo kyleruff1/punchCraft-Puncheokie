@@ -89,9 +89,22 @@ function main(): void {
       { midi, clock, watchdogMs: args.watchdogMs, profile, log: (m) => console.log(m) },
     )
     const watchdog = setInterval(() => session.checkWatchdog(), 1000)
+    // Basic latency telemetry (M40-17 am. 14): a periodic summary while
+    // the commit grid is live; per-message spans already ride the acks.
+    let lastCommitCount = 0
+    const telemetryLog = setInterval(() => {
+      const t = session.telemetry()
+      if (t && t.commits !== lastCommitCount) {
+        lastCommitCount = t.commits
+        console.log(
+          `punchbridge: telemetry — commits ${t.commits}, commit lag ${String(t.lastCommitLagTicks)} ticks, skipped steps ${t.skippedArpSteps}, max lateness ${t.maxLatenessMs.toFixed(1)} ms`,
+        )
+      }
+    }, 30000)
     socket.on('message', (data) => session.onText(data.toString()))
     socket.on('close', () => {
       clearInterval(watchdog)
+      clearInterval(telemetryLog)
       session.onClose()
       console.log(`punchbridge: tablet ${who} disconnected`)
     })

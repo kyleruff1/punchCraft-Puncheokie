@@ -10,10 +10,13 @@
  * exists.
  */
 import {
+  HARMONIC_FIELD_REQUIRED_CAPABILITIES,
+  HARMONIC_SCHEMA_VERSION,
   INSTRUMENT_SCHEMA_VERSION,
   type CompiledPunchGesture,
   type PunchBridgeAck,
   type VoiceId,
+  type WireSchemaVersion,
 } from '@domain/instrument/gestureSchema'
 
 export type BridgeStatus = 'idle' | 'connecting' | 'open' | 'closed' | 'error'
@@ -22,6 +25,20 @@ export interface BridgeClientCallbacks {
   onStatus?: (status: BridgeStatus, detail?: string) => void
   /** Round-trip millis for an acked message (send → ack receive). */
   onRtt?: (rttMs: number, ack: PunchBridgeAck) => void
+}
+
+/**
+ * The active patch's wire identity. Presence of `compiledFieldHash`
+ * upgrades the session to wire v2 (harmonic-field protocol, am. 8) — the
+ * hello then carries the identity block + clock contract and gestures are
+ * HELD until the bridge's accept echoes the active effectivePatchHash.
+ */
+export interface PatchIdentity {
+  mapHash: string
+  worldManifestHash?: string
+  compiledFieldHash?: string
+  effectivePatchHash?: string
+  patchGeneration?: number
 }
 
 const HEARTBEAT_MS = 1000
@@ -33,7 +50,11 @@ export class BridgeClient {
   private ws: WebSocket | null = null
   private url = ''
   private sessionId = ''
-  private mapHash = DEV_MAP_HASH
+  private identity: PatchIdentity = { mapHash: DEV_MAP_HASH }
+  /** Tablet-owned transport epoch (execution-backends clock contract). */
+  private transportGeneration = 0
+  /** V2 only: true after an accept echoing the ACTIVE effectivePatchHash. */
+  private negotiated = false
   private sequence = 0
   private heartbeat: ReturnType<typeof setInterval> | null = null
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
@@ -42,35 +63,53 @@ export class BridgeClient {
 
   constructor(private readonly cb: BridgeClientCallbacks = {}) {}
 
-  connect(url: string, sessionId: string, mapHash: string = DEV_MAP_HASH): void {
+  connect(
+    url: string,
+    sessionId: string,
+    mapHash: string = DEV_MAP_HASH,
+    identity: Omit<PatchIdentity, 'mapHash'> = {},
+  ): void {
     this.url = url
     this.sessionId = sessionId
-    this.mapHash = mapHash
+    this.identity = { mapHash, ...identity }
+    this.transportGeneration += 1
+    this.negotiated = false
     this.wantOpen = true
     this.openSocket()
   }
 
   /**
-   * A patch change produces a new hash; the bridge accepts the latest
-   * hello's hash, so re-hello keeps the session validated (Next-Punch
-   * patch-change semantics — no reconnect, no note interruption).
+   * A patch change produces a new identity; the bridge accepts the latest
+   * hello's identity, so re-hello keeps the session validated (Next-Punch
+   * patch-change semantics — no reconnect, no note interruption). On a v2
+   * identity the negotiation gate re-arms until the new accept echoes.
    */
-  setMapHash(mapHash: string): void {
-    if (this.mapHash === mapHash) return
-    this.mapHash = mapHash
-    if (this.isOpen()) {
-      this.raw({
-        type: 'hello',
-        schemaVersion: INSTRUMENT_SCHEMA_VERSION,
-        sessionId: this.sessionId,
-        mapHash,
-        heartbeatMs: HEARTBEAT_MS,
-      })
+  setPatchIdentity(identity: PatchIdentity): void {
+    const current = this.identity
+    if (
+      current.mapHash === identity.mapHash &&
+      current.worldManifestHash === identity.worldManifestHash &&
+      current.compiledFieldHash === identity.compiledFieldHash &&
+      current.effectivePatchHash === identity.effectivePatchHash &&
+      current.patchGeneration === identity.patchGeneration
+    ) {
+      return
     }
+    this.identity = { ...identity }
+    this.negotiated = false
+    if (this.isOpen()) {
+      this.sendHello()
+    }
+  }
+
+  /** V1 convenience (today's jam callers) — hash-only identity. */
+  setMapHash(mapHash: string): void {
+    this.setPatchIdentity({ mapHash })
   }
 
   disconnect(): void {
     this.wantOpen = false
+    this.negotiated = false
     this.clearTimers()
     if (this.ws) {
       try {
@@ -99,12 +138,16 @@ export class BridgeClient {
 
   sendGesture(gesture: CompiledPunchGesture): void {
     if (!this.isOpen()) return
+    // The v2 gate (am. 8): field gestures are HELD until the bridge's
+    // accept echoed the active patch identity — never a silent legacy
+    // fallback, never notes under an unvalidated session.
+    if (gesture.schemaVersion === HARMONIC_SCHEMA_VERSION && !this.negotiated) return
     const sequence = this.nextSeq()
     const now = this.nowMs()
     this.sentAt.set(sequence, now)
     this.raw({
       type: 'punch-gesture',
-      schemaVersion: INSTRUMENT_SCHEMA_VERSION,
+      schemaVersion: gesture.schemaVersion,
       sessionId: this.sessionId,
       sequence,
       mapHash: gesture.mapHash,
@@ -120,11 +163,53 @@ export class BridgeClient {
     this.sentAt.set(sequence, now)
     this.raw({
       type,
-      schemaVersion: INSTRUMENT_SCHEMA_VERSION,
+      schemaVersion: this.wireVersion(),
       sessionId: this.sessionId,
       sequence,
       sentAtMonotonicMs: now,
       ...(voiceId ? { voiceId } : {}),
+    })
+  }
+
+  private wireVersion(): WireSchemaVersion {
+    return this.identity.compiledFieldHash !== undefined
+      ? HARMONIC_SCHEMA_VERSION
+      : INSTRUMENT_SCHEMA_VERSION
+  }
+
+  /** Compose the hello for the current identity (v1 shape byte-identical). */
+  private sendHello(): void {
+    const version = this.wireVersion()
+    if (version === HARMONIC_SCHEMA_VERSION) {
+      this.raw({
+        type: 'hello',
+        schemaVersion: HARMONIC_SCHEMA_VERSION,
+        sessionId: this.sessionId,
+        mapHash: this.identity.mapHash,
+        requiredCapabilities: HARMONIC_FIELD_REQUIRED_CAPABILITIES,
+        ...(this.identity.worldManifestHash !== undefined
+          ? { worldManifestHash: this.identity.worldManifestHash }
+          : {}),
+        compiledFieldHash: this.identity.compiledFieldHash,
+        effectivePatchHash: this.identity.effectivePatchHash ?? this.identity.mapHash,
+        patchGeneration: this.identity.patchGeneration ?? 0,
+        transportGeneration: this.transportGeneration,
+        clock: {
+          authority: 'punchbridge',
+          beatsPerMinute: 60,
+          ticksPerBeat: 960,
+          transportEpochId: `${this.sessionId}#${this.transportGeneration}`,
+        },
+        heartbeatMs: HEARTBEAT_MS,
+      })
+      return
+    }
+    this.raw({
+      type: 'hello',
+      schemaVersion: INSTRUMENT_SCHEMA_VERSION,
+      sessionId: this.sessionId,
+      mapHash: this.identity.mapHash,
+      heartbeatMs: HEARTBEAT_MS,
     })
   }
 
@@ -142,13 +227,7 @@ export class BridgeClient {
 
     ws.onopen = () => {
       this.cb.onStatus?.('open', this.url)
-      this.raw({
-        type: 'hello',
-        schemaVersion: INSTRUMENT_SCHEMA_VERSION,
-        sessionId: this.sessionId,
-        mapHash: this.mapHash,
-        heartbeatMs: HEARTBEAT_MS,
-      })
+      this.sendHello()
       this.startHeartbeat()
     }
     ws.onmessage = (ev: WebSocketMessageEvent) => {
@@ -160,6 +239,7 @@ export class BridgeClient {
     ws.onclose = () => {
       this.stopHeartbeat()
       this.ws = null
+      this.negotiated = false // reconnect re-hellos and re-negotiates
       this.cb.onStatus?.('closed', this.url)
       if (this.wantOpen) this.scheduleReconnect()
     }
@@ -172,6 +252,21 @@ export class BridgeClient {
       ack = JSON.parse(data) as PunchBridgeAck
     } catch {
       return
+    }
+    // V2 negotiation (am. 8): the accept must echo the ACTIVE patch
+    // identity — a stale accept (from a superseded hello) arms nothing.
+    if (ack.type === 'hello-ack' && this.wireVersion() === HARMONIC_SCHEMA_VERSION) {
+      const expected = this.identity.effectivePatchHash ?? this.identity.mapHash
+      if (ack.accepted === true && ack.effectivePatchHash === expected) {
+        this.negotiated = true
+        this.cb.onStatus?.('open', 'negotiated')
+      } else {
+        this.negotiated = false
+        this.cb.onStatus?.(
+          'error',
+          `bridge rejected hello: ${ack.rejected ?? 'patch identity mismatch'}`,
+        )
+      }
     }
     const sentAt = this.sentAt.get(ack.sequence)
     if (sentAt !== undefined) {

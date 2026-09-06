@@ -16,6 +16,49 @@ import type { PunchHand } from '../punch/PunchEvent'
 /** Bumped only when the wire shape changes incompatibly. */
 export const INSTRUMENT_SCHEMA_VERSION = 1
 
+/**
+ * The harmonic-field wire protocol (harmonic-field-v2, second-pass am. 8).
+ * The protocol version IS the schemaVersion: every bridge hard-rejects an
+ * unknown schemaVersion, so an older bridge CANNOT ignore-and-continue in
+ * legacy mode when a field patch speaks — the negotiation fails closed by
+ * construction. Field patches stamp 2 on every message; legacy patches
+ * stay on 1 byte-identically.
+ */
+export const HARMONIC_SCHEMA_VERSION = 2
+
+export type WireSchemaVersion =
+  | typeof INSTRUMENT_SCHEMA_VERSION
+  | typeof HARMONIC_SCHEMA_VERSION
+
+/**
+ * Capability ids (single source of truth for tablet AND bridge). A v2
+ * hello REQUIRES its listed capabilities: a bridge missing one rejects
+ * the hello with the missing list — silent legacy fallback is forbidden.
+ */
+export const HARMONIC_FIELD_CAPABILITY = 'harmonic-field-v2'
+export const QUANTIZED_COMMIT_CAPABILITY = 'quantized-commit-v1'
+export const HARMONIC_FIELD_REQUIRED_CAPABILITIES: readonly string[] = [
+  HARMONIC_FIELD_CAPABILITY,
+  QUANTIZED_COMMIT_CAPABILITY,
+]
+
+/**
+ * Clock authority (execution-backends design): each performance session
+ * has exactly ONE. This release the tablet always declares 'punchbridge'
+ * (PunchBridge owns the 60 BPM transport); 'studio-one-host' ships only
+ * with M45-06's host-position adapter behind its own capability — a
+ * bridge without it REJECTS the hello rather than drifting on two clocks.
+ */
+export type PerformanceClockAuthority = 'punchbridge' | 'studio-one-host'
+
+export interface PerformanceClockContract {
+  authority: PerformanceClockAuthority
+  beatsPerMinute: number
+  ticksPerBeat: 960
+  /** `${sessionId}#${transportGeneration}` — names one transport epoch. */
+  transportEpochId: string
+}
+
 /** The twelve canonical strike tokens (Guided mode; §1). */
 export type StrikeToken =
   | '1'
@@ -81,11 +124,13 @@ export interface QuantizedChange {
   retrigger: RetriggerPolicy
   backend: ArpeggiatorBackend
   /**
-   * Harmonic commit grid (harmonic-field-v2 §12): present ONLY for
-   * harmonic-field patches — the bridge commits harmony on this window
-   * instead of the arp step grid. Absent → legacy arp-boundary commits.
+   * Harmonic commit grid (harmonic-field-v2 §12) in TRANSPORT TICKS
+   * (second-pass am. 3 — ticks are the canonical name; ms only as UI
+   * labels): present ONLY for harmonic-field patches — the bridge commits
+   * harmony on this window instead of the arp step grid. Absent → legacy
+   * arp-boundary commits, byte-identical.
    */
-  commitWindowMs?: number
+  commitIntervalTicks?: number
 }
 
 /**
@@ -136,7 +181,8 @@ export interface MusicalPunchInput {
  * JSON without loss.
  */
 export interface CompiledPunchGesture {
-  schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
+  /** 1 for legacy/latch/brass patches; 2 for harmonic-field patches. */
+  schemaVersion: WireSchemaVersion
   sessionId: string
   eventId: string
   mapHash: string
@@ -197,7 +243,7 @@ export interface CompiledPunchGesture {
 /** Tablet → bridge. */
 export interface PunchGestureMessage {
   type: 'punch-gesture'
-  schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
+  schemaVersion: WireSchemaVersion
   sessionId: string
   sequence: number
   mapHash: string
@@ -212,7 +258,7 @@ export interface PunchGestureMessage {
  */
 export interface PunchControlMessage {
   type: 'test-note' | 'panic'
-  schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
+  schemaVersion: WireSchemaVersion
   sessionId: string
   sequence: number
   sentAtMonotonicMs: number
@@ -222,21 +268,34 @@ export interface PunchControlMessage {
 
 export interface PunchHelloMessage {
   type: 'hello'
-  schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
+  schemaVersion: WireSchemaVersion
   sessionId: string
   mapHash: string
   /**
-   * Harmonic-field patches also announce their field manifest hash
-   * (harmonic-field-v2 §2) — additive; absent for latch/brass-only patches.
+   * V2 identity block (second-pass am. 8) — REQUIRED semantically when
+   * schemaVersion is 2 (the bridge rejects a v2 hello missing them);
+   * absent on v1 hellos, which stay byte-identical.
    */
-  fieldHash?: string
+  requiredCapabilities?: readonly string[]
+  /** Authored source identity of the world manifest. */
+  worldManifestHash?: string
+  /** Normalized compiled musical semantics — runtime compatibility. */
+  compiledFieldHash?: string
+  /** compiledFieldHash + freedom/navigation/pattern/commit/sound settings. */
+  effectivePatchHash?: string
+  /** Bumped by settings changes (M40-18); pending intents die with it. */
+  patchGeneration?: number
+  /** Tablet-owned; bumps per jam-session start — tags commits + replay. */
+  transportGeneration?: number
+  /** V2 clock contract — the bridge rejects an authority it cannot honor. */
+  clock?: PerformanceClockContract
   /** Millis between heartbeats the tablet promises; bridge watchdog uses it. */
   heartbeatMs: number
 }
 
 export interface PunchHeartbeatMessage {
   type: 'heartbeat'
-  schemaVersion: typeof INSTRUMENT_SCHEMA_VERSION
+  schemaVersion: WireSchemaVersion
   sessionId: string
   sentAtMonotonicMs: number
 }
@@ -256,8 +315,20 @@ export interface PunchBridgeAck {
   midiDispatchedAtPcMs: number
   /** Present on 'hello-ack': whether the bridge has a live MIDI port. */
   midiReady?: boolean
-  /** Present on any ack when the bridge rejects a message. */
+  /** Present on any ack when the bridge rejects a message (the reason). */
   rejected?: string
+  /**
+   * V2 hello-ack negotiation block (second-pass am. 8): the tablet must
+   * not send v2 gestures until accepted===true AND the echoed
+   * effectivePatchHash matches its active patch. Absent on v1 acks —
+   * the v1 ack stream stays byte-identical.
+   */
+  accepted?: boolean
+  supportedCapabilities?: readonly string[]
+  missingCapabilities?: readonly string[]
+  compiledFieldHash?: string
+  effectivePatchHash?: string
+  patchGeneration?: number
 }
 
 // ---------------------------------------------------------------------------

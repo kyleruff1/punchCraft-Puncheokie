@@ -77,8 +77,9 @@ export function subindexInBand(bandCount: 3 | 4 | 6, zone: number): number {
 
 /**
  * Per-hand navigation memory — sample-and-hold like the latch.
- * `commitWindowIndex` is floor(receivedMonotonicTimeMs / commitWindowMs):
- * the per-commit orbit gate (at most one advance per window per hand).
+ * `commitWindowIndex` is floor(receivedMonotonicTimeMs /
+ * msForTicks(commitIntervalTicks)): the per-commit orbit gate (at most one
+ * advance per window per hand).
  */
 export interface OrbitState {
   band: number

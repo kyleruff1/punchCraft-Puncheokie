@@ -7,6 +7,12 @@
  * and panic.
  *
  * Run: npm run bench   (add --midi "<port>" to target a specific port)
+ *
+ * `--v2` runs the HARMONIC COMMIT GRID scenario instead (M40-17): the
+ * dorian-brass-v2 field patch, where punches stage into 500 ms windows,
+ * flurries coalesce into ONE canonical commit, a rate-raising commit lands
+ * on the SOUNDING grid's boundary (the am.-4 case, audible), and the
+ * telemetry summary prints at the end.
  */
 import { compileBrassCube } from '../../../src/domain/instrument/brassCube'
 import { compilePunchPatch } from '../../../src/domain/instrument/cubeCompiler'
@@ -16,6 +22,7 @@ import {
   type InstrumentSessionState,
 } from '../../../src/domain/instrument/gestureCompiler'
 import type { MusicalPunchInput } from '../../../src/domain/instrument/gestureSchema'
+import { compileHarmonicField } from '../../../src/domain/instrument/harmonicField'
 import { launchPatchById } from '../../../src/domain/instrument/punchPatch'
 import { openBestBackend } from './midiBackend'
 import { VoiceRenderer } from './gestureToMidi'
@@ -75,23 +82,72 @@ script.push({
 // chord and rotation stay latched. Panic closes the session.
 const PANIC_AT_MS = 45000
 
+/**
+ * The M40-17 commit-grid rehearsal: every harmonic change should land ON
+ * the 500 ms grid (or the sounding arp boundary right after it) while
+ * stabs + transients stay punch-time.
+ */
+const v2Script: BenchPunch[] = [
+  { atMs: 0, hand: 'left', velocity01: 0.05, acceleration01: 0.4, velocityRaw: 12, note: 'downbeat — first punch IS boundary 0, Dm world opens' },
+  { atMs: 1300, hand: 'right', velocity01: 0.4, acceleration01: 0.5, velocityRaw: 40, note: 'right tone move staged mid-window → lands on the NEXT 500 ms boundary' },
+  { atMs: 4200, hand: 'left', velocity01: 0.85, acceleration01: 0.85, velocityRaw: 60, note: 'hard left staged at 4.2s: stab NOW, chord commits at 4.5s on the grid' },
+]
+
+// Coalescing: five punches inside ONE window (10.05–10.45 s) → exactly one
+// harmonic change at 10.5 s carrying all five eventIds (watch the bass).
+for (let i = 0; i < 5; i += 1) {
+  v2Script.push({
+    atMs: 10050 + i * 100,
+    hand: i % 2 === 0 ? 'left' : 'right',
+    velocity01: 0.5 + 0.08 * i,
+    acceleration01: 0.7,
+    velocityRaw: 50 + i,
+    note: i === 0 ? 'five-punch flurry in one window → ONE coalesced commit at 10.5s' : undefined,
+  })
+}
+
+// The am.-4 moment: a sustained flurry raises the ladder; the rate change
+// applies ATOMICALLY with the chord at the sounding grid's boundary.
+for (let i = 0; i < 10; i += 1) {
+  v2Script.push({
+    atMs: 15000 + i * 260,
+    hand: i % 2 === 0 ? 'left' : 'right',
+    velocity01: i % 2 === 0 ? 0.5 : 0.75,
+    acceleration01: 0.75,
+    velocityRaw: 55 + (i % 4),
+    note: i === 0 ? 'flurry — commits stay on-grid while the rate climbs with them' : undefined,
+  })
+}
+
+const V2_PANIC_AT_MS = 30000
+
 async function main(): Promise<void> {
   const midiArg = arg('--midi')
+  const v2 = process.argv.includes('--v2')
   const midi = openBestBackend([...(midiArg ? [midiArg] : []), 'punchbridge', 'loopmidi', 'wavetable'])
   const renderer = new VoiceRenderer(midi)
   renderer.prepareVoices()
 
-  const patch = launchPatchById('dorian-brass-cube')
+  const patch = launchPatchById(v2 ? 'dorian-brass-v2' : 'dorian-brass-cube')
   const cubeMap = compilePunchPatch(patch)
   const brassMap = compileBrassCube(patch)
+  const field =
+    v2 && patch.harmonicField
+      ? compileHarmonicField(patch.id, patch.harmonicField, brassMap)
+      : undefined
   let state: InstrumentSessionState = emptySessionState()
+
+  const runScript = v2 ? v2Script : script
+  const panicAt = v2 ? V2_PANIC_AT_MS : PANIC_AT_MS
 
   const started = Date.now()
   const wait = (untilMs: number): Promise<void> =>
     new Promise((r) => setTimeout(r, Math.max(0, untilMs - (Date.now() - started))))
 
-  console.log(`punchbridge bench: Dorian Brass Cube via "${midi.portName}" — ~${PANIC_AT_MS / 1000}s`)
-  for (const p of script) {
+  console.log(
+    `punchbridge bench: ${v2 ? 'Harmonic Field v2 commit grid' : 'Dorian Brass Cube'} via "${midi.portName}" — ~${panicAt / 1000}s`,
+  )
+  for (const p of runScript) {
     await wait(p.atMs)
     const input: MusicalPunchInput = {
       eventId: `bench-${p.hand}-${p.atMs}`,
@@ -105,6 +161,7 @@ async function main(): Promise<void> {
       patch,
       cubeMap,
       brassMap,
+      ...(field ? { field } : {}),
       velocity01: p.velocity01,
       acceleration01: p.acceleration01,
     })
@@ -114,9 +171,15 @@ async function main(): Promise<void> {
     if (p.note) console.log(`  [${(p.atMs / 1000).toFixed(1)}s] ${p.note}`)
   }
 
-  await wait(PANIC_AT_MS)
+  await wait(panicAt)
+  const telemetry = renderer.brassTelemetry()
   console.log('  panic — silence, wheel centered, wah settled')
   renderer.panic()
+  if (telemetry) {
+    console.log(
+      `punchbridge bench telemetry: commits ${telemetry.commits}, last commit lag ${String(telemetry.lastCommitLagTicks)} ticks, skipped steps ${telemetry.skippedArpSteps}, max scheduler lateness ${telemetry.maxLatenessMs.toFixed(1)} ms`,
+    )
+  }
   await new Promise((r) => setTimeout(r, 300))
   midi.close()
   console.log('punchbridge bench: done')
