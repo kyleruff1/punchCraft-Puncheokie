@@ -227,6 +227,11 @@ export default function JamScreen(): React.JSX.Element {
   const supportedOutputs = patch.harmonicField?.capabilities.supportedOutputs
   const effectiveOutput: InstrumentOutputTarget =
     supportedOutputs && !supportedOutputs.includes(outputTarget) ? 'bridge' : outputTarget
+  // A latch-only (legacy) patch has no brassCube, so the compiler emits
+  // neither `accent` nor `quantized` — the tablet then has no stab, no bed
+  // and no bass to play, and only the drum sounds. That reads as "the
+  // instrument is broken" rather than "this patch is PC-only", so say so.
+  const voicesOnTablet = patch.brassCube !== undefined
 
   // High sensitivity by default: the boxer should hear soft play. The
   // firmware's own transmit floor (cmd-17 threshold) still gates the very
@@ -660,6 +665,14 @@ export default function JamScreen(): React.JSX.Element {
         </Pressable>
       </View>
 
+      {!voicesOnTablet && effectiveOutput !== 'bridge' ? (
+        <View style={styles.warnBox} testID="jam-tablet-silent-warning">
+          <Text style={styles.warnText}>
+            {`“${base.name}” is a PC-rig patch — no brass section, so the tablet can only play its drum. Pick a Brass patch on the Puncheokie screen, or set OUTPUT to BRIDGE.`}
+          </Text>
+        </View>
+      ) : null}
+
       <View style={styles.stage} testID="jam-stage">
         <Text style={styles.dyad}>{dyad}</Text>
         <Text style={styles.coordinate}>{coordinate}</Text>
@@ -701,6 +714,15 @@ const styles = StyleSheet.create({
     borderColor: colors.trackerRight,
   },
   panicText: { fontSize: sizes.label, fontFamily: fonts.heading, color: colors.trackerRight },
+  warnBox: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.trackerRight,
+    backgroundColor: colors.surface,
+  },
+  warnText: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.trackerRight },
   stage: {
     alignItems: 'center',
     paddingVertical: 28,
