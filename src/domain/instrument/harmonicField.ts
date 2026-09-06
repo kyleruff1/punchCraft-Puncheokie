@@ -232,11 +232,17 @@ function buildDorianEdges(nodes: readonly HarmonicNode[]): readonly HarmonicEdge
 
 export const DORIAN_EDGES: readonly HarmonicEdge[] = buildDorianEdges(TENSION_ORDERED_DORIAN_NODES)
 
-/** This slice's capability envelope (review amendment 3): BRIDGE only. */
+/**
+ * The capability envelope. Outputs widened to all three in M40-23: the
+ * tablet now follows commits with parity (stable chordId sample routing +
+ * the commit follower's authority rules), so TABLET and BOTH are
+ * reachable. guided-4x4 stays hidden until M41-01 designs its role
+ * semantics — an unfinished mode must never be selectable.
+ */
 export const FOUNDATION_CAPABILITIES: HarmonicFieldCapabilities = {
   supportedFreedomModes: ['safe-3x3', 'full-6x6'],
   supportedNavigationModes: ['absolute', 'orbit'],
-  supportedOutputs: ['bridge'],
+  supportedOutputs: ['bridge', 'tablet', 'both'],
 }
 
 /**

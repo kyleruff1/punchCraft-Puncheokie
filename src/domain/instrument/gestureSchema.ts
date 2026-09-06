@@ -108,6 +108,16 @@ export interface ImmediateAccent {
 export interface QuantizedChange {
   cubeCellId: string // `L${leftZone}R${rightZone}`
   chordName: string
+  /**
+   * STABLE chord identity (harmonic-field-v2 review amendment 6): sample
+   * routing keys on THIS, never on chordName or the cell id — a world's
+   * left-axis order is free to change without re-rendering banks. Present
+   * on field patches only; the tablet falls back to the cell's left zone
+   * for v1 patches, whose bank order is the zone order by construction.
+   */
+  chordId?: string
+  /** Slot in the RENDERED tablet bank for `chordId` (v1 zone order). */
+  sampleBankSlot?: number
   bassMidiNote: number
   bassChannel: number // doc-numbered; 2
   /** The ROTATED six-note pool, ascending; [0] is the entry tone. */

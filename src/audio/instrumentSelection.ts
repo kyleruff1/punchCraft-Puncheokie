@@ -81,14 +81,20 @@ export function selectInstrumentSamples(
   let bass: string | null = null
   const quantized = gesture.quantized
   if (quantized && mode === 'arp') {
+    // Bank slot resolution (M40-23, review amendment 6): a field patch
+    // names the RENDERED slot for its stable chordId, because a v2 world
+    // orders the left axis by tension — routing by the cell's left zone
+    // would sound the wrong chord. A v1 patch has no slot and falls back
+    // to the zone, whose order IS the bank order by construction.
     const match = CUBE_CELL_ID.exec(quantized.cubeCellId)
-    if (match) {
-      const leftZone = Number(match[1])
-      bass = bassKey(leftZone)
+    const slot =
+      quantized.sampleBankSlot ?? (match ? Number(match[1]) : Number.NaN)
+    if (Number.isInteger(slot) && slot >= 0 && slot <= 5) {
+      bass = bassKey(slot)
       const layer = BRASS_ACTIVITY_LAYERS.find(
         (l) => l.notesPerMinute === quantized.notesPerMinute,
       )?.layer
-      bed = layer === undefined ? null : bedKey(leftZone, layer)
+      bed = layer === undefined ? null : bedKey(slot, layer)
     }
   }
   const accent = gesture.accent

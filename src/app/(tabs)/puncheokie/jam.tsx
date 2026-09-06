@@ -221,10 +221,12 @@ export default function JamScreen(): React.JSX.Element {
         : null,
     [patch, brassMap],
   )
-  // Field patches are BRIDGE-only until M40-23 (capability envelope) —
-  // the stored output target is honored again the moment a non-field
-  // patch is selected.
-  const effectiveOutput: InstrumentOutputTarget = patch.harmonicField ? 'bridge' : outputTarget
+  // OUTPUT honours the section's capability envelope (M40-23 widened it to
+  // bridge/tablet/both). A stored target a world does not support falls
+  // back to bridge rather than silently sounding nothing.
+  const supportedOutputs = patch.harmonicField?.capabilities.supportedOutputs
+  const effectiveOutput: InstrumentOutputTarget =
+    supportedOutputs && !supportedOutputs.includes(outputTarget) ? 'bridge' : outputTarget
 
   // High sensitivity by default: the boxer should hear soft play. The
   // firmware's own transmit floor (cmd-17 threshold) still gates the very
@@ -567,11 +569,14 @@ export default function JamScreen(): React.JSX.Element {
                 },
                 sensitivityRow,
                 {
-                  // Capability envelope: supportedOutputs is ['bridge']
-                  // this slice — the row states the lock, presses no-op.
+                  // Cycles only what the world actually supports (M40-23
+                  // widened the Dorian envelope to all three).
                   label: 'OUTPUT',
-                  value: 'BRIDGE (locked)',
-                  onPress: () => {},
+                  value: effectiveOutput.toUpperCase(),
+                  onPress: () =>
+                    setOutputTarget(
+                      cycle(supportedOutputs ?? OUTPUT_TARGETS, effectiveOutput),
+                    ),
                 },
                 modeRow,
               ]

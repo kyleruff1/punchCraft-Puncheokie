@@ -523,11 +523,12 @@ describe('wire byte contracts (R1 + amendment 3)', () => {
 // ---------------------------------------------------------------------------
 
 describe('capability envelope (review amendment 3)', () => {
-  it('this slice exposes safe-3x3 + full-6x6, absolute + orbit, BRIDGE only', () => {
+  it('exposes safe-3x3 + full-6x6, absolute + orbit, and (since M40-23) all three outputs', () => {
     const caps = DORIAN_HARMONIC_FIELD_SECTION.capabilities
     expect(caps.supportedFreedomModes).toEqual(['safe-3x3', 'full-6x6'])
     expect(caps.supportedNavigationModes).toEqual(['absolute', 'orbit'])
-    expect(caps.supportedOutputs).toEqual(['bridge'])
+    // M40-23 gave the tablet commit parity, so TABLET/BOTH are reachable.
+    expect(caps.supportedOutputs).toEqual(['bridge', 'tablet', 'both'])
     // guided-4x4 is TYPED but never offered until M41-01 designs its roles.
     expect(caps.supportedFreedomModes).not.toContain('guided-4x4')
   })

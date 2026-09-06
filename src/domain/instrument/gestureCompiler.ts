@@ -263,9 +263,16 @@ export function compileGesture(
       channel: ctx.brassMap.accentMidiChannel,
       gateMs: ctx.brassMap.accentGateMs,
     }
+    // Stable sample routing (am. 6): a field patch names the chord by its
+    // STABLE id and the slot its bank was rendered at, so the tension
+    // ordering of the left axis cannot mis-route the tablet's samples.
+    const fieldNode = fieldSection?.nodes[Math.max(0, Math.min(5, leftZone))]
     quantized = {
       cubeCellId: brassCell.cellId,
       chordName: brassCell.chordName,
+      ...(fieldNode
+        ? { chordId: fieldNode.chordId, sampleBankSlot: fieldNode.legacySampleBankSlot }
+        : {}),
       bassMidiNote: brassCell.bassMidiNote,
       bassChannel: ctx.brassMap.bassMidiChannel,
       chordMidiNotes: brassCell.rotatedPool,

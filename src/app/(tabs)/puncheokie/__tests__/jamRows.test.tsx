@@ -297,7 +297,7 @@ describe('harmonic-field patch — the five-selection surface (M40-18 #322)', ()
     expect(node(t, 'jam-row-retrigger')).toBeDefined()
     expect(node(t, 'jam-row-backend')).toBeDefined()
     expect(node(t, 'jam-row-sensitivity')).toBeDefined()
-    expect(textUnder(t, 'jam-row-output')).toContain('locked')
+    expect(textUnder(t, 'jam-row-output')).toContain('BRIDGE')
   })
 
   it('a v1 brass patch renders yesterday’s rows unchanged — no WORLD, no ADVANCED', () => {
@@ -340,15 +340,22 @@ describe('harmonic-field patch — the five-selection surface (M40-18 #322)', ()
     expect(latest.effectivePatchHash).not.toBe(first.effectivePatchHash)
   })
 
-  it('OUTPUT is locked to BRIDGE — pressing changes nothing and the wire still sounds', async () => {
+  it('OUTPUT cycles only what the world supports — all three since M40-23', async () => {
     useFieldPatch()
     const t = render()
     await press(t, 'jam-row-advanced')
-    await press(t, 'jam-row-output')
-    expect(useInstrumentSettingsStore.getState().outputTarget).toBe('bridge')
+    expect(textUnder(t, 'jam-row-output')).toContain('BRIDGE')
     punch(1_000)
     expect(mockBridge.gestures).toHaveLength(1)
-    expect(mockAudio.players).toHaveLength(0) // tablet engine never built
+    expect(mockAudio.players).toHaveLength(0) // bridge output builds no engine
+
+    await press(t, 'jam-row-output')
+    expect(useInstrumentSettingsStore.getState().outputTarget).toBe('tablet')
+    expect(textUnder(t, 'jam-row-output')).toContain('TABLET')
+    // The tablet engine is built lazily on the flip, and now voices punches.
+    expect(mockAudio.players.length).toBeGreaterThan(0)
+    punch(2_000)
+    expect(mockBridge.gestures).toHaveLength(1) // wire muted on TABLET
   })
 })
 
