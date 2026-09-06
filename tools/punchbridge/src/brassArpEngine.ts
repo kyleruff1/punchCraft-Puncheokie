@@ -45,6 +45,19 @@ import {
   mutationForStep,
   type PendingMicroMutation,
 } from '../../../src/domain/instrument/patternExecutionBackend'
+import { ARP_PATTERNS } from '../../../src/domain/instrument/brassCube'
+import {
+  resolveTechniqueMotif,
+  type CompiledTechniqueMotif,
+} from '../../../src/domain/instrument/techniqueMotif'
+import {
+  accumulatePhrasePunch,
+  closePhraseAtTick,
+  emptyPhraseState,
+  PHRASE_WINDOW_TICKS,
+  type PhraseAccumulatorState,
+} from '../../../src/domain/instrument/techniquePhraseAccumulator'
+import { strikeSignatureKeyOf } from '../../../src/domain/instrument/strikeArticulationCatalog'
 import {
   foldHarmonicCommit,
   type CompiledHarmonicCommit,
@@ -97,7 +110,12 @@ export interface BrassEngineTelemetry {
   mutatedSteps: number
   /** Mutations replaced by a newer punch before they ever sounded. */
   supersededMutations: number
+  /** Persistent pattern commits at phrase close (M40-22B). */
+  patternCommits: number
 }
+
+/** One pulse — the phrase grid, a projection of the SAME transport. */
+const PHRASE_GRID: QuantizationGrid = { phaseTick: 0, intervalTicks: PHRASE_WINDOW_TICKS }
 
 interface CommittedState {
   cellId: string
@@ -158,7 +176,11 @@ export class BrassArpEngine {
     maxLatenessMs: 0,
     mutatedSteps: 0,
     supersededMutations: 0,
+    patternCommits: 0,
   }
+  /** The open technique phrase (M40-22B); pure state, folded per punch. */
+  private phrase: PhraseAccumulatorState = emptyPhraseState()
+  private lastMotif: CompiledTechniqueMotif | null = null
 
   constructor(
     private readonly midi: MidiOutputBackend,
@@ -200,6 +222,7 @@ export class BrassArpEngine {
       })
       this.lastActivity = { pps: q.activityPps, atMs: this.clock.now() }
       this.stagePendingMutation(meta)
+      this.accumulatePhrase(meta)
       if (!this.transport.running) {
         this.arpGrid = { phaseTick: 0, intervalTicks: arpIntervalTicksFor(q.notesPerMinute) }
         this.commitGrid = { phaseTick: 0, intervalTicks: q.commitIntervalTicks }
@@ -245,6 +268,8 @@ export class BrassArpEngine {
     this.stepCursor = 0
     this.pendingMutation = null
     this.stepIndex = 0
+    this.phrase = emptyPhraseState()
+    this.lastMotif = null
   }
 
   get running(): boolean {
@@ -267,6 +292,89 @@ export class BrassArpEngine {
   /** The mutation that currently owns the next step, if any (am. 6). */
   get pendingMicroMutation(): PendingMicroMutation | null {
     return this.pendingMutation
+  }
+
+  /** The most recent persistent motif committed at a phrase close. */
+  get lastTechniqueMotif(): CompiledTechniqueMotif | null {
+    return this.lastMotif
+  }
+
+  /**
+   * Fold a punch into the open technique phrase (M40-22B). Only guided
+   * identities contribute tokens — a generic punch still raises the
+   * phrase's energy through the accumulator, but names no technique.
+   */
+  private accumulatePhrase(meta?: GestureMeta): void {
+    const token = meta?.technique?.token
+    if (!token) return
+    const result = accumulatePhrasePunch(
+      this.phrase,
+      {
+        eventId: meta?.eventId ?? 'unknown',
+        token,
+        velocity01: Math.min(1, (this.committed?.noteVelocity ?? 96) / 127),
+      },
+      this.lastTickObserved,
+    )
+    this.phrase = result.state
+    if (result.closed) this.commitPersistentPattern(result.closed)
+  }
+
+  /**
+   * Commit ONE persistent pattern at phrase close (design §10). The pattern
+   * changes only when a family DOMINATES (≥2 punches of it) — otherwise the
+   * compiled motif itself becomes the pattern. Because a phrase spans one
+   * pulse, this can fire at most once per pulse however dense the flurry.
+   *
+   * The motif resolves against the cell sounding AT THIS COMMIT (am. 5),
+   * never the chord that was active when the phrase opened. Harmony is
+   * untouched — only the pattern the running arp walks changes — and the
+   * PHASE is preserved unless the retrigger policy explicitly restarts it.
+   */
+  private commitPersistentPattern(abstract: Parameters<typeof resolveTechniqueMotif>[0]): void {
+    const committed = this.committed
+    if (!committed) return
+    const motif = resolveTechniqueMotif(abstract, {
+      cellId: committed.cellId,
+      lifetimeTicks: PHRASE_WINDOW_TICKS,
+    })
+    this.lastMotif = motif
+
+    const counts = new Map<string, number>()
+    for (const token of abstract.sourceTokens) {
+      const family = strikeSignatureKeyOf(token).family
+      counts.set(family, (counts.get(family) ?? 0) + 1)
+    }
+    let dominant: string | null = null
+    for (const [family, count] of counts) {
+      if (count >= 2 && (dominant === null || count > (counts.get(dominant) ?? 0))) {
+        dominant = family
+      }
+    }
+
+    // straight → up · hook → pendulum · uppercut → fanfare · mixed → motif.
+    const named =
+      dominant === 'straight'
+        ? ARP_PATTERNS.up
+        : dominant === 'hook'
+          ? ARP_PATTERNS.pendulum
+          : dominant === 'uppercut'
+            ? ARP_PATTERNS.fanfare
+            : null
+    const pattern = named ?? motif.resolvedPoolIndices
+    if (pattern.length === 0) return
+
+    committed.pattern = pattern
+    committed.patternDepth = Math.min(committed.patternDepth, pattern.length)
+    // Phase preserved: a persistent commit does NOT restart the arp unless
+    // the retrigger policy says so (am. 6). The cursor is only re-bounded
+    // so it still addresses the new pattern.
+    if (committed.retrigger === 'hard-retrigger') {
+      this.stepCursor = 0
+    } else {
+      this.stepCursor %= Math.max(1, pattern.length)
+    }
+    this.counters.patternCommits += 1
   }
 
   /**
@@ -348,6 +456,20 @@ export class BrassArpEngine {
     if (obs.latenessMs > this.counters.maxLatenessMs) {
       this.counters.maxLatenessMs = obs.latenessMs
     }
+    this.runGrids(obs)
+    // The phrase grid is a projection of the SAME transport and must close
+    // on its own boundary whether or not an arp step fell here — so it
+    // runs outside runGrids' early returns, and AFTER them so the motif
+    // resolves against the cell that will actually sound under it (am. 5).
+    if (crossedBoundaryIndices(obs.previousTick, obs.currentTick, PHRASE_GRID).length > 0) {
+      const closed = closePhraseAtTick(this.phrase, obs.currentTick)
+      this.phrase = closed.state
+      if (closed.closed) this.commitPersistentPattern(closed.closed)
+    }
+  }
+
+  /** Harmonic + arp projections of the observation (M40-17). */
+  private runGrids(obs: TransportObservation): void {
     const commitGrid = this.commitGrid
     if (!commitGrid || !this.arpGrid) return
 
