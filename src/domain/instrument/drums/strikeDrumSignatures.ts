@@ -167,12 +167,21 @@ export function composeStrikeDrumSignature(token: StrikeToken): StrikeDrumSignat
   // §4: the crash is reserved for genuine peaks, never a punch family. The
   // two-bar cooldown that keeps it consequential lives in the event queue —
   // eligibility is all a signature may declare.
+  //
+  // BOTH §4 triggers are open to every family: "a new session peak" and
+  // "the final strike of a completed eight-hit phrase" name events, not
+  // techniques. §16's "peak or phrase-ending uppercut: crash eligible" is
+  // confirming that uppercuts are included, not restricting the trigger to
+  // them — an eight-punch combination ending on a cross deserves its
+  // cymbal too.
   layers.push({ articulation: 'crash-main', condition: 'new-peak', velocityMultiplier: 1 })
-  if (family === 'uppercut' && side === 'rear') {
-    // §16: "Peak or phrase-ending uppercut: crash eligible" — the rear
-    // uppercut is the phrase-ending landing (§5.1 "Fill/landing").
-    layers.push({ articulation: 'crash-main', condition: 'phrase-ending', velocityMultiplier: 0.94 })
-  }
+  layers.push({
+    articulation: 'crash-main',
+    condition: 'phrase-ending',
+    // The rear uppercut IS the designed landing (§5.1 "Fill/landing"), so
+    // it crashes hardest; every other family punctuates a little softer.
+    velocityMultiplier: family === 'uppercut' && side === 'rear' ? 1 : 0.9,
+  })
 
   return {
     token,

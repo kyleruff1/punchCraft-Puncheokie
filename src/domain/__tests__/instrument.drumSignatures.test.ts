@@ -262,15 +262,32 @@ describe('§4 crash reservation', () => {
     }
   })
 
-  test('the rear uppercut is the phrase-ending crash (§16)', () => {
-    const conditions = strikeDrumSignatureOf('6')
-      .layers.filter((l) => l.articulation === 'crash-main')
-      .map((l) => l.condition)
-    expect(conditions).toContain('phrase-ending')
-    // An ordinary uppercut does not: "Ordinary uppercut: no crash."
-    expect(
-      strikeDrumSignatureOf('5').layers.some((l) => l.condition === 'phrase-ending'),
-    ).toBe(false)
+  test('any family can close a phrase with a crash (§4), the rear uppercut loudest', () => {
+    // §4's triggers name EVENTS, not techniques: "the final strike of a
+    // completed eight-hit phrase" applies whatever the last punch was. §16
+    // confirms uppercuts are included rather than restricting it to them.
+    const phraseCrash = (token: StrikeToken) =>
+      strikeDrumSignatureOf(token).layers.find(
+        (l) => l.articulation === 'crash-main' && l.condition === 'phrase-ending',
+      )
+    for (const signature of STRIKE_DRUM_SIGNATURES) {
+      expect(phraseCrash(signature.token)).toBeDefined()
+    }
+    // The rear uppercut is the designed landing, so it crashes hardest.
+    expect(phraseCrash('6')!.velocityMultiplier).toBeGreaterThan(
+      phraseCrash('2')!.velocityMultiplier,
+    )
+  })
+
+  test('an ordinary punch still never crashes — the condition is the gate', () => {
+    // "Ordinary uppercut: no crash." Eligibility is declared; nothing fires
+    // until the compiler sees an actual peak or phrase end.
+    for (const signature of STRIKE_DRUM_SIGNATURES) {
+      const unconditional = signature.layers.filter(
+        (l) => l.articulation === 'crash-main' && l.condition === 'always',
+      )
+      expect(unconditional).toHaveLength(0)
+    }
   })
 })
 

@@ -18,7 +18,9 @@
     "format": "prettier --write 'src/**/*.{ts,tsx,json,md}'",
     "test": "jest",
     "test:watch": "jest --watch",
-    "guard:velocity-terminology": "node tools/guards/velocity-terminology.mjs"
+    "guard:velocity-terminology": "node tools/guards/velocity-terminology.mjs",
+    "kit:render": "tsx tools/tablet-voice/src/render-brass-bank.ts --kit",
+    "kit:audition": "tsx tools/tablet-voice/src/render-kit-audition.ts"
   },
   "dependencies": {
     "@expo-google-fonts/kanit": "0.4.1",
