@@ -45,7 +45,12 @@ import {
   type InstrumentDrumKey,
 } from '../../../src/audio/instrumentBankKeys'
 import { compileBrassCube } from '../../../src/domain/instrument/brassCube'
+import {
+  LOGICAL_DRUM_ARTICULATIONS,
+  type LogicalDrumArticulation,
+} from '../../../src/domain/instrument/drums/logicalDrumArticulations'
 import { launchPatchById } from '../../../src/domain/instrument/punchPatch'
+import { drumArticulationLength, renderDrumArticulation } from './drumKit'
 import {
   adsrEnvelope,
   biquadLowpass,
@@ -108,7 +113,26 @@ export interface DrumPlanEntry {
   samples: number
 }
 
-export type BankPlanEntry = BedPlanEntry | BassPlanEntry | StabPlanEntry | DrumPlanEntry
+/**
+ * One of the Punch Kit's sixteen logical articulations (drum-kit-design §6).
+ * Separate from `DrumPlanEntry`, which is the brass instrument's five-piece
+ * drum layer — the kit is additive so the existing bank stays byte-identical
+ * while both exist. Five of the sixteen reproduce those five exactly.
+ */
+export interface KitDrumPlanEntry {
+  kind: 'kit-drum'
+  /** The logical articulation IS the key — no note number, no filename (§2). */
+  key: LogicalDrumArticulation
+  fileName: string
+  samples: number
+}
+
+export type BankPlanEntry =
+  | BedPlanEntry
+  | BassPlanEntry
+  | StabPlanEntry
+  | DrumPlanEntry
+  | KitDrumPlanEntry
 
 export interface TextureBankPlan {
   textureId: string
@@ -122,6 +146,8 @@ export interface BankPlan {
   textureIds: readonly string[]
   textures: readonly TextureBankPlan[]
   drums: readonly DrumPlanEntry[]
+  /** The Punch Kit (§6) — texture-independent, rendered once into shared/. */
+  kitDrums: readonly KitDrumPlanEntry[]
 }
 
 function textureOf(textureId: string): TextureDefinition {
@@ -263,7 +289,16 @@ export function buildBankPlan(): BankPlan {
     }),
   )
 
-  return { textureIds, textures, drums }
+  const kitDrums = LOGICAL_DRUM_ARTICULATIONS.map(
+    (articulation): KitDrumPlanEntry => ({
+      kind: 'kit-drum',
+      key: articulation,
+      fileName: `kit-${articulation}.wav`,
+      samples: drumArticulationLength(articulation),
+    }),
+  )
+
+  return { textureIds, textures, drums, kitDrums }
 }
 
 function assertPeak(name: string, buffer: Float64Array): void {
@@ -413,6 +448,9 @@ export function renderEntry(entry: BankPlanEntry): Float64Array {
     case 'drum':
       buffer = renderDrum(entry)
       break
+    case 'kit-drum':
+      buffer = renderDrumArticulation(entry.key)
+      break
   }
   assertPeak(entry.fileName, buffer)
   return buffer
@@ -430,6 +468,14 @@ function clipLine(key: string, dir: string, fileName: string, samples: number): 
 export function manifestSource(plan: BankPlan): string {
   const textureUnion = plan.textureIds.map((id) => `'${id}'`).join(' | ')
   const textureList = plan.textureIds.map((id) => `'${id}'`).join(', ')
+  // Top-level record: two-space indent, and the key quotes itself because
+  // every articulation id is hyphenated.
+  const kitDrums = plan.kitDrums
+    .map(
+      (entry) =>
+        `  '${entry.key}': { module: require('${MANIFEST_RELATIVE_ASSET_DIR}/shared/${entry.fileName}'), durationMs: ${Math.round(entry.samples / 48)} },`,
+    )
+    .join('\n')
 
   const banks = plan.textures
     .map((texture) => {
@@ -481,6 +527,7 @@ export function manifestSource(plan: BankPlan): string {
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import type { InstrumentDrumKey } from '../instrumentBankKeys'
+import type { LogicalDrumArticulation } from '../../domain/instrument/drums/logicalDrumArticulations'
 
 export type InstrumentTextureId = ${textureUnion}
 export const INSTRUMENT_TEXTURE_IDS: readonly InstrumentTextureId[] = [${textureList}]
@@ -507,6 +554,20 @@ export interface InstrumentBank {
 export const INSTRUMENT_BANKS: Readonly<Record<InstrumentTextureId, InstrumentBank>> = {
 ${banks}
 }
+
+/**
+ * The Punch Kit (drum-kit-design §6). Keyed by LOGICAL articulation, not by
+ * note number — that indirection is what lets the same domain gesture drive
+ * Superior Drummer on the bridge and these wavs on the tablet.
+ *
+ * Texture-independent by design (§4 asks for "one coherent acoustic-kit
+ * layout"), so this is one shared set rather than a per-texture copy.
+ */
+export const INSTRUMENT_KIT_DRUMS: Readonly<
+  Record<LogicalDrumArticulation, InstrumentBankClip>
+> = {
+${kitDrums}
+}
 `
 }
 
@@ -515,7 +576,17 @@ function main(): void {
   const instrumentDir = path.join(repoRoot, 'assets', 'audio', 'instrument')
   const plan = buildBankPlan()
 
-  for (const texture of plan.textures) {
+  /**
+   * `--kit` renders only the shared drums and rewrites the manifest.
+   *
+   * The per-texture beds and stabs take minutes and are byte-identical on
+   * every re-run, so re-rendering them to add a cymbal is pure waiting. The
+   * manifest stays correct because `buildBankPlan` computes the whole plan
+   * without rendering anything.
+   */
+  const kitOnly = process.argv.includes('--kit')
+
+  for (const texture of kitOnly ? [] : plan.textures) {
     const dir = path.join(instrumentDir, texture.textureId)
     fs.mkdirSync(dir, { recursive: true })
     let bytes = 0
@@ -534,13 +605,13 @@ function main(): void {
   const sharedDir = path.join(instrumentDir, 'shared')
   fs.mkdirSync(sharedDir, { recursive: true })
   let sharedBytes = 0
-  for (const entry of plan.drums) {
+  for (const entry of [...plan.drums, ...plan.kitDrums]) {
     const wav = wavBytes(renderEntry(entry))
     fs.writeFileSync(path.join(sharedDir, entry.fileName), wav)
     sharedBytes += wav.length
   }
   console.log(
-    `shared: ${plan.drums.length} files, ${(sharedBytes / 1e6).toFixed(2)} MB -> assets/audio/instrument/shared/`,
+    `shared: ${plan.drums.length + plan.kitDrums.length} files (${plan.kitDrums.length} punch kit), ${(sharedBytes / 1e6).toFixed(2)} MB -> assets/audio/instrument/shared/`,
   )
 
   const manifestPath = path.join(repoRoot, 'src', 'audio', 'voiceAssets', 'instrumentBankManifest.ts')

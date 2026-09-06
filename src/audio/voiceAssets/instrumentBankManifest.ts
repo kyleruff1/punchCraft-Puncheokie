@@ -14,6 +14,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import type { InstrumentDrumKey } from '../instrumentBankKeys'
+import type { LogicalDrumArticulation } from '../../domain/instrument/drums/logicalDrumArticulations'
 
 export type InstrumentTextureId = 'brass' | 'pluck'
 export const INSTRUMENT_TEXTURE_IDS: readonly InstrumentTextureId[] = ['brass', 'pluck']
@@ -180,4 +181,33 @@ export const INSTRUMENT_BANKS: Readonly<Record<InstrumentTextureId, InstrumentBa
       crash: { module: require('../../../assets/audio/instrument/shared/drum-crash.wav'), durationMs: 1500 },
     },
   },
+}
+
+/**
+ * The Punch Kit (drum-kit-design §6). Keyed by LOGICAL articulation, not by
+ * note number — that indirection is what lets the same domain gesture drive
+ * Superior Drummer on the bridge and these wavs on the tablet.
+ *
+ * Texture-independent by design (§4 asks for "one coherent acoustic-kit
+ * layout"), so this is one shared set rather than a per-texture copy.
+ */
+export const INSTRUMENT_KIT_DRUMS: Readonly<
+  Record<LogicalDrumArticulation, InstrumentBankClip>
+> = {
+  'ride-bow': { module: require('../../../assets/audio/instrument/shared/kit-ride-bow.wav'), durationMs: 700 },
+  'ride-bell': { module: require('../../../assets/audio/instrument/shared/kit-ride-bell.wav'), durationMs: 800 },
+  'ride-tight': { module: require('../../../assets/audio/instrument/shared/kit-ride-tight.wav'), durationMs: 300 },
+  'snare-center': { module: require('../../../assets/audio/instrument/shared/kit-snare-center.wav'), durationMs: 250 },
+  'snare-rimshot': { module: require('../../../assets/audio/instrument/shared/kit-snare-rimshot.wav'), durationMs: 225 },
+  'snare-body': { module: require('../../../assets/audio/instrument/shared/kit-snare-body.wav'), durationMs: 275 },
+  'rack-tom-high': { module: require('../../../assets/audio/instrument/shared/kit-rack-tom-high.wav'), durationMs: 350 },
+  'rack-tom-mid': { module: require('../../../assets/audio/instrument/shared/kit-rack-tom-mid.wav'), durationMs: 400 },
+  'floor-tom-high': { module: require('../../../assets/audio/instrument/shared/kit-floor-tom-high.wav'), durationMs: 450 },
+  'floor-tom-low': { module: require('../../../assets/audio/instrument/shared/kit-floor-tom-low.wav'), durationMs: 550 },
+  'kick-main': { module: require('../../../assets/audio/instrument/shared/kit-kick-main.wav'), durationMs: 400 },
+  'kick-sub': { module: require('../../../assets/audio/instrument/shared/kit-kick-sub.wav'), durationMs: 500 },
+  'hihat-closed': { module: require('../../../assets/audio/instrument/shared/kit-hihat-closed.wav'), durationMs: 100 },
+  'hihat-open': { module: require('../../../assets/audio/instrument/shared/kit-hihat-open.wav'), durationMs: 450 },
+  'crash-main': { module: require('../../../assets/audio/instrument/shared/kit-crash-main.wav'), durationMs: 1500 },
+  'rim-click': { module: require('../../../assets/audio/instrument/shared/kit-rim-click.wav'), durationMs: 120 },
 }
