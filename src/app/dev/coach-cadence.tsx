@@ -131,6 +131,13 @@ export default function CoachCadenceScreen(): React.JSX.Element {
   const [log, setLog] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const outputRef = useRef<VoiceOutputExpo | null>(null)
+  /**
+   * The live recorder, held OUTSIDE `measure()`'s try so both its finally and
+   * the focus cleanup can reach it. It used to be a local: any throw between
+   * `record()` and `stop()` left the microphone held by an object nothing
+   * could reach again (GH #357 audit).
+   */
+  const recorderRef = useRef<InstanceType<typeof AudioModule.AudioRecorder> | null>(null)
 
   /**
    * Free the measurement rig's players when this screen goes away (GH #356).
@@ -151,6 +158,17 @@ export default function CoachCadenceScreen(): React.JSX.Element {
       return () => {
         outputRef.current?.release()
         outputRef.current = null
+        const recorder = recorderRef.current
+        recorderRef.current = null
+        if (recorder) {
+          // Leaving mid-measurement must not walk away with the mic open.
+          void recorder.stop().catch(() => undefined)
+          try {
+            ;(recorder as unknown as { release?: () => void }).release?.()
+          } catch {
+            // Already gone.
+          }
+        }
       }
     }, []),
   )
@@ -181,6 +199,7 @@ export default function CoachCadenceScreen(): React.JSX.Element {
           ...RecordingPresets.HIGH_QUALITY,
           isMeteringEnabled: true,
         })
+        recorderRef.current = recorder
         await recorder.prepareToRecordAsync()
         recorder.record()
 
@@ -245,6 +264,23 @@ export default function CoachCadenceScreen(): React.JSX.Element {
       } catch (err) {
         say(`FAILED: ${String(err)}`)
       } finally {
+        // Always release the microphone, on every exit path. expo-audio's
+        // AudioRecorder has no remove(); stop() halts capture and release()
+        // (SharedObject) frees the native object.
+        const recorder = recorderRef.current
+        recorderRef.current = null
+        if (recorder) {
+          try {
+            await recorder.stop()
+          } catch {
+            // Never started, or already stopped.
+          }
+          try {
+            ;(recorder as unknown as { release?: () => void }).release?.()
+          } catch {
+            // Already gone.
+          }
+        }
         setBusy(false)
       }
     },

@@ -28,7 +28,7 @@
  */
 import React, { useCallback, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useFocusEffect } from 'expo-router'
 import {
   createAudioPlayer,
   requestRecordingPermissionsAsync,
@@ -37,6 +37,7 @@ import {
   type AudioSample,
 } from 'expo-audio'
 import * as Speech from 'expo-speech'
+import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 
 import { colors } from '@/theme/colors'
 
@@ -190,6 +191,20 @@ export default function VoiceLatencySpike(): React.JSX.Element {
   const [results, setResults] = useState<CaseResult[]>([])
   const [running, setRunning] = useState(false)
   const preloadedRef = useRef<AudioPlayer | null>(null)
+
+  // This screen had NO cleanup at all: the preloaded sampling player was
+  // created once and never freed, so one visit held a native handle (and an
+  // enabled audio-sampling callback) for the rest of the session
+  // (GH #357 audit).
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        releaseAudioPlayer(preloadedRef.current)
+        preloadedRef.current = null
+      },
+      [],
+    ),
+  )
   /** Which timing method the run actually used; they measure different things. */
   const methodRef = useRef<'sampling' | 'playhead'>('playhead')
 
