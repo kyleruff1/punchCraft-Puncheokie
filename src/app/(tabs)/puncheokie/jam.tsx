@@ -234,10 +234,17 @@ export default function JamScreen(): React.JSX.Element {
         onRtt: (rtt) => setRttMs(Math.round(rtt)),
       })
       bridgeRef.current = client
-      client.connect(bridgeUrl, `jam-${Math.floor(globalThis.performance.now())}`, cubeMap.patchHash)
+      // Deferred one tick: connect() reports 'connecting' SYNCHRONOUSLY
+      // (bridgeClient.ts), and useFocusEffect's first run lands before
+      // the mount commit settles — a same-tick setState trips React's
+      // "update on a component that hasn't mounted yet" warning.
+      const connectHandle = setTimeout(() => {
+        client.connect(bridgeUrl, `jam-${Math.floor(globalThis.performance.now())}`, cubeMap.patchHash)
+      }, 0)
       return () => {
         // Blur/unmount: close the socket and kill the heartbeat AND the
         // 2s reconnect loop — neither may tick under a workout.
+        clearTimeout(connectHandle)
         client.disconnect()
         bridgeRef.current = null
       }
