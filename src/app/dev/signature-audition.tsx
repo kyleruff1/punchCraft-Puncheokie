@@ -53,6 +53,9 @@ const TOKEN_HAND: Readonly<Record<string, 'left' | 'right'>> = STRIKE_TOKENS.red
   {},
 )
 
+/** Kyle's compact diagnostic sequence (M40-28 audition protocol). */
+const DIAGNOSTIC: readonly StrikeToken[] = ['1', '3', '2', '5', '2', '1', '5', '3', '2B', '2']
+
 const VELOCITIES = [0.15, 0.45, 0.75, 0.95] as const
 const ACCELERATIONS = [0.2, 0.5, 0.8, 0.98] as const
 /** Velocity that lands the OTHER hand in each cube zone, for cell control. */
@@ -82,6 +85,15 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   const [output, setOutput] = useState<'tablet' | 'bridge' | 'both'>('tablet')
   const [textureId, setTextureId] = useState<InstrumentTextureId>('brass')
   const [voiceReady, setVoiceReady] = useState(false)
+  /**
+   * The audition's layer passes, on-device. Pass 1 is the one that
+   * matters: if the families do not separate on the brass stab alone, the
+   * drums are carrying the classification.
+   */
+  const [layers, setLayers] = useState<'stab' | 'stab+arp' | 'all'>('stab')
+  const [auditionSlot, setAuditionSlot] = useState<number | null>(null)
+  const [auditionKey, setAuditionKey] = useState<readonly string[]>([])
+  const runningRef = useRef(false)
   const [rows, setRows] = useState<readonly AuditionRow[]>([])
 
   const patch = useMemo(() => launchPatchById(patchId), [patchId])
@@ -114,12 +126,14 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       } else {
         engineRef.current.setTexture(textureId)
       }
+      // 'stab' hears the brass hit alone: no beds, no bass.
+      engineRef.current.setMode(layers === 'stab' ? 'notes' : 'arp')
       return () => {
         engineRef.current?.release()
         engineRef.current = null
         setVoiceReady(false)
       }
-    }, [output, textureId]),
+    }, [output, textureId, layers]),
   )
 
   const connect = useCallback(() => {
@@ -177,7 +191,16 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       sessionRef.current = result.state
       // Tee: the tablet is the shipping output, the bridge is the desk rig.
       if (output !== 'tablet') bridgeRef.current?.sendGesture(result.gesture)
-      if (output !== 'bridge') engineRef.current?.handleGesture(result.gesture)
+      if (output !== 'bridge') {
+        // Layer muting for the audition passes. The drum is silenced by
+        // its own gain rather than by a special engine path, so what
+        // sounds is the shipping selection logic either way.
+        const voiced =
+          layers === 'all'
+            ? result.gesture
+            : { ...result.gesture, transient: { ...result.gesture.transient, velocity: 1 } }
+        engineRef.current?.handleGesture(voiced)
+      }
 
       const identity = resolveStrikeIdentity({ expectedStrikeToken: token, hand })
       const articulation = resolveStrikeArticulation(identity, hand)
@@ -198,8 +221,36 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         ].slice(0, 14),
       )
     },
-    [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone, output],
+    [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone, output, layers],
   )
+
+  /**
+   * Kyle's diagnostic sequence, played blind on-device: the screen shows
+   * the slot number only, and reveals the key when the pass finishes.
+   */
+  const runAudition = useCallback(() => {
+    if (runningRef.current) return
+    runningRef.current = true
+    setAuditionKey([])
+    const order = [...DIAGNOSTIC].sort(() => (Math.random() < 0.5 ? -1 : 1))
+    const key: string[] = []
+    order.forEach((token, index) => {
+      setTimeout(() => {
+        setAuditionSlot(index + 1)
+        throwToken(token)
+        const k = strikeSignatureKeyOf(token)
+        const body = k.target === 'body' ? ' BODY' : ''
+        key.push(`${index + 1}.  ${token}  ${k.family.toUpperCase()}${body}`)
+        if (index === order.length - 1) {
+          setTimeout(() => {
+            setAuditionSlot(null)
+            setAuditionKey(key)
+            runningRef.current = false
+          }, 1600)
+        }
+      }, index * 1900)
+    })
+  }, [throwToken])
 
   const cycleRow = (
     label: string,
@@ -227,6 +278,22 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         until the M44 classifier lands.
       </Text>
 
+      <Pressable onPress={runAudition} style={styles.runBtn} testID="audition-run">
+        <Text style={styles.runText}>
+          {auditionSlot === null ? 'RUN BLIND AUDITION  (10 strikes)' : `▶  ${auditionSlot} / 10`}
+        </Text>
+      </Pressable>
+      {auditionKey.length > 0 ? (
+        <View style={styles.keyBox} testID="audition-key">
+          <Text style={styles.logLine}>── key ──</Text>
+          {auditionKey.map((line) => (
+            <Text key={line} style={styles.logDim}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.grid}>
         {STRIKE_TOKENS.map((token) => (
           <Pressable
@@ -242,6 +309,12 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.controls}>
+        {cycleRow(
+          'LAYERS',
+          layers === 'stab' ? 'BRASS STAB ONLY' : layers === 'stab+arp' ? '+ ARP' : 'FULL MIX',
+          () => setLayers((l) => (l === 'stab' ? 'stab+arp' : l === 'stab+arp' ? 'all' : 'stab')),
+          'audition-layers',
+        )}
         {cycleRow(
           'OUTPUT',
           output.toUpperCase() + (output !== 'bridge' && !voiceReady ? ' (loading)' : ''),
@@ -323,6 +396,23 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   connectText: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textPrimary },
+  runBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.trackerRight,
+    backgroundColor: colors.surface,
+  },
+  runText: { fontSize: sizes.body, fontFamily: fonts.heading, color: colors.trackerRight },
+  keyBox: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: 2,
+  },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tokenBtn: {
     minWidth: 68,
