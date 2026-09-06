@@ -1494,6 +1494,118 @@ describe('focus-scoped reuse (#356) — release() frees, the SAME instance re-wa
     expect(live.size).toBe(0)
   })
 
+  it('the generation is strictly monotonic — a superseded preload does not populate', async () => {
+    // Two preloads overlap. The second supersedes the first, so when the
+    // first finally resumes it must NOT also fill the pool. Without the bump
+    // in preload() both would capture the same generation and both proceed.
+    const live = new Set<object>()
+    let releaseFirst: () => void = () => {}
+    let gateCount = 0
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      setAudioMode: (async () => {
+        gateCount += 1
+        // Only the FIRST call is held open.
+        if (gateCount === 1) {
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve
+          })
+        }
+      }) as never,
+    })
+
+    const first = output.preload({ light: true })
+    const second = output.preload({ light: true })
+    await second
+    const afterSecond = live.size
+    expect(afterSecond).toBeGreaterThan(0)
+
+    releaseFirst()
+    await first
+    // The superseded preload contributed nothing.
+    expect(live.size).toBe(afterSecond)
+  })
+
+  it('retries once after an UNKNOWN failure, then fails closed', async () => {
+    // A transient audio-stack error should not mute the coach for the rest of
+    // the session — but an endless recreate/fail loop is no better, so the
+    // retry is bounded to one.
+    let attempts = 0
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (() => ({ volume: 1, seekTo: () => {}, play: () => {}, remove: () => {} })) as never,
+      createClickScriptPlayer: (() => ({ volume: 1, seekTo: () => {}, play: () => {}, remove: () => {} })) as never,
+      setAudioMode: (async () => {
+        attempts += 1
+        throw new Error('audio stack down')
+      }) as never,
+    })
+
+    await output.preload({ light: true })
+    expect(output.available).toBe(false)
+    expect(attempts).toBe(1)
+
+    // One retry is allowed.
+    await output.preload({ light: true })
+    expect(attempts).toBe(2)
+
+    // …and then it stops trying.
+    await output.preload({ light: true })
+    await output.preload({ light: true })
+    expect(attempts).toBe(2)
+    expect(output.available).toBe(false)
+  })
+
+  it('never retries an INVALID-ASSET failure — the same failure would just recur', async () => {
+    // Nothing in the warm set could be created. That is the asset layer, not
+    // the device, so retrying re-runs the identical failure.
+    let creates = 0
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (() => {
+        creates += 1
+        throw new Error('no such clip')
+      }) as never,
+      createClickScriptPlayer: (() => {
+        throw new Error('no such clip')
+      }) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+
+    await output.preload({ light: true })
+    expect(output.available).toBe(false)
+    const afterFirst = creates
+    expect(afterFirst).toBeGreaterThan(0)
+
+    await output.preload({ light: true })
+    await output.preload({ light: true })
+    // Not one further creation attempt: it failed CLOSED.
+    expect(creates).toBe(afterFirst)
+  })
+
   it('release() is safe with nothing warmed, and safe called twice', () => {
     const h = rig()
     expect(() => {

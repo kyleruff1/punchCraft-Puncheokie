@@ -296,6 +296,20 @@ export const CLICK_SCRIPT_RESIDENT_CAP = 8
 /** Clearance after a one-shot clip's end before its player is released. */
 const ONE_SHOT_RELEASE_PAD_MS = 1_500
 
+/**
+ * Why the coach's audio stack failed, and therefore whether trying again can
+ * possibly help (GH #356 follow-up, #357).
+ */
+export type AudioFailureClass =
+  /** The device could not give us a resource right now — worth one retry. */
+  | 'transient-resource'
+  /** A clip is missing or unreadable — retrying re-runs the same failure. */
+  | 'invalid-asset'
+  /** The device cannot decode this clip — permanent for this build. */
+  | 'unsupported-codec'
+  /** Unclassified: retry once under a new generation, then fail closed. */
+  | 'unknown'
+
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
   private vocabulary: VoiceVocabulary
@@ -347,10 +361,24 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly clickScriptGen = new Map<number, number>()
 
   /**
-   * Bumped by `release()`; captured by `preload()` and re-checked after every
-   * await so a released output never resurrects its pool (GH #356).
+   * Strictly monotonic for the life of this instance, bumped by BOTH
+   * `release()` and `preload()` and re-checked after every await, so neither
+   * a released output nor a superseded preload can resurrect the pool
+   * (GH #356). Never reset — a stale continuation must not be able to equal a
+   * later generation by coincidence.
    */
   private generation = 0
+
+  /**
+   * Why the last failure happened, which decides whether a re-preload is
+   * allowed to retry. Clearing the latch unconditionally is right for
+   * transient resource exhaustion and wrong for a permanently broken asset,
+   * which would otherwise spin in a recreate/fail loop forever.
+   */
+  private failureClass: AudioFailureClass | null = null
+
+  /** Retries already spent on the CURRENT failure. Policy allows one. */
+  private retriesSinceFailure = 0
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -898,12 +926,21 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * than its voice.
    */
   async preload(opts?: { light?: boolean }): Promise<void> {
-    const generation = this.generation
-    // A re-warm is a genuine RETRY. `failed` is a permanent no-audio latch
-    // that nothing ever cleared, so before this the screen could hit one
-    // transient audio-stack error and stay mute for the rest of the session —
-    // and re-preloading on refocus is exactly what makes that reachable.
-    this.failed = false
+    // Bump, never merely read: a preload that starts while an EARLIER one is
+    // still suspended supersedes it, so only the newest populates the pool.
+    const generation = (this.generation += 1)
+
+    // A re-warm is a genuine RETRY — `failed` was a permanent no-audio latch
+    // that nothing ever cleared, so one transient error muted the coach for
+    // the rest of the session. But it is a BOUNDED retry: a missing clip or a
+    // codec this device cannot decode fails identically every time, and
+    // clearing the latch unconditionally would spin there forever.
+    if (this.failed) {
+      if (!this.mayRetryAfterFailure()) return
+      this.retriesSinceFailure += 1
+      this.failed = false
+      this.failureClass = null
+    }
     try {
       // 'mixWithOthers' until something is actually audible — asking for
       // focus while silent would duck the athlete's music for nothing.
@@ -915,7 +952,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         await this.setAudioMode({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
       }
     } catch (err) {
-      this.failed = true
+      // The audio stack itself would not initialise. Unclassifiable from
+      // here, so policy is: one retry under a new generation, then closed.
+      this.fail('unknown')
       logger.warn('puncheokie.voice.unavailable', 'audio stack failed to initialise', {
         error: safe(String(err)),
       })
@@ -963,9 +1002,49 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
 
     if (loaded === 0) {
-      this.failed = true
+      // Not one clip in the warm set could be created. That is the asset
+      // layer, not the device: retrying re-runs the identical failure, so
+      // this one does NOT get a second go.
+      this.fail('invalid-asset')
       logger.warn('puncheokie.voice.unavailable', 'no clips loaded; running without voice', {})
+      return
     }
+    // A warm that actually produced players clears the retry budget, so a
+    // later, unrelated transient failure still gets its own attempt.
+    this.retriesSinceFailure = 0
+    this.failureClass = null
+  }
+
+  /**
+   * Record a failure and its class. Kept in one place so every latch write
+   * carries a reason — an unclassified `failed = true` is what made the old
+   * latch permanent and unexplainable.
+   */
+  private fail(failureClass: AudioFailureClass): void {
+    this.failed = true
+    this.failureClass = failureClass
+    // `retriesSinceFailure` is deliberately NOT reset here. Resetting it on
+    // every failure is what makes a "bounded" retry unbounded: the retry
+    // clears the latch, the next attempt fails, the counter goes back to
+    // zero, and it loops forever. Only a SUCCESSFUL preload clears it.
+  }
+
+  /**
+   * Whether a re-preload may clear the failure latch (§ retry policy):
+   *
+   *   transient-resource   one retry — the device may have freed something
+   *   unknown              one retry under a new generation, then fail closed
+   *   invalid-asset        never — the clip is missing or unreadable
+   *   unsupported-codec    never — this device cannot decode it
+   *
+   * A permanent class fails CLOSED rather than looping, and the workout still
+   * runs: every call is already a no-op while `failed` is set.
+   */
+  private mayRetryAfterFailure(): boolean {
+    if (this.failureClass === 'invalid-asset' || this.failureClass === 'unsupported-codec') {
+      return false
+    }
+    return this.retriesSinceFailure < 1
   }
 
   /**
