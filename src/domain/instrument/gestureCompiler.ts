@@ -28,6 +28,11 @@ import type {
   WhammyAccent,
 } from './gestureSchema'
 import { HARMONIC_SCHEMA_VERSION, INSTRUMENT_SCHEMA_VERSION } from './gestureSchema'
+import type { TechniqueBlock } from './gestureSchema'
+import {
+  resolveStrikeArticulation,
+  resolveStrikeIdentity,
+} from './strikeArticulationCatalog'
 import { msForTicks } from './transportGrid'
 import {
   activityAt,
@@ -280,6 +285,31 @@ export function compileGesture(
     }
   }
 
+  // Technique block (M40-20/21/22A) — field patches only, so legacy and
+  // brass-only gestures stay byte-identical. The identity policy decides
+  // what may be CLAIMED: a guided score's token yields the full signature,
+  // free jam stays generic (hand-only articulation, never a technique
+  // name). Punch type never touches the harmony computed above.
+  let technique: TechniqueBlock | undefined
+  if (fieldSection && ctx.field) {
+    const identity = resolveStrikeIdentity({
+      ...(input.expectedStrikeToken ? { expectedStrikeToken: input.expectedStrikeToken } : {}),
+      hand,
+    })
+    const articulation = resolveStrikeArticulation(identity, hand)
+    technique = {
+      identitySource: identity.source,
+      immediateSignatureId: articulation.signatureId,
+      ...(identity.token ? { token: identity.token } : {}),
+      ...(identity.family ? { family: identity.family } : {}),
+      microMutation: {
+        operations: [...articulation.microArp.operations],
+        maxSteps: articulation.microArp.maxSteps,
+        rotation: articulation.microArp.rotation,
+      },
+    }
+  }
+
   // Exceptional-peak whammy — patch-gated, orthogonal to the brass blocks.
   const whammyCfg = ctx.patch.transition.whammy
   const whammy: WhammyAccent | undefined =
@@ -374,6 +404,7 @@ export function compileGesture(
           } satisfies HarmonicIntent,
         }
       : {}),
+    ...(technique ? { technique } : {}),
   }
 
   return {

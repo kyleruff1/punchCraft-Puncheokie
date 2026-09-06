@@ -431,6 +431,7 @@ describe('wire byte contracts (R1 + amendment 3)', () => {
       }
       expect(gesture.schemaVersion).toBe(1)
       expect(gesture.harmonicIntent).toBeUndefined()
+      expect(gesture.technique).toBeUndefined()
       expect(gesture.quantized?.commitIntervalTicks).toBeUndefined()
       expect(gesture.quantized).not.toHaveProperty('chordId')
     }
@@ -454,6 +455,18 @@ describe('wire byte contracts (R1 + amendment 3)', () => {
       expect(gesture.harmonicIntent).toBeDefined()
       expect(gesture.harmonicIntent!.band).toBeGreaterThanOrEqual(0)
       expect(gesture.harmonicIntent!.commitWindowIndex).toBeGreaterThanOrEqual(0)
+    }
+  })
+
+  it('free-jam v2 gestures carry a GENERIC technique block — never a technique claim', () => {
+    for (const json of replay(v2Patch(), true)) {
+      const gesture = JSON.parse(json) as {
+        technique?: { identitySource: string; token?: string; family?: string }
+      }
+      expect(gesture.technique).toBeDefined()
+      expect(gesture.technique!.identitySource).toBe('generic')
+      expect(gesture.technique!.token).toBeUndefined()
+      expect(gesture.technique!.family).toBeUndefined()
     }
   })
 

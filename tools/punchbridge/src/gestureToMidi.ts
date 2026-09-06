@@ -323,7 +323,10 @@ export class VoiceRenderer {
     // boundary 0 synchronously when idle: the accent + step-0 double
     // attack on the first punch is by design, layered voices). The
     // eventId feeds the field driver's commit fold (contributing ids).
-    this.engine.applyGesture(q, gesture.voice.noteVelocity, { eventId: gesture.eventId })
+    this.engine.applyGesture(q, gesture.voice.noteVelocity, {
+      eventId: gesture.eventId,
+      ...(gesture.technique ? { technique: gesture.technique } : {}),
+    })
 
     if (gesture.whammy) {
       // The whammy rides the ARP channel for BOTH hands, so its bend range

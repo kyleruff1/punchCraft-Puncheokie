@@ -149,6 +149,29 @@ export interface HarmonicIntent {
 }
 
 /**
+ * Technique block (technique-motif-design §14; M40-21/22A). Additive and
+ * field-patch-only — absent everywhere else, so legacy and v1 gestures stay
+ * byte-identical. It carries WHAT the punch means technically; the bridge
+ * decides when that reaches the running pattern.
+ */
+export interface TechniqueBlock {
+  /** How much we may claim: 'guided-score' names a token, 'generic' does not. */
+  identitySource: 'guided-score' | 'device-classifier' | 'hand-gesture' | 'generic'
+  /** Composed signature id, e.g. 'hook:physical-right:body'. */
+  immediateSignatureId: string
+  token?: StrikeToken
+  family?: 'straight' | 'hook' | 'uppercut'
+  /** The ≤3-step operation override this punch asks of the running pattern. */
+  microMutation?: {
+    operations: readonly string[]
+    maxSteps: number
+    rotation: number
+  }
+  /** The phrase this punch joined; its motif commits at phrase close. */
+  pendingPhraseId?: string
+}
+
+/**
  * Peak-event pitch accent (transition-design §1 whammy rows, §4 "new
  * velocity peak"). Channel-wide: rides over the arp lane if stepping.
  */
@@ -238,6 +261,7 @@ export interface CompiledPunchGesture {
   quantized?: QuantizedChange
   whammy?: WhammyAccent
   harmonicIntent?: HarmonicIntent
+  technique?: TechniqueBlock
 }
 
 /** Tablet → bridge. */

@@ -39,7 +39,12 @@ import type {
   ArpeggiatorBackend,
   QuantizedChange,
   RetriggerPolicy,
+  TechniqueBlock,
 } from '../../../src/domain/instrument/gestureSchema'
+import {
+  mutationForStep,
+  type PendingMicroMutation,
+} from '../../../src/domain/instrument/patternExecutionBackend'
 import {
   foldHarmonicCommit,
   type CompiledHarmonicCommit,
@@ -74,6 +79,8 @@ export interface GestureMeta {
   eventId?: string
   transportGeneration?: number
   patchGeneration?: number
+  /** The punch's technique block (M40-22A); absent off-field. */
+  technique?: TechniqueBlock
 }
 
 /** Basic latency/robustness counters (second-pass am. 14). */
@@ -86,6 +93,10 @@ export interface BrassEngineTelemetry {
   lastCommitLagTicks: number | null
   /** Worst scheduler lateness observed vs the tick lattice, in ms. */
   maxLatenessMs: number
+  /** Micro-mutated steps actually sounded (M40-22A). */
+  mutatedSteps: number
+  /** Mutations replaced by a newer punch before they ever sounded. */
+  supersededMutations: number
 }
 
 interface CommittedState {
@@ -129,11 +140,24 @@ export class BrassArpEngine {
   private pendingCommit: FoldedHarmonicCommit | null = null
   private lastCommit: CompiledHarmonicCommit | null = null
   private stagedSeq = 0
+  /**
+   * ONE pending micro-mutation (am. 6): the newest valid punch owns the
+   * next step. Contradictory operations never stack — a jab's advance, a
+   * hook's reverse and an uppercut's rise cannot compose on one step. The
+   * phrase accumulator still keeps every punch for the persistent motif.
+   */
+  private pendingMutation: PendingMicroMutation | null = null
+  /** Steps emitted since the engine started — the mutation's step clock. */
+  private stepIndex = 0
+  /** The transport tick most recently observed (mutation provenance). */
+  private lastTickObserved = 0
   private readonly counters: BrassEngineTelemetry = {
     commits: 0,
     skippedArpSteps: 0,
     lastCommitLagTicks: null,
     maxLatenessMs: 0,
+    mutatedSteps: 0,
+    supersededMutations: 0,
   }
 
   constructor(
@@ -175,6 +199,7 @@ export class BrassArpEngine {
           : {}),
       })
       this.lastActivity = { pps: q.activityPps, atMs: this.clock.now() }
+      this.stagePendingMutation(meta)
       if (!this.transport.running) {
         this.arpGrid = { phaseTick: 0, intervalTicks: arpIntervalTicksFor(q.notesPerMinute) }
         this.commitGrid = { phaseTick: 0, intervalTicks: q.commitIntervalTicks }
@@ -218,6 +243,8 @@ export class BrassArpEngine {
     this.commitGrid = null
     this.mode = null
     this.stepCursor = 0
+    this.pendingMutation = null
+    this.stepIndex = 0
   }
 
   get running(): boolean {
@@ -235,6 +262,37 @@ export class BrassArpEngine {
   /** The last canonical harmonic commit applied (field driver). */
   get lastHarmonicCommit(): CompiledHarmonicCommit | null {
     return this.lastCommit
+  }
+
+  /** The mutation that currently owns the next step, if any (am. 6). */
+  get pendingMicroMutation(): PendingMicroMutation | null {
+    return this.pendingMutation
+  }
+
+  /**
+   * Stage a punch's micro-mutation: it owns the NEXT step and lives at most
+   * maxSteps steps. A newer punch replaces an unfired one outright — the
+   * newest valid punch owns the next step, and contradictory operations
+   * never compose (am. 6).
+   */
+  private stagePendingMutation(meta?: GestureMeta): void {
+    const technique = meta?.technique
+    const micro = technique?.microMutation
+    if (!technique || !micro || micro.operations.length === 0) return
+    if (this.pendingMutation && this.stepIndex <= this.pendingMutation.expiresAfterStepIndex) {
+      // The outgoing mutation never got to sound (or is mid-life): it is
+      // superseded, not merged.
+      this.counters.supersededMutations += 1
+    }
+    const from = this.stepIndex
+    this.pendingMutation = {
+      sourcePunchEventId: meta?.eventId ?? 'unknown',
+      createdAtTick: this.lastTickObserved,
+      appliesFromStepIndex: from,
+      expiresAfterStepIndex: from + Math.max(1, Math.min(3, micro.maxSteps)) - 1,
+      operations: micro.operations,
+      rotation: micro.rotation,
+    }
   }
 
   telemetry(): BrassEngineTelemetry {
@@ -286,6 +344,7 @@ export class BrassArpEngine {
   // -------------------------------------------------------------------------
 
   private onTransportObservation(obs: TransportObservation): void {
+    this.lastTickObserved = obs.currentTick
     if (obs.latenessMs > this.counters.maxLatenessMs) {
       this.counters.maxLatenessMs = obs.latenessMs
     }
@@ -475,7 +534,11 @@ export class BrassArpEngine {
 
     if (committed.backend === 'punchbridge-tick') {
       const effLen = Math.max(1, Math.min(committed.patternDepth, committed.pattern.length))
-      const patternIndex = committed.pattern[this.stepCursor % effLen] ?? 0
+      const basePatternIndex = committed.pattern[this.stepCursor % effLen] ?? 0
+      // Micro-mutation (M40-22A): the owning punch's operation colours THIS
+      // step only — the running phase is never restarted, so the mutation
+      // is audible without the pattern lurching.
+      const patternIndex = this.mutatedPatternIndex(basePatternIndex)
       const note =
         committed.rotatedPool[Math.min(patternIndex, committed.rotatedPool.length - 1)] ?? 0
       this.flushPendingStepOff()
@@ -493,6 +556,11 @@ export class BrassArpEngine {
       }, gateMs)
       this.pendingStepOff = record
       this.stepCursor = (this.stepCursor % effLen) + 1
+      this.stepIndex += 1
+      // An expired mutation is dropped so it can never colour a later step.
+      if (this.pendingMutation && this.stepIndex > this.pendingMutation.expiresAfterStepIndex) {
+        this.pendingMutation = null
+      }
     } else if (
       committedThisBoundary &&
       (cellChanged || committed.retrigger === 'hard-retrigger')
@@ -508,6 +576,56 @@ export class BrassArpEngine {
       }
       this.heldChordNotes = [...committed.rotatedPool]
     }
+  }
+
+  /**
+   * Apply the owning micro-mutation's leading operation to ONE step's
+   * pool index. Operations are interpreted against the running pattern's
+   * index space, never against harmony: a mutation can move which pool
+   * tone this step takes, and nothing else. The chord, bass, and rate are
+   * untouched — only a harmonic commit moves those.
+   */
+  private mutatedPatternIndex(baseIndex: number): number {
+    const mutation = mutationForStep(this.pendingMutation, this.stepIndex)
+    if (!mutation) return baseIndex
+    const operation = mutation.operations[this.stepIndex - mutation.appliesFromStepIndex]
+    if (operation === undefined) return baseIndex
+    const poolSize = this.committed?.rotatedPool.length ?? 6
+    const wrap = (i: number): number => ((i % poolSize) + poolSize) % poolSize
+    let index = baseIndex
+    switch (operation) {
+      case 'advance':
+        index = wrap(baseIndex + 1)
+        break
+      case 'skip':
+        index = wrap(baseIndex + 2)
+        break
+      case 'reverse':
+        index = wrap(baseIndex - 1)
+        break
+      case 'land-root':
+        index = 0
+        break
+      case 'land-fifth':
+        index = 2
+        break
+      case 'land-upper-anchor':
+        index = 5
+        break
+      case 'octave-pulse-up':
+      case 'octave-pulse-down':
+      case 'lower-inversion':
+        // Register moves ride the voice, not the pattern index: the step
+        // keeps its tone here (the octave lands with M40-22B's plan).
+        index = baseIndex
+        break
+      default:
+        return baseIndex
+    }
+    // The hand's rotation nudges which side of the pool the step leans to.
+    index = wrap(index + mutation.rotation)
+    if (index !== baseIndex) this.counters.mutatedSteps += 1
+    return index
   }
 
   /**
