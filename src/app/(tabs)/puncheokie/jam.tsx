@@ -128,8 +128,10 @@ export default function JamScreen(): React.JSX.Element {
   const setBrassOptions = useInstrumentSettingsStore((s) => s.setBrassOptions)
   const outputTarget = useInstrumentSettingsStore((s) => s.outputTarget)
   const textureId = useInstrumentSettingsStore((s) => s.textureId)
+  const voiceMode = useInstrumentSettingsStore((s) => s.voiceMode)
   const setOutputTarget = useInstrumentSettingsStore((s) => s.setOutputTarget)
   const setTextureId = useInstrumentSettingsStore((s) => s.setTextureId)
+  const setVoiceMode = useInstrumentSettingsStore((s) => s.setVoiceMode)
   const [overrides, setOverrides] = useState<JamOverrides>({})
   const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
   const [rttMs, setRttMs] = useState<number | null>(null)
@@ -205,7 +207,9 @@ export default function JamScreen(): React.JSX.Element {
       // and rebuilds any sounding loops from the new texture's bank.
       engineRef.current.setTexture(textureId)
     }
-  }, [outputTarget, textureId])
+    // Same-mode calls no-op inside; entering 'notes' silences the loops.
+    engineRef.current.setMode(voiceMode)
+  }, [outputTarget, textureId, voiceMode])
 
   useEffect(
     () => () => {
@@ -320,6 +324,11 @@ export default function JamScreen(): React.JSX.Element {
     value: textureId,
     onPress: () => setTextureId(cycle(INSTRUMENT_TEXTURE_IDS, textureId)),
   }
+  const modeRow = {
+    label: 'MODE',
+    value: voiceMode === 'notes' ? 'single notes' : 'arp',
+    onPress: () => setVoiceMode(voiceMode === 'arp' ? 'notes' : 'arp'),
+  }
 
   // A brass-cube patch swaps the legacy music rows for the brass options
   // (persisted store-side); SENSITIVITY applies to both patch families.
@@ -343,6 +352,7 @@ export default function JamScreen(): React.JSX.Element {
         sensitivityRow,
         outputRow,
         textureRow,
+        modeRow,
       ]
     : []
 
@@ -392,6 +402,7 @@ export default function JamScreen(): React.JSX.Element {
     sensitivityRow,
     outputRow,
     textureRow,
+    modeRow,
   ]
 
   const selectorRows = patch.brassCube ? brassRows : legacyRows

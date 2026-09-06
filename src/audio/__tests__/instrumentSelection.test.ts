@@ -205,3 +205,28 @@ describe('drum routing and gain clamping', () => {
     expect(negative.drumGain).toBe(0)
   })
 })
+
+describe("voice mode — 'notes' suppresses the sustained material", () => {
+  it("keeps the stab + drum but returns no bed/bass in 'notes' mode", () => {
+    const sel = selectInstrumentSamples(
+      gesture({ accent: accent(), quantized: quantized() }),
+      'brass',
+      'notes',
+    )
+    expect(sel).toEqual({
+      textureId: 'brass',
+      bed: null,
+      bass: null,
+      stab: 'stab-57',
+      stabGain: 100 / 127,
+      drum: 'kick',
+      drumGain: 100 / 127,
+    })
+  })
+
+  it("defaults to 'arp' when the mode argument is omitted", () => {
+    const sel = selectInstrumentSamples(gesture({ accent: accent(), quantized: quantized() }), 'brass')
+    expect(sel.bed).toBe('bed-L3-A2')
+    expect(sel.bass).toBe('bass-L3')
+  })
+})

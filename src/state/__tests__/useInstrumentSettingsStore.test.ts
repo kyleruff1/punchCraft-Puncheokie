@@ -74,17 +74,33 @@ describe('persistence — one merged blob', () => {
     expect(useInstrumentSettingsStore.getState().textureId).toBe('pluck')
   })
 
-  it('either setter writes BOTH fields under the one key', () => {
+  it('every setter writes ALL fields under the one key', () => {
     const h = harness()
     h.store().setTextureId('pluck')
     expect(
       h.repo.read(SETTINGS_KEYS.instrumentTablet, { output: 'missing', texture: 'missing' }),
-    ).toEqual({ output: 'bridge', texture: 'pluck' })
+    ).toEqual({ output: 'bridge', texture: 'pluck', mode: 'arp' })
 
     h.store().setOutputTarget('tablet')
     expect(
       h.repo.read(SETTINGS_KEYS.instrumentTablet, { output: 'missing', texture: 'missing' }),
-    ).toEqual({ output: 'tablet', texture: 'pluck' })
+    ).toEqual({ output: 'tablet', texture: 'pluck', mode: 'arp' })
+
+    h.store().setVoiceMode('notes')
+    expect(
+      h.repo.read(SETTINGS_KEYS.instrumentTablet, { output: 'missing', texture: 'missing' }),
+    ).toEqual({ output: 'tablet', texture: 'pluck', mode: 'notes' })
+  })
+
+  it('a mode change survives a reload without clobbering its siblings', () => {
+    const h = harness()
+    h.store().setTextureId('pluck')
+    h.store().setVoiceMode('notes')
+
+    __resetInstrumentSettingsForTests()
+    useInstrumentSettingsStore.getState().load(new SettingsRepository(h.db))
+    expect(useInstrumentSettingsStore.getState().voiceMode).toBe('notes')
+    expect(useInstrumentSettingsStore.getState().textureId).toBe('pluck')
   })
 })
 
@@ -107,5 +123,17 @@ describe('stored garbage falls to defaults', () => {
     useInstrumentSettingsStore.getState().load(repo)
     expect(useInstrumentSettingsStore.getState().outputTarget).toBe('both')
     expect(useInstrumentSettingsStore.getState().textureId).toBe('brass')
+  })
+
+  it('a pre-mode blob (no mode field) falls to arp, garbage mode too', () => {
+    const db = createMigratedDb()
+    const repo = new SettingsRepository(db)
+    repo.write(SETTINGS_KEYS.instrumentTablet, { output: 'tablet', texture: 'pluck' })
+    useInstrumentSettingsStore.getState().load(repo)
+    expect(useInstrumentSettingsStore.getState().voiceMode).toBe('arp')
+
+    repo.write(SETTINGS_KEYS.instrumentTablet, { output: 'tablet', texture: 'pluck', mode: 'karaoke' })
+    useInstrumentSettingsStore.getState().load(repo)
+    expect(useInstrumentSettingsStore.getState().voiceMode).toBe('arp')
   })
 })

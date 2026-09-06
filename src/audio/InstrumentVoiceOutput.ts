@@ -63,7 +63,7 @@ import { logger, safe } from '@/diagnostics/logger'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
 
 import { INSTRUMENT_DRUM_KEYS } from './instrumentBankKeys'
-import { selectInstrumentSamples } from './instrumentSelection'
+import { selectInstrumentSamples, type InstrumentVoiceMode } from './instrumentSelection'
 import {
   INSTRUMENT_BANKS,
   type InstrumentBankClip,
@@ -129,6 +129,7 @@ export class InstrumentVoiceOutput {
 
   private availableFlag = true
   private texture: InstrumentTextureId = 'brass'
+  private mode: InstrumentVoiceMode = 'arp'
 
   /** Pooled one-shots, in least-recently-used order (Map re-insertion). */
   private readonly oneShots = new Map<string, PooledOneShot>()
@@ -197,14 +198,29 @@ export class InstrumentVoiceOutput {
   }
 
   /**
+   * Switch between the sustained-arp voice and the single-notes voice.
+   * Entering 'notes' silences the running bed/bass immediately (the stabs
+   * ARE the instrument there); returning to 'arp' stays quiet until the
+   * next punch commits a cell — the loops restart on a punch, never on a
+   * settings tap.
+   */
+  setMode(mode: InstrumentVoiceMode): void {
+    if (!this.availableFlag) return
+    if (mode === this.mode) return
+    this.mode = mode
+    if (mode === 'notes') this.destroyPlaylists()
+  }
+
+  /**
    * The per-punch entry point. One-shots first (punch feel), then the
    * loop swaps — and a loop is only touched when its selection CHANGED
    * (R4); a legacy gesture's null bed/bass leaves the sounding loops
-   * alone.
+   * alone. In 'notes' mode the selection never carries a bed/bass, so
+   * only the stab + drum sound.
    */
   handleGesture(gesture: CompiledPunchGesture): void {
     if (!this.availableFlag) return
-    const sel = selectInstrumentSamples(gesture, this.texture)
+    const sel = selectInstrumentSamples(gesture, this.texture, this.mode)
     const bank = INSTRUMENT_BANKS[this.texture]
     if (sel.stab !== null) {
       this.fireOneShot(stabPoolKey(sel.stab), bank.stabs[sel.stab], sel.stabGain)

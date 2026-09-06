@@ -20,6 +20,11 @@
  *
  * A legacy-patch gesture (no accent/quantized blocks) selects only a drum —
  * the tablet plays punch one-shots and leaves any sounding loops alone.
+ *
+ * Voice mode (Kyle, 2026-09-05): 'arp' keeps the sustained bed+bass loops
+ * cycling between punches; 'notes' suppresses them so the two hands trade
+ * single entry-tone stabs — the alternating-notes instrument. The drum
+ * transient fires in both modes (the punch feel is mode-independent).
  */
 import { BRASS_ACTIVITY_LAYERS } from '@domain/instrument/brassCube'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
@@ -35,6 +40,11 @@ import type { InstrumentTextureId } from './voiceAssets/instrumentBankManifest'
 
 /** `L{0..5}R{0..5}` — the wire shape of `QuantizedChange.cubeCellId`. */
 const CUBE_CELL_ID = /^L([0-5])R([0-5])$/
+
+/** 'arp' = sustained loops between punches; 'notes' = stabs only. */
+export type InstrumentVoiceMode = 'arp' | 'notes'
+
+export const INSTRUMENT_VOICE_MODES: readonly InstrumentVoiceMode[] = ['arp', 'notes']
 
 export interface InstrumentSelection {
   textureId: InstrumentTextureId
@@ -65,11 +75,12 @@ function gain01(midiVelocity: number): number {
 export function selectInstrumentSamples(
   gesture: CompiledPunchGesture,
   textureId: InstrumentTextureId,
+  mode: InstrumentVoiceMode = 'arp',
 ): InstrumentSelection {
   let bed: string | null = null
   let bass: string | null = null
   const quantized = gesture.quantized
-  if (quantized) {
+  if (quantized && mode === 'arp') {
     const match = CUBE_CELL_ID.exec(quantized.cubeCellId)
     if (match) {
       const leftZone = Number(match[1])

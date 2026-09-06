@@ -7,6 +7,10 @@
 import { create } from 'zustand'
 
 import {
+  INSTRUMENT_VOICE_MODES,
+  type InstrumentVoiceMode,
+} from '@audio/instrumentSelection'
+import {
   INSTRUMENT_TEXTURE_IDS,
   type InstrumentTextureId,
 } from '@audio/voiceAssets/instrumentBankManifest'
@@ -27,9 +31,15 @@ const OUTPUT_TARGETS: readonly InstrumentOutputTarget[] = ['bridge', 'tablet', '
 interface InstrumentTabletBlob {
   output: InstrumentOutputTarget
   texture: InstrumentTextureId
+  /** Absent in pre-mode blobs — oneOf falls back to 'arp'. */
+  mode?: InstrumentVoiceMode
 }
 
-const DEFAULT_TABLET_BLOB: InstrumentTabletBlob = { output: 'bridge', texture: 'brass' }
+const DEFAULT_TABLET_BLOB: Required<InstrumentTabletBlob> = {
+  output: 'bridge',
+  texture: 'brass',
+  mode: 'arp',
+}
 
 /** The persisted brass-cube blob (one JSON object under instrumentBrass). */
 export interface BrassOptions {
@@ -66,6 +76,8 @@ export interface InstrumentSettingsState {
   /** Tablet instrument voice (M40-15): gesture routing + sample texture. */
   outputTarget: InstrumentOutputTarget
   textureId: InstrumentTextureId
+  /** 'arp' = sustained loops between punches; 'notes' = alternating stabs. */
+  voiceMode: InstrumentVoiceMode
   /** True once a load has run, so a screen never writes over unread values. */
   loaded: boolean
   load(repo: SettingsRepository): void
@@ -74,6 +86,7 @@ export interface InstrumentSettingsState {
   setBrassOptions(partial: Partial<BrassOptions>): void
   setOutputTarget(target: InstrumentOutputTarget): void
   setTextureId(textureId: InstrumentTextureId): void
+  setVoiceMode(mode: InstrumentVoiceMode): void
 }
 
 let repository: SettingsRepository | null = null
@@ -90,6 +103,7 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
   brassBackend: DEFAULT_BRASS_OPTIONS.backend,
   outputTarget: DEFAULT_TABLET_BLOB.output,
   textureId: DEFAULT_TABLET_BLOB.texture,
+  voiceMode: DEFAULT_TABLET_BLOB.mode,
   loaded: false,
 
   load(repo) {
@@ -113,6 +127,7 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
       brassBackend: oneOf(ARP_BACKENDS, brass.backend, DEFAULT_BRASS_OPTIONS.backend),
       outputTarget: oneOf(OUTPUT_TARGETS, tablet.output, DEFAULT_TABLET_BLOB.output),
       textureId: oneOf(INSTRUMENT_TEXTURE_IDS, tablet.texture, DEFAULT_TABLET_BLOB.texture),
+      voiceMode: oneOf(INSTRUMENT_VOICE_MODES, tablet.mode, DEFAULT_TABLET_BLOB.mode),
       loaded: true,
     })
   },
@@ -145,10 +160,11 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
 
   setOutputTarget(target) {
     set({ outputTarget: target })
-    // Merged blob, the setBrassOptions pattern: one key, both fields.
+    // Merged blob, the setBrassOptions pattern: one key, all fields.
     repository?.write(SETTINGS_KEYS.instrumentTablet, {
       output: target,
       texture: get().textureId,
+      mode: get().voiceMode,
     } satisfies InstrumentTabletBlob)
   },
 
@@ -157,6 +173,16 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
     repository?.write(SETTINGS_KEYS.instrumentTablet, {
       output: get().outputTarget,
       texture: textureId,
+      mode: get().voiceMode,
+    } satisfies InstrumentTabletBlob)
+  },
+
+  setVoiceMode(mode) {
+    set({ voiceMode: mode })
+    repository?.write(SETTINGS_KEYS.instrumentTablet, {
+      output: get().outputTarget,
+      texture: get().textureId,
+      mode,
     } satisfies InstrumentTabletBlob)
   },
 }))
@@ -172,6 +198,7 @@ export function __resetInstrumentSettingsForTests(): void {
     brassBackend: DEFAULT_BRASS_OPTIONS.backend,
     outputTarget: DEFAULT_TABLET_BLOB.output,
     textureId: DEFAULT_TABLET_BLOB.texture,
+    voiceMode: DEFAULT_TABLET_BLOB.mode,
     loaded: false,
   })
 }
