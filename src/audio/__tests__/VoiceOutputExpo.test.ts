@@ -1361,3 +1361,95 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     expect(h.created).toHaveLength(20)
   })
 })
+
+describe('focus-scoped reuse (#356) — release() frees, the SAME instance re-warms', () => {
+  // Measured on the tablet: leaving punchCraft Live left 21 native
+  // AudioTracks resident for the rest of the session, and the instrument's
+  // 30 stacked on top of them (40 observed against a documented ~48 ceiling,
+  // past which the app goes silent with no error at all).
+  //
+  // The fix frees the pool on blur and re-warms it on focus WITHOUT
+  // replacing the VoiceOutputExpo. That is deliberate: `output` feeds the
+  // `voice` memo, which is a dependency of the workout runner's arm effect,
+  // so a new identity would re-arm the runner mid-workout. These tests pin
+  // the property that makes keeping the identity possible — that a released
+  // output is not a dead one.
+  // Tracks player OBJECTS, not module ids. Jest's asset transform maps every
+  // require()'d wav to the same numeric id, so a Set keyed on the source
+  // would collapse four distinct native players into one entry and quietly
+  // under-report the very thing these tests measure.
+  function rig() {
+    const clock = 1_000
+    const removed: object[] = []
+    const live = new Set<object>()
+    const keys: string[] = []
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          removed.push(player)
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      keys.push(String(source))
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => clock,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+    return { output, removed, live, keys }
+  }
+
+  it('release() removes every resident player', async () => {
+    const h = rig()
+    await h.output.preload({ light: true })
+    const warmed = h.live.size
+    expect(warmed).toBeGreaterThan(0)
+    h.output.release()
+    expect(h.live.size).toBe(0)
+    expect(h.removed).toHaveLength(warmed)
+  })
+
+  it('preload() after release() re-warms the same clips on the same instance', async () => {
+    const h = rig()
+    await h.output.preload({ light: true })
+    const first = h.live.size
+    h.output.release()
+    expect(h.live.size).toBe(0)
+    // The load-bearing claim: no terminal flag is set by release(), so the
+    // instance a blurred screen kept is the instance a refocused screen can
+    // use. If this ever regresses, the coach goes permanently silent after
+    // the first tab switch — and nothing would throw.
+    await h.output.preload({ light: true })
+    expect(h.live.size).toBe(first)
+  })
+
+  it('a full preload survives a release/re-preload cycle too', async () => {
+    const h = rig()
+    await h.output.preload()
+    const first = h.live.size
+    h.output.release()
+    await h.output.preload()
+    expect(h.live.size).toBe(first)
+  })
+
+  it('release() is safe with nothing warmed, and safe called twice', () => {
+    const h = rig()
+    expect(() => {
+      h.output.release()
+      h.output.release()
+    }).not.toThrow()
+    expect(h.live.size).toBe(0)
+  })
+})
