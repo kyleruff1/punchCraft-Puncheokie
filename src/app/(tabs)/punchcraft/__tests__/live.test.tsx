@@ -101,6 +101,10 @@ jest.mock('expo-router', () => {
       const cleanup = fn()
       if (typeof cleanup === 'function') mockCleanups.push(cleanup)
     },
+    // GH #356: the screen frees its native audio when it is neither focused
+    // nor running a workout. Tests flip `mockIsFocused` before rendering to
+    // stand in for a blurred-but-mounted tab screen.
+    useIsFocused: () => mockIsFocused,
   }
 })
 
@@ -116,6 +120,7 @@ jest.mock('expo-keep-awake', () => ({
 }))
 
 const mockCleanups: Array<() => void> = []
+let mockIsFocused = true
 /** Stands in for the tab navigator whose bar the live screen hides. */
 const mockParent = { setOptions: jest.fn() }
 
@@ -125,6 +130,7 @@ import LiveScreen from '../live'
 import { TAB_BAR_STYLE } from '../../_layout'
 import { colors } from '@/theme/colors'
 import { setLive, useLiveStore, useWorkoutStore } from '@state/useWorkoutStore'
+import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
 import { useBackdropSettingsStore } from '@state/useBackdropSettingsStore'
 import type { LiveState } from '@state/useWorkoutStore'
 
@@ -171,6 +177,7 @@ function nodes(tree: ReactTestRenderer, testID: string): ReactTestInstance[] {
 beforeEach(() => {
   jest.clearAllMocks()
   mockCleanups.length = 0
+  mockIsFocused = true
   act(() => {
     useLiveStore.getState().resetLive()
     useWorkoutStore.getState().resetRecipe()
@@ -517,5 +524,68 @@ describe('no app audio on this screen (spec §13.5)', () => {
     // ESM import with no CommonJS globals.
     const source = readFileSync('src/app/(tabs)/punchcraft/live.tsx', 'utf8')
     expect(source).not.toMatch(/expo-av|expo-audio|expo-speech/)
+  })
+})
+
+describe('audio hold on blur (GH #356)', () => {
+  // Measured on the tablet before this landed: leaving punchCraft Live left
+  // 21 native AudioTracks resident for the rest of the session, and the
+  // instrument's 30 stacked on top — 40 against a ~48 ceiling past which the
+  // app goes silent with NO error, because each individual play still looks
+  // successful. `(tabs)` keeps a visited screen mounted, so the unmount-only
+  // cleanup never ran.
+  //
+  // The predicate itself is exhaustively tested in __tests__/audioHold.test.ts;
+  // these four pin that the screen is actually WIRED to it.
+  function spyRelease(): jest.SpyInstance {
+    return jest.spyOn(VoiceOutputExpo.prototype, 'release')
+  }
+
+  it('a blurred, idle screen frees its native players', () => {
+    const release = spyRelease()
+    mockIsFocused = false
+    render()
+    expect(release).toHaveBeenCalled()
+    release.mockRestore()
+  })
+
+  it('a focused screen holds them', () => {
+    const release = spyRelease()
+    mockIsFocused = true
+    render()
+    expect(release).not.toHaveBeenCalled()
+    release.mockRestore()
+  })
+
+  it('a workout running on a blurred screen keeps its audio', () => {
+    // The trap this guards. The runner is not focus-aware, so a blurred
+    // screen keeps advancing the session, ringing the bell and calling
+    // combinations. Releasing here would leave an athlete who is still
+    // punching with no coach, no click and no bell — and nothing would error.
+    const release = spyRelease()
+    mockIsFocused = true
+    render()
+    drive({ phase: 'work', roundRemainingMs: 120_000 })
+    release.mockClear()
+    mockIsFocused = false
+    drive({ phase: 'work', roundRemainingMs: 119_000 })
+    expect(release).not.toHaveBeenCalled()
+    release.mockRestore()
+  })
+
+  it('…and frees them the moment that workout finishes', () => {
+    // The other half: a workout abandoned mid-round still ends, and the
+    // players must come back at that point rather than lingering for the
+    // rest of the session.
+    const release = spyRelease()
+    mockIsFocused = true
+    render()
+    drive({ phase: 'work', roundRemainingMs: 120_000 })
+    mockIsFocused = false
+    drive({ phase: 'work', roundRemainingMs: 119_000 })
+    release.mockClear()
+    drive({ phase: 'completed' })
+    expect(release).toHaveBeenCalled()
+    release.mockRestore()
   })
 })

@@ -345,6 +345,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly clickScriptArmed = new Set<number>()
   /** Per-module play generation, so a scheduled pre-arm never seeks a player that has since replayed. */
   private readonly clickScriptGen = new Map<number, number>()
+
+  /**
+   * Bumped by `release()`; captured by `preload()` and re-checked after every
+   * await so a released output never resurrects its pool (GH #356).
+   */
+  private generation = 0
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -724,6 +730,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   }
 
   /**
+   * How long until the coach lane falls silent; 0 if it already is.
+   *
+   * The subtraction lives here rather than at the call site because
+   * `audibleUntilMs()` is stamped on THIS instance's clock, which defaults to
+   * `performance.now()` — a caller reaching for `Date.now()` would compute a
+   * garbage delay. Used to tear the pool down without cutting a clip short:
+   * the closing ding-ding is started by the same runner tick that publishes
+   * the terminal phase, so releasing on that edge would kill the bell about
+   * 0 ms into its ring (GH #356).
+   */
+  msUntilQuiet(): number {
+    const until = this.audibleUntilMs()
+    return until > 0 ? Math.max(0, until - this.clock()) : 0
+  }
+
+  /**
    * Advance `busyUntilMs` to cover a clip of `durationMs` starting now,
    * plus a `COACH_LANE_RELEASE_GRACE_MS` tail so the next armed event
    * doesn't collide with the previous clip's decay (M39-V2 Phase 4-ii
@@ -876,6 +898,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * than its voice.
    */
   async preload(opts?: { light?: boolean }): Promise<void> {
+    const generation = this.generation
+    // A re-warm is a genuine RETRY. `failed` is a permanent no-audio latch
+    // that nothing ever cleared, so before this the screen could hit one
+    // transient audio-stack error and stay mute for the rest of the session —
+    // and re-preloading on refocus is exactly what makes that reachable.
+    this.failed = false
     try {
       // 'mixWithOthers' until something is actually audible — asking for
       // focus while silent would duck the athlete's music for nothing.
@@ -893,6 +921,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       })
       return
     }
+
+    // Released while we were awaiting: the screen is gone, so creating the
+    // pool now would leak it.
+    if (generation !== this.generation) return
 
     // Warm the clips a round actually opens with, not every clip in every
     // form: the pool cap means preloading everything would only evict most of
@@ -1616,6 +1648,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   /** Release players and any held focus. */
   release(): void {
+    // Invalidate any preload still in flight (GH #356). `preload()` awaits
+    // before it creates anything, so without this a blur landing inside that
+    // await would let release() empty the pool and then have the awaiting
+    // continuation refill it — up to 20 native players rebuilt on a screen
+    // that has already gone, with nothing left to free them.
+    this.generation += 1
     for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
     this.clearSequence()
@@ -1643,7 +1681,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
     this.clickScriptPlayers.clear()
     this.clickScriptArmed.clear()
-    this.clickScriptGen.clear()
+    // clickScriptGen is deliberately NOT cleared. It holds no native handle —
+    // only a monotonic per-module counter that in-flight pre-arm timers
+    // captured and compare against. Clearing it restarts those counters at 1,
+    // so a stale timer from before the release would match a fresh generation
+    // and write a dead player into the live cache.
     this.clickScriptPlayer = null
     for (const player of this.oneShotPlayers) {
       try {

@@ -1444,6 +1444,56 @@ describe('focus-scoped reuse (#356) — release() frees, the SAME instance re-wa
     expect(h.live.size).toBe(first)
   })
 
+  it('a release DURING an in-flight preload wins — the pool is not resurrected', async () => {
+    // The race that would have defeated the whole fix. preload() awaits
+    // setAudioMode before it creates anything, so a blur landing inside that
+    // await used to let release() empty the pool and then have the awaiting
+    // continuation refill it — up to 20 native players rebuilt for a screen
+    // that had already gone, with nothing left to free them. That is also a
+    // candidate explanation for the 21 tracks measured surviving on device.
+    let releaseNow: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      releaseNow = resolve
+    })
+    const removed: object[] = []
+    const live = new Set<object>()
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          removed.push(player)
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      // Suspend the preload exactly where the real one suspends.
+      setAudioMode: (async () => {
+        await gate
+      }) as never,
+    })
+
+    const inFlight = output.preload()
+    expect(live.size).toBe(0) // still suspended, nothing created yet
+    output.release() // the screen blurs mid-await
+    releaseNow()
+    await inFlight
+
+    expect(live.size).toBe(0)
+  })
+
   it('release() is safe with nothing warmed, and safe called twice', () => {
     const h = rig()
     expect(() => {

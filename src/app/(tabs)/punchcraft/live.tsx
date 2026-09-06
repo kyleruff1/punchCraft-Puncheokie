@@ -25,7 +25,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
+import { Stack, useFocusEffect, useIsFocused, useNavigation, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
@@ -57,6 +57,7 @@ import {
   type SharedWorkClock,
 } from '@domain/timing/SharedWorkClock'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
+import { shouldHoldAudio } from './_audioHold'
 import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
 import { RecoveryPlayer } from '@audio/RecoveryPlayer'
@@ -146,6 +147,23 @@ export default function LiveScreen(): React.JSX.Element {
     }
   }, [output])
 
+  /**
+   * Whether this screen may free its native audio right now (GH #356).
+   *
+   * `(tabs)` keeps a once-visited screen MOUNTED, so the unmount cleanup just
+   * above never ran in practice: measured on the tablet, leaving punchCraft
+   * Live left 21 AudioTracks resident for the rest of the session, and the
+   * instrument's 30 stacked on top (40 against a ~48 ceiling past which the
+   * app goes silent with no error).
+   *
+   * But blur is NOT "finished" here — the runner ticks from a plain effect and
+   * is not focus-aware, so a workout keeps running, ringing and calling while
+   * the screen is blurred. Hence the OR: focused, or a live workout. See
+   * `_audioHold.ts` for the full argument and its exhaustive test.
+   */
+  const isFocused = useIsFocused()
+  const holdAudio = shouldHoldAudio({ phase: live.phase, isFocused })
+
   // Live vocabulary override (Kyle's mid-workout radio): dispatch-time
   // only. Clips resolve at play time and preload keeps BOTH tracks warm,
   // so the flip is instant — no engine rebuild, no rhythm-map change.
@@ -180,9 +198,16 @@ export default function LiveScreen(): React.JSX.Element {
     // Preload during the countdown, not at the first cue: M34-01 measured a
     // cold clip at roughly twice the jitter of a preloaded one. Re-runs on a
     // vocabulary change; preload also warms the OTHER vocabulary's openers.
+    //
+    // Also the RE-WARM half of the #356 release below: refocusing a screen
+    // whose pool was freed re-enters here and rebuilds it. Guarded so the
+    // blur transition does not immediately re-warm what it just released —
+    // this effect is declared BEFORE the release effect, so on the way down
+    // it returns early and the release runs after it.
+    if (!holdAudio) return
     output.setVocabulary(effectiveVocabulary)
     void output.preload({ light: preloadLight })
-  }, [output, effectiveVocabulary, preloadLight])
+  }, [output, effectiveVocabulary, preloadLight, holdAudio])
 
   React.useEffect(() => {
     output.setVolumes(volumes)
@@ -369,7 +394,15 @@ export default function LiveScreen(): React.JSX.Element {
     if (live.phase !== 'idle' || policy.mode === 'off') return
     introRef.current ??= new IntroPlayer()
     introRef.current.load(intro.segments)
-  }, [live.phase, policy.mode, intro.segments])
+    // `holdAudio` is a dependency because the release below DISCARDS the
+    // player (it is single-use — see the phase effect). Without it, a blur
+    // and refocus while still in the lobby would leave the ref null with no
+    // reason to re-run: `live.phase` is still 'idle', `policy.mode` is
+    // unchanged and `intro.segments` is referentially stable. The walkout
+    // would then never be spoken, and because the countdown's length comes
+    // from `intro.totalMs` rather than from the player, the athlete would
+    // watch ~20 s of silence before a bell arrived out of nowhere.
+  }, [live.phase, policy.mode, intro.segments, holdAudio])
   React.useEffect(() => {
     if (live.phase !== 'countdown' || policy.mode === 'off') return
     introRef.current?.play(volumes.voice, {
@@ -388,7 +421,15 @@ export default function LiveScreen(): React.JSX.Element {
       introRef.current?.pause()
       return
     }
-    if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()
+    if (live.phase !== 'idle' && live.phase !== 'countdown') {
+      introRef.current?.stop()
+      // DISCARD it, do not just stop it. IntroPlayer's `started` latch is
+      // never reset, so a stopped instance refuses to load() again — and the
+      // `??=` above would happily reuse it, leaving the next workout's
+      // walkout silent with nothing thrown and nothing logged. Since the
+      // screen stays mounted between workouts, that was already reachable.
+      introRef.current = null
+    }
   }, [live.phase])
   React.useEffect(() => () => introRef.current?.stop(), [])
 
@@ -556,6 +597,43 @@ export default function LiveScreen(): React.JSX.Element {
     clickVocabulary,
   ])
   React.useEffect(() => () => recoveryRef.current?.stop(), [])
+
+  /**
+   * Free every native audio handle once the screen is neither focused nor
+   * running a workout (GH #356). Declared AFTER the ceremony refs so it can
+   * reach them, and after the preload effect so the two never fight.
+   *
+   * `output` deliberately keeps its identity — it is not rebuilt. The `voice`
+   * memo below feeds the workout runner's arm effect, so a new VoiceOutputExpo
+   * would re-arm the runner mid-round, reset the phase to idle and strand
+   * `startedRef` at true: a start button that does nothing. release() clears
+   * the pools without marking the instance dead and preload() re-warms it
+   * (pinned in VoiceOutputExpo.test.ts, "focus-scoped reuse").
+   */
+  React.useEffect(() => {
+    if (holdAudio) return
+    const freeEverything = (): void => {
+      output.release()
+      // The three ceremony players are one AudioPlaylist each. They have no
+      // release() — stop() IS their native teardown (pause + destroy + null).
+      introRef.current?.stop()
+      introRef.current = null // single-use; see the note at the phase effect
+      warnRef.current?.stop()
+      recoveryRef.current?.stop()
+    }
+    // Never cut a sounding clip. A workout that ENDS while blurred flips
+    // this effect on the very tick that starts the closing ding-ding, so
+    // releasing immediately would kill the bell about 0 ms into its ring.
+    // Quiet lane (the ordinary case: leaving an idle lobby) → 0, and the
+    // release happens in this commit.
+    const graceMs = output.msUntilQuiet()
+    if (graceMs === 0) {
+      freeEverything()
+      return
+    }
+    const timer = setTimeout(freeEverything, graceMs)
+    return () => clearTimeout(timer)
+  }, [holdAudio, output])
 
   React.useEffect(() => {
     runner.setVocabulary(clickVocabulary)
