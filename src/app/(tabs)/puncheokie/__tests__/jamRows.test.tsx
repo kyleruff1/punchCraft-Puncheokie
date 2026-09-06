@@ -104,7 +104,18 @@ jest.mock('@protocol/trackerKeepalive', () => ({
   }),
 }))
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn() } }))
+jest.mock('expo-router', () => {
+  // useFocusEffect ≈ "focused for as long as mounted" under the test
+  // renderer — the focus-scoped lifecycles behave like mount effects.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useEffect } = require('react') as typeof React
+  return {
+    router: { back: jest.fn() },
+    useFocusEffect: (cb: () => void | (() => void)) => {
+      useEffect(cb, [cb])
+    },
+  }
+})
 
 import JamScreen from '../jam'
 import {

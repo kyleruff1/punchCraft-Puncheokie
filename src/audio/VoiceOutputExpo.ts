@@ -879,7 +879,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     try {
       // 'mixWithOthers' until something is actually audible — asking for
       // focus while silent would duck the athlete's music for nothing.
-      await this.setAudioMode({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
+      // But NEVER surrender held focus: expo-audio keeps ONE global
+      // interruption mode (last caller wins), so a mid-workout re-preload
+      // resetting to mixWithOthers would un-duck the athlete's music
+      // under the coach (isolation audit, 2026-09-05).
+      if (!this.focusHeld) {
+        await this.setAudioMode({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
+      }
     } catch (err) {
       this.failed = true
       logger.warn('puncheokie.voice.unavailable', 'audio stack failed to initialise', {

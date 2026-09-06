@@ -15,8 +15,8 @@
  * boundary-quantized bridge-side anyway). Panic and disconnect always
  * release every note (§23).
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { router } from 'expo-router'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { router, useFocusEffect } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
@@ -192,53 +192,72 @@ export default function JamScreen(): React.JSX.Element {
   const outputRef = useRef(outputTarget)
   outputRef.current = outputTarget
 
-  useEffect(() => {
-    if (outputTarget === 'bridge') {
-      // Back to the PC rig: silence the tablet, keep the pools warm for
-      // the next flip.
-      engineRef.current?.panic()
-      return
-    }
-    if (engineRef.current === null) {
-      engineRef.current = new InstrumentVoiceOutput()
-      void engineRef.current.preload(textureId)
-    } else {
-      // Same-id calls no-op inside; a real change re-preloads the pools
-      // and rebuilds any sounding loops from the new texture's bank.
-      engineRef.current.setTexture(textureId)
-    }
-    // Same-mode calls no-op inside; entering 'notes' silences the loops.
-    engineRef.current.setMode(voiceMode)
-  }, [outputTarget, textureId, voiceMode])
-
-  useEffect(
-    () => () => {
-      engineRef.current?.release()
-      engineRef.current = null
-    },
-    [],
+  // FOCUS-scoped, not mount-scoped (isolation audit, 2026-09-05): tabs
+  // keep a once-visited screen MOUNTED on tab switch, so an unmount-only
+  // cleanup would leave the engine's ~24 native players resident, the
+  // bed/bass loops sounding, the WS heartbeat/reconnect loop alive, and
+  // the punch subscription compiling gestures — all UNDER a punchCraft
+  // workout. useFocusEffect's cleanup runs on blur AND unmount, so
+  // leaving the jam by any route silences and frees everything; refocus
+  // rebuilds it lazily.
+  useFocusEffect(
+    useCallback(() => {
+      if (outputTarget === 'bridge') {
+        // PC-rig mode: nothing tablet-side to build; a lingering engine
+        // from an earlier flip is silenced (pools stay for this focus).
+        engineRef.current?.panic()
+        return
+      }
+      if (engineRef.current === null) {
+        engineRef.current = new InstrumentVoiceOutput()
+        void engineRef.current.preload(textureId)
+      } else {
+        // Same-id calls no-op inside; a real change re-preloads the pools
+        // and rebuilds any sounding loops from the new texture's bank.
+        engineRef.current.setTexture(textureId)
+      }
+      // Same-mode calls no-op inside; entering 'notes' silences the loops.
+      engineRef.current.setMode(voiceMode)
+      return () => {
+        // Blur/unmount: free every native player and playlist — the
+        // workout's own audio stack owns the AudioTrack budget now.
+        engineRef.current?.release()
+        engineRef.current = null
+      }
+    }, [outputTarget, textureId, voiceMode]),
   )
 
-  useEffect(() => {
-    const client = new BridgeClient({
-      onStatus: (status) => setBridgeStatus(status),
-      onRtt: (rtt) => setRttMs(Math.round(rtt)),
-    })
-    bridgeRef.current = client
-    client.connect(bridgeUrl, `jam-${Math.floor(globalThis.performance.now())}`, cubeMap.patchHash)
-    return () => client.disconnect()
-    // Connect once per mount; URL edits happen on the landing/settings.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      const client = new BridgeClient({
+        onStatus: (status) => setBridgeStatus(status),
+        onRtt: (rtt) => setRttMs(Math.round(rtt)),
+      })
+      bridgeRef.current = client
+      client.connect(bridgeUrl, `jam-${Math.floor(globalThis.performance.now())}`, cubeMap.patchHash)
+      return () => {
+        // Blur/unmount: close the socket and kill the heartbeat AND the
+        // 2s reconnect loop — neither may tick under a workout.
+        client.disconnect()
+        bridgeRef.current = null
+      }
+      // Connect once per focus; URL edits happen on the landing/settings.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []),
+  )
 
   useEffect(() => {
     bridgeRef.current?.setMapHash(cubeMap.patchHash)
   }, [cubeMap.patchHash])
 
-  useEffect(() => {
-    const shared = getTrackerKeepaliveSource()
-    if (!shared) return
-    return shared.subscribe((event) => {
+  useFocusEffect(
+    useCallback(() => {
+      const shared = getTrackerKeepaliveSource()
+      if (!shared) return
+      // Blur unsubscribes (the cleanup below): a blurred jam does ZERO
+      // per-punch work — no scaling, no compile, no setState — while a
+      // workout owns the shared punch feed.
+      return shared.subscribe((event) => {
       if (event.hand !== 'left' && event.hand !== 'right') return
       const { patch: livePatch, cubeMap: liveMap, brassMap: liveMap2 } = liveCtxRef.current
       const scalers = scalersRef.current
@@ -299,8 +318,9 @@ export default function JamScreen(): React.JSX.Element {
       setLastMove(
         `${result.gesture.voice.voiceId} → ${midiNoteName(result.gesture.voice.targetNote)} · ${result.gesture.voice.transition}${result.gesture.voice.transitionDurationMs ? ` ${result.gesture.voice.transitionDurationMs}ms` : ''} · cell ${cell.label}`,
       )
-    })
-  }, [])
+      })
+    }, []),
+  )
 
   const cycle = <T,>(list: readonly T[], current: T): T =>
     list[(list.indexOf(current) + 1) % list.length] as T
