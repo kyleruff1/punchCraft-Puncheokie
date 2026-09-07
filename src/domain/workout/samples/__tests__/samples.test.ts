@@ -17,16 +17,18 @@ import {
 } from '../index'
 import { validateGeneratedWorkout } from '../../GeneratedWorkout'
 import { buildRoundSchedule } from '../../roundSchedule'
-import { CLICK_MAPS } from '../clickMaps'
+import { allClickMaps } from '../allClickMaps'
+import { QUICK_WORKOUT_ORDER } from '../quickWorkouts'
 import { bpmForRecipe, msToBeats } from '../../cadence'
 import { punchTokens } from '../../WorkoutTokens'
 import { blocksSpanMs, roundPunchCount } from '../authoring'
 import { handSequence, resolveEffectiveStance } from '../../../programs/StanceMapper'
 
 const ALL = listSampleWorkouts()
+const MAPS = allClickMaps()
 
 describe('the sample catalogue', () => {
-  it('exposes exactly the ten binding keys', () => {
+  it('exposes exactly the binding keys — ten full workouts, then the twelve quick ones', () => {
     expect(ALL.map((s) => s.key)).toEqual([
       'three-round-fundamentals',
       'establish-the-jab-20',
@@ -38,7 +40,16 @@ describe('the sample catalogue', () => {
       'body-work',
       'pace-pusher',
       'pump-and-coast',
+      ...QUICK_WORKOUT_ORDER,
     ])
+    expect(QUICK_WORKOUT_ORDER).toHaveLength(12)
+  })
+
+  it('gives every sample a unique block-id prefix', () => {
+    // Block ids are `${prefix}${round}-b${n}`; two samples sharing a prefix
+    // would make their cue ids collide in every downstream log and manifest.
+    const prefixes = ALL.map((s) => s.workout.schedule[0]!.id.replace(/-r\d+$/, ''))
+    expect(new Set(prefixes).size).toBe(prefixes.length)
   })
 
   it('resolves each key to its workout', () => {
@@ -92,7 +103,7 @@ describe.each(ALL.map((s) => [s.key, s.workout] as const))('%s', (key, workout) 
     // whether the click is on (baseBpm×division = MAP.bpm) or off (legacy
     // nominalBpm path). If a future edit changes coachTempo without
     // preserving the product, this fails before it ever reaches glass.
-    const map = CLICK_MAPS[key]
+    const map = MAPS[key]
     expect(map).toBeDefined()
     expect(bpmForRecipe(workout.recipe)).toBe(map!.bpm)
   })
@@ -162,6 +173,52 @@ describe.each(ALL.map((s) => [s.key, s.workout] as const))('%s', (key, workout) 
     )
     for (const text of strings) {
       for (const pattern of banned) expect(text).not.toMatch(pattern)
+    }
+  })
+})
+
+describe('the quick catalogue (2026-09-07) — two rounds × 4:00, one 1:00 rest', () => {
+  const quick = ALL.filter((s) => s.key.startsWith('quick-'))
+
+  it.each(quick.map((s) => [s.key, s.workout] as const))(
+    '%s is two 4:00 rounds with one rest, on the 240 s doctrine',
+    (_key, workout) => {
+      expect(workout.schedule.map((r) => r.workDurationMs)).toEqual([240_000, 240_000])
+      expect(workout.schedule.map((r) => r.restAfterMs)).toEqual([60_000, 0])
+      expect(workout.schedule.every((r) => r.kind === 'round' && r.countsTowardGoal)).toBe(true)
+    },
+  )
+
+  it.each(quick.map((s) => [s.key, s.workout] as const))(
+    '%s paces its density over ITS OWN eight minutes, not a four-round schedule',
+    (_key, workout) => {
+      // The suite scales its simulated punches off this number; a value
+      // computed against buildRoundSchedule(20)'s 960 s would halve it.
+      expect(workout.estimatedActivePunchesPerMinute).toBe(
+        Math.round(workout.recipe.totalPunchGoal / 8),
+      )
+    },
+  )
+
+  it('keeps every quick workout on a click the loop bank ships (85, 100 or 120)', () => {
+    for (const s of quick) {
+      expect([85, 100, 120]).toContain(bpmForRecipe(s.workout.recipe))
+    }
+  })
+
+  it('only Southpaw Mirror switches stance, and only at the round boundary', () => {
+    for (const s of quick) {
+      const stances = s.workout.schedule.map(
+        (r) => new Set(r.blocks.map((b) => b.stance)),
+      )
+      for (const set of stances) expect(set.size).toBe(1)
+      const perRound = stances.map((set) => [...set][0])
+      if (s.key === 'quick-southpaw-mirror') {
+        expect(perRound).toEqual(['orthodox', 'southpaw'])
+        expect(s.workout.recipe.stanceMode).toBe('switch-by-round')
+      } else {
+        expect(new Set(perRound).size).toBe(1)
+      }
     }
   })
 })

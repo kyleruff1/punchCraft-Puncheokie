@@ -16,7 +16,14 @@
  *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
  *        tools/analysis/gen-workout-scripts.ts > docs/click-workout-scripts.md
  */
-import { CLICK_MAPS, SETUP_GAP_MEASURES, breathBeats, measuresPerRep, rowMeasures, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
+import { breathBeats, measuresPerRep, rowMeasures, setupMeasuresForRow, type ClickRate } from '../../src/domain/workout/samples/clickMaps'
+import { allClickMaps } from '../../src/domain/workout/samples/allClickMaps'
+import { QUICK_WORKOUT_META, QUICK_WORKOUT_ORDER } from '../../src/domain/workout/samples/quickWorkouts'
+
+// Every map the app plays — literal and composed. The `--corpus` output of
+// this script IS the render list, so iterating CLICK_MAPS alone would leave
+// a composed workout's lead-ins, rests and new calls unrendered.
+const MAPS = allClickMaps()
 import { parseCombo, punchTokens } from '../../src/domain/workout/WorkoutTokens'
 import { spokenFor } from '../voice/prosody.mjs'
 
@@ -31,6 +38,7 @@ const NAMES: Record<string, string> = {
   'body-work': 'Body Work',
   'pace-pusher': 'Pace Pusher',
   'pump-and-coast': 'Pump & Coast',
+  ...Object.fromEntries(QUICK_WORKOUT_ORDER.map((key) => [key, QUICK_WORKOUT_META[key].name])),
 }
 
 const WALKOUTS: Record<string, string> = {
@@ -56,6 +64,32 @@ const WALKOUTS: Record<string, string> = {
     'Pace Pusher. Four rounds, one-twenty on the click. Same combination, three speeds — straight time, time-and-a-half, then double-time on the same beat. The ladder never lies. On the bell.',
   'pump-and-coast':
     'Pump and Coast. Four rounds at one hundred. Bursts and breathers — when we pump, you empty it; when we coast, you recover on your feet. On the bell.',
+  // The quick catalogue (2026-09-07): two rounds, nine minutes. Doc-only,
+  // like every walkout above.
+  'quick-jab-school':
+    'Jab School. Two rounds at one hundred. The lead hand is home — touch, return, double it. On the bell.',
+  'quick-one-two':
+    'One-Two. Two rounds, one-twenty on the click. The straight pair at three speeds, then the double jab in front of it. On the bell.',
+  'quick-hook-line':
+    'Hook Line. Two rounds at one hundred. Hooks come off the straight line — then both hooks, back to back. On the bell.',
+  'quick-square':
+    'The Square. Two rounds at one hundred. Trace it — one, four, two, three — then close it with the four-count. On the bell.',
+  'quick-uppercut-lane':
+    'Uppercut Lane. Two rounds, eighty-five on the click. Short uppercuts up the middle, both hands. Bend the knees. On the bell.',
+  'quick-downstairs':
+    'Downstairs. Two rounds at one hundred. Body jabs, the cross to the ribs, the hook under the elbow. Elbows in. On the bell.',
+  'quick-level-change':
+    'Level Change. Two rounds at one hundred. Head, body, head — every bar changes floors, the stance never does. On the bell.',
+  'quick-southpaw-mirror':
+    'Southpaw Mirror. Two rounds, eighty-five on the click — orthodox, then the same four sets southpaw. Same numbers, opposite world. On the bell.',
+  'quick-speed-burst':
+    'Speed Burst. Two rounds, one-twenty on the click. Short straight flurries and quick exits — the sprint lives in the bursts. On the bell.',
+  'quick-heavy-two':
+    'Heavy Two. Two rounds, one-twenty on the click. Hooks and crosses with weight behind them — sit down on every shot. On the bell.',
+  'quick-coast-reset':
+    'Coast and Reset. Two rounds at one hundred. Pump, then breathe on your feet — the empty slots are where you reset. On the bell.',
+  'quick-six-count':
+    'Six Count. Two rounds at one hundred. The whole alphabet — one through six in a bar — then the long phrases. On the bell.',
 }
 
 const WORDS: Record<string, string> = {
@@ -306,9 +340,9 @@ function noteCall(motif: string, rate: ClickRate, bpm: number): void {
 }
 
 const out: string[] = []
-out.push('# punchCraft — Click-Track Workout Scripts (all 10 predetermined sets)')
+out.push(`# punchCraft — Click-Track Workout Scripts (all ${Object.keys(MAPS).length} predetermined sets)`)
 out.push('')
-out.push('> Generated from `CLICK_MAPS` (the running library) by `tools/analysis/gen-workout-scripts.ts` — the maps ARE these tables; regenerate after any map edit.')
+out.push('> Generated from `allClickMaps()` (the running library — the hand-authored `CLICK_MAPS` plus the composed quick catalogue) by `tools/analysis/gen-workout-scripts.ts` — the maps ARE these tables; regenerate after any map edit.')
 out.push('>')
 out.push('> Every spoken element is bracket-tagged for the corpus bank:')
 out.push('>')
@@ -320,7 +354,7 @@ out.push('')
 out.push('---')
 out.push('')
 
-for (const [key, map] of Object.entries(CLICK_MAPS)) {
+for (const [key, map] of Object.entries(MAPS)) {
   out.push(`## ${NAMES[key]}  \`${key}\``)
   out.push('')
   out.push(`**${map.bpm} BPM · ${map.rounds.length} rounds × 4:00 work · ${map.bpm} measures/round · click audible, coach-guided**`)
@@ -341,8 +375,14 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       const kind = sectionKind(row.motif)
       const perBar = punchTokens(parseCombo(row.motif)).length
       punchTotal += perBar * row.reps
-      if (i > 0) {
-        out.push(`_⏸ setup pause — ${SETUP_GAP_MEASURES} measures on the click, no tokens (lead-in room)_`)
+      // The AUTHORED pad, per section: the opener's Variant-B pad and any
+      // fit-click-pads override, not the legacy two-measure constant that
+      // under-counted every round by the opener since 2026-09-04.
+      const pad = setupMeasuresForRow(row, i)
+      if (pad > 0) {
+        out.push(
+          `_⏸ ${i === 0 ? 'opener pad' : 'setup pause'} — ${pad} measures on the click, no tokens (lead-in room)_`,
+        )
         out.push('')
       }
       out.push(`**§${ri + 1}.${i + 1} ${kind}** — ${rowMeasures(row)} measures`)
@@ -362,8 +402,8 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
       out.push('```')
       out.push('')
     })
-    const gapMeasures = SETUP_GAP_MEASURES * Math.max(0, round.rows.length - 1)
-    out.push(`_Round ${ri + 1} totals: ${round.rows.reduce((a, r) => a + rowMeasures(r), 0)} row measures + ${gapMeasures} setup-pause measures · **${punchTotal} punches**_`)
+    const gapMeasures = round.rows.reduce((a, r, i) => a + setupMeasuresForRow(r, i), 0)
+    out.push(`_Round ${ri + 1} totals: ${round.rows.reduce((a, r) => a + rowMeasures(r), 0)} row measures + ${gapMeasures} pad measures = ${map.bpm} · **${punchTotal} punches**_`)
     out.push('')
     if (round.rest) {
       out.push(`### Rest ${ri + 1} → ${ri + 2}  (1:00)`)
@@ -384,7 +424,7 @@ for (const [key, map] of Object.entries(CLICK_MAPS)) {
 
 let leads = 0
 let rests = 0
-for (const map of Object.values(CLICK_MAPS)) {
+for (const map of Object.values(MAPS)) {
   map.rounds.forEach((r, ri) => {
     leads += r.rows.length
     if (ri < map.rounds.length - 1) rests += 1
@@ -394,7 +434,7 @@ out.push('## Corpus-bank tally (what this document orders up)')
 out.push('')
 out.push('| family | count | bracket |')
 out.push('|---|---|---|')
-out.push(`| walkouts | ${Object.keys(CLICK_MAPS).length} | \`<<SINGLE CLIP>>\` |`)
+out.push(`| walkouts | ${Object.keys(MAPS).length} | \`<<SINGLE CLIP>>\` |`)
 out.push(`| section lead-ins | ${leads} | \`<<SINGLE CLIP>>\` |`)
 out.push(`| rest scripts | ${rests} | \`<<SINGLE CLIP>>\` |`)
 out.push('| token components (1-6, fused 1b-6b) | 12 (+ silence) | `[[COMPONENT HITS]]` |')

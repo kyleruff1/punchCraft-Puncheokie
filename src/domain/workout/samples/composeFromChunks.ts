@@ -19,8 +19,10 @@
 import type { GeneratedWorkout } from '../GeneratedWorkout'
 import type { ProgramRound } from '../WorkoutTokens'
 import { parseCombo, punchTokens } from '../WorkoutTokens'
-import { buildRoundSchedule, type WorkoutDurationMinutes } from '../roundSchedule'
+import type { WorkoutDurationMinutes } from '../roundSchedule'
 import { defaultRecipe, type WorkoutRecipe } from '../WorkoutRecipe'
+
+type CoachTempo = WorkoutRecipe['coachTempo']
 import { GENERATOR_VERSION } from '../versions'
 import { layBlocks, roundPunchCount } from './authoring'
 import { clickSpecs, rowMeasures, SETUP_GAP_MEASURES, type ClickMap } from './clickMaps'
@@ -58,6 +60,22 @@ export function roundBudget(
   return { usedMeasures, budgetMeasures: bpm, remainingMeasures: bpm - usedMeasures }
 }
 
+/**
+ * The coach tempo that keeps `bpmForRecipe(recipe) === map.bpm` — the W2
+ * visual-grid invariant `samples.test.ts` pins for every sample.
+ *
+ * Loop-asset contract (metronomeAssets.ts): every loop wav is one 60-BPM
+ * base pulse, so TEMPO SCALES BY DIVISION. A 120 map is the 60 base at
+ * division 2 (`threeRoundFundamentals.ts`); 85 and 100 are their own base
+ * at division 1 (`switchByRound.ts`, `bodyWork.ts`). Any other bpm has no
+ * loop in the bank and would fail the metronome-asset lookup on glass.
+ */
+export function clickTempoFor(bpm: number): CoachTempo {
+  return bpm === 120
+    ? { baseBpm: 60, division: 2, swing: 0.5 }
+    : { baseBpm: bpm, division: 1, swing: 0.5 }
+}
+
 /** Resolve chunk-referencing rounds into a plain ClickMap (identical to a literal map). */
 export function resolveToClickMap(def: ComposedWorkoutDef): ClickMap {
   return { bpm: def.bpm, rounds: def.rounds.map(resolveRound) }
@@ -84,7 +102,6 @@ export function compose(def: ComposedWorkoutDef): GeneratedWorkout {
 
   const map = resolveToClickMap(def)
   const durationMinutes = def.durationMinutes
-  const scheduleInfo = buildRoundSchedule(durationMinutes)
 
   const rounds: ProgramRound[] = map.rounds.map((round, index) => {
     const blocks = layBlocks(clickSpecs(def.prefix, index, round), map.bpm)
@@ -103,6 +120,12 @@ export function compose(def: ComposedWorkoutDef): GeneratedWorkout {
   })
 
   const totalGoal = rounds.reduce((sum, r) => sum + r.targetPunches, 0)
+  // Pace over the rounds this workout ACTUALLY has. The wrappers divide by
+  // `buildRoundSchedule(20).activeSeconds` — four rounds — which is wrong
+  // for anything shorter (Three-Round Fundamentals included) and would
+  // halve a two-round workout's density. The suite paces its simulated
+  // punches off this number, so it has to be honest.
+  const activeSeconds = rounds.reduce((sum, r) => sum + r.workDurationMs, 0) / 1000
 
   const tally: Record<string, number> = {}
   for (const round of map.rounds) {
@@ -127,7 +150,7 @@ export function compose(def: ComposedWorkoutDef): GeneratedWorkout {
       defaultStance: 'orthodox',
       cadenceProfile: 'steady',
       voiceMode: 'minimal',
-      coachTempo: { baseBpm: 60, division: 2, swing: 0.5 },
+      coachTempo: clickTempoFor(def.bpm),
       metronome: { enabled: true, volume: 0.6 },
       generatorVersion: GENERATOR_VERSION,
       seed: `composed-${def.id}`,
@@ -136,7 +159,7 @@ export function compose(def: ComposedWorkoutDef): GeneratedWorkout {
     schedule: rounds,
     roundPunchTargets: rounds.map((r) => r.targetPunches),
     expectedTechniqueDistribution,
-    estimatedActivePunchesPerMinute: Math.round(totalGoal / (scheduleInfo.activeSeconds / 60)),
+    estimatedActivePunchesPerMinute: Math.round(totalGoal / (activeSeconds / 60)),
     warnings: [],
   }
 }

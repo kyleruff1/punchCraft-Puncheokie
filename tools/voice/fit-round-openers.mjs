@@ -25,8 +25,12 @@
  *    can pay, the pad rounds up to 2 so the cut stays whole.
  */
 
-import { CLICK_MAPS, measuresPerRep, rowMeasures } from '../../src/domain/workout/samples/clickMaps.ts'
+import { measuresPerRep, rowMeasures } from '../../src/domain/workout/samples/clickMaps.ts'
+import { allClickMaps } from '../../src/domain/workout/samples/allClickMaps.ts'
 import { CLICK_SCRIPT_CLIPS } from '../../src/audio/voiceAssets/clickScriptManifest.ts'
+
+// Every map the app plays — the literal ten and the composed quick twelve.
+const CLICK_MAPS = allClickMaps()
 
 /** Widest call breath at dispatch (DENSE_BREATH_MS.techniques). */
 const BREATH_MS = 750

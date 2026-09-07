@@ -1454,6 +1454,1508 @@ exports[`token streams are stable fixtures pump-and-coast token stream snapshot 
 ]
 `;
 
+exports[`token streams are stable fixtures quick-coast-reset token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qcr1-b1",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "1@2",
+          "1@3",
+        ],
+      },
+      {
+        "id": "qcr1-b2",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "rest@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qcr1-b3",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "2@0.5",
+          "2@1",
+          "2@1.5",
+        ],
+      },
+      {
+        "id": "qcr1-b4",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "rest@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qcr1-b5",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "3@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+    ],
+    "target": 130,
+    "theme": "Work, then reset on your feet",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qcr2-b1",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qcr2-b2",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "3@0.6666666666666666",
+          "rest@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qcr2-b3",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "rest@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qcr2-b4",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qcr2-b5",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "3@1.3333333333333333",
+          "2@2",
+        ],
+      },
+    ],
+    "target": 178,
+    "theme": "Coast into combinations",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-downstairs token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qdn1-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@1",
+          "1@2",
+          "2b@3",
+        ],
+      },
+      {
+        "id": "qdn1-b2",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "2b@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qdn1-b3",
+        "kind": "repeated-combo",
+        "repeat": 22,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qdn1-b4",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2b@0",
+          "3b@1",
+          "2b@2",
+          "rest@3",
+        ],
+      },
+    ],
+    "target": 175,
+    "theme": "Find the floor",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qdn2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3b@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qdn2-b2",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "1b@0.5",
+          "1b@1",
+          "1b@1.5",
+        ],
+      },
+      {
+        "id": "qdn2-b3",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "3b@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qdn2-b4",
+        "kind": "repeated-combo",
+        "repeat": 22,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "3b@1.3333333333333333",
+          "2@2",
+        ],
+      },
+    ],
+    "target": 290,
+    "theme": "Dig and come back up",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-heavy-two token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qh21-b1",
+        "kind": "repeated-combo",
+        "repeat": 15,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qh21-b2",
+        "kind": "repeated-combo",
+        "repeat": 15,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qh21-b3",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "3@0.6666666666666666",
+          "2@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qh21-b4",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 261,
+    "theme": "Sit down on the straight line",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qh22-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qh22-b2",
+        "kind": "repeated-combo",
+        "repeat": 22,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "3@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qh22-b3",
+        "kind": "repeated-combo",
+        "repeat": 22,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "5@1.3333333333333333",
+          "2@2",
+        ],
+      },
+      {
+        "id": "qh22-b4",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "2@2",
+          "3@3",
+          "2@4",
+          "5@5",
+          "2@6",
+          "rest@7",
+        ],
+      },
+    ],
+    "target": 304,
+    "theme": "Hooks with weight",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-hook-line token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qhl1-b1",
+        "kind": "repeated-combo",
+        "repeat": 15,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qhl1-b2",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qhl1-b3",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "3@0",
+          "2@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qhl1-b4",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+    ],
+    "target": 187,
+    "theme": "Hooks off the line",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qhl2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "qhl2-b2",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "3@0",
+          "4@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "qhl2-b3",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@0.6666666666666666",
+          "3@1.3333333333333333",
+          "2@2",
+        ],
+      },
+      {
+        "id": "qhl2-b4",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 250,
+    "theme": "Both hooks",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-jab-school token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qjs1-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "1@2",
+          "1@3",
+        ],
+      },
+      {
+        "id": "qjs1-b2",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qjs1-b3",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "1@0.6666666666666666",
+          "2@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qjs1-b4",
+        "kind": "repeated-combo",
+        "repeat": 30,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 223,
+    "theme": "Touch and return",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qjs2-b1",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "1@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qjs2-b2",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "1b@0.5",
+          "1b@1",
+          "1b@1.5",
+        ],
+      },
+      {
+        "id": "qjs2-b3",
+        "kind": "repeated-combo",
+        "repeat": 16,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.6666666666666666",
+          "2@1.3333333333333333",
+          "3@2",
+        ],
+      },
+      {
+        "id": "qjs2-b4",
+        "kind": "repeated-combo",
+        "repeat": 30,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.6666666666666666",
+          "1@1.3333333333333333",
+          "1@2",
+        ],
+      },
+    ],
+    "target": 312,
+    "theme": "Double and go",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-level-change token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qlc1-b1",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "1@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qlc1-b2",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "1b@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qlc1-b3",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1b@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qlc1-b4",
+        "kind": "repeated-combo",
+        "repeat": 24,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "2@0.6666666666666666",
+          "1@1.3333333333333333",
+          "2@2",
+        ],
+      },
+    ],
+    "target": 238,
+    "theme": "High, low, high",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qlc2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@1",
+          "3@2",
+          "4b@3",
+        ],
+      },
+      {
+        "id": "qlc2-b2",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3b@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qlc2-b3",
+        "kind": "repeated-combo",
+        "repeat": 22,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qlc2-b4",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1b@0",
+          "1@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 232,
+    "theme": "Change floors in the phrase",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-one-two token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "q121-b1",
+        "kind": "repeated-combo",
+        "repeat": 15,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "rest@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "q121-b2",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "1@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "q121-b3",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "rest@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "q121-b4",
+        "kind": "repeated-combo",
+        "repeat": 28,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "rest@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 194,
+    "theme": "The pair at three speeds",
+  },
+  {
+    "blocks": [
+      {
+        "id": "q122-b1",
+        "kind": "repeated-combo",
+        "repeat": 16,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "q122-b2",
+        "kind": "repeated-combo",
+        "repeat": 24,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.6666666666666666",
+          "2@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "q122-b3",
+        "kind": "repeated-combo",
+        "repeat": 30,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "q122-b4",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "1@1.3333333333333333",
+          "2@2",
+        ],
+      },
+    ],
+    "target": 314,
+    "theme": "Double the lead, keep the two",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-six-count token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "q6c1-b1",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "q6c1-b2",
+        "kind": "repeated-combo",
+        "repeat": 12,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "5@2",
+          "6@3",
+        ],
+      },
+      {
+        "id": "q6c1-b3",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+          "5@4",
+          "6@5",
+          "rest@6",
+          "rest@7",
+        ],
+      },
+      {
+        "id": "q6c1-b4",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "6@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+    ],
+    "target": 204,
+    "theme": "Count to six",
+  },
+  {
+    "blocks": [
+      {
+        "id": "q6c2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "q6c2-b2",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+          "1@4",
+          "2@5",
+          "5@6",
+          "2@7",
+        ],
+      },
+      {
+        "id": "q6c2-b3",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+          "5@4",
+          "6@5",
+          "rest@6",
+          "rest@7",
+        ],
+      },
+      {
+        "id": "q6c2-b4",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "5@2",
+          "6@3",
+        ],
+      },
+    ],
+    "target": 200,
+    "theme": "The whole phrase",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-southpaw-mirror token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qsm1-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "orthodox",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qsm1-b2",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "orthodox",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qsm1-b3",
+        "kind": "repeated-combo",
+        "repeat": 17,
+        "stance": "orthodox",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qsm1-b4",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "orthodox",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+    ],
+    "target": 181,
+    "theme": "Orthodox base",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qsm2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "southpaw",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qsm2-b2",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "southpaw",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@1",
+          "2@2",
+          "rest@3",
+        ],
+      },
+      {
+        "id": "qsm2-b3",
+        "kind": "repeated-combo",
+        "repeat": 17,
+        "stance": "southpaw",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qsm2-b4",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "southpaw",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2b@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+    ],
+    "target": 181,
+    "theme": "Southpaw mirror",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-speed-burst token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qsb1-b1",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "1@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qsb1-b2",
+        "kind": "repeated-combo",
+        "repeat": 34,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qsb1-b3",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "3@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qsb1-b4",
+        "kind": "repeated-combo",
+        "repeat": 32,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "3@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+    ],
+    "target": 308,
+    "theme": "Fast hands, clean stops",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qsb2-b1",
+        "kind": "repeated-combo",
+        "repeat": 24,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+      {
+        "id": "qsb2-b2",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.5",
+          "1@1",
+          "2@1.5",
+          "3@2",
+          "2@2.5",
+          "rest@3",
+          "rest@3.5",
+        ],
+      },
+      {
+        "id": "qsb2-b3",
+        "kind": "repeated-combo",
+        "repeat": 24,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "1@0.6666666666666666",
+          "2@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qsb2-b4",
+        "kind": "repeated-combo",
+        "repeat": 34,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "3@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 366,
+    "theme": "Pages at speed",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-square token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qsq1-b1",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@1",
+          "2@2",
+          "3@3",
+        ],
+      },
+      {
+        "id": "qsq1-b2",
+        "kind": "repeated-combo",
+        "repeat": 9,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "qsq1-b3",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@0.6666666666666666",
+          "2@1.3333333333333333",
+          "3@2",
+        ],
+      },
+      {
+        "id": "qsq1-b4",
+        "kind": "repeated-combo",
+        "repeat": 14,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "3@2",
+          "2@3",
+          "1@4",
+          "4@5",
+          "3@6",
+          "2@7",
+        ],
+      },
+    ],
+    "target": 240,
+    "theme": "Trace the square",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qsq2-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qsq2-b2",
+        "kind": "repeated-combo",
+        "repeat": 10,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "3@0",
+          "4@1",
+          "3@2",
+          "4@3",
+        ],
+      },
+      {
+        "id": "qsq2-b3",
+        "kind": "repeated-combo",
+        "repeat": 20,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@0.6666666666666666",
+          "3@1.3333333333333333",
+          "4@2",
+        ],
+      },
+      {
+        "id": "qsq2-b4",
+        "kind": "repeated-combo",
+        "repeat": 26,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "4@0.5",
+          "3@1",
+          "2@1.5",
+        ],
+      },
+    ],
+    "target": 276,
+    "theme": "Close the square",
+  },
+]
+`;
+
+exports[`token streams are stable fixtures quick-uppercut-lane token stream snapshot 1`] = `
+[
+  {
+    "blocks": [
+      {
+        "id": "qul1-b1",
+        "kind": "repeated-combo",
+        "repeat": 13,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "5@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qul1-b2",
+        "kind": "repeated-combo",
+        "repeat": 16,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "5@0",
+          "6@0.6666666666666666",
+          "5@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qul1-b3",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "6@1",
+          "3@2",
+          "2@3",
+        ],
+      },
+      {
+        "id": "qul1-b4",
+        "kind": "repeated-combo",
+        "repeat": 19,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "5@0.5",
+          "2@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 189,
+    "theme": "Short line up the middle",
+  },
+  {
+    "blocks": [
+      {
+        "id": "qul2-b1",
+        "kind": "repeated-combo",
+        "repeat": 12,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "1@0",
+          "2@1",
+          "5@2",
+          "6@3",
+        ],
+      },
+      {
+        "id": "qul2-b2",
+        "kind": "repeated-combo",
+        "repeat": 8,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "6@0",
+          "3@1",
+          "6@2",
+          "3@3",
+        ],
+      },
+      {
+        "id": "qul2-b3",
+        "kind": "repeated-combo",
+        "repeat": 18,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "2@0",
+          "5@0.6666666666666666",
+          "2@1.3333333333333333",
+          "rest@2",
+        ],
+      },
+      {
+        "id": "qul2-b4",
+        "kind": "repeated-combo",
+        "repeat": 19,
+        "stance": "inherit",
+        "targetPunches": null,
+        "tokens": [
+          "5@0",
+          "2@0.5",
+          "3@1",
+          "rest@1.5",
+        ],
+      },
+    ],
+    "target": 191,
+    "theme": "Both uppercuts, then finish",
+  },
+]
+`;
+
 exports[`token streams are stable fixtures speed-combos token stream snapshot 1`] = `
 [
   {

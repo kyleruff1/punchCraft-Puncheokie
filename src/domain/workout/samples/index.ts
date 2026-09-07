@@ -21,6 +21,12 @@ import { speedCombos } from './speedCombos'
 import { switchByRound } from './switchByRound'
 import { threeRoundFundamentals } from './threeRoundFundamentals'
 import { uppercutClinic } from './uppercutClinic'
+import {
+  QUICK_WORKOUT_META,
+  QUICK_WORKOUT_ORDER,
+  QUICK_WORKOUTS,
+  type QuickWorkoutKey,
+} from './quickWorkouts'
 
 /** Stable identifiers — binding for M31-06's sample picker. */
 export type SampleWorkoutKey =
@@ -35,6 +41,7 @@ export type SampleWorkoutKey =
   | 'pace-pusher'
   | 'pump-and-coast'
   | 'diagnostic-token-sequence'
+  | QuickWorkoutKey
 
 export interface SampleWorkout {
   key: SampleWorkoutKey
@@ -109,7 +116,7 @@ const SAMPLES: Record<SampleWorkoutKey, SampleWorkout> = {
     key: 'pump-and-coast',
     name: 'Pump & Coast',
     description:
-      'Three short rounds pumping one punch per round with voiced coasting recoveries — the M39-V2 Phase 4b demo.',
+      'Four rounds of pump bars and coast bars — empty it, then recover on your feet — at one hundred on the click.',
     workout: pumpAndCoast,
   },
   'diagnostic-token-sequence': {
@@ -119,10 +126,25 @@ const SAMPLES: Record<SampleWorkoutKey, SampleWorkout> = {
       'INTERNAL QA rig — five known-truth combos back-to-back in R1 for the verify-workout harness. Not intended as a user-facing workout.',
     workout: diagnosticTokenSequence,
   },
+  // The quick catalogue (2026-09-07): two rounds × 4:00, ≈ nine minutes.
+  // Names and descriptions live beside their definitions in
+  // quickWorkouts.ts; the registry only binds the keys.
+  ...(Object.fromEntries(
+    QUICK_WORKOUT_ORDER.map((key) => [
+      key,
+      {
+        key,
+        name: QUICK_WORKOUT_META[key].name,
+        description: QUICK_WORKOUT_META[key].description,
+        workout: QUICK_WORKOUTS[key],
+      },
+    ]),
+  ) as Record<QuickWorkoutKey, SampleWorkout>),
 }
 
-/** Presentation order for the "Start with a sample" list — the 3×3
- * landing grid reads left-to-right, top-to-bottom in this order. */
+/** Presentation order for the "Start with a sample" list — the landing
+ * grid reads left-to-right, top-to-bottom in this order: the ten full
+ * workouts, then the twelve quick ones. */
 const ORDER: SampleWorkoutKey[] = [
   'three-round-fundamentals',
   'establish-the-jab-20',
@@ -134,6 +156,7 @@ const ORDER: SampleWorkoutKey[] = [
   'body-work',
   'pace-pusher',
   'pump-and-coast',
+  ...QUICK_WORKOUT_ORDER,
 ]
 
 export function listSampleWorkouts(): SampleWorkout[] {
