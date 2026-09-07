@@ -1070,11 +1070,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       if (oldest.done) break
       const evicted = this.players.get(oldest.value)
       this.players.delete(oldest.value)
-      try {
-        evicted?.remove()
-      } catch {
-        // Already gone; the point was to stop holding the track.
-      }
+      // `remove()` alone is a registry map-delete: it frees no AudioTrack and
+      // does not even stop playback, so this cap bounded the JS Map while the
+      // native players accumulated until GC happened to run. That is the whole
+      // #356 defect, and it made MAX_RESIDENT_PLAYERS bound nothing that
+      // matters. `releaseAudioPlayer` is total and never throws.
+      releaseAudioPlayer(evicted)
     }
 
     try {
@@ -1285,11 +1286,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
             this.clickScriptArmed.delete(module)
             this.clickScriptGen.delete(module)
             if (this.clickScriptPlayer === target) this.clickScriptPlayer = null
-            try {
-              target.remove()
-            } catch {
-              // Already gone.
-            }
+            releaseAudioPlayer(target)
             return
           }
           try {
@@ -1347,11 +1344,9 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.clickScriptPlayers.delete(module)
       this.clickScriptArmed.delete(module)
       this.clickScriptGen.delete(module)
-      try {
-        player.remove()
-      } catch {
-        // Already gone.
-      }
+      // The loop above already skips the sounding player and the one just
+      // inserted, so nothing here is audible — a real release cuts nothing.
+      releaseAudioPlayer(player)
     }
   }
 
@@ -1369,11 +1364,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.oneShotPlayers.add(player)
     this.schedule(() => {
       this.oneShotPlayers.delete(player)
-      try {
-        player.remove()
-      } catch {
-        // Already gone.
-      }
+      // Fires a pad AFTER the clip's own duration, so the release is never
+      // cutting audio — and `remove()` here freed nothing, which is what made
+      // these "tracked" one-shots leak exactly as badly as the untracked ones
+      // this Set was introduced to fix.
+      releaseAudioPlayer(player)
     }, durationMs + ONE_SHOT_RELEASE_PAD_MS)
   }
 

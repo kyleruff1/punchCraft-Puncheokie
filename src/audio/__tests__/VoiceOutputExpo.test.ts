@@ -1235,7 +1235,13 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     const timers: Array<{ at: number; fn: () => void; id: number }> = []
     let nextId = 1
     const removed: number[] = []
+    const released: number[] = []
     const live = new Set<number>()
+    // `live` is cleared by release(), NOT by remove(). That asymmetry is the
+    // whole point: expo-audio's remove() is a registry map-delete that frees
+    // no AudioTrack, so a fake whose remove() also cleared `live` would report
+    // a clean teardown for code that leaks every native player — which is
+    // exactly the false confidence this suite gave before #356 was traced.
     const makeFake = (source: number) =>
       ({
         source,
@@ -1246,6 +1252,9 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
         pause: () => {},
         remove: () => {
           removed.push(source)
+        },
+        release: () => {
+          released.push(source)
           live.delete(source)
         },
       }) as never
@@ -1283,8 +1292,21 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
       module,
       durationMs,
     })
-    return { output, advance, removed, live, clip }
+    return { output, advance, removed, released, live, clip }
   }
+
+  it('every teardown site RELEASES, not merely unlinks — the #356 defect itself', () => {
+    // remove() is `players.remove(player.id)` against a ConcurrentHashMap
+    // (AudioModule.kt:544-546): the ExoPlayer, its MediaSession and its
+    // AudioTrack all survive it. Four in-workout sites called only remove(),
+    // so the three caps that exist to stay under the ~48 ceiling bounded the
+    // JS maps while the native players accumulated until GC happened to run.
+    const h = rig()
+    h.output.playClickScript(h.clip(700), { oneShot: true })
+    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    expect(h.removed).toContain(700)
+    expect(h.released).toContain(700)
+  })
 
   it('a one-shot lead-in releases its player after the clip instead of parking it', () => {
     const h = rig()
@@ -1338,6 +1360,16 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     h.advance(900 + 1_500 + 1)
     expect(h.live.has(600)).toBe(false)
     expect(h.live.has(601)).toBe(false)
+  })
+
+  it('the click-script cap releases what it evicts, not just unlinks it', () => {
+    const h = rig()
+    for (let m = 1; m <= CLICK_SCRIPT_RESIDENT_CAP + 3; m += 1) {
+      h.output.playClickScript(h.clip(m))
+    }
+    // The same three the recency test pins — but now proven actually FREED.
+    expect(h.released).toEqual([1, 2, 3])
+    expect(h.live.has(1)).toBe(false)
   })
 
   it('release() sweeps tracked one-shots that have not timed out yet', () => {
