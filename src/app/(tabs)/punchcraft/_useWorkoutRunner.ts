@@ -109,6 +109,31 @@ export const LEAD_IN_PAD_MS = 250
 export const CALL_PAD_MS = 500
 
 /**
+ * How long a per-bar call takes to become AUDIBLE after the scheduler
+ * decides to fire it — subtracted from every call's dispatch time so the
+ * breath the athlete actually gets is the breath `breathForBar` intends.
+ *
+ * Measured, not guessed (release build, body-work round 1, 46 call bars,
+ * `tools/analysis/observed-timing.mjs`):
+ *
+ *   scheduler fired late (`clickScript.dispatch.lateMs`)   46.5 ms median
+ *   play() → first audio (`voice.observed.onsetLatencyMs`) 25.0 ms median
+ *                                                          ─────────────
+ *                                                          ~71 ms
+ *
+ * Deliberately NOT the 201 ms the raw "observed end − planned end" showed.
+ * 113 ms of that was the END EVENT arriving late, not audio playing long:
+ * the manifest's `durationMs` matches every rendered wav to within 0.5 ms,
+ * and the excess varies by player path (124/94/67 ms) — which file content
+ * never would. Correcting for reporting lag would have pushed every call
+ * ~130 ms too early.
+ *
+ * Re-measure after any change to the dispatch tick or the audio path; the
+ * analyzer proposes a new value from `breathMs` on the dispatch record.
+ */
+export const CALL_DISPATCH_LAG_MS = 71
+
+/**
  * How many reps before a section ends to start previewing the NEXT distinct
  * block's opening pills (Kyle, 2026-09-04: the preview should lead in with
  * the section's whisper, not flash in on the final rep). ~2 reps ≈ the
@@ -711,6 +736,13 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       giveUpAtMs: number
       /** Calls only: the bar's first punch, which the call must end a breath before. */
       firstNodeMs?: number
+      /**
+       * Calls only: the breath `breathForBar` INTENDED — logged so the
+       * analyzer compares the delivered breath against the intent instead
+       * of re-deriving it from the dispatch time (which now carries the
+       * dispatch-lag compensation and would read 71 ms too generous).
+       */
+      breathMs?: number
       state: 'pending' | 'played' | 'skipped'
       /** The section's rep-0 call, sequenced right after its lead-in — exempt from the lead-in collision drop. */
       firstRep?: boolean
@@ -779,7 +811,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, firstNodeMs - clip.durationMs - breathMs),
+        breathMs,
+        // Ask CALL_DISPATCH_LAG_MS early: the scheduler fires late and the
+        // player takes time to sound, and the measured sum of the two was
+        // eating ~71 ms out of every bar's breath.
+        dispatchAtMs: Math.max(0, firstNodeMs - clip.durationMs - breathMs - CALL_DISPATCH_LAG_MS),
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
         giveUpAtMs: firstNodeMs + 500,
@@ -2169,6 +2205,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               // first node — both measurable once the observer reports ends.
               endByMs: safe(entry.giveUpAtMs),
               firstNodeMs: safe(entry.firstNodeMs ?? null),
+              // Calls only: the INTENDED breath and the lag compensation
+              // applied to reach it. The analyzer scores the delivered
+              // breath against `breathMs`, never against the dispatch time.
+              breathMs: safe(entry.breathMs ?? null),
+              lagMs: safe(entry.kind === 'call' ? CALL_DISPATCH_LAG_MS : null),
               monotonicTimeMs: safe(clock.now()),
             })
           }

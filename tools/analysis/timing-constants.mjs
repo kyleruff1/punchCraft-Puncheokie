@@ -115,6 +115,7 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
   for (const name of [
     'LEAD_IN_PAD_MS',
     'CALL_PAD_MS',
+    'CALL_DISPATCH_LAG_MS',
     'TECHNIQUE_CALL_LEAD_MS',
     'TECHNIQUE_LEADIN_LEAD_MS',
     'NUMBERS_CALL_LEAD_MS',
@@ -135,6 +136,7 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
   const leads = {
     LEAD_IN_PAD_MS: readNumberConst(runner, 'LEAD_IN_PAD_MS'),
     CALL_PAD_MS: readNumberConst(runner, 'CALL_PAD_MS'),
+    CALL_DISPATCH_LAG_MS: readNumberConst(runner, 'CALL_DISPATCH_LAG_MS'),
     TECHNIQUE_CALL_LEAD_MS: readNumberConst(runner, 'TECHNIQUE_CALL_LEAD_MS'),
     TECHNIQUE_LEADIN_LEAD_MS: readNumberConst(runner, 'TECHNIQUE_LEADIN_LEAD_MS'),
     NUMBERS_CALL_LEAD_MS: readNumberConst(runner, 'NUMBERS_CALL_LEAD_MS'),

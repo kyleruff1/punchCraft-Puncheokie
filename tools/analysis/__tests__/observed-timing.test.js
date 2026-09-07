@@ -2,8 +2,10 @@
  * The mic-free timing analyzer (GH #292, plan C5) on a synthetic capture
  * written in the real ConsoleSink shape. Every number below is chosen so
  * the join is provable by hand: the round's work axis sits at monotonic
- * +10 000, the call ends 50 ms late, the lead-in walks 200 ms past its
- * budget, the countdown ends 150 ms before the bell.
+ * +10 000, each call's audio ends 15 ms later than its intended breath
+ * allows (while its END EVENT arrives a further 35 ms late — the two must
+ * not be confused), the lead-in's audio runs 30 ms past its budget, and the
+ * countdown ends 150 ms before the bell.
  */
 
 import { analyze, fitWorkAxis, renderReport, roundWindows } from '../observed-timing.mjs'
@@ -26,7 +28,25 @@ const rec = (time, tag, fields) => {
 const play = (time, fields) => rec(time, 'puncheokie.voice.play', fields)
 const observed = (time, fields) => rec(time, 'puncheokie.voice.observed', fields)
 
-function capture({ truncateCall = false, dropObservation = false } = {}) {
+/**
+ * `shortfallMs` delays each call's ONSET so the audible end lands that much
+ * later than intended, across two slots — the shape that proves a uniform
+ * loss is blamed on the dispatch path rather than on the breath doctrine.
+ * Delivered breath = 250 − (shortfall − 15) − 15; see the breath test.
+ */
+function capture({ truncateCall = false, dropObservation = false, shortfallMs = null } = {}) {
+  const extra = shortfallMs === null ? 0 : shortfallMs - 15
+  const secondSlot = shortfallMs === null
+    ? []
+    : [55000, 58000, 61000].flatMap((at, i) => [
+        rec('10:01:10.000', 'puncheokie.clickScript.dispatch', { kind: 'call', slot: 'call/3-4', traceId: `call/3-4#${at}`, dispatchAtMs: at, lateMs: 2, durationMs: 1000, endByMs: at + 1750, firstNodeMs: at + 1250, breathMs: 250, lagMs: 71, monotonicTimeMs: 10000 + at }),
+        play('10:01:10.000', { asset: 'call-3-4', kind: 'click-script', label: 'call/3-4', playId: `p-call2-${i}`, traceId: `call/3-4#${at}`, path: 'armed', vocabulary: 'numbers', dispatchMs: 10000 + at, durationMs: 1000 }),
+        observed('10:01:11.000', { playId: `p-call2-${i}`, kind: 'click-script', label: 'call/3-4', path: 'armed', traceId: `call/3-4#${at}`, outcome: 'ok', dispatchMs: 10000 + at, onsetMs: 10000 + at + 15 + extra, endMs: 10000 + at + 1050 + extra, onsetLatencyMs: 15 + extra, observedDurationMs: 1035, expectedDurationMs: 1000, silentByVolume: false }),
+      ])
+  return captureLines({ truncateCall, dropObservation, extra, secondSlot })
+}
+
+function captureLines({ truncateCall, dropObservation, extra, secondSlot }) {
   return [
     rec('10:00:00.000', 'puncheokie.qa.run', { workout: 'quick-one-two', vocab: 'numbers', dev: false, gitSha: 'abc1234' }),
     rec('10:00:05.000', 'puncheokie.round.boundary', { transition: 'countdown-entered', roundIndex: 0, workElapsedMs: 0, monotonicTimeMs: 1000 }),
@@ -44,11 +64,13 @@ function capture({ truncateCall = false, dropObservation = false } = {}) {
     // Three bars of the same call, each planned to end at work +1000 with the
     // first punch at +1250 (planned breath 250); each ends 50 ms late.
     ...[40000, 43000, 46000].flatMap((at, i) => [
-      rec('10:00:50.000', 'puncheokie.clickScript.dispatch', { kind: 'call', slot: 'call/1-2', traceId: `call/1-2#${at}`, dispatchAtMs: at, lateMs: 2, durationMs: 1000, endByMs: at + 1000, firstNodeMs: at + 1250, monotonicTimeMs: 10000 + at }),
+      // `breathMs` is the INTENDED breath the runner logs; `endByMs` is the
+      // give-up time, and `dispatchAtMs` already carries the lag compensation.
+      rec('10:00:50.000', 'puncheokie.clickScript.dispatch', { kind: 'call', slot: 'call/1-2', traceId: `call/1-2#${at}`, dispatchAtMs: at, lateMs: 2, durationMs: 1000, endByMs: at + 1750, firstNodeMs: at + 1250, breathMs: 250, lagMs: 71, monotonicTimeMs: 10000 + at }),
       play('10:00:50.000', { asset: 'call-1-2', kind: 'click-script', label: 'call/1-2', playId: `p-call-${i}`, traceId: `call/1-2#${at}`, path: i === 0 ? 'fresh' : 'armed', vocabulary: 'numbers', dispatchMs: 10000 + at, durationMs: 1000 }),
       dropObservation && i === 1
         ? ''
-        : observed('10:00:51.000', { playId: `p-call-${i}`, kind: 'click-script', label: 'call/1-2', path: i === 0 ? 'fresh' : 'armed', traceId: `call/1-2#${at}`, outcome: 'ok', dispatchMs: 10000 + at, onsetMs: 10000 + at + 15, endMs: 10000 + at + (truncateCall && i === 2 ? 600 : 1050), onsetLatencyMs: 15, observedDurationMs: truncateCall && i === 2 ? 585 : 1035, expectedDurationMs: 1000, silentByVolume: false }),
+        : observed('10:00:51.000', { playId: `p-call-${i}`, kind: 'click-script', label: 'call/1-2', path: i === 0 ? 'fresh' : 'armed', traceId: `call/1-2#${at}`, outcome: 'ok', dispatchMs: 10000 + at, onsetMs: 10000 + at + 15 + extra, endMs: 10000 + at + (truncateCall && i === 2 ? 600 : 1050) + extra, onsetLatencyMs: 15 + extra, observedDurationMs: truncateCall && i === 2 ? 585 : 1035, expectedDurationMs: 1000, silentByVolume: false }),
     ]),
     // A combo announce whose block's first ring lands 200 ms after its end.
     rec('10:01:00.000', 'puncheokie.comboAnnounce.dispatch', { slotId: 'sp1-b4#0:rep-0:combo-announce:before:e1,e2', assetId: 'ca-1-2', atTick: 1200, monotonicTimeMs: 60000, traceId: 'sp1-b4#0:rep-0:combo-announce:before:e1,e2', durationMs: 900 }),
@@ -67,6 +89,7 @@ function capture({ truncateCall = false, dropObservation = false } = {}) {
     rec('10:05:13.100', 'puncheokie.instrument.observed', { eventId: 'e2', hand: 'right', keys: 'stab-62', outcome: 'masked', latencyMs: null, pipelineMs: 4, peak: 38 }),
     rec('10:09:20.000', 'puncheokie.round.boundary', { transition: 'completed', roundIndex: 1, workElapsedMs: 240000, monotonicTimeMs: 550000 }),
     rec('10:09:21.000', 'puncheokie.observer.stats', { watched: 9, openAtRelease: 0, maxHandlerMs: 0.4 }),
+    ...secondSlot,
   ]
     .filter(Boolean)
     .join('\n')
@@ -75,7 +98,7 @@ function capture({ truncateCall = false, dropObservation = false } = {}) {
 const CONSTANTS = {
   rail: { RAIL_K_MS: 120, RAIL_K_MS_spine: 120 },
   breath: { DENSE_BREATH_MS: { numbers: 260, techniques: 320 }, MIN_BREATH_MS: 150, CALL_BREATH_OVERRIDES: {} },
-  leads: { LEAD_IN_PAD_MS: 250, TECHNIQUE_LEADIN_LEAD_MS: 500 },
+  leads: { LEAD_IN_PAD_MS: 250, TECHNIQUE_LEADIN_LEAD_MS: 500, CALL_DISPATCH_LAG_MS: 71 },
   audio: { DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS: 40, ONE_SHOT_RELEASE_PAD_MS: 1500, CLICK_SCRIPT_PREARM_PAD_MS: 200 },
   calibration: null,
 }
@@ -115,17 +138,27 @@ describe('joins', () => {
     // lead-in overrun, which is exactly the finding this analyzer exists for.
     expect(report.verdict.exit).toBe(2)
     expect(report.verdict.hard).toEqual([])
-    expect(report.verdict.soft).toEqual(['1 lead-in(s) ended past endBy (median 200 ms)'])
+    expect(report.verdict.soft).toEqual(['1 lead-in(s) ended past endBy (median 30 ms)'])
   })
 
-  it('measures breath per slot through the work-axis fit', () => {
+  it('scores breath against the AUDIBLE end and the logged intent, not the end event', () => {
+    // The fixture's observation ends 1050 ms after onset while the clip is
+    // 1000 ms long — 50 ms of end-event lag, which must NOT count against
+    // the breath. Delivered = firstNode − (onset + stated duration) = 235;
+    // intended = the logged `breathMs` of 250; shortfall = 15.
     const slot = report.breath.bySlot['call/1-2']
-    expect(slot).toMatchObject({ n: 3, vocabulary: 'numbers', plannedBreathMs: 250, medianBreathMs: 200, medianEndLateMs: 50 })
-    expect(report.breath.byVocab.numbers).toMatchObject({ n: 3, medianBreathMs: 200, medianEndLateMs: 50 })
+    expect(slot).toMatchObject({ n: 3, vocabulary: 'numbers', plannedBreathMs: 250, medianBreathMs: 235, medianEndLateMs: 15 })
+    expect(report.breath.byVocab.numbers).toMatchObject({ n: 3, medianBreathMs: 235, medianEndLateMs: 15 })
+    // The lag is reported on its own, as a property of the reporting path:
+    // the two armed calls lag 35 ms each (end event 1050 after onset, audio
+    // 1015), the armed lead-in 170 — median 35.
+    expect(report.breath.endLagByPath.armed.medianMs).toBe(35)
   })
 
-  it('measures lead-ins against endBy', () => {
-    expect(report.leadIns).toMatchObject({ n: 1, medianEndMinusEndByMs: 200, walkedOver: 1 })
+  it('measures lead-ins against endBy, on the audible end', () => {
+    // onset 30030 + 8000 stated = 38030 audible end, against an endBy of
+    // 38000 → 30 ms over. The end EVENT at 38200 would have said 200.
+    expect(report.leadIns).toMatchObject({ n: 1, medianEndMinusEndByMs: 30, walkedOver: 1 })
   })
 
   it('measures the combo announce against the block’s first ring', () => {
@@ -162,8 +195,24 @@ describe('proposals', () => {
   it('flags the rail constant as inert and measures the announce stand-in', () => {
     expect(by('RAIL_K_MS')).toMatchObject({ current: 120, status: 'inert', measured: { announceEndToRingMedianMs: 200 } })
   })
-  it('proposes a per-slot breath override from the measured late end', () => {
-    expect(by("CALL_BREATH_OVERRIDES['call/1-2']")).toMatchObject({ current: 'derived 250', proposed: 300, apply: true })
+  it('proposes nothing for a shortfall inside the noise band', () => {
+    // 15 ms of shortfall is not a finding. Before breath was scored on the
+    // audible end this same fixture read 50 ms and produced a proposal —
+    // the end-event lag was manufacturing tuning advice.
+    expect(by("CALL_BREATH_OVERRIDES['call/1-2']")).toBeUndefined()
+    expect(by('CALL_DISPATCH_LAG_MS')).toBeUndefined()
+  })
+
+  it('blames the dispatch path, not the breath doctrine, when every slot loses the same time', () => {
+    const uniform = analyze(capture({ shortfallMs: 120 }), CONSTANTS)
+    const lag = uniform.proposals.find((p) => p.constant === 'CALL_DISPATCH_LAG_MS')
+    expect(lag).toMatchObject({ current: 71, apply: true })
+    expect(lag.proposed).toBeGreaterThan(71)
+    expect(lag.basis).toMatch(/dispatch path, not the breath doctrine/)
+    // The breath doctrine is held, and per-slot overrides are superseded.
+    expect(uniform.proposals.find((p) => p.constant === 'DENSE_BREATH_MS')).toMatchObject({ status: 'held' })
+    expect(uniform.proposals.find((p) => p.constant === 'CALL_BREATH_OVERRIDES')).toMatchObject({ status: 'superseded' })
+    expect(uniform.proposals.some((p) => p.constant.startsWith("CALL_BREATH_OVERRIDES['"))).toBe(false)
   })
   it('does not propose a lead-in pad from fewer than three lead-ins, and says so when uncalibrated', () => {
     expect(by('LEAD_IN_PAD_MS')).toBeUndefined()
@@ -201,7 +250,7 @@ describe('report', () => {
   it('renders every section', () => {
     const md = renderReport(analyze(capture(), CONSTANTS), 'fixture')
     for (const heading of ['## Onset latency by family', '## Work axis fit', '## Breath (3 calls)', '## Ceremonies', '## Proposals']) expect(md).toContain(heading)
-    expect(md).toContain('| call/1-2 | 3 | numbers | 250 | 200 | 200 | 50 |')
+    expect(md).toContain('| call/1-2 | 3 | numbers | 250 | 235 | 235 | 15 |')
     expect(md).toContain('build: release · sha abc1234')
   })
 })

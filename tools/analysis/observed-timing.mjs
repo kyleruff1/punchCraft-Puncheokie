@@ -97,8 +97,30 @@ export function parseClickDispatches(text) {
     durationMs: numField(body, 'durationMs'),
     endByMs: numField(body, 'endByMs'),
     firstNodeMs: numField(body, 'firstNodeMs'),
+    breathMs: numField(body, 'breathMs'),
+    lagMs: numField(body, 'lagMs'),
     monotonicTimeMs: numField(body, 'monotonicTimeMs'),
   }))
+}
+
+/**
+ * When the sound actually STOPPED, as opposed to when the observer heard
+ * about it.
+ *
+ * The end event lags the audio: on the tablet `observedDurationMs` ran
+ * 113 ms past the stated duration at the median and varied by player path
+ * (124/94/67 ms), while every rendered wav matches its manifest
+ * `durationMs` to within 0.5 ms — so the excess is reporting, not audio.
+ * Scoring breath against `endMs` therefore understates it by that lag and
+ * would propose a ~130 ms over-correction. Onset is trustworthy (it is a
+ * transition event, and the audio starts when the player says it starts),
+ * so the audible end is onset + the clip's own length.
+ */
+export function audibleEndMs(obs, play) {
+  if (obs?.onsetMs == null) return null
+  const stated = obs.expectedDurationMs ?? play?.durationMs ?? null
+  if (stated === null) return obs.endMs ?? null
+  return obs.onsetMs + stated
 }
 
 export function parseAnnounceDispatches(text) {
@@ -296,17 +318,24 @@ export function analyze(text, constants = null) {
     const obs = play?.playId ? obsById.get(play.playId) : undefined
     const roundIndex = roundAt(windows, d.monotonicTimeMs)
     if (!obs || obs.outcome !== 'ok' || typeof obs.endMs !== 'number' || roundIndex === null) continue
+    const audibleEnd = audibleEndMs(obs, play)
+    if (audibleEnd === null) continue
+    const endLagMs = r1(obs.endMs - audibleEnd)
     const endByMono = toMonotonic(roundIndex, d.endByMs)
     if (d.kind === 'call') {
       const firstNodeMono = toMonotonic(roundIndex, d.firstNodeMs)
       if (firstNodeMono === null) continue
-      // A CALL's `endByMs` is its give-up time (`firstNodeMs + 500`), not a
-      // planned end — reading it as one reported every planned breath as
-      // −500 ms. The planned end is where the runner put the clip:
-      // `dispatchAtMs + durationMs`, which is `firstNodeMs − breathMs`.
-      const plannedEndMs =
-        typeof d.dispatchAtMs === 'number' && typeof d.durationMs === 'number' ? d.dispatchAtMs + d.durationMs : null
-      const plannedEndMono = plannedEndMs === null ? null : toMonotonic(roundIndex, plannedEndMs)
+      // The INTENDED breath is logged (`breathMs`) — never re-derived from
+      // the dispatch time, which carries CALL_DISPATCH_LAG_MS compensation
+      // and would read that much too generous. A capture from before that
+      // field existed falls back to the old derivation, and a CALL's
+      // `endByMs` is its give-up time, not a planned end.
+      const derivedPlanned =
+        typeof d.dispatchAtMs === 'number' && typeof d.durationMs === 'number' && typeof d.firstNodeMs === 'number'
+          ? Math.round(d.firstNodeMs - (d.dispatchAtMs + d.durationMs))
+          : null
+      const intendedBreathMs = d.breathMs ?? derivedPlanned
+      const deliveredBreathMs = r1(firstNodeMono - audibleEnd)
       calls.push({
         slot: d.slot,
         roundIndex,
@@ -315,12 +344,15 @@ export function analyze(text, constants = null) {
         // read "unknown" and the proposal named a constant that has no such key.
         vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
-        plannedBreathMs: plannedEndMs === null || typeof d.firstNodeMs !== 'number' ? null : Math.round(d.firstNodeMs - plannedEndMs),
-        breathMs: r1(firstNodeMono - obs.endMs),
-        endLateMs: plannedEndMono === null ? null : r1(obs.endMs - plannedEndMono),
-        giveUpMarginMs: endByMono === null ? null : r1(endByMono - obs.endMs),
+        plannedBreathMs: intendedBreathMs,
+        breathMs: deliveredBreathMs,
+        // Positive = the call finished later than intended, eating breath.
+        endLateMs: intendedBreathMs === null ? null : r1(intendedBreathMs - deliveredBreathMs),
+        giveUpMarginMs: endByMono === null ? null : r1(endByMono - audibleEnd),
         onsetLatencyMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
+        lagAppliedMs: d.lagMs ?? null,
+        endLagMs,
       })
     } else if (d.kind === 'lead-in') {
       leadIns.push({
@@ -328,9 +360,10 @@ export function analyze(text, constants = null) {
         roundIndex,
         vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
-        endMinusEndByMs: endByMono === null ? null : r1(obs.endMs - endByMono),
+        endMinusEndByMs: endByMono === null ? null : r1(audibleEnd - endByMono),
         onsetLatencyMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
+        endLagMs,
       })
     }
   }
@@ -343,6 +376,15 @@ export function analyze(text, constants = null) {
   }
   const breathBySlot = Object.fromEntries(
     Object.entries(bySlot).map(([slot, s]) => [slot, { n: s.n, vocabulary: s.vocabulary, plannedBreathMs: s.plannedBreathMs, medianBreathMs: r1(median(s.breath)), medianEndLateMs: s.endLate.length > 0 ? r1(median(s.endLate)) : null, p95BreathMs: r1(percentile(s.breath, 95)) }]),
+  )
+  // How far the END EVENT lagged the audio, per player path. Not a defect —
+  // a property of the reporting, and the reason breath is scored against
+  // `onset + stated duration` rather than against the end event.
+  const endLagByPath = Object.fromEntries(
+    [...new Set([...calls, ...leadIns].map((r) => r.path ?? 'unknown'))].map((path) => [
+      path,
+      latencyStats([...calls, ...leadIns].filter((r) => (r.path ?? 'unknown') === path).map((r) => r.endLagMs)),
+    ]),
   )
   const breathByVocab = {}
   for (const vocab of new Set(calls.map((c) => c.vocabulary ?? 'unknown'))) {
@@ -459,7 +501,7 @@ export function analyze(text, constants = null) {
     coverage: { playsWithId: playsWithId.length, observed: playsWithId.length - unobserved.length, ratio: coverage === null ? null : Math.round(coverage * 1000) / 1000, unobserved: unobserved.slice(0, 20).map((p) => ({ playId: p.playId, kind: p.kind, label: p.label })) },
     fit: [...fit.values()],
     families,
-    breath: { calls: calls.length, bySlot: breathBySlot, byVocab: breathByVocab },
+    breath: { calls: calls.length, bySlot: breathBySlot, byVocab: breathByVocab, endLagByPath },
     leadIns: leadInSummary,
     announces: announceSummary,
     ceremonies,
@@ -519,16 +561,27 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
   const globalShift = uniform ? Math.round(median(lateByslot)) : null
 
   if (uniform && Math.abs(globalShift) >= BREATH_PROPOSAL_MIN_MS) {
-    for (const [vocab, v] of Object.entries(breathByVocab)) {
-      const dense = c.breath?.DENSE_BREATH_MS?.[vocab] ?? null
-      proposals.push({
-        constant: `DENSE_BREATH_MS.${vocab}`,
-        current: dense,
-        proposed: dense === null ? null : Math.round(dense + globalShift),
-        basis: `EVERY slot ends late by the same ${globalShift} ms (${slotRows.length} slots spanning ${Math.round(Math.min(...lateByslot))}–${Math.round(Math.max(...lateByslot))} ms over ${v.n} bars) — one constant, not per-slot overrides`,
-        apply: dense !== null,
-      })
-    }
+    // A uniform shortfall is the DISPATCH PATH, not the breath doctrine:
+    // every slot loses the same milliseconds between the scheduler deciding
+    // and the audio sounding. `CALL_DISPATCH_LAG_MS` is the constant that
+    // compensates it; `DENSE_BREATH_MS` is how long the coach should be
+    // silent, which no measurement of the audio path should quietly rewrite.
+    const lag = c.leads?.CALL_DISPATCH_LAG_MS ?? null
+    const bars = Object.values(breathByVocab).reduce((n, v) => n + v.n, 0)
+    proposals.push({
+      constant: 'CALL_DISPATCH_LAG_MS',
+      current: lag,
+      proposed: lag === null ? Math.round(globalShift) : Math.round(lag + globalShift),
+      basis: `EVERY slot loses the same ${globalShift} ms (${slotRows.length} slots spanning ${Math.round(Math.min(...lateByslot))}–${Math.round(Math.max(...lateByslot))} ms over ${bars} bars) — the dispatch path, not the breath doctrine`,
+      apply: true,
+    })
+    proposals.push({
+      constant: 'DENSE_BREATH_MS',
+      current: JSON.stringify(c.breath?.DENSE_BREATH_MS ?? {}),
+      proposed: 'unchanged',
+      status: 'held',
+      basis: 'how long the coach should be silent is Kyle\'s call; the uniform shortfall above is the audio path and belongs in the lag constant',
+    })
     proposals.push({
       constant: 'CALL_BREATH_OVERRIDES',
       current: Object.keys(c.breath?.CALL_BREATH_OVERRIDES ?? {}).length,
@@ -622,9 +675,16 @@ export function renderReport(report, sessionDir = '') {
   for (const r of report.fit) L.push(`- round ${r.roundIndex}: offset ${r.offsetMs} ms from ${r.n} tokenDue (spread ${r.spreadMs}) · boundary ${r.boundaryOffsetMs} · disagreement ${r.disagreementMs ?? '—'} ms`)
   L.push('')
   L.push(`## Breath (${report.breath.calls} calls)`)
-  L.push('| slot | n | vocab | planned | measured median | p95 | end late median |')
+  L.push('| slot | n | vocab | intended | delivered median | p95 | shortfall median |')
   L.push('|---|---|---|---|---|---|---|')
   for (const [slot, s] of Object.entries(report.breath.bySlot)) L.push(`| ${slot} | ${s.n} | ${s.vocabulary ?? '—'} | ${s.plannedBreathMs ?? '—'} | ${s.medianBreathMs} | ${s.p95BreathMs} | ${s.medianEndLateMs ?? '—'} |`)
+  L.push('')
+  L.push(
+    'end-event lag (reporting, not audio — breath is scored against onset + stated duration): ' +
+      (Object.entries(report.breath.endLagByPath ?? {})
+        .map(([p, s]) => `${p} ${s.medianMs ?? '—'} ms (n${s.n})`)
+        .join(', ') || '—'),
+  )
   L.push('')
   L.push(`lead-ins: n ${report.leadIns.n} · end − endBy median ${report.leadIns.medianEndMinusEndByMs ?? '—'} ms (p95 ${report.leadIns.p95EndMinusEndByMs ?? '—'}) · walked over ${report.leadIns.walkedOver}`)
   L.push(`combo announces: n ${report.announces.n} · end → first ring median ${report.announces.medianEndToRingMs ?? '—'} ms · spread ${report.announces.spreadMs ?? '—'} · tight(60) ${report.announces.tightWithin60ms ?? '—'} · cut by ring ${report.announces.cutByRing}`)
