@@ -179,16 +179,47 @@ describe('args', () => {
 
 describe('observed summary', () => {
   const PID = '( 8286)'
+  // The REAL ConsoleSink shape, copied from a device capture:
+  //   '[INFO] puncheokie.voice.play', 'clip playing', { asset: 'bell',
+  // The level is what sits in the brackets; the event code follows it. A
+  // fixture written as '[<code>] …' passes against a matcher built the same
+  // wrong way and finds nothing in the field — that is exactly what happened
+  // on the first release drive, so this helper is the shape contract.
   const rec = (time, tag, fields) => {
     const entries = Object.entries(fields)
     const [first, ...rest] = entries
     const fmt = (v) => (typeof v === 'string' ? `'${v}'` : String(v))
     return [
-      `08-31 ${time} I/ReactNativeJS${PID}: '[${tag}] message', { ${first[0]}: ${fmt(first[1])},`,
+      `08-31 ${time} I/ReactNativeJS${PID}: '[INFO] ${tag}', 'message', { ${first[0]}: ${fmt(first[1])},`,
       ...rest.map(([k, v]) => `08-31 ${time} I/ReactNativeJS${PID}:   ${k}: ${fmt(v)},`),
       `08-31 ${time} I/ReactNativeJS${PID}: }`,
     ].join('\n')
   }
+
+  it('parses a line copied verbatim from a device capture', () => {
+    const real = [
+      "09-07 15:10:43.596 I/ReactNativeJS(15660): '[INFO] puncheokie.voice.observed', 'clip observed', { playId: 'ab12-1',",
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   kind: \'click-script\',',
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   outcome: \'ok\',',
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   onsetLatencyMs: 12,',
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   observedDurationMs: 1000,',
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   expectedDurationMs: 1000,',
+      '09-07 15:10:43.596 I/ReactNativeJS(15660):   silentByVolume: false }',
+    ].join('\n')
+    const s = summarizeObserved(real)
+    expect(s.present).toBe(true)
+    expect(s.byKind['click-script']).toMatchObject({ n: 1, outcomes: { ok: 1 } })
+    expect(s.byKind['click-script'].onset.medianMs).toBe(12)
+  })
+
+  it('does not confuse a code with one that extends it', () => {
+    const blocked = rec('10:00:00.000', 'puncheokie.qa.run.blocked', { workout: 'body-work', nonce: 'n1' })
+    const staged = rec('10:00:01.000', 'puncheokie.qa.run', { workout: 'body-work', dev: false, nonce: 'n1' })
+    const { recordsWithTag } = require('../logcat.mjs')
+    expect(recordsWithTag(`${blocked}\n${staged}`, 'puncheokie.qa.run')).toHaveLength(1)
+    expect(recordsWithTag(`${blocked}\n${staged}`, 'puncheokie.qa.run')[0].body).toContain('dev: false')
+    expect(recordsWithTag(`${blocked}\n${staged}`, 'puncheokie.qa.run.blocked')).toHaveLength(1)
+  })
 
   it('reports coverage, per-kind onset stats, truncation, silent births and the instrument tap', () => {
     const text = [
@@ -206,7 +237,12 @@ describe('observed summary', () => {
     expect(s.present).toBe(true)
     expect(s.playsWithId).toBe(3)
     expect(s.voiceObserved).toBe(3)
-    expect(s.coverage).toBe(1)
+    // Three plays, but only two of them were observed — the third observation
+    // is the INTRO, a ceremony that mints its own playId and writes no
+    // `voice.play`. Counting it toward coverage hid the missing play (and
+    // produced "1/0 plays" on a capture that was all ceremony).
+    expect(s.coverage).toBeCloseTo(2 / 3, 3)
+    expect(s.ceremonyObserved).toBe(1)
     expect(s.byKind['click-script']).toMatchObject({ n: 2, outcomes: { ok: 2 }, truncated: 0, silentBirths: 1 })
     expect(s.byKind['click-script'].onset).toEqual({ n: 2, medianMs: 26, p95Ms: 40, jitterMs: 14 })
     expect(s.byKind['click-script'].byPath.armed.medianMs).toBe(12)

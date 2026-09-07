@@ -76,15 +76,28 @@ export function stitchLogRecords(logcatText) {
   return records
 }
 
-/** The `[puncheokie.x.y]` tag of a stitched record, or undefined. */
+/**
+ * The event code of a stitched record, or undefined.
+ *
+ * `ConsoleSink` (src/diagnostics/logger.ts) writes
+ * `console.info('[INFO] puncheokie.voice.play', 'clip playing', {…})`, which
+ * reaches logcat as `'[INFO] puncheokie.voice.play', 'clip playing', { … }` —
+ * the LEVEL is what sits in the brackets and the code follows it. A matcher
+ * built on `'[<code>]` finds nothing on a real capture while passing happily
+ * against a fixture written the same wrong way; that cost one release drive.
+ */
 export function recordTag(body) {
-  const m = body.match(/^'\[([a-zA-Z0-9_.-]+)\]/)
+  const m = body.match(/^'\[[A-Z]+\]\s+([a-zA-Z0-9_.-]+)'/)
   return m ? m[1] : undefined
 }
 
-/** Stitched records that carry `tag`, each with its `ts` (ms since midnight). */
+/**
+ * Stitched records whose code is EXACTLY `tag`, each with its `ts` (ms since
+ * midnight). Exact, so `puncheokie.qa.run` never swallows
+ * `puncheokie.qa.run.blocked` or `.duplicate`.
+ */
 export function recordsWithTag(logcatText, tag) {
   return stitchLogRecords(logcatText)
-    .filter((r) => r.body.startsWith(`'[${tag}]`))
+    .filter((r) => recordTag(r.body) === tag)
     .map((r) => ({ ts: parseTimestampMs(r.dateStr, r.timeStr), body: r.body }))
 }

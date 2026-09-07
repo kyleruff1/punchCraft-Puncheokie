@@ -102,9 +102,18 @@ export function summarizeObserved(logcatText) {
     : null
   // Coverage denominator: every coach play that minted a playId (the four
   // VoiceOutputExpo play sites do so only when the observer is armed).
-  const playsWithId = recordsWithTag(logcatText, 'puncheokie.voice.play').filter(
-    (r) => extractField(r.body, 'playId') !== undefined,
-  ).length
+  // The ceremony players and the metronome mint their OWN playIds and never
+  // write a `voice.play`, so they belong in neither side of this ratio —
+  // counting them in the numerator produced "1/0 plays" on the first real
+  // capture. They are reported separately as `ceremonyObserved`.
+  const playIds = new Set(
+    recordsWithTag(logcatText, 'puncheokie.voice.play')
+      .map((r) => extractField(r.body, 'playId'))
+      .filter((id) => id !== undefined),
+  )
+  const playsWithId = playIds.size
+  const fromPlays = voice.filter((v) => v.playId !== undefined && playIds.has(v.playId))
+  const ceremonyObserved = voice.length - fromPlays.length
 
   const byKind = {}
   for (const kind of new Set(voice.map((v) => v.kind ?? 'unknown'))) {
@@ -145,7 +154,8 @@ export function summarizeObserved(logcatText) {
     present: voice.length + instrument.length > 0,
     playsWithId,
     voiceObserved: voice.length,
-    coverage: playsWithId === 0 ? null : Math.round((voice.length / playsWithId) * 1000) / 1000,
+    ceremonyObserved,
+    coverage: playsWithId === 0 ? null : Math.round((fromPlays.length / playsWithId) * 1000) / 1000,
     byKind,
     instrument: instrumentSummary,
     observer,
@@ -156,7 +166,7 @@ export function renderObservedTable(summary) {
   if (!summary.present) return 'observed: no observer records in this capture (QA flag off?)'
   const lines = []
   lines.push(
-    `observed: coverage ${summary.coverage === null ? 'n/a' : `${Math.round(summary.coverage * 100)}%`} (${summary.voiceObserved}/${summary.playsWithId} plays)` +
+    `observed: coverage ${summary.coverage === null ? 'n/a' : `${Math.round(summary.coverage * 100)}%`} of ${summary.playsWithId} plays · ${summary.ceremonyObserved} ceremony` +
       (summary.observer ? ` · observer maxHandlerMs ${summary.observer.maxHandlerMs}` : ''),
   )
   lines.push('| kind | n | ok | onset median | p95 | jitter | truncated | silent births | other outcomes |')

@@ -9,12 +9,15 @@
 import { analyze, fitWorkAxis, renderReport, roundWindows } from '../observed-timing.mjs'
 
 const PID = '( 8286)'
+// The REAL ConsoleSink shape (src/diagnostics/logger.ts), copied from a
+// device capture: `'[INFO] puncheokie.voice.play', 'clip playing', { … }`.
+// The brackets hold the LEVEL, not the event code.
 const rec = (time, tag, fields) => {
   const entries = Object.entries(fields)
   const [first, ...rest] = entries
   const fmt = (v) => (typeof v === 'string' ? `'${v}'` : String(v))
   return [
-    `08-31 ${time} I/ReactNativeJS${PID}: '[${tag}] message', { ${first[0]}: ${fmt(first[1])},`,
+    `08-31 ${time} I/ReactNativeJS${PID}: '[INFO] ${tag}', 'message', { ${first[0]}: ${fmt(first[1])},`,
     ...rest.map(([k, v]) => `08-31 ${time} I/ReactNativeJS${PID}:   ${k}: ${fmt(v)},`),
     `08-31 ${time} I/ReactNativeJS${PID}: }`,
   ].join('\n')

@@ -524,13 +524,22 @@ async function driveOne(ctx, job, attempt = 1) {
       sendIntent(url, deviceId)
     }
 
-    let qaRun = await waitForLogLine(dir, 'puncheokie.qa.run', QA_RUN_TIMEOUT_MS, (l) => l.includes(nonce))
-    if (!qaRun) {
-      slog('   qa.run not seen — re-sending the intent once')
+    // The nonce is NOT on the tag line — it is one of the last fields, and
+    // `waitForLogLine` matches a single line by design. So wait for the code,
+    // then confirm the nonce against the STITCHED record.
+    const stagedRun = () =>
+      recordsWithTag(existsSync(join(dir, 'logcat.txt')) ? readFileSync(join(dir, 'logcat.txt'), 'utf8') : '', 'puncheokie.qa.run').find(
+        (r) => r.body.includes(nonce),
+      )
+    let qaRun = await waitForLogLine(dir, 'puncheokie.qa.run', QA_RUN_TIMEOUT_MS)
+    let record = qaRun ? stagedRun() : undefined
+    if (!record) {
+      slog('   qa.run for this nonce not seen — re-sending the intent once')
       sendIntent(url, deviceId)
-      qaRun = await waitForLogLine(dir, 'puncheokie.qa.run', QA_RUN_TIMEOUT_MS, (l) => l.includes(nonce))
+      qaRun = await waitForLogLine(dir, 'puncheokie.qa.run.duplicate', QA_RUN_TIMEOUT_MS, (l) => l.includes(nonce)) ?? qaRun
+      record = stagedRun()
     }
-    if (!qaRun) {
+    if (!record) {
       if (args.tapFallback && args.launch === 'warm') {
         slog('   deep link never landed — tap fallback (dev builds only)')
         await tapFallback(deviceId, job, slog)
@@ -540,10 +549,7 @@ async function driveOne(ctx, job, attempt = 1) {
         return finish()
       }
     } else {
-      const record = recordsWithTag(readFileSync(join(dir, 'logcat.txt'), 'utf8'), 'puncheokie.qa.run').find((r) =>
-        r.body.includes(nonce),
-      )
-      const body = record?.body ?? qaRun.line
+      const body = record.body
       row.build = {
         dev: boolField(body, 'dev') ?? null,
         gitSha: extractField(body, 'gitSha') ?? null,

@@ -99,8 +99,24 @@ def num(body: str, key: str) -> float | None:
         return None
 
 
+_TAG = re.compile(r"^'\[[A-Z]+\]\s+([A-Za-z0-9_.-]+)'")
+
+
+def record_tag(body: str) -> str | None:
+    """The event code of a record.
+
+    `ConsoleSink` writes `console.info('[INFO] puncheokie.voice.play', …)`, so
+    the brackets hold the LEVEL and the code follows it. Matching on
+    `'[<code>]` finds nothing on a real capture — the exact trap this module
+    exists to close.
+    """
+    m = _TAG.match(body)
+    return m.group(1) if m else None
+
+
 def records_with_tag(records: list[dict], tag: str) -> list[dict]:
-    return [r for r in records if r["body"].startswith(f"'[{tag}]")]
+    """Records whose code is EXACTLY `tag` (so `.run` never eats `.run.blocked`)."""
+    return [r for r in records if record_tag(r["body"]) == tag]
 
 
 def parse_token_due(records: list[dict]) -> list[dict]:
