@@ -166,16 +166,42 @@ describe('PlaybackObserver', () => {
     expect(h.records.map((r) => r.playId)).toEqual(['e1', 'e2'])
   })
 
-  it('reports stalled when the position stops moving while still playing', () => {
+  it('reports stalled only after the position has sat still for 1.5 s of real time', () => {
+    // A COUNT of identical positions is not a stall signal. On the tablet
+    // media3 repeats `currentTime` several times at the observed 40 ms
+    // cadence while it spins up: a 3-sample rule closed the 25 s walkout
+    // 101 ms in and 51 of 68 click-script plays early, and every duration
+    // built on those observations was fiction (release drive, 2026-09-07).
     const h = rig()
     const p = fakePlayer()
     h.observer.watch(p, meta('f'))
     p.emit({ playing: true, currentTime: 0 })
-    p.emit({ playing: true, currentTime: 0.2 })
-    p.emit({ playing: true, currentTime: 0.2 })
+    // Six repeats of the same position inside a second: still playing.
+    for (let i = 0; i < 6; i += 1) {
+      h.advance(40)
+      p.emit({ playing: true, currentTime: 0.2 })
+    }
     expect(h.records).toHaveLength(0)
+
+    h.advance(1_500)
     p.emit({ playing: true, currentTime: 0.2 })
     expect(h.records[0]?.outcome).toBe('stalled')
+  })
+
+  it('a playlist stepping its per-track position backwards is progress, not a stall', () => {
+    // `currentTime` on a playlist is per-TRACK, so it resets at every track
+    // change. Any CHANGE restarts the stall window.
+    const h = rig()
+    const p = fakePlayer()
+    h.observer.watch(p, meta('f2'))
+    p.emit({ playing: true, currentTime: 1.8 })
+    h.advance(1_000)
+    p.emit({ playing: true, currentTime: 0 }) // next track
+    h.advance(1_000)
+    p.emit({ playing: true, currentTime: 0.5 })
+    expect(h.records).toHaveLength(0)
+    p.emit({ playing: false })
+    expect(h.records[0]?.outcome).toBe('ok')
   })
 
   it('marks a play born at volume 0 as silentByVolume', () => {

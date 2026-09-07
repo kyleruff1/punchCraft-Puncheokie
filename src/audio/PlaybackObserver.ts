@@ -109,8 +109,9 @@ interface Entry {
   method: 'status' | 'poll'
   onsetMs: number | null
   positionAtOnsetMs: number | null
-  /** Positions seen in periodic statuses after onset; three unchanged while playing = stalled. */
-  recentPositions: number[]
+  /** The last position seen in a periodic status, and when it was FIRST seen. */
+  lastPosition: number | null
+  lastPositionSinceMs: number | null
   closed: boolean
 }
 
@@ -122,7 +123,19 @@ interface PlayerState {
   lastPolledPosition: number | null
 }
 
-const STALL_SAMPLES = 3
+/**
+ * How long a position may sit unchanged, while the player still reports
+ * `playing`, before the play is called stalled.
+ *
+ * Measured on the tablet (release build, 2026-09-07): a count of consecutive
+ * identical positions is NOT a stall signal. At the observed 40 ms cadence
+ * media3 reports the same `currentTime` several times in a row while it
+ * spins up — so a 3-sample rule closed the walkout 101 ms into a 25 s
+ * playlist and 51 of 68 click-script plays early, and every duration built
+ * on those observations was fiction. A stall has to be measured in TIME, and
+ * the window has to be longer than any legitimate reporting gap.
+ */
+const STALL_WINDOW_MS = 1_500
 const ONSET_POSITION_EPSILON_S = 0.01
 
 /**
@@ -204,7 +217,8 @@ export class PlaybackObserver {
       method: state.subscription !== undefined ? 'status' : 'poll',
       onsetMs: null,
       positionAtOnsetMs: null,
-      recentPositions: [],
+      lastPosition: null,
+      lastPositionSinceMs: null,
       closed: false,
     }
     this.rearm()
@@ -316,12 +330,12 @@ export class PlaybackObserver {
       if (status.didJustFinish === true || status.playing === false) {
         this.close(entry, 'ok', now)
       } else if (typeof position === 'number') {
-        entry.recentPositions.push(position)
-        if (entry.recentPositions.length > STALL_SAMPLES) entry.recentPositions.shift()
-        if (
-          entry.recentPositions.length === STALL_SAMPLES &&
-          entry.recentPositions.every((p) => p === entry.recentPositions[0])
-        ) {
+        // A playlist's `currentTime` is per-TRACK, so it legitimately steps
+        // backwards at every track change; treat any change as progress.
+        if (entry.lastPosition === null || position !== entry.lastPosition) {
+          entry.lastPosition = position
+          entry.lastPositionSinceMs = now
+        } else if (entry.lastPositionSinceMs !== null && now - entry.lastPositionSinceMs >= STALL_WINDOW_MS) {
           this.close(entry, 'stalled', now)
         }
       }

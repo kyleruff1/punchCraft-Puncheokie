@@ -251,7 +251,14 @@ export function analyze(text, constants = null) {
   }
 
   // -- families ------------------------------------------------------------
-  const joined = playsWithId.map((p) => ({ play: p, obs: obsById.get(p.playId) ?? null }))
+  // `playInstruction`'s record opens with `asset:` and carries no `kind` —
+  // the kind lives on the observation's WatchMeta. Reading only the play's
+  // put every bell in a family called "unknown" and left `ceremonies.bells`
+  // empty on a capture that had two of them.
+  const joined = playsWithId.map((p) => {
+    const obs = obsById.get(p.playId) ?? null
+    return { play: { ...p, kind: p.kind ?? obs?.kind }, obs }
+  })
   const families = {}
   for (const kind of new Set(joined.map((j) => j.play.kind ?? 'unknown'))) {
     const rows = joined.filter((j) => (j.play.kind ?? 'unknown') === kind)
@@ -283,14 +290,22 @@ export function analyze(text, constants = null) {
     if (d.kind === 'call') {
       const firstNodeMono = toMonotonic(roundIndex, d.firstNodeMs)
       if (firstNodeMono === null) continue
+      // A CALL's `endByMs` is its give-up time (`firstNodeMs + 500`), not a
+      // planned end — reading it as one reported every planned breath as
+      // −500 ms. The planned end is where the runner put the clip:
+      // `dispatchAtMs + durationMs`, which is `firstNodeMs − breathMs`.
+      const plannedEndMs =
+        typeof d.dispatchAtMs === 'number' && typeof d.durationMs === 'number' ? d.dispatchAtMs + d.durationMs : null
+      const plannedEndMono = plannedEndMs === null ? null : toMonotonic(roundIndex, plannedEndMs)
       calls.push({
         slot: d.slot,
         roundIndex,
         vocabulary: play.vocabulary ?? null,
         path: play.path ?? null,
-        plannedBreathMs: typeof d.firstNodeMs === 'number' && typeof d.endByMs === 'number' ? d.firstNodeMs - d.endByMs : null,
+        plannedBreathMs: plannedEndMs === null || typeof d.firstNodeMs !== 'number' ? null : Math.round(d.firstNodeMs - plannedEndMs),
         breathMs: r1(firstNodeMono - obs.endMs),
-        endLateMs: endByMono === null ? null : r1(obs.endMs - endByMono),
+        endLateMs: plannedEndMono === null ? null : r1(obs.endMs - plannedEndMono),
+        giveUpMarginMs: endByMono === null ? null : r1(endByMono - obs.endMs),
         onsetLatencyMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
       })
@@ -354,7 +369,13 @@ export function analyze(text, constants = null) {
   if (announceSummary.cutByRing > 0) soft.push(`${announceSummary.cutByRing} combo announce(s) still speaking at the first ring`)
 
   // -- ceremonies ----------------------------------------------------------
-  const bells = joined.filter((j) => j.play.kind === 'instruction' && /bell/i.test(j.play.label ?? j.play.asset ?? '') && j.obs?.onsetMs !== undefined && j.obs.outcome === 'ok').map((j) => j.obs)
+  // The bell goes out through `playInstruction`, whose observation is watched
+  // as kind `clip` (its WatchMeta) while the play record names no kind at all
+  // — so match on the ASSET, not the kind, or every ceremony row reads "—" on
+  // a capture that rang two bells.
+  const bells = joined
+    .filter((j) => /bell/i.test(j.play.asset ?? j.play.label ?? '') && j.obs?.onsetMs != null && j.obs.outcome === 'ok')
+    .map((j) => j.obs)
   const warns = observed.filter((o) => o.kind === 'round-warning')
   const recoveries = observed.filter((o) => o.kind === 'recovery')
   const intros = observed.filter((o) => o.kind === 'intro')
