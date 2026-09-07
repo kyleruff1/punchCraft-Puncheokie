@@ -86,6 +86,7 @@ import type {
   AdaptationRecord,
   RealizedTokenStream,
 } from '@storage/repositories/WorkoutRepository'
+import { isQaEnabled } from '@state/useQaStore'
 import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkoutStore'
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
@@ -2031,8 +2032,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // under Metro debug). Cost is near zero when nothing is anomalous:
     // clock records are written only past the stall threshold.
     // The recorder is per-arm, so a new workout starts with a clean buffer.
+    // The persisted QA flag (GH #291/#292) arms it too, so the unattended
+    // suite's token-forensics survive a release build without a rebuild.
     vizRef.current = new VizForensics({
-      enabled: __DEV__ || process.env.EXPO_PUBLIC_VIZ_FORENSICS === '1',
+      enabled: __DEV__ || process.env.EXPO_PUBLIC_VIZ_FORENSICS === '1' || isQaEnabled(),
       now: () => clock.now(),
       emit: (batch: readonly VizRecord[]) => {
         logger.info('puncheokie.viz.batch', 'visual transition batch', {
