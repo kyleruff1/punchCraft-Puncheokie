@@ -1,3 +1,4 @@
+import { INSTRUMENT_ENGINES, type InstrumentEngine } from '@audio/instrumentEngine'
 /**
  * Puncheoke instrument settings, persisted — the selected PunchPatch,
  * the PunchBridge address, and the brass-cube jam options. Same shape as
@@ -39,12 +40,19 @@ interface InstrumentTabletBlob {
   texture: InstrumentTextureId
   /** Absent in pre-mode blobs — oneOf falls back to 'arp'. */
   mode?: InstrumentVoiceMode
+  /**
+   * Which audio engine backs the instrument. Absent in pre-engine blobs —
+   * oneOf falls back to 'expo', so an existing install keeps today's engine
+   * until it is switched deliberately (audio-engine-migration.md step 2).
+   */
+  engine?: InstrumentEngine
 }
 
 const DEFAULT_TABLET_BLOB: Required<InstrumentTabletBlob> = {
   output: 'bridge',
   texture: 'brass',
   mode: 'arp',
+  engine: 'expo',
 }
 
 /** The persisted brass-cube blob (one JSON object under instrumentBrass). */
@@ -124,6 +132,8 @@ export interface InstrumentSettingsState {
   setOutputTarget(target: InstrumentOutputTarget): void
   setTextureId(textureId: InstrumentTextureId): void
   setVoiceMode(mode: InstrumentVoiceMode): void
+  engine: InstrumentEngine
+  setEngine(engine: InstrumentEngine): void
   setHarmonicOptions(partial: Partial<HarmonicSettingsOptions>): void
 }
 
@@ -142,6 +152,7 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
   outputTarget: DEFAULT_TABLET_BLOB.output,
   textureId: DEFAULT_TABLET_BLOB.texture,
   voiceMode: DEFAULT_TABLET_BLOB.mode,
+  engine: DEFAULT_TABLET_BLOB.engine,
   harmonicFreedom: DEFAULT_HARMONIC_OPTIONS.freedom,
   harmonicNavigation: DEFAULT_HARMONIC_OPTIONS.navigation,
   harmonicCommitIntervalTicks: DEFAULT_HARMONIC_OPTIONS.commitIntervalTicks,
@@ -177,6 +188,7 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
       outputTarget: oneOf(OUTPUT_TARGETS, tablet.output, DEFAULT_TABLET_BLOB.output),
       textureId: oneOf(INSTRUMENT_TEXTURE_IDS, tablet.texture, DEFAULT_TABLET_BLOB.texture),
       voiceMode: oneOf(INSTRUMENT_VOICE_MODES, tablet.mode, DEFAULT_TABLET_BLOB.mode),
+      engine: oneOf(INSTRUMENT_ENGINES, tablet.engine, DEFAULT_TABLET_BLOB.engine),
       harmonicFreedom: harmonicValid
         ? oneOf(FREEDOM_MODES, harmonic.freedom, DEFAULT_HARMONIC_OPTIONS.freedom)
         : DEFAULT_HARMONIC_OPTIONS.freedom,
@@ -227,6 +239,7 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
       output: target,
       texture: get().textureId,
       mode: get().voiceMode,
+      engine: get().engine,
     } satisfies InstrumentTabletBlob)
   },
 
@@ -236,6 +249,17 @@ export const useInstrumentSettingsStore = create<InstrumentSettingsState>((set, 
       output: get().outputTarget,
       texture: textureId,
       mode: get().voiceMode,
+      engine: get().engine,
+    } satisfies InstrumentTabletBlob)
+  },
+
+  setEngine(engine) {
+    set({ engine })
+    repository?.write(SETTINGS_KEYS.instrumentTablet, {
+      output: get().outputTarget,
+      texture: get().textureId,
+      mode: get().voiceMode,
+      engine,
     } satisfies InstrumentTabletBlob)
   },
 
@@ -283,6 +307,7 @@ export function __resetInstrumentSettingsForTests(): void {
     outputTarget: DEFAULT_TABLET_BLOB.output,
     textureId: DEFAULT_TABLET_BLOB.texture,
     voiceMode: DEFAULT_TABLET_BLOB.mode,
+    engine: DEFAULT_TABLET_BLOB.engine,
     harmonicFreedom: DEFAULT_HARMONIC_OPTIONS.freedom,
     harmonicNavigation: DEFAULT_HARMONIC_OPTIONS.navigation,
     harmonicCommitIntervalTicks: DEFAULT_HARMONIC_OPTIONS.commitIntervalTicks,

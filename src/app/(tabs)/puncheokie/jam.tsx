@@ -21,7 +21,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
-import { InstrumentVoiceOutput } from '@audio/InstrumentVoiceOutput'
+import { createInstrumentVoice, type InstrumentVoice } from '@audio/InstrumentVoice'
 import { INSTRUMENT_TEXTURE_IDS } from '@audio/voiceAssets/instrumentBankManifest'
 import { BridgeClient, type BridgeStatus, type PatchIdentity } from '@/instrument/bridgeClient'
 import { compileBrassCube, type ArpPatternId } from '@domain/instrument/brassCube'
@@ -156,6 +156,7 @@ function effectivePatch(
 
 export default function JamScreen(): React.JSX.Element {
   const basePatchId = useInstrumentSettingsStore((s) => s.patchId)
+  const audioEngine = useInstrumentSettingsStore((s) => s.engine)
   const bridgeUrl = useInstrumentSettingsStore((s) => s.bridgeUrl)
   const brassPatternId = useInstrumentSettingsStore((s) => s.brassPatternId)
   const brassRetrigger = useInstrumentSettingsStore((s) => s.brassRetrigger)
@@ -268,7 +269,7 @@ export default function JamScreen(): React.JSX.Element {
   // first non-bridge OUTPUT selection and lives until unmount; the punch
   // handler reads the routing through a ref (the liveCtxRef pattern) so
   // the [] keepalive subscription sees every flip.
-  const engineRef = useRef<InstrumentVoiceOutput | null>(null)
+  const engineRef = useRef<InstrumentVoice | null>(null)
   const outputRef = useRef(effectiveOutput)
   outputRef.current = effectiveOutput
 
@@ -289,7 +290,7 @@ export default function JamScreen(): React.JSX.Element {
         return
       }
       if (engineRef.current === null) {
-        engineRef.current = new InstrumentVoiceOutput()
+        engineRef.current = createInstrumentVoice(audioEngine)
         void engineRef.current.preload(textureId)
       } else {
         // Same-id calls no-op inside; a real change re-preloads the pools
@@ -304,7 +305,10 @@ export default function JamScreen(): React.JSX.Element {
         engineRef.current?.release()
         engineRef.current = null
       }
-    }, [effectiveOutput, textureId, voiceMode]),
+      // `audioEngine` is a dependency so flipping the engine rebuilds the
+      // voice: the cleanup releases the old one first, which is what makes
+      // the A/B a tap rather than a rebuild.
+    }, [effectiveOutput, textureId, voiceMode, audioEngine]),
   )
 
   // The wire identity (M40-17 handshake): a field patch upgrades the

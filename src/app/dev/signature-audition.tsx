@@ -30,7 +30,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/theme/colors'
 import { fonts, sizes } from '@/theme/typography'
 import { BridgeClient, type BridgeStatus, type PatchIdentity } from '@/instrument/bridgeClient'
-import { InstrumentVoiceOutput } from '@audio/InstrumentVoiceOutput'
+import { createInstrumentVoice, type InstrumentVoice } from '@audio/InstrumentVoice'
+import { useInstrumentSettingsStore } from '@state/useInstrumentSettingsStore'
 import { INSTRUMENT_TEXTURE_IDS, type InstrumentTextureId } from '@audio/voiceAssets/instrumentBankManifest'
 import { compileBrassCube } from '@domain/instrument/brassCube'
 import { compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
@@ -90,6 +91,11 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   // PC rig. 'tablet' is the default for exactly that reason.
   const [output, setOutput] = useState<'tablet' | 'bridge' | 'both'>('tablet')
   const [textureId, setTextureId] = useState<InstrumentTextureId>('brass')
+  // The engine is a GLOBAL choice, not a per-screen one, so it comes from the
+  // store rather than local state like the rows around it — the jam must hear
+  // the same engine this screen is auditioning.
+  const audioEngine = useInstrumentSettingsStore((s) => s.engine)
+  const setAudioEngine = useInstrumentSettingsStore((s) => s.setEngine)
   const [voiceReady, setVoiceReady] = useState(false)
   /**
    * The audition's layer passes, on-device. Pass 1 is the one that
@@ -116,7 +122,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   const bridgeRef = useRef<BridgeClient | null>(null)
   const [replaying, setReplaying] = useState(false)
   const replayTimers = useRef<ReturnType<typeof setTimeout>[]>([])
-  const engineRef = useRef<InstrumentVoiceOutput | null>(null)
+  const engineRef = useRef<InstrumentVoice | null>(null)
   const sessionRef = useRef<InstrumentSessionState>(emptySessionState())
   const clockRef = useRef(0)
 
@@ -129,7 +135,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         return
       }
       if (engineRef.current === null) {
-        engineRef.current = new InstrumentVoiceOutput()
+        engineRef.current = createInstrumentVoice(audioEngine)
         void engineRef.current.preload(textureId).then(() => setVoiceReady(true))
       } else {
         engineRef.current.setTexture(textureId)
@@ -141,7 +147,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         engineRef.current = null
         setVoiceReady(false)
       }
-    }, [output, textureId, layers]),
+    }, [output, textureId, layers, audioEngine]),
   )
 
 
@@ -405,6 +411,12 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       </View>
 
       <View style={styles.controls}>
+        {cycleRow(
+          'ENGINE',
+          audioEngine === 'oboe' ? 'OBOE (low latency)' : 'EXPO-AUDIO',
+          () => setAudioEngine(audioEngine === 'expo' ? 'oboe' : 'expo'),
+          'audition-engine',
+        )}
         {cycleRow(
           'LAYERS',
           layers === 'stab' ? 'BRASS STAB ONLY' : layers === 'stab+arp' ? '+ ARP' : 'FULL MIX',
