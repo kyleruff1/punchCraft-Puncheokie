@@ -18,6 +18,12 @@
  * Dev-only surface, instrument-lab style: local state, no stores.
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { SIM_SCRIPTS } from '@simulation/scripts'
+import {
+  createRollingScaler,
+  HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
+  HIGH_SENSITIVITY_VELOCITY_DEFAULTS,
+} from '@domain/instrument/rollingScale'
 import { Stack, useFocusEffect } from 'expo-router'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 
@@ -108,6 +114,8 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
   )
 
   const bridgeRef = useRef<BridgeClient | null>(null)
+  const [replaying, setReplaying] = useState(false)
+  const replayTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   const engineRef = useRef<InstrumentVoiceOutput | null>(null)
   const sessionRef = useRef<InstrumentSessionState>(emptySessionState())
   const clockRef = useRef(0)
@@ -136,6 +144,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
     }, [output, textureId, layers]),
   )
 
+
   const connect = useCallback(() => {
     bridgeRef.current?.disconnect()
     const client = new BridgeClient({ onStatus: (status) => setBridgeStatus(status) })
@@ -159,7 +168,7 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
    * against any harmonic cell without re-punching the other hand.
    */
   const throwToken = useCallback(
-    (token: StrikeToken) => {
+    (token: StrikeToken, dynamics?: { velocity01: number; acceleration01: number }) => {
       const hand = TOKEN_HAND[token] ?? 'left'
       // Advance the synthetic clock past a commit window so each audition
       // punch lands in its own window (no coalescing during a listen).
@@ -183,8 +192,11 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
           ...(field ? { field } : {}),
           // The cell selector drives the punching hand's zone; the other
           // hand keeps whatever it last latched.
-          velocity01: zoneVelocity ?? VELOCITIES[velocityIndex] ?? 0.5,
-          acceleration01: ACCELERATIONS[accelerationIndex] ?? 0.5,
+          // A replay supplies its own dynamics; the buttons use the
+          // selectors. Everything else about the compile is identical, so a
+          // replayed punch travels the shipping path exactly as a tapped one.
+          velocity01: dynamics?.velocity01 ?? zoneVelocity ?? VELOCITIES[velocityIndex] ?? 0.5,
+          acceleration01: dynamics?.acceleration01 ?? ACCELERATIONS[accelerationIndex] ?? 0.5,
         },
       )
       if (!result) return
@@ -195,10 +207,19 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
         // Layer muting for the audition passes. The drum is silenced by
         // its own gain rather than by a special engine path, so what
         // sounds is the shipping selection logic either way.
+        // Layer muting has to cover BOTH drum paths. Zeroing `transient`
+        // alone silenced the legacy five-piece layer but left the Punch Kit
+        // block sounding at full volume, so "BRASS STAB ONLY" was neither.
         const voiced =
           layers === 'all'
             ? result.gesture
-            : { ...result.gesture, transient: { ...result.gesture.transient, velocity: 1 } }
+            : {
+                ...result.gesture,
+                transient: { ...result.gesture.transient, velocity: 1 },
+                ...(result.gesture.drums
+                  ? { drums: { ...result.gesture.drums, hits: [] } }
+                  : {}),
+              }
         engineRef.current?.handleGesture(voiced)
       }
 
@@ -223,6 +244,74 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
     },
     [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone, output, layers],
   )
+
+  /**
+   * Replay the captured jam signatures through the full twelve-signature
+   * mapping.
+   *
+   * Every (velocityRaw, accelerationRaw) pair in `captured-jam` was logged
+   * off the gloves on 2026-09-06. Two things make this worth having over the
+   * token buttons:
+   *
+   * 1. REAL DYNAMICS. The buttons use fixed selector values, so every punch
+   *    sounds equally hard. These are the actual spread the trackers
+   *    reported, including the half that saturate — which is the thing worth
+   *    hearing.
+   * 2. REPEATABLE. The same 24 punches every run, so an instrument change
+   *    can be A/B'd by ear instead of by throwing and hoping.
+   *
+   * The raws go through the SAME rolling scalers the jam builds
+   * (jam.tsx:243-244), freshly constructed per run so the warm-up is
+   * identical every time — otherwise the first few punches would read
+   * differently on a second run and the comparison would be worthless.
+   *
+   * Tokens are assigned round-robin within the captured hand, so a left
+   * capture drives 1/1B/3/3B/5/5B and a right one 2/2B/4/4B/6/6B. That is
+   * what turns two-piece jam data into a twelve-articulation audition.
+   */
+  const replayCaptured = useCallback(() => {
+    if (replaying) return
+    setReplaying(true)
+    const steps = SIM_SCRIPTS['captured-jam']
+    // Fresh per run: deterministic warm-up, so run N sounds like run N+1.
+    const scalers = {
+      velocity: createRollingScaler(HIGH_SENSITIVITY_VELOCITY_DEFAULTS),
+      acceleration: createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS),
+    }
+    const LEFT_TOKENS: StrikeToken[] = ['1', '1B', '3', '3B', '5', '5B']
+    const RIGHT_TOKENS: StrikeToken[] = ['2', '2B', '4', '4B', '6', '6B']
+    let leftAt = 0
+    let rightAt = 0
+
+    steps.forEach((step, index) => {
+      const handle = setTimeout(() => {
+        const token =
+          step.hand === 'left'
+            ? (LEFT_TOKENS[leftAt++ % LEFT_TOKENS.length] as StrikeToken)
+            : (RIGHT_TOKENS[rightAt++ % RIGHT_TOKENS.length] as StrikeToken)
+        throwToken(token, {
+          velocity01: scalers.velocity.scale(step.hand, step.velocityRaw),
+          acceleration01: scalers.acceleration.scale(step.hand, step.accelerationRaw),
+        })
+        if (index === steps.length - 1) setReplaying(false)
+      }, step.offsetMs)
+      replayTimers.current.push(handle)
+    })
+  }, [replaying, throwToken])
+
+  // Leaving mid-replay must not fire punches into a released engine.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        // Clear the pending punches only. Setting state here would fire on
+        // an unmounting component — React warns, and the flag is reset by
+        // the next run anyway.
+        for (const handle of replayTimers.current.splice(0)) clearTimeout(handle)
+      },
+      [],
+    ),
+  )
+
 
   /**
    * Kyle's diagnostic sequence, played blind on-device: the screen shows
@@ -281,6 +370,13 @@ export default function SignatureAuditionScreen(): React.JSX.Element {
       <Pressable onPress={runAudition} style={styles.runBtn} testID="audition-run">
         <Text style={styles.runText}>
           {auditionSlot === null ? 'RUN BLIND AUDITION  (10 strikes)' : `▶  ${auditionSlot} / 10`}
+        </Text>
+      </Pressable>
+
+      {/* Real captured dynamics, not selector values — see replayCaptured. */}
+      <Pressable onPress={replayCaptured} style={styles.runBtn} testID="audition-replay">
+        <Text style={styles.runText}>
+          {replaying ? '▶  REPLAYING CAPTURED JAM…' : 'REPLAY CAPTURED JAM  (24 real punches)'}
         </Text>
       </Pressable>
       {auditionKey.length > 0 ? (
