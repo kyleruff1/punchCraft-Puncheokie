@@ -96,6 +96,42 @@ def normalize(text: str) -> list[str]:
 _FUSED_B = re.compile(r"^([1-6])b$")
 _DIGIT_WORDS = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five", "6": "six"}
 
+# Whisper writes a spoken count as a NUMERAL: the coach says "thirty four
+# bars" and the transcript reads "34 bars". Against a script written in
+# words that is a two-token replace, and the click bank's lead-in copy is
+# full of "… thirteen bars", "… twenty six bars" — 102 of 141 failures in
+# the 2026-09-07 bank audit were exactly this, on clips whose audio is
+# correct. Expanding the numeral to its spoken words compares like with
+# like. Only whole numbers below 100 appear in this copy (bar counts and
+# "times through"); anything else is left alone rather than guessed at.
+_ONES = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+         "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+         "seventeen", "eighteen", "nineteen"]
+_TENS = {2: "twenty", 3: "thirty", 4: "forty", 5: "fifty", 6: "sixty", 7: "seventy",
+         8: "eighty", 9: "ninety"}
+
+
+def spoken_number(token: str) -> list[str] | None:
+    """`"34"` -> `["thirty", "four"]`. None when it is not a plain 0-99 count."""
+    if not token.isdigit():
+        return None
+    value = int(token)
+    if value < 0 or value > 99:
+        return None
+    if value < 20:
+        return [_ONES[value]]
+    tens, ones = divmod(value, 10)
+    return [_TENS[tens]] if ones == 0 else [_TENS[tens], _ONES[ones]]
+
+
+def expand_numerals(tokens: list[str]) -> list[str]:
+    """Every plain 0-99 numeral token replaced by its spoken words."""
+    out: list[str] = []
+    for token in tokens:
+        words = spoken_number(token)
+        out.extend(words if words is not None else [token])
+    return out
+
 
 def canonical_tokens(text: str) -> list[str]:
     """`normalize` plus the exactness folds the token audit compares with.
@@ -114,7 +150,10 @@ def canonical_tokens(text: str) -> list[str]:
             out.append("upper")
         else:
             out.append(token)
-    return out
+    # After the punch-digit folds, never before: `_FUSED_B` and `_DIGIT_WORDS`
+    # own 1-6 as PUNCH numbers, and a bar count only ever reaches this line as
+    # a bare numeral Whisper wrote.
+    return expand_numerals(out)
 
 
 def match_score(expected: str, transcript: str) -> dict:
