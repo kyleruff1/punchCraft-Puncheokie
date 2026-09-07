@@ -91,14 +91,34 @@ export const HIGH_SENSITIVITY_VELOCITY_DEFAULTS: RollingScaleOptions = {
   highPercentile: 0.85,
 }
 
+/**
+ * Acceleration, high sensitivity (retuned 2026-09-07 from a live capture).
+ *
+ * The soft end is deliberately unchanged — `warmLow` and `lowPercentile` are
+ * what make a relaxed jab read mid-zone instead of pinning at nothing, which
+ * is the whole reason this variant exists.
+ *
+ * What moved is the TOP. Measured over 24 real punches, accelerationRaw
+ * spanned 41..796 while the references put the ceiling at P85 — so once the
+ * window owned the references (after `warmSamples`), the hardest ~15% of
+ * punches all mapped to 1.0 and were indistinguishable. Half the session
+ * pinned at MIDI velocity 127: a medium punch and the hardest punch of the
+ * night produced the identical hit.
+ *
+ * `highPercentile` is the persistent cause and 0.95 is the fix; `warmHigh`
+ * only bites for the first dozen punches, but 350 was well under the observed
+ * range and pinned nearly every hard punch during warm-up, so it moves too.
+ * Both are conservative: the ceiling still adapts to whoever is punching,
+ * it just stops treating the top of their range as one value.
+ */
 export const HIGH_SENSITIVITY_ACCELERATION_DEFAULTS: RollingScaleOptions = {
   window: 40,
   warmLow: 80,
-  warmHigh: 350,
+  warmHigh: 600,
   warmSamples: 12,
   minSpread: 50,
   lowPercentile: 0.1,
-  highPercentile: 0.85,
+  highPercentile: 0.95,
 }
 
 /** Where the low/high references come from (calibration seam). */

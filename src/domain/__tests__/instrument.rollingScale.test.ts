@@ -2,7 +2,9 @@ import { createImpulseScaler } from '../effects/impulseScale'
 import {
   ACCELERATION_SCALE_DEFAULTS,
   createRollingScaler,
+  HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
   VELOCITY_SCALE_DEFAULTS,
+  type RollingScaleOptions,
 } from '../instrument/rollingScale'
 
 describe('instrument rollingScale', () => {
@@ -86,5 +88,67 @@ describe('instrument rollingScale', () => {
     for (let i = 0; i < 20; i += 1) scaler.scale('left', 18)
     const rightFresh = createRollingScaler(VELOCITY_SCALE_DEFAULTS).scale('right', 9)
     expect(scaler.scale('right', 9)).toBe(rightFresh)
+  })
+})
+
+describe('acceleration dynamics over a real capture (2026-09-07 retune)', () => {
+  // The 24 accelerationRaw values logged off the gloves on 2026-09-06, in the
+  // order thrown. Real data rather than synthetic: the defect was that the
+  // hardest punches of an actual session were indistinguishable, and only the
+  // real distribution shows that.
+  const CAPTURED: readonly number[] = [
+    237, 92, 197, 41, 721, 110, 104, 116, 120, 175, 76, 796, 484, 217, 215, 564,
+    602, 548, 230, 643, 466, 470, 360, 380,
+  ]
+
+  function scaleAll(opts: RollingScaleOptions): number[] {
+    const scaler = createRollingScaler(opts)
+    // One hand: the window is per-hand, and a two-hand split would halve the
+    // sample count and keep the references in warm-up for the whole run.
+    return CAPTURED.map((raw) => scaler.scale('right', raw))
+  }
+
+  const SATURATED = 0.999
+
+  it('stops pinning the top of the range — the defect this retune fixes', () => {
+    const values = scaleAll(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS)
+    const pinned = values.filter((v) => v >= SATURATED)
+    // Before: highPercentile 0.85 and warmHigh 350 pinned a third of the
+    // session at 1.0, which downstream became MIDI velocity 127 for every one.
+    expect(pinned.length).toBeLessThanOrEqual(4)
+  })
+
+  it('still spreads the hardest punches apart from each other', () => {
+    // The four biggest hits (796, 721, 643, 602) must not collapse to one
+    // value — that is precisely what "a medium punch and my hardest punch
+    // sound identical" means.
+    const scaler = createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS)
+    for (const raw of CAPTURED) scaler.scale('right', raw)
+    const hard = [602, 643, 721, 796].map((raw) => scaler.scale('right', raw))
+    const distinct = new Set(hard.map((v) => v.toFixed(3)))
+    expect(distinct.size).toBeGreaterThan(1)
+  })
+
+  it('keeps soft play expressive — the reason this variant exists', () => {
+    // The low anchor is deliberately untouched by the retune. A soft punch
+    // must still read meaningfully above zero, or the high-sensitivity
+    // variant has lost its purpose.
+    const scaler = createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS)
+    for (const raw of CAPTURED) scaler.scale('right', raw)
+    const soft = scaler.scale('right', 175)
+    expect(soft).toBeGreaterThan(0)
+    expect(soft).toBeLessThan(0.6)
+  })
+
+  it('is a strict improvement on the old constants for this capture', () => {
+    const before = scaleAll({
+      ...HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
+      warmHigh: 350,
+      highPercentile: 0.85,
+    })
+    const after = scaleAll(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS)
+    const pinnedBefore = before.filter((v) => v >= SATURATED).length
+    const pinnedAfter = after.filter((v) => v >= SATURATED).length
+    expect(pinnedAfter).toBeLessThan(pinnedBefore)
   })
 })
