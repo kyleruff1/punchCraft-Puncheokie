@@ -125,6 +125,13 @@ interface PlayerState {
 const STALL_SAMPLES = 3
 const ONSET_POSITION_EPSILON_S = 0.01
 
+/**
+ * Status cadence for an observed playlist (the ceremony players): onset and
+ * end are transition events, so this only feeds the stall check. The
+ * unobserved default stays 500.
+ */
+export const OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS = 40
+
 function removeSubscription(sub: Subscription): void {
   if (typeof sub === 'function') {
     try {
@@ -159,6 +166,7 @@ export class PlaybackObserver {
   private deadlineAtMs: number | null = null
 
   private watched = 0
+  private minted = 0
   private maxHandlerMs = 0
 
   constructor(opts: PlaybackObserverOptions) {
@@ -172,14 +180,20 @@ export class PlaybackObserver {
     this.statusEvent = opts.statusEvent ?? 'playbackStatusUpdate'
   }
 
-  /** Begin observing one play on `player`. A second watch on an open entry supersedes it. */
-  watch(player: ObservablePlayer, meta: WatchMeta): void {
+  /**
+   * Begin observing one play on `player`. A second watch on an open entry
+   * supersedes it. `statusEvent` names the event this player kind emits —
+   * `playbackStatusUpdate` for an AudioPlayer (the default),
+   * `playlistStatusUpdate` for an AudioPlaylist; it is fixed at the first
+   * watch, when the listener is attached.
+   */
+  watch(player: ObservablePlayer, meta: WatchMeta, opts: { statusEvent?: string } = {}): void {
     this.watched += 1
     let state = this.players.get(player)
     if (state === undefined) {
       state = { subscription: undefined, entry: null, pollHandle: null, lastPolledPosition: null }
       this.players.set(player, state)
-      this.attach(player, state)
+      this.attach(player, state, opts.statusEvent ?? this.statusEvent)
     } else if (state.entry !== null && !state.entry.closed) {
       // The pooled re-trigger case — "1, 1" on the same player — is data,
       // not an error: the first play was cut short by the second.
@@ -216,6 +230,17 @@ export class PlaybackObserver {
     }
   }
 
+  /** The observer's clock — owners stamp `dispatchMs` here so every field shares one domain. */
+  nowMs(): number {
+    return this.clock()
+  }
+
+  /** A playId for an owner without its own minting (the ceremony players). */
+  mintPlayId(prefix: string): string {
+    this.minted += 1
+    return `${prefix}-${this.minted}`
+  }
+
   stats(): { watched: number; open: number; listeners: number; maxHandlerMs: number } {
     let open = 0
     let listeners = 0
@@ -228,10 +253,10 @@ export class PlaybackObserver {
 
   // --------------------------------------------------------------- internals
 
-  private attach(player: ObservablePlayer, state: PlayerState): void {
+  private attach(player: ObservablePlayer, state: PlayerState, statusEvent: string): void {
     if (typeof player.addListener === 'function') {
       try {
-        state.subscription = player.addListener(this.statusEvent, (status) => {
+        state.subscription = player.addListener(statusEvent, (status) => {
           this.onStatus(state, status)
         })
         if (state.subscription !== undefined) return

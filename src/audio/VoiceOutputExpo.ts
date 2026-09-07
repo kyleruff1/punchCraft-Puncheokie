@@ -493,8 +493,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * calls `.start()` on `work-entered` and `.stop()` on the phase
    * transitions that end work. Public via the `metronome` port method,
    * which is optional so any pre-V1b test double compiles unchanged.
+   * Constructed in the constructor, not here: it takes the timing
+   * observer, which only exists once the QA flag has been read.
    */
-  private readonly metronomePlayer = new MetronomePlayer()
+  private readonly metronomePlayer: MetronomePlayer
 
   /**
    * The logical tick clock — the sole timing authority for score
@@ -742,6 +744,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           onObserved: (record) => this.logObserved(record),
         })
       : null
+    this.metronomePlayer = new MetronomePlayer({ timing: this.observer })
     // Observed players report status every 40 ms while playing (stall check
     // only — onset and end are transition events). Injected factories are
     // left alone; the option is a construction-time one on the native side.
@@ -1880,6 +1883,15 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // Already gone.
     }
     this.focusHeld = false
+  }
+
+  /**
+   * The armed timing observer, or null. The ceremony players (intro, round
+   * warning, recovery) are handed this so one observer covers every coach
+   * sound the screen makes and one `observer.stats` record accounts for it.
+   */
+  get timingObserver(): PlaybackObserver | null {
+    return this.observer
   }
 
   // ------------------------------------------------------------- internals

@@ -142,6 +142,10 @@ export default function LiveScreen(): React.JSX.Element {
   // Built once, never per render: the output owns players and a focus
   // request, and rebuilding it mid-workout would drop both.
   const output = React.useMemo(() => new VoiceOutputExpo(), [])
+  // The silent timing observer (GH #291), or null with the QA flag off. One
+  // per output, fixed at its construction — so this is referentially stable
+  // and inert in the ceremony effects' dependency lists below.
+  const timingObserver = output.timingObserver
   // Felt feedback, built once and gated by the haptics volume — turning it off
   // in settings silences the motor rather than just muting a number.
   const haptics = React.useMemo(() => new HapticOutputExpo(), [])
@@ -411,7 +415,7 @@ export default function LiveScreen(): React.JSX.Element {
   const introRef = useRef<IntroPlayer | null>(null)
   React.useEffect(() => {
     if (live.phase !== 'idle' || policy.mode === 'off') return
-    introRef.current ??= new IntroPlayer()
+    introRef.current ??= new IntroPlayer({ observer: timingObserver })
     introRef.current.load(intro.segments)
     // `holdAudio` is a dependency because the release below DISCARDS the
     // player (it is single-use — see the phase effect). Without it, a blur
@@ -421,7 +425,7 @@ export default function LiveScreen(): React.JSX.Element {
     // would then never be spoken, and because the countdown's length comes
     // from `intro.totalMs` rather than from the player, the athlete would
     // watch ~20 s of silence before a bell arrived out of nowhere.
-  }, [live.phase, policy.mode, intro.segments, holdAudio])
+  }, [live.phase, policy.mode, intro.segments, holdAudio, timingObserver])
   React.useEffect(() => {
     if (live.phase !== 'countdown' || policy.mode === 'off') return
     introRef.current?.play(volumes.voice, {
@@ -469,7 +473,7 @@ export default function LiveScreen(): React.JSX.Element {
       warnRef.current?.stop()
       return
     }
-    warnRef.current ??= new RoundWarningPlayer()
+    warnRef.current ??= new RoundWarningPlayer({ observer: timingObserver })
     // During rest, roundIndex still names the round just finished; the
     // athlete is being readied for the NEXT one (1-based: index + 2).
     // The next round's theme ("Coming up — the Square Builder!") joins
@@ -485,7 +489,7 @@ export default function LiveScreen(): React.JSX.Element {
       nextLead ? { module: nextLead.module, durationMs: nextLead.durationMs } : undefined,
     )
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
-  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule, clickVocabulary])
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule, clickVocabulary, timingObserver])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
   // Inter-round recovery walkthrough — the cornerman works the corner
@@ -595,7 +599,7 @@ export default function LiveScreen(): React.JSX.Element {
         }
       : RECOVERY_SCRIPTS.find((s) => s.scriptId === recoveryPlan[live.roundIndex])
     if (!script) return
-    recoveryRef.current ??= new RecoveryPlayer()
+    recoveryRef.current ??= new RecoveryPlayer({ observer: timingObserver })
     recoveryRef.current.prepare(script)
     // Rest elapsed from the same monotonic timer the rest phase reads —
     // never a wall clock, never a timer of its own (D6). Duplicated
@@ -614,6 +618,7 @@ export default function LiveScreen(): React.JSX.Element {
     workout.id,
     workout.schedule,
     clickVocabulary,
+    timingObserver,
   ])
   React.useEffect(() => () => recoveryRef.current?.stop(), [])
 
