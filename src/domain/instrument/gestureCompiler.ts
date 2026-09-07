@@ -51,6 +51,8 @@ import {
 import { advanceVoice, emptyLatch, type InstrumentLatchState } from './latchedVoice'
 import type { ModulationDestination, PunchPatch } from './punchPatch'
 import { overshootCents, transitionDurationMs, transitionKind } from './transitions'
+import { compileDrumGesture } from './drums/compileDrumGesture'
+import { emptyDrumEnergy, type DrumEnergyState } from './drums/drumFamilyEnergy'
 import { emptyPeaks, notePeak, type PeakState } from './velocityPeak'
 import { positionInZone, quantizeZone, type ZoneState } from './zoneQuantizer'
 
@@ -71,6 +73,8 @@ export interface InstrumentSessionState {
    * the latch; session-only, never on the wire (R1 safe).
    */
   orbit: { left: OrbitState | null; right: OrbitState | null }
+  /** Punch Kit family energy (drum-kit-design §14); session-only. */
+  drumEnergy: DrumEnergyState
 }
 
 export function emptySessionState(): InstrumentSessionState {
@@ -82,6 +86,7 @@ export function emptySessionState(): InstrumentSessionState {
     peaks: emptyPeaks(),
     brassLayer: 0,
     orbit: { left: null, right: null },
+    drumEnergy: emptyDrumEnergy(),
   }
 }
 
@@ -283,6 +288,27 @@ export function compileGesture(
     ? resolveStrikeArticulation(strikeIdentity, hand)
     : null
 
+  // Punch Kit (drum-kit-design §2): ONE place where a punch becomes a drum
+  // gesture. Gated on the same field-patch identity as the articulation, so
+  // legacy and v1 gestures carry no drum block and stay byte-identical.
+  //
+  // The compiler owns what the punch MEANS; the tablet and the bridge only
+  // perform it — that is the single-mapping rule the design opens with.
+  const drumFold = strikeIdentity
+    ? compileDrumGesture({
+        eventId: input.eventId,
+        identity: strikeIdentity,
+        hand,
+        acceleration01: ctx.acceleration01,
+        velocity01: ctx.velocity01,
+        nowMs: now,
+        energy: state.drumEnergy,
+        // The crash is RESERVED (§4): the same session-peak gate the whammy
+        // rides, never a routine punch.
+        isNewPeak: peakFold.accent,
+      })
+    : null
+
   // Brass blocks: the punched hand's new zone + the other hand's latched
   // zone stage ONE cell; the bridge commits it on the next step boundary.
   let accent: ImmediateAccent | undefined
@@ -476,6 +502,7 @@ export function compileGesture(
         }
       : {}),
     ...(technique ? { technique } : {}),
+    ...(drumFold ? { drums: drumFold.gesture } : {}),
   }
 
   return {
@@ -488,6 +515,7 @@ export function compileGesture(
       peaks: peakFold.state,
       brassLayer,
       orbit,
+      drumEnergy: drumFold ? drumFold.energy : state.drumEnergy,
     },
   }
 }

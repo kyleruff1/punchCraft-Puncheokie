@@ -26,6 +26,8 @@ export const INSTRUMENT_SCHEMA_VERSION = 1
  */
 export const HARMONIC_SCHEMA_VERSION = 2
 
+import type { CompiledDrumGesture } from './drums/compileDrumGesture'
+
 export type WireSchemaVersion =
   | typeof INSTRUMENT_SCHEMA_VERSION
   | typeof HARMONIC_SCHEMA_VERSION
@@ -272,6 +274,17 @@ export interface CompiledPunchGesture {
   whammy?: WhammyAccent
   harmonicIntent?: HarmonicIntent
   technique?: TechniqueBlock
+  /**
+   * Punch Kit drum gesture (drum-kit-design §2). Additive and field-patch
+   * only, appended AFTER `technique` — absent everywhere else, so legacy and
+   * v1 gestures serialize byte-identically.
+   *
+   * It carries LOGICAL articulations ('ride-bow', 'floor-tom-low'), never
+   * note numbers: the bridge resolves them through an SD3 mapping profile and
+   * the tablet through its rendered WAV bank. Performers may perform this;
+   * they may not reinterpret what the punch meant.
+   */
+  drums?: CompiledDrumGesture
 }
 
 /** Tablet → bridge. */

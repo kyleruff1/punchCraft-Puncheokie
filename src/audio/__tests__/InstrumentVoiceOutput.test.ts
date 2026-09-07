@@ -207,12 +207,19 @@ function makeHarness() {
 // Pool creation order during preload: stab keys in manifest order, then the
 // drums. The transformer flattens every wav module to `1`, so ORDER is
 // the only honest identity fakes can key on.
+import { KIT_DRUM_WARM_SET } from '../instrumentBankKeys'
+
 const STAB_KEYS = Object.keys(INSTRUMENT_BANKS.brass.stabs)
 const DRUM_KEYS = Object.keys(INSTRUMENT_BANKS.brass.drums)
 const stabIndex = (key: string): number => STAB_KEYS.indexOf(key)
-const DRUM_BASE = STAB_KEYS.length
-// Derived, not hardcoded: the drum bank grew a low tom with M40-28.
-const POOL_SIZE = STAB_KEYS.length + DRUM_KEYS.length
+// The Punch Kit's warm set preloads between the stabs and the legacy drums,
+// so the legacy drum players start after both.
+const DRUM_BASE = STAB_KEYS.length + KIT_DRUM_WARM_SET.length
+// Derived, not hardcoded: the drum bank grew a low tom with M40-28, and the
+// Punch Kit's warm set joined the pool with the tablet wiring. The kit's rare
+// pieces (crash, bell, rimshot, hats, sub kick, tight ride, rim) stay LAZY, so
+// they are deliberately absent from this count.
+const POOL_SIZE = STAB_KEYS.length + KIT_DRUM_WARM_SET.length + DRUM_KEYS.length
 
 // ---------------------------------------------------------------------------
 // Gesture fixtures
@@ -246,6 +253,7 @@ function quantized(overrides: Partial<QuantizedChange> = {}): QuantizedChange {
 function gesture(blocks: {
   accent?: ImmediateAccent
   quantized?: QuantizedChange
+  drums?: CompiledPunchGesture['drums']
 }): CompiledPunchGesture {
   return {
     schemaVersion: 1,
@@ -290,6 +298,7 @@ function gesture(blocks: {
     },
     ...(blocks.accent ? { accent: blocks.accent } : {}),
     ...(blocks.quantized ? { quantized: blocks.quantized } : {}),
+    ...(blocks.drums ? { drums: blocks.drums } : {}),
   }
 }
 
@@ -610,5 +619,92 @@ describe('panic and release', () => {
     expect(h.players.every((p) => p.removed)).toBe(true)
     expect(h.playlists.every((p) => p.destroyed)).toBe(true)
     expect(h.scheduled.filter((s) => !s.ran).every((s) => s.cancelled)).toBe(true)
+  })
+})
+
+describe('Punch Kit playback (drum-kit-design §5.1)', () => {
+  /** A minimal compiled drum gesture — the shape the compiler emits. */
+  function drumBlock(
+    hits: readonly { articulation: string; midiVelocity: number }[],
+  ): CompiledPunchGesture['drums'] {
+    return {
+      schemaVersion: 1,
+      eventId: 'e1',
+      identitySource: 'guided-score',
+      token: '2B',
+      family: 'cross',
+      target: 'body',
+      accentBand: 'normal',
+      hits: hits.map((h) => ({
+        articulation: h.articulation,
+        midiVelocity: h.midiVelocity,
+        lane: 'cross',
+        gateMs: 30,
+        priority: 'direct',
+        role: 'primary',
+        group: 'snare',
+      })),
+      arpMutation: 'power-land',
+      grooveIntent: {
+        role: 'backbeat',
+        energy: { jab: 0, cross: 0.3, hook: 0, uppercut: 0, body: 0.2 },
+      },
+      fillIntent: { eligible: false, maxSubdivisions: 8 },
+      timingPolicy: 'soft-grid',
+      visual: { side: 0.6, group: 'snare', weight: 0.5, low: true },
+    } as CompiledPunchGesture['drums']
+  }
+
+  it('plays every hit in the block, at the compiler’s velocities', async () => {
+    const h = makeHarness()
+    await h.engine.preload('brass')
+    const before = h.players.length
+    h.engine.handleGesture(
+      gesture({
+        drums: drumBlock([
+          { articulation: 'snare-body', midiVelocity: 118 },
+          { articulation: 'kick-main', midiVelocity: 100 },
+        ]),
+      }),
+    )
+    // snare-body is a RARE piece — lazy, so it is created on this first use.
+    // kick-main is in the warm set and was already pooled.
+    expect(h.players.length).toBeGreaterThan(before)
+    const played = h.players.filter((p: FakePlayer) => p.playCount > 0)
+    expect(played).toHaveLength(2)
+    // §9's curve already ran in the compiler; the pool only converts to gain.
+    expect(played.some((p: FakePlayer) => Math.abs(p.volume - 118 / 127) < 1e-6)).toBe(true)
+    expect(played.some((p: FakePlayer) => Math.abs(p.volume - 100 / 127) < 1e-6)).toBe(true)
+  })
+
+  it('SUPERSEDES the legacy five-piece drum — a punch is not hit twice', async () => {
+    // Both layers firing would double every punch. The kit wins whenever the
+    // gesture carries a compiled drum block.
+    const h = makeHarness()
+    await h.engine.preload('brass')
+    h.engine.handleGesture(
+      gesture({ drums: drumBlock([{ articulation: 'ride-bow', midiVelocity: 90 }]) }),
+    )
+    const legacyDrums = h.players.slice(DRUM_BASE, DRUM_BASE + DRUM_KEYS.length)
+    expect(legacyDrums.every((p: FakePlayer) => p.playCount === 0)).toBe(true)
+    expect(h.players.filter((p: FakePlayer) => p.playCount > 0)).toHaveLength(1)
+  })
+
+  it('falls back to the legacy drum when a gesture carries no kit block', async () => {
+    // v1 and legacy patches emit no drum block at all, and must keep sounding
+    // exactly as before.
+    const h = makeHarness()
+    await h.engine.preload('brass')
+    h.engine.handleGesture(gesture({}))
+    const legacyDrums = h.players.slice(DRUM_BASE, DRUM_BASE + DRUM_KEYS.length)
+    expect(legacyDrums.some((p: FakePlayer) => p.playCount > 0)).toBe(true)
+  })
+
+  it('an empty hit list falls through rather than silencing the punch', async () => {
+    const h = makeHarness()
+    await h.engine.preload('brass')
+    h.engine.handleGesture(gesture({ drums: drumBlock([]) }))
+    const legacyDrums = h.players.slice(DRUM_BASE, DRUM_BASE + DRUM_KEYS.length)
+    expect(legacyDrums.some((p: FakePlayer) => p.playCount > 0)).toBe(true)
   })
 })

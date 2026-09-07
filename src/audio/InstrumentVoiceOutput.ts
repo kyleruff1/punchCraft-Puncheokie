@@ -63,10 +63,13 @@ import { logger, safe } from '@/diagnostics/logger'
 import { releaseAudioPlayer, releaseAudioPlaylist } from './nativeAudioTeardown'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
 
-import { INSTRUMENT_DRUM_KEYS } from './instrumentBankKeys'
+import { INSTRUMENT_DRUM_KEYS,
+  KIT_DRUM_WARM_SET,
+  kitDrumKey } from './instrumentBankKeys'
 import { selectInstrumentSamples, type InstrumentVoiceMode } from './instrumentSelection'
 import {
   INSTRUMENT_BANKS,
+  INSTRUMENT_KIT_DRUMS,
   type InstrumentBankClip,
   type InstrumentTextureId,
 } from './voiceAssets/instrumentBankManifest'
@@ -230,7 +233,21 @@ export class InstrumentVoiceOutput {
     if (sel.stab !== null) {
       this.fireOneShot(stabPoolKey(sel.stab), bank.stabs[sel.stab], sel.stabGain)
     }
-    if (sel.drum !== null) {
+    // Punch Kit (drum-kit-design §5.1): when the gesture carries a compiled
+    // drum block it SUPERSEDES the legacy five-piece layer — firing both
+    // would double-hit every punch. Each hit names a logical articulation,
+    // which this bank resolves to a rendered clip.
+    if (gesture.drums !== undefined && gesture.drums.hits.length > 0) {
+      for (const hit of gesture.drums.hits) {
+        this.fireOneShot(
+          kitDrumKey(hit.articulation),
+          INSTRUMENT_KIT_DRUMS[hit.articulation],
+          // The compiler already applied the §9 family curve; the pool wants
+          // a 0..1 gain.
+          Math.max(0, Math.min(1, hit.midiVelocity / 127)),
+        )
+      }
+    } else if (sel.drum !== null) {
       this.fireOneShot(drumPoolKey(sel.drum), bank.drums[sel.drum], sel.drumGain)
     }
     if (sel.bed !== null && sel.bed !== this.currentBedKey) {
@@ -289,6 +306,11 @@ export class InstrumentVoiceOutput {
     let loaded = 0
     for (const key of Object.keys(bank.stabs)) {
       if (this.pooledFor(stabPoolKey(key), bank.stabs[key])) loaded += 1
+    }
+    // The kit's ordinary hits, warmed so the first punch of each family is
+    // not a cold load. The rare pieces stay lazy — see KIT_DRUM_WARM_SET.
+    for (const articulation of KIT_DRUM_WARM_SET) {
+      if (this.pooledFor(kitDrumKey(articulation), INSTRUMENT_KIT_DRUMS[articulation])) loaded += 1
     }
     for (const key of INSTRUMENT_DRUM_KEYS) {
       if (this.pooledFor(drumPoolKey(key), bank.drums[key])) loaded += 1
