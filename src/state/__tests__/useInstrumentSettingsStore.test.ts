@@ -79,12 +79,12 @@ describe('persistence — one merged blob', () => {
     h.store().setTextureId('pluck')
     expect(
       h.repo.read(SETTINGS_KEYS.instrumentTablet, { output: 'missing', texture: 'missing' }),
-    ).toEqual({ output: 'bridge', texture: 'pluck', mode: 'arp', engine: 'expo' })
+    ).toEqual({ output: 'bridge', texture: 'pluck', mode: 'arp', engine: 'oboe' })
 
     h.store().setOutputTarget('tablet')
     expect(
       h.repo.read(SETTINGS_KEYS.instrumentTablet, { output: 'missing', texture: 'missing' }),
-    ).toEqual({ output: 'tablet', texture: 'pluck', mode: 'arp', engine: 'expo' })
+    ).toEqual({ output: 'tablet', texture: 'pluck', mode: 'arp', engine: 'oboe' })
 
     h.store().setVoiceMode('notes')
     expect(

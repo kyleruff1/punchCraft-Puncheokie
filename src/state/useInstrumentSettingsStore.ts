@@ -52,7 +52,12 @@ const DEFAULT_TABLET_BLOB: Required<InstrumentTabletBlob> = {
   output: 'bridge',
   texture: 'brass',
   mode: 'arp',
-  engine: 'expo',
+  // Oboe is the shipping engine as of the step-4 default flip
+  // (audio-engine-migration.md). Measured against expo-audio on the same
+  // screen, same app, toggled live: 37 AudioTracks to 0, and a kit one-shot
+  // from 119.4 ms median / 50.6 ms jitter to a fast-mixer track. An install
+  // that has already persisted a choice keeps it; this is only the fallback.
+  engine: 'oboe',
 }
 
 /** The persisted brass-cube blob (one JSON object under instrumentBrass). */

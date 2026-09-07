@@ -177,6 +177,13 @@ function punch(atMs: number): void {
 
 beforeEach(() => {
   __resetInstrumentSettingsForTests()
+  // This suite's subject is the gesture TEE — which rig a punch is routed to —
+  // and it asserts through the expo-audio mock. Pin the engine so it keeps
+  // testing routing rather than whichever engine happens to be the default;
+  // the Oboe engine creates no expo players and calls no expo setAudioMode, so
+  // leaving this implicit made the tee assertions fail for a reason that had
+  // nothing to do with the tee.
+  useInstrumentSettingsStore.setState({ engine: 'expo' })
   mockAudio.players.length = 0
   mockAudio.playlists.length = 0
   mockAudio.audioModeCalls = 0
