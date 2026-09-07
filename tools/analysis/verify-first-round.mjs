@@ -40,6 +40,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 
+import { extractField, numField, parseTimestampMs, stitchLogRecords } from './logcat.mjs'
+
 // The announcer's `announce()` path fires the phrase EARLIER than the
 // strike beat (call-ahead), while `onTokenDue` fires AT the strike beat.
 // The manifest anchors every per-word event to the strike beat (the
@@ -77,79 +79,9 @@ const DEFER_JOIN_WINDOW_MS = 5000
 // Logcat parser
 // ---------------------------------------------------------------------------
 
-/**
- * Match a logcat line prefix + puncheokie event.
- * `adb logcat -v time` format: `MM-DD HH:MM:SS.mmm I/ReactNativeJS(pid): 'msg', ...'`
- */
-const LOG_PREFIX = /^(\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}\.\d{3})\s+\w\/\w+\(\s*\d+\):\s*(.*)$/
-
-function parseTimestampMs(dateStr, timeStr) {
-  // Return an absolute epoch-like ms — we only care about DIFFERENCES,
-  // so relative to an arbitrary base is fine.
-  const [hh, mm, ss] = timeStr.split(':')
-  const [ssI, ms] = ss.split('.')
-  return (
-    Number(hh) * 3600_000 +
-    Number(mm) * 60_000 +
-    Number(ssI) * 1000 +
-    Number(ms)
-  )
-}
-
-/** Extract a specific field from a JSON-like body inside a log line. */
-function extractField(body, key) {
-  const re = new RegExp(`${key}:\\s*'([^']*)'|${key}:\\s*"([^"]*)"|${key}:\\s*([0-9.eE+-]+)`)
-  const m = body.match(re)
-  return m ? (m[1] ?? m[2] ?? m[3]) : undefined
-}
-
-/** `extractField`, coerced to a number. `undefined` stays `undefined`. */
-function numField(body, key) {
-  const v = extractField(body, key)
-  return v === undefined ? undefined : Number(v)
-}
-
-/**
- * Stitch multi-line logcat records. React Native's logger emits object
- * payloads across multiple lines, all with the same timestamp+prefix.
- * We collapse them into single body strings so a `text:` field ~2 lines
- * below the `puncheokie.voice.play` tag is visible to `extractField`.
- *
- * Continuation heuristic: a line whose body starts with whitespace + a
- * field name (`text:`, `durationMs:`, `asset:`, etc.) or a closing `}`
- * is appended to the previous record's body.
- */
-function stitchLogRecords(logcatText) {
-  const lines = logcatText.split(/\r?\n/)
-  const records = []
-  let current = null
-  for (const rawLine of lines) {
-    const m = LOG_PREFIX.exec(rawLine)
-    if (!m) {
-      // A non-prefix line ENDS the record in progress — it must be
-      // flushed, not discarded. Dropping it lost the final record of
-      // every logcat in the archive (files end with a content line plus
-      // a trailing newline, and `split` yields a last empty string that
-      // fails LOG_PREFIX), so 1663 `clip playing` lines parsed to 1656
-      // events. Benign in the archive because the casualty always sat in
-      // round 3, but this is exactly the silent-dropper class every
-      // verdict downstream is sensitive to.
-      if (current) records.push(current)
-      current = null
-      continue
-    }
-    const [, dateStr, timeStr, body] = m
-    const startsWithTag = body.startsWith("'[")
-    if (startsWithTag || current === null) {
-      if (current) records.push(current)
-      current = { dateStr, timeStr, body }
-    } else {
-      current.body += ' ' + body.trim()
-    }
-  }
-  if (current) records.push(current)
-  return records
-}
+// The prefix regex, timestamp parser, field extractor and the multi-line
+// record stitcher live in ./logcat.mjs (shared with verify-suite.mjs and
+// observed-summary.mjs); the flush-the-last-record rule is documented there.
 
 /**
  * Parse a whole logcat file into a stream of typed events we care about.

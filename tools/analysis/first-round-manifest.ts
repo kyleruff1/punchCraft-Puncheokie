@@ -8,9 +8,12 @@
  * `tools/analysis/manifests/<workoutId>.json` — the ground truth the
  * verifier correlates against.
  *
- * Usage:
- *   npx tsx tools/analysis/first-round-manifest.ts --workout=<id>
- *   npx tsx tools/analysis/first-round-manifest.ts --all
+ * Usage (the stub loader makes the manifests' `require('…wav')` a
+ * placeholder under Node — a bare `npx tsx` fails on the first wav):
+ *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
+ *     tools/analysis/first-round-manifest.ts --workout=<id> [--vocab=techniques]
+ *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
+ *     tools/analysis/first-round-manifest.ts --all [--vocab=techniques]
  *
  * Deterministic — same input produces byte-equal output.
  */
@@ -113,6 +116,14 @@ interface FirstRoundManifest {
   roundIndex: 0
   workDurationMs: number
   bpm: number
+  /**
+   * Whole-session shape for the unattended suite (GH #292): verify-suite.mjs
+   * sizes each drive's budget and the sim's pace from these, so it needs no
+   * TypeScript at runtime.
+   */
+  roundCount: number
+  scheduleMs: readonly { workMs: number; restMs: number }[]
+  estimatedActivePunchesPerMinute: number
   compiledAtEpochMs: 0
   identity: {
     workoutId: string
@@ -360,6 +371,12 @@ export function buildFirstRoundManifest(
     roundIndex: 0,
     workDurationMs: workout.schedule[0]?.workDurationMs ?? 0,
     bpm,
+    roundCount: workout.schedule.length,
+    scheduleMs: workout.schedule.map((round) => ({
+      workMs: round.workDurationMs,
+      restMs: round.restAfterMs,
+    })),
+    estimatedActivePunchesPerMinute: workout.estimatedActivePunchesPerMinute,
     compiledAtEpochMs: 0,
     identity: {
       workoutId: compiled.identity.workoutId,
@@ -393,7 +410,7 @@ function writeManifest(manifest: FirstRoundManifest): string {
 function summarize(m: FirstRoundManifest): string {
   return [
     `${m.workoutId} (${m.workoutName})`,
-    `  round 1 · ${m.workDurationMs / 1000}s · ${m.bpm} bpm · hash=${m.identity.timelineHash}`,
+    `  round 1 · ${m.workDurationMs / 1000}s · ${m.bpm} bpm · hash=${m.identity.timelineHash} · ${m.roundCount} rounds · ${m.estimatedActivePunchesPerMinute}/min`,
     `  strikes=${m.strikes.length} · coachEvents=${m.coachEvents.length} · silentByDesign=${m.silentByDesign.length}`,
     ...(m.notes.length > 0 ? [`  notes:`, ...m.notes.map((n) => `    - ${n}`)] : []),
   ].join('\n')
