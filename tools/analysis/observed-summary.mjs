@@ -64,9 +64,14 @@ export function parseVoiceObserved(logcatText) {
     traceId: extractField(body, 'traceId'),
     method: extractField(body, 'method'),
     outcome: extractField(body, 'outcome'),
+    dispatchMs: numField(body, 'dispatchMs'),
+    onsetMs: numField(body, 'onsetMs'),
+    endMs: numField(body, 'endMs'),
     onsetLatencyMs: numField(body, 'onsetLatencyMs'),
     observedDurationMs: numField(body, 'observedDurationMs'),
     expectedDurationMs: numField(body, 'expectedDurationMs'),
+    positionAtOnsetMs: numField(body, 'positionAtOnsetMs'),
+    volumeAtDispatch: numField(body, 'volumeAtDispatch'),
     silentByVolume: boolField(body, 'silentByVolume') ?? false,
   }))
 }

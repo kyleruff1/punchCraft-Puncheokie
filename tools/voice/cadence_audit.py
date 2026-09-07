@@ -81,7 +81,33 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from asr_match import canonical_tokens
 
+# `src/audio/voiceAssets/phraseManifest.ts` was DELETED when V2 Phase 5-iv
+# retired the per-punch phrase corpus (commit 369a2c6). This audit measured
+# THAT corpus, so on a current checkout it has no input at all — it used to
+# die on a FileNotFoundError several frames deep, which reads like a broken
+# tool rather than a retired one. The surviving per-token timing lives in
+# `src/domain/programs/phraseTimingManifest.ts`; dump it to JSON with
+# `tools/analysis/phrase-timing-dump.mjs`. The live, mic-free measurement
+# that replaces this audit is
+#   node tools/analysis/observed-timing.mjs --session <dir>
 MANIFEST = os.path.join("src", "audio", "voiceAssets", "phraseManifest.ts")
+PHRASE_TIMING_DUMP = os.path.join("tools", "analysis", "reports", "phrase-timing.json")
+
+
+def _require_corpus() -> None:
+    """Fail loudly and usefully when the audited corpus is not on disk."""
+    if os.path.exists(MANIFEST):
+        return
+    raise SystemExit(
+        MANIFEST + " does not exist — the per-punch phrase corpus this audits\n"
+        "was retired in V2 Phase 5-iv (commit 369a2c6). Nothing plays those clips.\n"
+        "\nWhat to run instead:\n"
+        "  node tools/analysis/observed-timing.mjs --session <dir>\n"
+        "      the live rail measurement, mic-free (GH #291)\n"
+        "  node --import ./tools/analysis/wav-stub.mjs --import tsx \\\n"
+        "      tools/analysis/phrase-timing-dump.mjs\n"
+        "      the surviving per-token marks as JSON\n"
+    )
 GRID = os.path.join("tools", "voice", "cadence-grid.json")
 REPORT_DIR = os.path.join("tools", "analysis", "reports")
 REPORT_PATH = os.path.join(REPORT_DIR, "cadence-audit.json")
@@ -111,6 +137,7 @@ _ENTRY_RE = re.compile(
 
 
 def parse_manifest() -> list[dict]:
+    _require_corpus()
     text = open(MANIFEST, encoding="utf-8").read()
     entries: list[dict] = []
     for m in _ENTRY_RE.finditer(text):
