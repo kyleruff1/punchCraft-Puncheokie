@@ -101,6 +101,9 @@ let mockIsFocused = true
 
 import LiveScreen from '../live'
 import { replaceSinks, type LogRecord } from '@diagnostics/logger'
+import { SimulatedPunchSource } from '@simulation/SimulatedPunchSource'
+import { simBpmForWorkout } from '@simulation/simPace'
+import { getSampleWorkout } from '@domain/workout/samples'
 import { setLive, useLiveStore, useWorkoutStore, type LiveState } from '@state/useWorkoutStore'
 import { __resetQaStoreForTests, useQaStore, type StagedQaRun } from '@state/useQaStore'
 
@@ -256,3 +259,79 @@ describe('QA autostart', () => {
     expect(autostartLogs()).toHaveLength(0)
   })
 })
+
+describe('QA auto-sim', () => {
+  // No gloves are connected under jest, so the live screen's source IS the
+  // simulator; spying on the prototype sees the instance the screen built.
+  let playScript: jest.SpyInstance
+  let stopScript: jest.SpyInstance
+
+  beforeEach(() => {
+    playScript = jest.spyOn(SimulatedPunchSource.prototype, 'playScript')
+    stopScript = jest.spyOn(SimulatedPunchSource.prototype, 'stopScript')
+  })
+  afterEach(() => {
+    playScript.mockRestore()
+    stopScript.mockRestore()
+  })
+
+  const simLogs = (): LogRecord[] => records.filter((r) => r.code === 'puncheokie.qa.sim')
+
+  it('plays the staged script at work-entered, paced to the workout, and stops it at rest', () => {
+    stage({ sim: 'captured-jam', autostart: false })
+    render()
+    // Not in the lobby, not during the countdown.
+    drive({ phase: 'idle', roundCount: 3, roundIndex: -1 })
+    drive({ phase: 'countdown', roundCount: 3, roundIndex: 0 })
+    expect(playScript).not.toHaveBeenCalled()
+
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    const workout = getSampleWorkout('three-round-fundamentals').workout
+    const expectedBpm = simBpmForWorkout('captured-jam', workout)
+    expect(playScript).toHaveBeenCalledWith('captured-jam', expectedBpm)
+    expect(simLogs()).toHaveLength(1)
+    expect(simLogs()[0]?.fields.bpm?.value).toBe(expectedBpm)
+
+    drive({ phase: 'rest', roundCount: 3, roundIndex: 0 })
+    expect(stopScript).toHaveBeenCalled()
+  })
+
+  it('restarts the script fresh for every round', () => {
+    stage({ sim: 'alternating-1-2', autostart: false })
+    render()
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    drive({ phase: 'rest', roundCount: 3, roundIndex: 0 })
+    drive({ phase: 'work', roundCount: 3, roundIndex: 1 })
+    expect(playScript).toHaveBeenCalledTimes(2)
+    expect(simLogs().map((r) => r.fields.roundIndex?.value)).toEqual([0, 1])
+  })
+
+  it('honours an explicit simBpm over the paced one', () => {
+    stage({ sim: 'burst', simBpm: 123, autostart: false })
+    render()
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    expect(playScript).toHaveBeenCalledWith('burst', 123)
+  })
+
+  it('does nothing when the staged run asks for no script — or there is no run', () => {
+    stage({ sim: 'none', autostart: false })
+    render()
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    expect(playScript).not.toHaveBeenCalled()
+  })
+
+  it('stops the script on pause and on the way out', () => {
+    stage({ sim: 'captured-jam', autostart: false })
+    const tree = render()
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    drive({ phase: 'paused', roundCount: 3, roundIndex: 0 })
+    expect(stopScript).toHaveBeenCalledTimes(1)
+    drive({ phase: 'work', roundCount: 3, roundIndex: 0 })
+    act(() => {
+      tree.unmount()
+      mounted.splice(mounted.indexOf(tree), 1)
+    })
+    expect(stopScript).toHaveBeenCalledTimes(2)
+  })
+})
+

@@ -51,6 +51,7 @@ import { resetLive, setLive, useLive, useRecipe, useSelectedSampleKey } from '@s
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
 import { useQaStore } from '@state/useQaStore'
 import { logger, safe } from '@diagnostics/logger'
+import { simBpmForWorkout } from '@simulation/simPace'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
 import { useSharedTransportAnchor } from '@audio/useSharedTransportAnchor'
@@ -106,6 +107,10 @@ export default function LiveScreen(): React.JSX.Element {
   const selectedSampleKey = useSelectedSampleKey()
   const recipe = useRecipe()
   const live = useLive()
+  // The run staged by the `qa/run` deep link, if any (GH #291). Read here,
+  // above the punch-source hook, because that hook latches its choice on
+  // the first render and must see `simForce` then.
+  const qaRun = useQaStore((s) => s.run)
   const [confirmingStop, setConfirmingStop] = useState(false)
   /**
    * How the finished workout was written (M33-08). Held here rather than in
@@ -247,6 +252,10 @@ export default function LiveScreen(): React.JSX.Element {
     // the simulator to freshly-connected trackers is safe — and rescues
     // the athlete who opened the screen while a reconnect was in flight.
     allowUpgrade: live.phase === 'idle',
+    // QA (GH #291): a suite run may insist on the simulator, and wants a
+    // scripted pass to loop for the whole work phase.
+    forceSim: qaRun?.simForce ?? false,
+    simLoop: (qaRun?.sim ?? 'none') !== 'none',
   })
 
   // The auto-retry scheduler must not scan or evict while a workout is
@@ -701,7 +710,6 @@ export default function LiveScreen(): React.JSX.Element {
   // never start a workout on a screen that is not the one being looked at.
   // `startedRef` never resets while this screen stays mounted, so a second
   // deep link in the same process cannot autostart — the suite cold-starts.
-  const qaRun = useQaStore((s) => s.run)
   React.useEffect(() => {
     if (!qaRun?.autostart || qaRun.autostartConsumed) return
     if (live.phase !== 'idle' || live.roundCount === 0) return
@@ -718,6 +726,28 @@ export default function LiveScreen(): React.JSX.Element {
     }, delayMs)
     return () => clearTimeout(timer)
   }, [qaRun, live.phase, live.roundCount, holdAudio, handleStart, workout.id])
+
+  // QA auto-sim (GH #291): scripted punches during WORK only. Phase-driven
+  // rather than constructor-time because `source.start()` runs at arm — a
+  // script handed to the constructor would throw punches in the lobby. The
+  // script loops (the source was built with `loop`) and is torn down on
+  // every phase change, so rest, pause and the end are silent; `roundIndex`
+  // in the deps restarts it fresh at each work-entered.
+  React.useEffect(() => {
+    if (sim === null || !qaRun || qaRun.sim === 'none' || live.phase !== 'work') return
+    const script = qaRun.sim
+    const bpm = qaRun.simBpm ?? simBpmForWorkout(script, workout)
+    sim.playScript(script, bpm)
+    logger.info('puncheokie.qa.sim', 'auto sim script started', {
+      script: safe(script),
+      bpm: safe(bpm),
+      roundIndex: safe(live.roundIndex),
+      targetPpm: safe(workout.estimatedActivePunchesPerMinute),
+    })
+    return () => {
+      sim.stopScript()
+    }
+  }, [sim, qaRun, live.phase, live.roundIndex, workout])
 
   const roundGoal = workout.schedule[Math.max(0, live.roundIndex)]?.targetPunches
 

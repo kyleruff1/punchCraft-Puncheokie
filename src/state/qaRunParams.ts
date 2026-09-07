@@ -16,8 +16,11 @@
  */
 import { isSampleWorkoutKey, type SampleWorkoutKey } from '@domain/workout/samples'
 import { SIM_SCRIPTS, type SimScriptId } from '@simulation/scripts'
+import { SIM_BPM_MAX, SIM_BPM_MIN } from '@simulation/simPace'
 
 import type { QaVocabulary } from './useQaStore'
+
+export { SIM_BPM_MAX, SIM_BPM_MIN }
 
 export interface QaRunRequest {
   workout: SampleWorkoutKey | 'generated'
@@ -38,10 +41,6 @@ export type QaRunParseResult =
 
 /** expo-router hands back `string | string[]`; a repeated key takes its first value. */
 type RawParams = Record<string, string | string[] | undefined>
-
-/** Tempo bounds for an explicit `simBpm` — outside these the script is noise. */
-export const SIM_BPM_MIN = 40
-export const SIM_BPM_MAX = 400
 
 function first(raw: RawParams, key: string): string | undefined {
   const v = raw[key]
