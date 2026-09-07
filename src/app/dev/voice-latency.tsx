@@ -69,6 +69,7 @@ import {
   type AudioSample,
 } from 'expo-audio'
 import * as Speech from 'expo-speech'
+import { AudioContext as OboeAudioContext } from 'react-native-audio-api'
 import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 
 import { colors } from '@/theme/colors'
@@ -319,6 +320,33 @@ export default function VoiceLatencySpike(): React.JSX.Element {
     setLog((prev) => [...prev, line])
   }, [])
 
+  /**
+   * Step 0 probe (audio-engine-migration.md): does the Oboe native module
+   * actually resolve, and will it open a stream?
+   *
+   * A dev client only carries native code compiled into it, so this failing
+   * with "native module could not be found" means the APK is stale rather
+   * than the code being wrong. Reporting the sample rate proves the stream
+   * opened: 48000 matches the rendered bank, and anything else means decode
+   * would resample on every hit.
+   */
+  const probeOboe = useCallback(() => {
+    try {
+      const ctx = new OboeAudioContext()
+      say(`OBOE ok — sampleRate=${ctx.sampleRate} state=${ctx.state}`)
+      // A zero-length silent source forces the driver to start, which is
+      // what actually opens the Oboe stream; constructing the context alone
+      // does not.
+      const src = ctx.createBufferSource()
+      src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate)
+      src.connect(ctx.destination)
+      src.start(0)
+      say(`OBOE stream started — state=${ctx.state}`)
+    } catch (err) {
+      say(`OBOE FAILED: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }, [say])
+
   const run = useCallback(
     async (mode: 'duckOthers' | 'mixWithOthers', forceMethod?: 'sampling' | 'playhead') => {
       setRunning(true)
@@ -523,6 +551,14 @@ export default function VoiceLatencySpike(): React.JSX.Element {
           style={[styles.button, running && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>Run (mix, playhead)</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={probeOboe}
+          style={styles.button}
+          testID="probe-oboe"
+        >
+          <Text style={styles.buttonText}>Probe Oboe</Text>
         </Pressable>
       </View>
 
