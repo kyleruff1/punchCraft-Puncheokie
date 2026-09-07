@@ -69,7 +69,11 @@ import {
   type AudioSample,
 } from 'expo-audio'
 import * as Speech from 'expo-speech'
-import { AudioContext as OboeAudioContext } from 'react-native-audio-api'
+import {
+  AudioContext as OboeAudioContext,
+  type AnalyserNode as OboeAnalyser,
+  type AudioBuffer as OboeBuffer,
+} from 'react-native-audio-api'
 import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 
 import { colors } from '@/theme/colors'
@@ -98,7 +102,14 @@ const SHORT_CLIP = require('../../../assets/spike-voice/tone-short.wav')
 const LONG_CLIP = require('../../../assets/spike-voice/tone-long.wav')
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-type CaseId = 'preloaded' | 'armed' | 'armed-kit' | 'cold' | 'tts-phrase' | 'tts-number'
+type CaseId =
+  | 'preloaded'
+  | 'armed'
+  | 'armed-kit'
+  | 'armed-oboe'
+  | 'cold'
+  | 'tts-phrase'
+  | 'tts-number'
 
 interface CaseResult {
   id: CaseId
@@ -320,6 +331,46 @@ export default function VoiceLatencySpike(): React.JSX.Element {
     setLog((prev) => [...prev, line])
   }, [])
 
+/**
+ * Time one Oboe trigger, by the SAME class of measurement as `armed-kit`.
+ *
+ * There is no playhead to poll here — Web Audio source nodes are fire-and-
+ * forget — so an AnalyserNode is tapped instead and polled for the first
+ * non-silent frame. That keeps the comparison honest: both this and the
+ * expo-audio `armed-kit` figure are JS-polled at one loop turn of resolution,
+ * so the DIFFERENCE between them is meaningful even though neither is a true
+ * acoustic latency.
+ *
+ * A fresh source node per trigger is mandatory, not a choice: `.buffer` may be
+ * set once and `start()` called once (AudioBufferSourceNode.ts:39-48, :101-107).
+ * That is also why this path cannot truncate a still-sounding hit the way the
+ * expo-audio pool does.
+ */
+async function timeArmedOboe(
+  ctx: OboeAudioContext,
+  buffer: OboeBuffer,
+  analyser: OboeAnalyser,
+  data: Uint8Array,
+  timeoutMs = 3_000,
+): Promise<number | null> {
+  const src = ctx.createBufferSource()
+  src.buffer = buffer
+  src.connect(analyser)
+  const startedAt = performance.now()
+  src.start(0)
+  for (;;) {
+    analyser.getByteTimeDomainData(data)
+    let peak = 0
+    for (let i = 0; i < data.length; i += 1) {
+      peak = Math.max(peak, Math.abs((data[i] ?? 128) - 128))
+    }
+    // 128 is silence for byte time-domain data; >2 clears dither/noise.
+    if (peak > 2) return performance.now() - startedAt
+    if (performance.now() - startedAt > timeoutMs) return null
+    await new Promise<void>((resolve) => setTimeout(resolve, 1))
+  }
+}
+
   /**
    * Step 0 probe (audio-engine-migration.md): does the Oboe native module
    * actually resolve, and will it open a stream?
@@ -457,6 +508,52 @@ export default function VoiceLatencySpike(): React.JSX.Element {
             `snare-center from the shipped bank; method: ${methodRef.current}`,
           ),
         ])
+
+        // --- (a4) ARMED via OBOE — the migration's decisive comparison ----
+        // Same clip as (a3), same JS-polled measurement class, so the delta
+        // against armed-kit is the engine and nothing else. This is where
+        // kill-criterion K3 fires: if this still lands near 100 ms or jitters
+        // above ~25 ms, the audio engine was never the bottleneck and the
+        // migration should stop here.
+        try {
+          const oboeCtx = new OboeAudioContext()
+          say(`oboe ctx sampleRate=${oboeCtx.sampleRate}`)
+          const oboeBuffer = await oboeCtx.decodeAudioData(
+            INSTRUMENT_KIT_DRUMS['snare-center'].module,
+          )
+          say(`oboe decoded snare-center: ${oboeBuffer.duration.toFixed(3)}s`)
+          const analyser = oboeCtx.createAnalyser()
+          analyser.fftSize = 2048
+          analyser.connect(oboeCtx.destination)
+          const probe = new Uint8Array(analyser.fftSize)
+          // Open the stream BEFORE the first timed rep, or rep 1 measures the
+          // Oboe stream-open cost instead of a trigger.
+          const warm = oboeCtx.createBufferSource()
+          warm.buffer = oboeCtx.createBuffer(1, 1, oboeCtx.sampleRate)
+          warm.connect(oboeCtx.destination)
+          warm.start(0)
+          await sleep(400)
+          say(`oboe stream state=${oboeCtx.state}`)
+
+          const oboe: number[] = []
+          for (let i = 0; i < REPS; i += 1) {
+            const ms = await timeArmedOboe(oboeCtx, oboeBuffer, analyser, probe)
+            if (ms !== null) oboe.push(ms)
+            say(`armed-oboe ${i + 1}/${REPS}: ${ms === null ? 'TIMEOUT' : `${ms.toFixed(1)} ms`}`)
+            await sleep(REP_GAP_MS)
+          }
+          setResults((r) => [
+            ...r,
+            summarize(
+              'armed-oboe',
+              'ARMED via OBOE — snare-center',
+              oboe,
+              'fresh source node per hit; analyser tap, JS-polled like the others',
+            ),
+          ])
+        } catch (err) {
+          say(`armed-oboe FAILED: ${err instanceof Error ? err.message : String(err)}`)
+        }
 
         // --- (b) cold -----------------------------------------------------
         const cold: number[] = []
