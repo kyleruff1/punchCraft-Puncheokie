@@ -144,6 +144,16 @@ export function getSampleWorkout(key: SampleWorkoutKey): SampleWorkout {
   return SAMPLES[key]
 }
 
+/**
+ * Whether an arbitrary string names a registered sample — INCLUDING the
+ * hidden diagnostic rig, which is not in `ORDER` but is a real, runnable
+ * workout. The QA deep link validates its `workout` parameter with this
+ * so a typo lands on an error screen, never on `+not-found`.
+ */
+export function isSampleWorkoutKey(key: string): key is SampleWorkoutKey {
+  return Object.prototype.hasOwnProperty.call(SAMPLES, key)
+}
+
 export {
   threeRoundFundamentals,
   establishTheJab20,

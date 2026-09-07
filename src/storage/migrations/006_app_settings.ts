@@ -76,6 +76,14 @@ export const SETTINGS_KEYS = {
    * its section (harmonic-field-v2).
    */
   instrumentHarmonic: 'instrument.harmonic',
+  /**
+   * QA mode (GH #291): `{ enabled: boolean }`. Off by default. When on, the
+   * `punchcraft://qa/run` deep link may autostart a workout and drive it
+   * with a simulated punch script, and the timing observers may attach.
+   * Persisted — NOT `__DEV__` — because the unattended suite runs against a
+   * release build.
+   */
+  qa: 'qa.mode',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

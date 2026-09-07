@@ -49,6 +49,8 @@ import { getSampleWorkout } from '@domain/workout/samples'
 import { generateWorkout } from '@domain/workout/generateWorkout'
 import { resetLive, setLive, useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
+import { useQaStore } from '@state/useQaStore'
+import { logger, safe } from '@diagnostics/logger'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
 import { useSharedTransportAnchor } from '@audio/useSharedTransportAnchor'
@@ -81,6 +83,14 @@ import type { SimScriptId } from '@simulation/scripts'
 
 /** Tag for the keep-awake lock this screen owns; see the header note. */
 const LIVE_KEEP_AWAKE_TAG = 'punchcraft-live'
+
+/**
+ * How long a QA autostart waits after the runner arms before pressing Hit It
+ * (GH #291). Mirrors the settle the tap driver used: `output.preload()` and
+ * `IntroPlayer.load()` both fire on idle, and a start landing under them
+ * measures their cost instead of the workout's.
+ */
+const QA_AUTOSTART_SETTLE_MS = 2_500
 
 /**
  * Workout backdrop art (§17, D17). The wide-format hero from the branding
@@ -682,6 +692,32 @@ export default function LiveScreen(): React.JSX.Element {
     startedRef.current = true
     runner.start()
   }, [runner])
+
+  // QA autostart (GH #291): the `qa/run` deep link staged a run asking for
+  // Hit It to be pressed. Wait for the runner's OWN armed signal — pushStore
+  // publishes `roundCount` from the session once the arm effect has run, and
+  // `phase` stays 'idle' until start — then settle, then take the button's
+  // exact path. `holdAudio` gates it the same way the audio stack is gated:
+  // never start a workout on a screen that is not the one being looked at.
+  // `startedRef` never resets while this screen stays mounted, so a second
+  // deep link in the same process cannot autostart — the suite cold-starts.
+  const qaRun = useQaStore((s) => s.run)
+  React.useEffect(() => {
+    if (!qaRun?.autostart || qaRun.autostartConsumed) return
+    if (live.phase !== 'idle' || live.roundCount === 0) return
+    if (!holdAudio) return
+    const delayMs = qaRun.autostartDelayMs ?? QA_AUTOSTART_SETTLE_MS
+    const timer = setTimeout(() => {
+      useQaStore.getState().consumeAutostart()
+      logger.info('puncheokie.qa.autostart', 'QA autostart pressed Hit It', {
+        workout: safe(workout.id),
+        nonce: safe(qaRun.nonce ?? null),
+        delayMs: safe(delayMs),
+      })
+      handleStart()
+    }, delayMs)
+    return () => clearTimeout(timer)
+  }, [qaRun, live.phase, live.roundCount, holdAudio, handleStart, workout.id])
 
   const roundGoal = workout.schedule[Math.max(0, live.roundIndex)]?.targetPunches
 
