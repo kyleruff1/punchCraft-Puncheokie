@@ -19,6 +19,7 @@
  */
 import { create } from 'zustand'
 
+import { setTimingObserverEnabled } from '@diagnostics/qaFlags'
 import type { SampleWorkoutKey } from '@domain/workout/samples'
 import type { SimScriptId } from '@simulation/scripts'
 import { SETTINGS_KEYS } from '@storage/migrations/006_app_settings'
@@ -89,10 +90,13 @@ export const useQaStore = create<QaState>((set) => ({
     const stored = repo.read<QaSettings>(SETTINGS_KEYS.qa, defaultQaSettings())
     // Anything but literal `true` is off — a corrupted row must fail closed,
     // because "on" grants autostart to an externally reachable URL.
-    set({ enabled: stored.enabled === true, loaded: true })
+    const enabled = stored.enabled === true
+    setTimingObserverEnabled(enabled)
+    set({ enabled, loaded: true })
   },
 
   setEnabled(on) {
+    setTimingObserverEnabled(on)
     set({ enabled: on })
     persist({ enabled: on })
   },
@@ -118,5 +122,6 @@ export function isQaEnabled(): boolean {
 /** Reset for tests — the module-level repository handle outlives a render. */
 export function __resetQaStoreForTests(): void {
   repository = null
+  setTimingObserverEnabled(false)
   useQaStore.setState({ ...defaultQaSettings(), loaded: false, run: null })
 }

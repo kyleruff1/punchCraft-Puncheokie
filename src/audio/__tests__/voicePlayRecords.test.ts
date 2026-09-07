@@ -21,21 +21,47 @@ import { replaceSinks, type LogRecord } from '@diagnostics/logger'
 
 import { VoiceOutputExpo } from '../VoiceOutputExpo'
 
-function rig() {
+interface FakePlayer {
+  source: number
+  volume: number
+  currentTime: number
+  listeners: Array<(s: { playing?: boolean; currentTime?: number }) => void>
+  emit: (s: { playing?: boolean; currentTime?: number }) => void
+}
+
+function rig(options: { timingObserver?: boolean } = {}) {
   let clock = 5_000
   let nextId = 1
   const timers: Array<{ at: number; fn: () => void; id: number }> = []
-  const makeFake = (source: number) =>
-    ({
+  const fakes: FakePlayer[] = []
+  const makeFake = (source: number) => {
+    const fake: FakePlayer = {
       source,
       volume: 1,
       currentTime: 0,
+      listeners: [],
+      emit: (s) => {
+        for (const l of [...fake.listeners]) l(s)
+      },
+    }
+    fakes.push(fake)
+    return {
+      ...fake,
+      get listeners() {
+        return fake.listeners
+      },
+      emit: fake.emit,
       seekTo: () => Promise.resolve(),
       play: () => {},
       pause: () => {},
       remove: () => {},
       release: () => {},
-    }) as never
+      addListener: (_event: string, cb: FakePlayer['listeners'][number]) => {
+        fake.listeners.push(cb)
+        return { remove: () => void (fake.listeners = fake.listeners.filter((l) => l !== cb)) }
+      },
+    } as never
+  }
   const output = new VoiceOutputExpo({
     clock: () => clock,
     schedule: (fn, delayMs) => {
@@ -50,8 +76,9 @@ function rig() {
     createPlayer: (source: number) => makeFake(source),
     createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
     setAudioMode: (async () => {}) as never,
+    ...options,
   })
-  return { output, tick: (ms: number) => void (clock += ms), now: () => clock }
+  return { output, fakes, tick: (ms: number) => void (clock += ms), now: () => clock }
 }
 
 let records: LogRecord[] = []
@@ -96,6 +123,53 @@ describe('voice.play records', () => {
     // A fresh player speaks straight away: dispatchMs equals the clock at play().
     expect(field(r!, 'dispatchMs')).toBe(5_000)
     expect(field(r!, 'path')).toBe('fresh')
+  })
+
+  it('with the observer armed, a play is observed end to end and joined by playId', () => {
+    const h = rig({ timingObserver: true })
+    h.output.playInstruction({ text: 'aside', module: 610, durationMs: 900, traceId: 't-1' })
+    const play = plays()[0]!
+    const playId = field(play, 'playId') as string
+    expect(typeof playId).toBe('string')
+    const fake = h.fakes[h.fakes.length - 1]!
+    expect(fake.listeners).toHaveLength(1) // one listener per player
+
+    h.tick(30)
+    fake.emit({ playing: true, currentTime: 0 })
+    h.tick(900)
+    fake.emit({ playing: false, currentTime: 0.9 })
+
+    const observed = records.filter((r) => r.code === 'puncheokie.voice.observed')
+    expect(observed).toHaveLength(1)
+    const o = observed[0]!
+    expect(field(o, 'playId')).toBe(playId)
+    expect(field(o, 'traceId')).toBe('t-1')
+    expect(field(o, 'kind')).toBe('instruction')
+    expect(field(o, 'outcome')).toBe('ok')
+    expect(field(o, 'onsetLatencyMs')).toBe(30)
+    expect(field(o, 'observedDurationMs')).toBe(900)
+    expect(field(o, 'silentByVolume')).toBe(false)
+  })
+
+  it('with the observer off (the default), no listener is ever attached and nothing is observed', () => {
+    const h = rig()
+    h.output.playInstruction({ text: 'aside', module: 611, durationMs: 900 })
+    expect(h.fakes[h.fakes.length - 1]?.listeners).toHaveLength(0)
+    expect(records.filter((r) => r.code === 'puncheokie.voice.observed')).toHaveLength(0)
+    expect(field(plays()[0]!, 'playId')).toEqual(expect.any(String))
+  })
+
+  it('release() reports the observer stats and closes open observations as released', () => {
+    const h = rig({ timingObserver: true })
+    h.output.playInstruction({ text: 'aside', module: 612, durationMs: 5_000 })
+    h.fakes[h.fakes.length - 1]!.emit({ playing: true })
+    h.output.release()
+    const observed = records.filter((r) => r.code === 'puncheokie.voice.observed')
+    expect(observed.map((r) => field(r, 'outcome'))).toEqual(['released'])
+    const stats = records.find((r) => r.code === 'puncheokie.observer.stats')
+    expect(stats).toBeDefined()
+    expect(field(stats!, 'watched')).toBe(1)
+    expect(field(stats!, 'openAtRelease')).toBe(1)
   })
 
   it('clip (pooled): dispatchMs present alongside the duck-tell volume', async () => {
