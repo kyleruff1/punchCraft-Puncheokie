@@ -29,17 +29,27 @@
  * 2 playlists to a single stream, which relieves rather than adds to the ~48
  * AudioTrack ceiling behind #356/#357.
  *
- * ## What this step does NOT do
+ * ## Loops (step 5)
  *
- * Bed and bass loops are still carried by an expo-audio delegate, so the
- * engine flag stays a true A/B: flipping it changes the one-shot path and
- * nothing else. Loops move in step 5.
+ * Bed and bass are looping source nodes in the same graph, not playlists on a
+ * carried expo-audio delegate. That delegate is gone, and with it two costs
+ * step 3 had to accept: it preloaded a 37-player pool it never used, and every
+ * punch fired a silent legacy drum through it purely because
+ * `selectInstrumentSamples` always names one.
+ *
+ * The bank's loops are rendered to be seamless by PERIODICITY and by
+ * zero-amplitude boundaries (see tools/tablet-voice), so `loop = true` over
+ * the whole buffer needs no crossfade — the loop point is already silent or
+ * already phase-continuous.
  */
-import { AudioContext, type AudioBuffer } from 'react-native-audio-api'
+import {
+  AudioContext,
+  type AudioBuffer,
+  type AudioBufferSourceNode,
+} from 'react-native-audio-api'
 
 import { logger, safe } from '@diagnostics/logger'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
-import { InstrumentVoiceOutput } from './InstrumentVoiceOutput'
 import type { InstrumentVoice } from './InstrumentVoice'
 import { kitDrumKey } from './instrumentBankKeys'
 import { selectInstrumentSamples, type InstrumentVoiceMode } from './instrumentSelection'
@@ -51,6 +61,21 @@ import {
 
 /** The bank is rendered at 48 kHz; matching it means decode never resamples. */
 const BANK_SAMPLE_RATE = 48000
+
+/** Stop and detach a source; never throws, so a teardown loop cannot abort. */
+function stopSource(source: AudioBufferSourceNode | undefined): void {
+  if (source === undefined) return
+  try {
+    source.stop()
+  } catch {
+    // Already ended.
+  }
+  try {
+    source.disconnect()
+  } catch {
+    // Already detached.
+  }
+}
 
 export class InstrumentVoiceOutputOboe implements InstrumentVoice {
   private ctx: AudioContext | null = null
@@ -66,11 +91,22 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
    */
   private generation = 0
 
+  private mode: InstrumentVoiceMode = 'arp'
+
   /**
-   * Carries bed/bass only. It receives a gesture with the one-shot fields
-   * stripped, so it swaps loops and sounds nothing else.
+   * One persistent gain per loop lane, so a swap replaces the SOURCE under a
+   * stable node rather than rebuilding the connection each time.
    */
-  private readonly loops = new InstrumentVoiceOutput()
+  private bedLane: { source: AudioBufferSourceNode; key: string } | null = null
+  private bassLane: { source: AudioBufferSourceNode; key: string } | null = null
+
+  /**
+   * What each lane SHOULD be playing. Set before the decode await, so a
+   * second swap arriving mid-decode can abandon the first — without this a
+   * fast chord change would land the older loop on top of the newer one.
+   */
+  private wantedBedKey: string | null = null
+  private wantedBassKey: string | null = null
 
   get available(): boolean {
     return this.availableFlag
@@ -80,7 +116,6 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     if (!this.availableFlag) return
     const generation = (this.generation += 1)
     this.texture = textureId
-    void this.loops.preload(textureId)
 
     try {
       this.ctx ??= new AudioContext({ sampleRate: BANK_SAMPLE_RATE })
@@ -148,7 +183,11 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
   }
 
   setMode(mode: InstrumentVoiceMode): void {
-    this.loops.setMode(mode)
+    if (mode === this.mode) return
+    this.mode = mode
+    // 'notes' is the alternating-note instrument: no beds, no bass. Entering
+    // it silences the loops rather than leaving them droning underneath.
+    if (mode === 'notes') this.stopLoops()
   }
 
   handleGesture(gesture: CompiledPunchGesture): void {
@@ -167,23 +206,18 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
       }
     }
 
-    // Loops only: strip every one-shot field so the delegate swaps beds and
-    // basses and sounds nothing. `transient.velocity` goes to 0 rather than
-    // being removed because `selectInstrumentSamples` always names a drum,
-    // falling back to 'kick' — gain 0 is how it stays silent. That wasted
-    // silent trigger is the price of carrying loops on the old engine, and it
-    // goes away in step 5.
-    const loopsOnly: CompiledPunchGesture = {
-      ...gesture,
-      transient: { ...gesture.transient, velocity: 0 },
+    // A lane is only touched when its selection CHANGED — a legacy gesture's
+    // null bed/bass leaves the sounding loops alone.
+    if (selection.bed !== null && selection.bed !== this.wantedBedKey) {
+      void this.swapLoop('bed', selection.bed)
     }
-    delete (loopsOnly as { accent?: unknown }).accent
-    delete (loopsOnly as { drums?: unknown }).drums
-    this.loops.handleGesture(loopsOnly)
+    if (selection.bass !== null && selection.bass !== this.wantedBassKey) {
+      void this.swapLoop('bass', selection.bass)
+    }
   }
 
   panic(): void {
-    this.loops.panic()
+    this.stopLoops()
     // Source nodes are fire-and-forget and each is at most one clip long;
     // suspending the context stops the graph immediately, and the next
     // trigger resumes it.
@@ -192,11 +226,87 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
 
   release(): void {
     this.generation += 1
-    this.loops.release()
+    this.stopLoops()
     this.buffers.clear()
     const ctx = this.ctx
     this.ctx = null
     void ctx?.close().catch(() => undefined)
+  }
+
+  /**
+   * Point one loop lane at `key`, decoding it on first use.
+   *
+   * Lazy rather than eager: the bank holds 24 beds and 6 basses per texture
+   * and a session touches a handful. Decoding all of them would cost seconds
+   * of preload — and in a dev client each decode is an HTTP fetch from Metro —
+   * to warm loops that will never sound.
+   */
+  private async swapLoop(kind: 'bed' | 'bass', key: string): Promise<void> {
+    const ctx = this.ctx
+    if (ctx === null) return
+    // Claim the lane BEFORE awaiting, so a newer swap wins the race.
+    if (kind === 'bed') this.wantedBedKey = key
+    else this.wantedBassKey = key
+    const generation = this.generation
+
+    let buffer = this.buffers.get(key)
+    if (buffer === undefined) {
+      const bank = INSTRUMENT_BANKS[this.texture]
+      const clip = kind === 'bed' ? bank.beds[key] : bank.basses[key]
+      if (clip === undefined) {
+        logger.warn('puncheokie.instrument.clipMissing', 'no bank entry for loop', {
+          key: safe(key),
+        })
+        return
+      }
+      try {
+        buffer = await ctx.decodeAudioData(clip.module)
+      } catch (error) {
+        logger.warn('puncheokie.instrument.clipMissing', 'loop decode failed', {
+          key: safe(key),
+          error: safe(String(error)),
+        })
+        return
+      }
+      // Released, texture-changed, or superseded while we decoded.
+      if (generation !== this.generation) return
+      this.buffers.set(key, buffer)
+    }
+
+    const stillWanted = kind === 'bed' ? this.wantedBedKey : this.wantedBassKey
+    if (stillWanted !== key || this.mode === 'notes') return
+
+    const previous = kind === 'bed' ? this.bedLane : this.bassLane
+    try {
+      const source = ctx.createBufferSource()
+      source.buffer = buffer
+      // The bank's loops are rendered seamless — sample-exact lengths, and
+      // either zero-amplitude boundaries or an integer number of cycles — so
+      // looping the whole buffer needs no crossfade.
+      source.loop = true
+      source.connect(ctx.destination)
+      source.start(0)
+      if (kind === 'bed') this.bedLane = { source, key }
+      else this.bassLane = { source, key }
+    } catch (error) {
+      logger.warn('puncheokie.instrument.oboeFire', 'loop start failed', {
+        key: safe(key),
+        error: safe(String(error)),
+      })
+      return
+    }
+    // Stop the old one only once the new one is running, so the lane never
+    // falls silent between them.
+    stopSource(previous?.source)
+  }
+
+  private stopLoops(): void {
+    stopSource(this.bedLane?.source)
+    stopSource(this.bassLane?.source)
+    this.bedLane = null
+    this.bassLane = null
+    this.wantedBedKey = null
+    this.wantedBassKey = null
   }
 
   /** Fire one clip. Fully synchronous — no await, no seek, no rewind. */
