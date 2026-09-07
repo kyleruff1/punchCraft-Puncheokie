@@ -30,6 +30,7 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
 import {
   CLICK_SCRIPT_PREARM_PAD_MS,
+  ONE_SHOT_RELEASE_PAD_MS,
   CLICK_SCRIPT_RESIDENT_CAP,
   COACH_LANE_RELEASE_GRACE_MS,
   DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
@@ -1303,7 +1304,7 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     // JS maps while the native players accumulated until GC happened to run.
     const h = rig()
     h.output.playClickScript(h.clip(700), { oneShot: true })
-    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1)
     expect(h.removed).toContain(700)
     expect(h.released).toContain(700)
   })
@@ -1312,7 +1313,7 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     const h = rig()
     h.output.playClickScript(h.clip(500), { oneShot: true })
     expect(h.live.has(500)).toBe(true)
-    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1)
     expect(h.removed).toEqual([500])
     expect(h.live.has(500)).toBe(false)
   })
@@ -1324,7 +1325,7 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     h.output.playClickScript(h.clip(501), { oneShot: true }) // busy-lane retry
     await Promise.resolve() // let the retry's rewind settle
     await Promise.resolve()
-    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1) // first timer fires mid-way: gen mismatch
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1) // first timer fires mid-way: gen mismatch
     h.advance(400) // second timer fires
     expect(h.removed).toEqual([501])
   })
@@ -1360,6 +1361,22 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     h.advance(900 + 1_500 + 1)
     expect(h.live.has(600)).toBe(false)
     expect(h.live.has(601)).toBe(false)
+  })
+
+  it('a one-shot survives past the re-arm pad — the release is destructive now', () => {
+    // Regression guard. The one-shot branch reuses the re-arm timer, which is
+    // armed from play(), not from audible onset — and a one-shot lead-in is
+    // always a FRESH downloadFirst player, which holds no media item at
+    // play() and only sounds once Metro has delivered the whole file. On the
+    // 200 ms re-arm pad the release therefore landed inside the clip. That
+    // was invisible while remove() was a no-op; once it genuinely frees the
+    // ExoPlayer it truncates the whisper.
+    const h = rig()
+    h.output.playClickScript(h.clip(710, 700), { oneShot: true })
+    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    expect(h.live.has(710)).toBe(true) // still sounding at the re-arm pad
+    h.advance(ONE_SHOT_RELEASE_PAD_MS)
+    expect(h.live.has(710)).toBe(false) // freed at the release pad
   })
 
   it('the click-script cap releases what it evicts, not just unlinks it', () => {

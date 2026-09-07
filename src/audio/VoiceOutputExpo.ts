@@ -294,8 +294,14 @@ export const MAX_RESIDENT_PLAYERS = 24
  */
 export const CLICK_SCRIPT_RESIDENT_CAP = 8
 
-/** Clearance after a one-shot clip's end before its player is released. */
-const ONE_SHOT_RELEASE_PAD_MS = 1_500
+/**
+ * Clearance after a one-shot clip's end before its player is released.
+ *
+ * Generous on purpose: the release is DESTRUCTIVE and every one-shot timer is
+ * armed from the play() call, not from audible onset, so this pad is what
+ * absorbs a `downloadFirst` player's resolve + download + prepare latency.
+ */
+export const ONE_SHOT_RELEASE_PAD_MS = 1_500
 
 /**
  * Why the coach's audio stack failed, and therefore whether trying again can
@@ -1299,7 +1305,18 @@ export class VoiceOutputExpo implements VoiceOutputPort {
             .then(() => {
               if (this.clickScriptGen.get(module) === gen) this.clickScriptArmed.add(module)
             })
-        }, clip.durationMs + CLICK_SCRIPT_PREARM_PAD_MS)
+          // The pad has to fit what the timer DOES. The re-arm branch only
+          // pauses and seeks, so 200 ms of clearance is plenty and landing
+          // early is harmless. The one-shot branch DESTROYS the player, and
+          // this timer is armed from the play() call rather than from audible
+          // onset — a one-shot lead-in is always a fresh `downloadFirst`
+          // player, which holds no media item at play() and only sounds once
+          // Metro has delivered the whole file (lead-ins are the largest
+          // clips in the bank, up to 1.4 MB). Releasing on the 200 ms pad
+          // therefore truncated the tail of the whisper. This was invisible
+          // before the #356 fix only because `remove()` neither stopped nor
+          // freed anything, so the clip always played out — while leaking.
+        }, clip.durationMs + (oneShot ? ONE_SHOT_RELEASE_PAD_MS : CLICK_SCRIPT_PREARM_PAD_MS))
       }
       if (!reused || armed) {
         speak(reused ? 'armed' : 'fresh')
@@ -1684,11 +1701,17 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // Anything above safety keeps the previous "chop mid-syllable is
     // worse than late-and-heard" contract.
     if (belowPriority <= AUDIO_PRIORITY.safety) {
-      try {
-        this.phrasePlayer?.remove()
-      } catch {
-        // Already gone.
-      }
+      // NOTE: `phrasePlayer` is DEAD — Phase 5-iv gutted `playCombination`
+      // (it now returns false without ever assigning it), so the only writes
+      // to this field anywhere are `= null`. That means the A10 contract
+      // above is currently a NO-OP: a sounding combination announce today is
+      // a one-shot in `oneShotPlayers`, which cancel() never touches, so the
+      // coach keeps talking over a paused workout. Tracked separately —
+      // fixing it is a behaviour change, not a teardown change. Converted to
+      // the real teardown anyway so reviving the phrase path cannot silently
+      // strand the longest-lived player in the class; `remove()` would not
+      // have honoured the contract either, since it does not stop playback.
+      releaseAudioPlayer(this.phrasePlayer)
       this.phrasePlayer = null
       // Same A10 contract for a sounding click-script: a paused workout
       // must not keep a 14 s rest script (or a lead-in) talking. PAUSE,

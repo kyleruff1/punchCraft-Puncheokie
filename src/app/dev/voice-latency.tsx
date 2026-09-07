@@ -455,8 +455,11 @@ async function timeArmedOboe(
    * would resample on every hit.
    */
   const probeOboe = useCallback(() => {
+    // Closed on every exit path: the probe's whole job is to prove a stream
+    // opens, and leaving each proof running defeats the screen it sits on.
+    let ctx: OboeAudioContext | null = null
     try {
-      const ctx = new OboeAudioContext()
+      ctx = new OboeAudioContext()
       say(`OBOE ok — sampleRate=${ctx.sampleRate} state=${ctx.state}`)
       // A zero-length silent source forces the driver to start, which is
       // what actually opens the Oboe stream; constructing the context alone
@@ -468,6 +471,8 @@ async function timeArmedOboe(
       say(`OBOE stream started — state=${ctx.state}`)
     } catch (err) {
       say(`OBOE FAILED: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      void ctx?.close().catch(() => undefined)
     }
   }, [say])
 
@@ -588,8 +593,14 @@ async function timeArmedOboe(
         // kill-criterion K3 fires: if this still lands near 100 ms or jitters
         // above ~25 ms, the audio engine was never the bottleneck and the
         // migration should stop here.
+        // Held outside the try so every exit path can close it. An Oboe
+        // context owns a live output stream; dropping the reference leaves
+        // that stream open under whatever the jam or live screen opens next
+        // — the same exhaustion class as the AudioTrack ceiling, on the
+        // engine the app now ships on by default.
+        let oboeCtx: OboeAudioContext | null = null
         try {
-          const oboeCtx = new OboeAudioContext()
+          oboeCtx = new OboeAudioContext()
           say(`oboe ctx sampleRate=${oboeCtx.sampleRate}`)
           const oboeBuffer = await oboeCtx.decodeAudioData(
             INSTRUMENT_KIT_DRUMS['snare-center'].module,
@@ -626,6 +637,8 @@ async function timeArmedOboe(
           ])
         } catch (err) {
           say(`armed-oboe FAILED: ${err instanceof Error ? err.message : String(err)}`)
+        } finally {
+          void oboeCtx?.close().catch(() => undefined)
         }
 
         // --- (b) cold -----------------------------------------------------
@@ -637,7 +650,13 @@ async function timeArmedOboe(
           const ms = await timeOne(player)
           if (ms !== null) cold.push(ms)
           say(`cold ${i + 1}/${REPS}: ${ms === null ? 'TIMEOUT' : `${ms.toFixed(1)} ms`}`)
-          player.remove()
+          // `remove()` is a registry map-delete that frees no AudioTrack, so
+          // this loop used to strand one live ExoPlayer per rep — REPS of them
+          // per press. That does not merely leak: each rep then measured cold
+          // loading against a progressively more starved audio stack, so the
+          // number this harness exists to report was a function of its own
+          // leak, and the tail reps could TIMEOUT for that reason alone.
+          releaseAudioPlayer(player)
           await sleep(REP_GAP_MS)
         }
         setResults((r) => [
