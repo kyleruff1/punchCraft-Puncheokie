@@ -2050,6 +2050,174 @@
           "areaSlug": "qa-docs",
           "priority": "P1",
           "size": "S"
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Jab School — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-jab-school`\n**Loop order**: 11 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-jab-school --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Two rounds on the lead hand — touch, return, then double it into the two) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] One-Two — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-one-two`\n**Loop order**: 12 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-one-two --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (The straight pair at three speeds, then the double jab in front of it) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Hook Line — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-hook-line`\n**Loop order**: 13 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-hook-line --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motifs `1-2-3-4` and `3-4-3-4`: their `call/` clips ship with this workout, so a missing-asset here is a render gap, not a runtime bug.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] The Square — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-square`\n**Loop order**: 14 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-square --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Trace the square — one, four, two, three — then close it with the four-count) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Uppercut Lane — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-uppercut-lane`\n**Loop order**: 15 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-uppercut-lane --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motifs `1-2-5-6` and `6-3-6-3` at 85 bpm — the slowest stride in the catalogue, so the call has the most room and the least excuse for a late end.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Downstairs — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-downstairs`\n**Loop order**: 16 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-downstairs --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `1-2-3b-2`; every bar carries a fused body call (`3b`), which is the pronunciation the numbers vocabulary is most likely to run together.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Level Change — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-level-change`\n**Loop order**: 17 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-level-change --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Head, body, head — every bar changes floors without changing the stance) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Southpaw Mirror — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-southpaw-mirror`\n**Loop order**: 18 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-southpaw-mirror --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: `stanceMode: 'switch-by-round'` with `cadenceProfile: 'technical'` — round 2 mirrors round 1's four chunks. The stance card must appear at the bell only, and R2's calls must not re-announce the stance.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Speed Burst — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-speed-burst`\n**Loop order**: 19 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-speed-burst --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: 120 bpm with an 8-slot bar at 2x — the tightest call window in the catalogue and the first place a breath shortfall becomes audible.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Heavy Two — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-heavy-two`\n**Loop order**: 20 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-heavy-two --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Hooks and crosses with weight behind them, two rounds, no wasted motion) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Coast & Reset — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-coast-reset`\n**Loop order**: 21 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-coast-reset --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `2-3-.-.` and k=5 sections; the trailing rests are deliberate silence, so `clickScript.skipped` on a coast bar is expected, not a miss.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Six Count — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-six-count`\n**Loop order**: 22 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-six-count --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `1-2-3-4-5-6-.-.` — the longest phrase in the bank. Its clip is the one most likely to run past its breath budget.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
         }
       ]
     },

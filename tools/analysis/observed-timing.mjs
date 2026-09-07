@@ -50,6 +50,16 @@ export const WARN_END_TO_BELL_TARGET_MS = [0, 400]
 export const RAIL_TIGHT_MS = 60
 /** A per-slot breath shift smaller than this is noise, not a proposal. */
 export const BREATH_PROPOSAL_MIN_MS = 40
+/**
+ * When every slot's late end sits inside this band, ONE constant explains
+ * them all and the per-slot overrides are noise dressed as findings.
+ *
+ * Measured on the tablet (release, body-work round 1): four slots of
+ * different lengths each ended 198–205 ms late over 46 bars. Proposing four
+ * `CALL_BREATH_OVERRIDES` entries there would hard-code a global latency into
+ * per-slot exceptions and hide the single cause.
+ */
+export const GLOBAL_SHIFT_BAND_MS = 50
 const BELL_WINDOW_MS = [-500, 3000]
 
 const r1 = (v) => (v === null || v === undefined || !Number.isFinite(v) ? null : Math.round(v * 10) / 10)
@@ -300,7 +310,10 @@ export function analyze(text, constants = null) {
       calls.push({
         slot: d.slot,
         roundIndex,
-        vocabulary: play.vocabulary ?? null,
+        // A click-script play record names no vocabulary; the drive runs in
+        // exactly one, which `qa.run` states — without this every breath row
+        // read "unknown" and the proposal named a constant that has no such key.
+        vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
         plannedBreathMs: plannedEndMs === null || typeof d.firstNodeMs !== 'number' ? null : Math.round(d.firstNodeMs - plannedEndMs),
         breathMs: r1(firstNodeMono - obs.endMs),
@@ -313,7 +326,7 @@ export function analyze(text, constants = null) {
       leadIns.push({
         slot: d.slot,
         roundIndex,
-        vocabulary: play.vocabulary ?? null,
+        vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
         endMinusEndByMs: endByMono === null ? null : r1(obs.endMs - endByMono),
         onsetLatencyMs: obs.onsetLatencyMs ?? null,
@@ -493,28 +506,67 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
     }
   }
 
-  // Breath: the call ended late by d → dispatch it d earlier by growing breathMs.
-  for (const [slot, s] of Object.entries(breathBySlot)) {
-    if (s.n < 3 || s.medianEndLateMs === null || s.plannedBreathMs === null) continue
-    if (Math.abs(s.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
-    const override = c.breath?.CALL_BREATH_OVERRIDES?.[slot] ?? null
+  // Breath: the call ended late by d → dispatch it d earlier by growing
+  // breathMs. But FIRST ask whether one number explains every slot: a uniform
+  // lag is a global constant, and writing it into per-slot overrides would
+  // bake a latency into exceptions and hide its single cause.
+  const slotRows = Object.entries(breathBySlot).filter(
+    ([, s]) => s.n >= 3 && s.medianEndLateMs !== null && s.plannedBreathMs !== null,
+  )
+  const lateByslot = slotRows.map(([, s]) => s.medianEndLateMs)
+  const uniform =
+    lateByslot.length >= 2 && Math.max(...lateByslot) - Math.min(...lateByslot) <= GLOBAL_SHIFT_BAND_MS
+  const globalShift = uniform ? Math.round(median(lateByslot)) : null
+
+  if (uniform && Math.abs(globalShift) >= BREATH_PROPOSAL_MIN_MS) {
+    for (const [vocab, v] of Object.entries(breathByVocab)) {
+      const dense = c.breath?.DENSE_BREATH_MS?.[vocab] ?? null
+      proposals.push({
+        constant: `DENSE_BREATH_MS.${vocab}`,
+        current: dense,
+        proposed: dense === null ? null : Math.round(dense + globalShift),
+        basis: `EVERY slot ends late by the same ${globalShift} ms (${slotRows.length} slots spanning ${Math.round(Math.min(...lateByslot))}–${Math.round(Math.max(...lateByslot))} ms over ${v.n} bars) — one constant, not per-slot overrides`,
+        apply: dense !== null,
+      })
+    }
     proposals.push({
-      constant: `CALL_BREATH_OVERRIDES['${slot}']`,
-      current: override ?? `derived ${s.plannedBreathMs}`,
-      proposed: Math.round(s.plannedBreathMs + s.medianEndLateMs),
-      basis: `observed call end − planned end median ${s.medianEndLateMs} ms over ${s.n} bars (measured breath ${s.medianBreathMs} vs planned ${s.plannedBreathMs})`,
-      apply: true,
+      constant: 'CALL_BREATH_OVERRIDES',
+      current: Object.keys(c.breath?.CALL_BREATH_OVERRIDES ?? {}).length,
+      proposed: 'none',
+      status: 'superseded',
+      basis: `the ${slotRows.length} slots agree within ${Math.round(Math.max(...lateByslot) - Math.min(...lateByslot))} ms — the global shift above covers them; per-slot overrides are for a slot that disagrees with its neighbours`,
     })
+  } else {
+    for (const [slot, s] of slotRows) {
+      if (Math.abs(s.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
+      const override = c.breath?.CALL_BREATH_OVERRIDES?.[slot] ?? null
+      proposals.push({
+        constant: `CALL_BREATH_OVERRIDES['${slot}']`,
+        current: override ?? `derived ${s.plannedBreathMs}`,
+        proposed: Math.round(s.plannedBreathMs + s.medianEndLateMs),
+        basis: `observed call end − planned end median ${s.medianEndLateMs} ms over ${s.n} bars (measured breath ${s.medianBreathMs} vs planned ${s.plannedBreathMs})`,
+        apply: true,
+      })
+    }
+    for (const [vocab, v] of Object.entries(breathByVocab)) {
+      if (v.n < 10 || v.medianEndLateMs === null || Math.abs(v.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
+      const dense = c.breath?.DENSE_BREATH_MS?.[vocab] ?? null
+      proposals.push({ constant: `DENSE_BREATH_MS.${vocab}`, current: dense, proposed: dense === null ? null : Math.round(dense + v.medianEndLateMs), basis: `${vocab} calls end late by median ${v.medianEndLateMs} ms over ${v.n} bars`, apply: dense !== null })
+    }
   }
-  for (const [vocab, v] of Object.entries(breathByVocab)) {
-    if (v.n < 10 || v.medianEndLateMs === null || Math.abs(v.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
-    const dense = c.breath?.DENSE_BREATH_MS?.[vocab] ?? null
-    proposals.push({ constant: `DENSE_BREATH_MS.${vocab}`, current: dense, proposed: dense === null ? null : Math.round(dense + v.medianEndLateMs), basis: `${vocab} calls end late by median ${v.medianEndLateMs} ms over ${v.n} bars`, apply: dense !== null })
-  }
+  // The floor only needs raising when a slot's own shortfall would push it
+  // below the floor — a uniform lag moves every slot together and leaves the
+  // floor's job unchanged.
   const minBreath = c.breath?.MIN_BREATH_MS ?? null
-  const allLate = Object.values(breathByVocab).map((v) => v.medianEndLateMs).filter((x) => x !== null)
-  if (minBreath !== null && allLate.length > 0 && Math.max(...allLate) >= BREATH_PROPOSAL_MIN_MS) {
-    proposals.push({ constant: 'MIN_BREATH_MS', current: minBreath, proposed: Math.round(minBreath + Math.max(...allLate)), basis: 'the floor must absorb the largest measured late end', apply: true })
+  const worstMeasured = slotRows.length > 0 ? Math.min(...slotRows.map(([, s]) => s.medianBreathMs)) : null
+  if (minBreath !== null && worstMeasured !== null && worstMeasured < minBreath) {
+    proposals.push({
+      constant: 'MIN_BREATH_MS',
+      current: minBreath,
+      proposed: Math.round(minBreath + (minBreath - worstMeasured)),
+      basis: `the tightest slot delivered ${worstMeasured} ms of breath against a ${minBreath} ms floor${uniform ? ' — but the global shift above is the real cause; revisit after applying it' : ''}`,
+      apply: !uniform,
+    })
   }
 
   // Audio output latency: the armed-path onset median is the playhead's own lag.

@@ -169,7 +169,10 @@ function derivedLabels(issue, phaseIndex, isEpic = false) {
   labels.add(`phase:${phaseIndex}`)
   if (!isEpic) {
     labels.add(`area:${issue.areaSlug}`)
-    labels.add(issue.priority)
+    // Priority is optional: the [LOOP] verification issues carry none, and
+    // adding `undefined` to the set ships a literal "undefined" label.
+    if (issue.priority) labels.add(issue.priority)
+    for (const extra of issue.extraLabels ?? []) labels.add(extra)
     if (issue.sprint === 'sprint-1') labels.add('sprint-1')
     if (issue.hardwareRequired) labels.add('hardware-required')
     if (issue.goNoGo) labels.add('go-no-go')
@@ -229,10 +232,20 @@ async function seedIssues(msByKey, epicByPhase, allExisting) {
   const created = [] // {frag, issue, ghInfo}
   for (const frag of FRAGMENTS) {
     for (const issue of frag.issues) {
-      const title = `${issue.key} ${issue.title}`
+      // `key: null` means the title IS the title. The [LOOP] per-workout
+      // issues are matched by EXACT title — by this seeder's idempotency
+      // check and by verify-suite.mjs --gh-ledger — so an `M39-x ` prefix
+      // would fork every one of them into a duplicate.
+      const title = issue.key ? `${issue.key} ${issue.title}` : issue.title
       const ms = msByKey.get(issue.milestoneKey)
       const labels = derivedLabels(issue, frag.phase, false)
-      const bodyWithHeader = `> Milestone: **${issue.milestoneKey}** · Phase ${frag.phase} · Epic: ${frag.epic.title} · Area: ${STATIC.areaSlugToName[issue.areaSlug] || issue.areaSlug}\n\n${issue.body}`
+      const headerParts = [
+        ...(issue.milestoneKey ? [`Milestone: **${issue.milestoneKey}**`] : []),
+        `Phase ${frag.phase}`,
+        `Epic: ${frag.epic.title}`,
+        `Area: ${STATIC.areaSlugToName[issue.areaSlug] || issue.areaSlug}`,
+      ]
+      const bodyWithHeader = `> ${headerParts.join(' · ')}\n\n${issue.body}`
       const info = await findOrCreateIssue({ title, body: bodyWithHeader, labels, milestoneTitle: ms?.title }, allExisting)
       if (!info) continue
       if (info.created) { summary.issues.c++; log(`Issue ${issue.key} ${issue.title.slice(0, 60)}`) } else { summary.issues.s++ }

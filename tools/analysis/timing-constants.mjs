@@ -36,13 +36,46 @@ export function readNumberConst(source, name) {
   return m ? Number(m[1].replace(/_/g, '')) : null
 }
 
-/** `export const NAME = { numbers: 1, techniques: 2 }` → object, else null. */
-export function readRecordConst(source, name) {
+/**
+ * `export const NAME = { numbers: 1, techniques: 2 }` → object, else null.
+ *
+ * Values may be SUMS OF NAMED CONSTANTS rather than literals — the runner
+ * writes `numbers: CALL_PAD_MS + NUMBERS_CALL_LEAD_MS`, and a literals-only
+ * reader returned `{}` for the one record every breath proposal is keyed to.
+ * `scope` resolves those names; an unresolvable term drops that entry rather
+ * than guessing.
+ */
+export function readRecordConst(source, name, scope = {}) {
   const m = source.match(new RegExp(`(?:export )?const ${name}[^=]*=\\s*\\{([^}]*)\\}`))
   if (!m) return null
   const out = {}
-  for (const pair of m[1].matchAll(/([a-zA-Z_]+)\s*:\s*(-?[0-9_.]+)/g)) out[pair[1]] = Number(pair[2].replace(/_/g, ''))
+  for (const pair of m[1].matchAll(/([a-zA-Z_]+)\s*:\s*([^,\n]+)/g)) {
+    const value = evalSum(pair[2], scope)
+    if (value !== null) out[pair[1]] = value
+  }
   return out
+}
+
+/** `A + B - 12` where each term is a number or a name in `scope`. Null if any term is unknown. */
+export function evalSum(expression, scope = {}) {
+  const cleaned = expression.split('//')[0].trim().replace(/,$/, '')
+  if (cleaned.length === 0) return null
+  const terms = cleaned.match(/[+-]?\s*[A-Za-z0-9_.]+/g)
+  if (!terms) return null
+  let total = 0
+  for (const raw of terms) {
+    const sign = raw.trim().startsWith('-') ? -1 : 1
+    const term = raw.replace(/^[+-]\s*/, '').trim()
+    if (term.length === 0) return null
+    const asNumber = Number(term.replace(/_/g, ''))
+    if (Number.isFinite(asNumber)) {
+      total += sign * asNumber
+      continue
+    }
+    if (!(term in scope) || typeof scope[term] !== 'number') return null
+    total += sign * scope[term]
+  }
+  return total
 }
 
 /** `CALL_BREATH_OVERRIDES: Record<string, number> = { 'slot': 123, … }` → object. */
@@ -77,8 +110,22 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
     RAIL_K_MS_spine: readNumberConst(spine, 'RAIL_K_MS'),
     source: RHYTHM_MAP,
   }
+  // Read the plain leads first: DENSE_BREATH_MS is expressed in terms of them.
+  const leadScope = {}
+  for (const name of [
+    'LEAD_IN_PAD_MS',
+    'CALL_PAD_MS',
+    'TECHNIQUE_CALL_LEAD_MS',
+    'TECHNIQUE_LEADIN_LEAD_MS',
+    'NUMBERS_CALL_LEAD_MS',
+    'METRONOME_SWAP_LEAD_MS',
+    'AVATAR_LEAD_MS',
+  ]) {
+    const value = readNumberConst(runner, name)
+    if (value !== null) leadScope[name] = value
+  }
   const breath = {
-    DENSE_BREATH_MS: readRecordConst(runner, 'DENSE_BREATH_MS'),
+    DENSE_BREATH_MS: readRecordConst(runner, 'DENSE_BREATH_MS', leadScope),
     MIN_BREATH_MS: readNumberConst(runner, 'MIN_BREATH_MS'),
     BREATH_REF_SLOT_MS: readNumberConst(runner, 'BREATH_REF_SLOT_MS'),
     BREATH_TRACK_GAIN: readNumberConst(runner, 'BREATH_TRACK_GAIN'),
