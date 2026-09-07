@@ -37,10 +37,11 @@ function harness(options: Partial<ConstructorParameters<typeof SimulatedPunchSou
 }
 
 describe('script catalogue', () => {
-  it('contains exactly the three declared scripts', () => {
+  it('contains exactly the declared scripts', () => {
     expect(Object.keys(SIM_SCRIPTS).sort()).toEqual([
       'alternating-1-2',
       'burst',
+      'captured-jam',
       'combo-1-2-3-2',
     ])
   })

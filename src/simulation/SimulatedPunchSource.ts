@@ -257,6 +257,14 @@ export class SimulatedPunchSource implements PunchEventSource {
       event.velocityUnit = 'tracker-unit'
     }
 
+    // Acceleration rides the same gate as velocity: both are raw tracker
+    // readings from the same record. Emitted only when the script supplies
+    // one, so the existing scripts keep their previous byte-for-byte shape
+    // rather than gaining a fabricated axis.
+    if (this.opts.velocity && step.accelerationRaw !== undefined) {
+      event.accelerationRaw = step.accelerationRaw
+    }
+
     // punchType is deliberately absent: the capability says 'none', and a
     // source that emitted it would let a consumer build on a tier the real
     // hardware cannot reach (D12).
