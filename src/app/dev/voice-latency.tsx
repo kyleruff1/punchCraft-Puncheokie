@@ -1,8 +1,40 @@
 /**
- * M34-01 voice latency spike harness (#195). **Throwaway — spike branch only.**
+ * M34-01 voice latency spike harness (#195), extended for the instrument.
  *
  * Answers one question: can a cached clip be made audible within a bounded,
  * low-jitter delay of the moment it was asked for, on the TB125FU?
+ *
+ * ## The ARMED cases, and why they were added
+ *
+ * The original `preloaded` case measured 149.9 ms median on this tablet
+ * (docs/puncheokie-voice-spike.md:92) — a number since used to argue that
+ * expo-audio is too slow to monitor a live instrument on. But that case
+ * calls `seekTo(0)` and then starts the clock BEFORE `play()`, and `seekTo`
+ * is async, so the seek is still in flight while the clock runs. The
+ * shipping instrument never does that: `fireOneShot` arms its pooled player
+ * ahead of time and its hot path is a bare `player.play()` with zero awaits
+ * (InstrumentVoiceOutput.ts:400-407).
+ *
+ * `armed` reproduces that faithfully — same player, same clip, same timing
+ * method, with the arming AWAITED before the clock starts. The gap between
+ * `preloaded` and `armed` is therefore the cost of the seek, not of the
+ * audio engine. `armed-kit` repeats it on a real rendered kit one-shot so
+ * the figure includes the shipped file's decode and attack.
+ *
+ * ## What the answer decides
+ *
+ * Whether the tablet can host silent live monitoring on expo-audio, or
+ * whether the instrument needs a low-latency engine (Oboe/AAudio). The
+ * tablet declares `android.hardware.audio.low_latency` and AudioFlinger
+ * shows a fast path at ~10 ms sitting COLD_IDLE, but media3 floors its PCM
+ * buffer at 250 ms, so our tracks run at Flags 0x000 and never reach it.
+ *
+ *   armed median <= 40 ms and jitter <= 15 ms  -> ship on expo-audio
+ *   armed median >  60 ms or  jitter >  25 ms  -> migrate the instrument
+ *
+ * Jitter is still the gate, not the median: a constant offset cancels out
+ * of p95 - median, and for an instrument bounded jitter matters more than a
+ * low average.
  *
  * ## What is actually being timed
  *
@@ -40,6 +72,7 @@ import * as Speech from 'expo-speech'
 import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 
 import { colors } from '@/theme/colors'
+import { INSTRUMENT_KIT_DRUMS } from '@audio/voiceAssets/instrumentBankManifest'
 
 /** Doc §19.2: report p95, never an average. */
 const REPS = 30
@@ -64,7 +97,7 @@ const SHORT_CLIP = require('../../../assets/spike-voice/tone-short.wav')
 const LONG_CLIP = require('../../../assets/spike-voice/tone-long.wav')
 /* eslint-enable @typescript-eslint/no-require-imports */
 
-type CaseId = 'preloaded' | 'cold' | 'tts-phrase' | 'tts-number'
+type CaseId = 'preloaded' | 'armed' | 'armed-kit' | 'cold' | 'tts-phrase' | 'tts-number'
 
 interface CaseResult {
   id: CaseId
@@ -122,6 +155,80 @@ async function timeToPlayheadMove(player: AudioPlayer, timeoutMs = 3_000): Promi
     // being waited for.
     await new Promise<void>((resolve) => setTimeout(resolve, 1))
   }
+}
+
+/**
+ * Park a player at zero the way `InstrumentVoiceOutput` arms its pool
+ * (InstrumentVoiceOutput.ts:383-399), and AWAIT it.
+ *
+ * Pause FIRST, then seek: a player parked "playing" at end-of-stream resumes
+ * on a lone `seekTo(0)` — the voice-storm lesson. Awaiting the seek is the
+ * whole point: arming must be finished before the clock starts, or the
+ * measurement swallows it.
+ */
+async function armPlayer(player: AudioPlayer): Promise<void> {
+  try {
+    player.pause()
+  } catch {
+    // Already stopped at end-of-stream.
+  }
+  await Promise.resolve(player.seekTo(0)).catch(() => undefined)
+  // seekTo resolving is not proof the playhead landed; give the native side
+  // a beat, then verify. Bounded so a stalled seek cannot hang the run.
+  for (let i = 0; i < 40 && player.currentTime > 0.001; i += 1) await sleep(5)
+}
+
+/**
+ * Time the INSTRUMENT's real hot path: one bare `play()` on an ALREADY-ARMED
+ * player, with no seek inside the measurement.
+ *
+ * This is the case the original harness never covered. Its `preloaded` case
+ * calls `seekTo(0)` and then starts the clock before `play()` (see
+ * `timeToFirstSample`), and `seekTo` is async — so the seek is still in
+ * flight when the clock is running and its cost lands in the number. The
+ * shipping instrument does not do that: `fireOneShot` arms the player ahead
+ * of time and the hot path is `player.play()` alone, zero awaits
+ * (InstrumentVoiceOutput.ts:400-407).
+ *
+ * The gap between this and `preloaded` is therefore the cost of the seek,
+ * not of the engine — which is exactly what has to be separated before
+ * deciding whether the audio engine needs replacing at all.
+ */
+async function timeArmedPlay(
+  player: AudioPlayer,
+  method: 'sampling' | 'playhead',
+  timeoutMs = 3_000,
+): Promise<number | null> {
+  if (method === 'playhead') {
+    const startedAt = performance.now()
+    player.play()
+    for (;;) {
+      if (player.currentTime > 0) return performance.now() - startedAt
+      if (performance.now() - startedAt > timeoutMs) return null
+      await new Promise<void>((resolve) => setTimeout(resolve, 1))
+    }
+  }
+  return new Promise((resolve) => {
+    let settled = false
+    const subscription = player.addListener('audioSampleUpdate', (sample: AudioSample) => {
+      if (settled) return
+      const peak = sample.channels[0]?.frames.reduce((m, f) => Math.max(m, Math.abs(f)), 0) ?? 0
+      if (peak < 0.01) return
+      settled = true
+      const elapsed = performance.now() - startedAt
+      subscription.remove()
+      resolve(elapsed)
+    })
+    setTimeout(() => {
+      if (settled) return
+      settled = true
+      subscription.remove()
+      resolve(null)
+    }, timeoutMs)
+    // NOTHING between the clock and play(). That is the measurement.
+    const startedAt = performance.now()
+    player.play()
+  })
 }
 
 /**
@@ -260,6 +367,59 @@ export default function VoiceLatencySpike(): React.JSX.Element {
         setResults((r) => [
           ...r,
           summarize('preloaded', 'Preloaded clip', warm, `method: ${methodRef.current}`),
+        ])
+
+        // --- (a2) ARMED — the instrument's real hot path -------------------
+        // Same player, same clip, same timing method as (a). The ONLY
+        // difference is that the seek happens BEFORE the clock rather than
+        // inside it. Any gap between (a) and (a2) is the seek, not the
+        // engine — and that distinction decides whether expo-audio needs
+        // replacing for live monitoring at all.
+        const armedWarm: number[] = []
+        for (let i = 0; i < REPS; i += 1) {
+          await armPlayer(preloaded)
+          const ms = await timeArmedPlay(preloaded, methodRef.current)
+          if (ms !== null) armedWarm.push(ms)
+          say(`armed ${i + 1}/${REPS}: ${ms === null ? 'TIMEOUT' : `${ms.toFixed(1)} ms`}`)
+          await sleep(REP_GAP_MS)
+        }
+        setResults((r) => [
+          ...r,
+          summarize(
+            'armed',
+            'ARMED player — instrument hot path',
+            armedWarm,
+            `bare play(), no seek in the measurement; method: ${methodRef.current}`,
+          ),
+        ])
+
+        // --- (a3) ARMED, real kit one-shot --------------------------------
+        // (a2) uses the spike's synthetic tone, which starts at full
+        // amplitude on sample zero — ideal for isolating latency, but not
+        // what ships. This repeats it on an actual rendered kit clip so the
+        // number includes the real file's decode and its attack ramp.
+        const kitClip = INSTRUMENT_KIT_DRUMS['snare-center']
+        const kitPlayer = createAudioPlayer(kitClip.module, PLAYER_OPTIONS)
+        if (methodRef.current === 'sampling') kitPlayer.setAudioSamplingEnabled(true)
+        for (let i = 0; i < 50 && !kitPlayer.isLoaded; i += 1) await sleep(50)
+        say(`kit player (snare-center) loaded=${String(kitPlayer.isLoaded)}`)
+        const armedKit: number[] = []
+        for (let i = 0; i < REPS; i += 1) {
+          await armPlayer(kitPlayer)
+          const ms = await timeArmedPlay(kitPlayer, methodRef.current)
+          if (ms !== null) armedKit.push(ms)
+          say(`armed-kit ${i + 1}/${REPS}: ${ms === null ? 'TIMEOUT' : `${ms.toFixed(1)} ms`}`)
+          await sleep(REP_GAP_MS)
+        }
+        releaseAudioPlayer(kitPlayer)
+        setResults((r) => [
+          ...r,
+          summarize(
+            'armed-kit',
+            'ARMED player — real kit one-shot',
+            armedKit,
+            `snare-center from the shipped bank; method: ${methodRef.current}`,
+          ),
         ])
 
         // --- (b) cold -----------------------------------------------------
