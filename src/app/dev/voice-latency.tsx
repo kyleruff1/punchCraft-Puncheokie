@@ -78,6 +78,11 @@ import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 
 import { colors } from '@/theme/colors'
 import { INSTRUMENT_KIT_DRUMS } from '@audio/voiceAssets/instrumentBankManifest'
+import { SIM_SCRIPTS } from '@simulation/scripts'
+import {
+  createRollingScaler,
+  HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
+} from '@domain/instrument/rollingScale'
 
 /** Doc §19.2: report p95, never an average. */
 const REPS = 30
@@ -372,6 +377,74 @@ async function timeArmedOboe(
 }
 
   /**
+   * Read the RENDERED amplitude of each captured punch — silently.
+   *
+   * The analyser sits upstream of `destination`, so it sees the graph's own
+   * samples regardless of output volume: the tablet can be muted and this
+   * still measures real audio. No microphone, no noise, no ear required.
+   *
+   * What it proves: that the acceleration retune actually spreads dynamics in
+   * the audio, not merely in the numbers. Before the retune a quarter of these
+   * punches pinned at MIDI 127; if the fix works, the measured peaks should
+   * spread instead of clustering at the top.
+   */
+  const probeDynamics = useCallback(async () => {
+    try {
+      const ctx = new OboeAudioContext({ sampleRate: 48000 })
+      const buffer = await ctx.decodeAudioData(INSTRUMENT_KIT_DRUMS['snare-center'].module)
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 2048
+      // Silent by construction. A Web Audio node is only PULLED if it has a
+      // path to `destination`, so the analyser cannot simply be left dangling
+      // — it would never be fed. Routing it through a zero gain keeps the
+      // graph rendering (so the analyser sees real samples) while nothing
+      // reaches the speaker. That is what makes this measurable with the room
+      // quiet and no microphone involved.
+      const mute = ctx.createGain()
+      mute.gain.value = 0
+      analyser.connect(mute)
+      mute.connect(ctx.destination)
+      const frame = new Uint8Array(analyser.fftSize)
+
+      const scaler = createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS)
+      const captured = SIM_SCRIPTS['captured-jam']
+      const peaks: number[] = []
+
+      for (const step of captured) {
+        const accel01 = scaler.scale('right', step.accelerationRaw)
+        // The §9 uppercut lane, the same curve the kit uses.
+        const midi = Math.round(75 + 52 * Math.pow(accel01, 0.72))
+        const source = ctx.createBufferSource()
+        source.buffer = buffer
+        const level = ctx.createGain()
+        level.gain.value = midi / 127
+        source.connect(level)
+        level.connect(analyser)
+        source.start(0)
+
+        // Sample the graph across the clip's attack and keep the loudest frame.
+        let peak = 0
+        for (let i = 0; i < 24; i += 1) {
+          analyser.getByteTimeDomainData(frame)
+          for (let n = 0; n < frame.length; n += 1) {
+            peak = Math.max(peak, Math.abs((frame[n] ?? 128) - 128))
+          }
+          await sleep(4)
+        }
+        peaks.push(peak)
+        say(`aRaw ${String(step.accelerationRaw).padStart(3)} → midi ${midi} → peak ${peak}`)
+        await sleep(120)
+      }
+
+      const pinned = peaks.filter((p) => p >= Math.max(...peaks) - 1).length
+      say(`RENDERED peaks: min ${Math.min(...peaks)} max ${Math.max(...peaks)} distinct ${new Set(peaks).size}/${peaks.length}, at-max ${pinned}`)
+      void ctx.close().catch(() => undefined)
+    } catch (err) {
+      say(`dynamics probe FAILED: ${err instanceof Error ? err.message : String(err)}`)
+    }
+  }, [say])
+
+  /**
    * Step 0 probe (audio-engine-migration.md): does the Oboe native module
    * actually resolve, and will it open a stream?
    *
@@ -656,6 +729,14 @@ async function timeArmedOboe(
           testID="probe-oboe"
         >
           <Text style={styles.buttonText}>Probe Oboe</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => void probeDynamics()}
+          style={styles.button}
+          testID="probe-dynamics"
+        >
+          <Text style={styles.buttonText}>Probe Dynamics (silent)</Text>
         </Pressable>
       </View>
 
