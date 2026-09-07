@@ -3721,8 +3721,39 @@
       "targetStrikeMs": 238833
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 98,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s2",
+      "clipId": "li-4c3a8e05",
+      "text": "One, one, two — double-time, thirty-four bars. Quick double one, two. Stop on the empty slot every time.",
+      "durationMs": 8251,
+      "expectedStartTick": 53279,
+      "expectedStartMs": 55499,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s3",
+      "clipId": "li-38565a86",
+      "text": "Two, three, two — double-time, eighteen bars. Fast triple, then clear the page.",
+      "durationMs": 7120,
+      "expectedStartTick": 123485,
+      "expectedStartMs": 128630,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s4",
+      "clipId": "li-d7997ba6",
+      "text": "One, two, three — time-and-a-half, thirty-two bars. One, two, three, breathe. Keep the hook compact.",
+      "durationMs": 8920,
+      "expectedStartTick": 160157,
+      "expectedStartMs": 166830,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 94,
   "silentByDesign": [],
   "notes": []
 }

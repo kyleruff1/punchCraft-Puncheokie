@@ -2125,8 +2125,39 @@
       "targetStrikeMs": 236700
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 57,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s2",
+      "clipId": "li-27e595f5",
+      "text": "Coast bar — one-bee, two-bee, empty, empty, straight time, nine bars. Two body shots, then stand back up tall.",
+      "durationMs": 8174,
+      "expectedStartTick": 61033,
+      "expectedStartMs": 63576,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s3",
+      "clipId": "li-62b25be2",
+      "text": "One, two-bee, three — time-and-a-half, twenty-two bars. Head one, body two-bee, then the hook comes back upstairs.",
+      "durationMs": 8747,
+      "expectedStartTick": 106563,
+      "expectedStartMs": 111003,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s4",
+      "clipId": "li-3646ca50",
+      "text": "Two-bee, three-bee, two-bee — straight time, thirteen bars. All downstairs. Elbows in, eyes up.",
+      "durationMs": 8422,
+      "expectedStartTick": 162171,
+      "expectedStartMs": 168928,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 56,
   "silentByDesign": [],
   "notes": []
 }

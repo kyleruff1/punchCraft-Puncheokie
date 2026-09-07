@@ -3157,8 +3157,39 @@
       "targetStrikeMs": 238625
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 82,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s2",
+      "clipId": "li-804a57cf",
+      "text": "One, two, three, two — straight time, fifteen bars. The four-count with the hips in it. Finish on the cross.",
+      "durationMs": 8720,
+      "expectedStartTick": 56669,
+      "expectedStartMs": 59030,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s3",
+      "clipId": "li-984be989",
+      "text": "Two, three, two — time-and-a-half, twenty-six bars. Rear hand, hook, rear hand. Heavy, not slow.",
+      "durationMs": 8000,
+      "expectedStartTick": 118800,
+      "expectedStartMs": 123750,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s4",
+      "clipId": "li-e6097f09",
+      "text": "One, two, three — double-time, twenty-six bars. Quick one, two, then the hook lands with weight.",
+      "durationMs": 7354,
+      "expectedStartTick": 173180,
+      "expectedStartMs": 180396,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 78,
   "silentByDesign": [],
   "notes": []
 }

@@ -2293,8 +2293,39 @@
       "targetStrikeMs": 238059
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 56,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-uppercut-lane/r1s2",
+      "clipId": "li-6b9ceca4",
+      "text": "Five, six, five — time-and-a-half, sixteen bars. Uppercuts only, lead, rear, lead. Rip them short.",
+      "durationMs": 7960,
+      "expectedStartTick": 73436,
+      "expectedStartMs": 76495.88235294117,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-uppercut-lane/r1s3",
+      "clipId": "li-df2437cb",
+      "text": "One, six, three, two — straight time, eight bars. Jab, rear uppercut, hook, cross. Level up, then over.",
+      "durationMs": 8680,
+      "expectedStartTick": 121535,
+      "expectedStartMs": 126599.41176470587,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-uppercut-lane/r1s4",
+      "clipId": "li-c48cc869",
+      "text": "One, five, two — double-time, nineteen bars. Jab, lead uppercut, cross. Quick up the middle, then finish long.",
+      "durationMs": 9000,
+      "expectedStartTick": 170019,
+      "expectedStartMs": 177102.94117647057,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 55,
   "silentByDesign": [],
   "notes": []
 }

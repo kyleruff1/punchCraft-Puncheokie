@@ -2701,8 +2701,39 @@
       "targetStrikeMs": 238350
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 70,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s2",
+      "clipId": "li-e4cf45f6",
+      "text": "One, one, two — straight time, nine bars. Double the lead, then the rear hand. The fourth slot is quiet.",
+      "durationMs": 8112,
+      "expectedStartTick": 61092,
+      "expectedStartMs": 63638,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s3",
+      "clipId": "li-f2c2a9ac",
+      "text": "One-bee, one, two — time-and-a-half, eighteen bars. Body one-bee, head one, then the rear hand. Reset on the empty slot.",
+      "durationMs": 9066,
+      "expectedStartTick": 106257,
+      "expectedStartMs": 110684,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s4",
+      "clipId": "li-73c4911c",
+      "text": "One, one, two — double-time, thirty bars. Quick double one, two. Stay long, stay loose.",
+      "durationMs": 8475,
+      "expectedStartTick": 152904,
+      "expectedStartMs": 159275,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 68,
   "silentByDesign": [],
   "notes": []
 }

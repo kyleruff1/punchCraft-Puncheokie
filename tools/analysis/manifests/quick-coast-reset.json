@@ -1585,8 +1585,49 @@
       "targetStrikeMs": 236100
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 41,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-coast-reset/r1s2",
+      "clipId": "li-223c9e4d",
+      "text": "Coast bar — one, then three empty slots, straight time, eight bars. One shot, then recover on your feet. The empty slots are the work.",
+      "durationMs": 9960,
+      "expectedStartTick": 40886,
+      "expectedStartMs": 42590,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-coast-reset/r1s3",
+      "clipId": "li-b5b386a8",
+      "text": "Pump: twos only, double-time — ten bars. Rear hand, fast and straight. Then we breathe.",
+      "durationMs": 6914,
+      "expectedStartTick": 85283,
+      "expectedStartMs": 88836,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-coast-reset/r1s4",
+      "clipId": "li-97e8d9af",
+      "text": "One, two — with a hold after each, straight time, fourteen bars. Punch, wait, punch, wait. Reset between every shot.",
+      "durationMs": 8947,
+      "expectedStartTick": 110979,
+      "expectedStartMs": 115603,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-coast-reset/r1s5",
+      "clipId": "li-b6cbec5d",
+      "text": "Coast bar — two, three, empty, empty, straight time, nine bars. Cross, hook, then stand tall and breathe.",
+      "durationMs": 8260,
+      "expectedStartTick": 180758,
+      "expectedStartMs": 188290,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 48,
   "silentByDesign": [],
   "notes": []
 }

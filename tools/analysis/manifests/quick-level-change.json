@@ -2881,8 +2881,39 @@
       "targetStrikeMs": 239000
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 68,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s2",
+      "clipId": "li-076d2bde",
+      "text": "One, two, one-bee, two — straight time, ten bars. High, high, low, high. The stance never changes.",
+      "durationMs": 8720,
+      "expectedStartTick": 65117,
+      "expectedStartMs": 67830,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s3",
+      "clipId": "li-e8a61589",
+      "text": "One, one-bee, two — double-time, twenty bars. Head one, body one, two. Quick level change, clean exit.",
+      "durationMs": 8560,
+      "expectedStartTick": 115958,
+      "expectedStartMs": 120790,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s4",
+      "clipId": "li-7e5aefd1",
+      "text": "One-bee, two, one, two — time-and-a-half, twenty-four bars. Start low, finish high. Bend the knees, not the back.",
+      "durationMs": 8151,
+      "expectedStartTick": 167039,
+      "expectedStartMs": 173999,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 67,
   "silentByDesign": [],
   "notes": []
 }

@@ -2197,8 +2197,39 @@
       "targetStrikeMs": 238353
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 56,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-southpaw-mirror/r1s2",
+      "clipId": "li-42c47c8a",
+      "text": "One, one, two — straight time, eight bars. Double the lead, then the rear hand. Notice which foot is forward.",
+      "durationMs": 7489,
+      "expectedStartTick": 73888,
+      "expectedStartMs": 76966.88235294117,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-southpaw-mirror/r1s3",
+      "clipId": "li-2295a31e",
+      "text": "One, two, three — double-time, seventeen bars. Quick one, two, hook. Same shape you will mirror next round.",
+      "durationMs": 8179,
+      "expectedStartTick": 122016,
+      "expectedStartMs": 127100.41176470587,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-southpaw-mirror/r1s4",
+      "clipId": "li-20853f56",
+      "text": "One, two-bee, three — time-and-a-half, eighteen bars. Head, body, hook. Remember this set — it comes back the other way.",
+      "durationMs": 8544,
+      "expectedStartTick": 173167,
+      "expectedStartMs": 180382.47058823527,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 55,
   "silentByDesign": [],
   "notes": []
 }

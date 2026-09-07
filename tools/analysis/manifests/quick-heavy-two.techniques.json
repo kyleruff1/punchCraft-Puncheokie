@@ -3157,8 +3157,39 @@
       "targetStrikeMs": 238625
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 82,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s2",
+      "clipId": "lt-4c001b43",
+      "text": "Jab, cross, lead hook, cross — straight time, fifteen bars. The four-count with the hips in it. Finish on the cross.",
+      "durationMs": 8354,
+      "expectedStartTick": 57020,
+      "expectedStartMs": 59396,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s3",
+      "clipId": "lt-6e5d73fd",
+      "text": "Cross, lead hook, cross — time-and-a-half, twenty-six bars. Rear hand, hook, rear hand. Heavy, not slow.",
+      "durationMs": 8328,
+      "expectedStartTick": 118485,
+      "expectedStartMs": 123422,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-heavy-two/r1s4",
+      "clipId": "lt-a746ba70",
+      "text": "Jab, cross, lead hook — double-time, twenty-six bars. Quick jab, cross, then the hook lands with weight.",
+      "durationMs": 8591,
+      "expectedStartTick": 171993,
+      "expectedStartMs": 179159,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 78,
   "silentByDesign": [],
   "notes": []
 }

@@ -2269,8 +2269,39 @@
       "targetStrikeMs": 237300
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 46,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s2",
+      "clipId": "li-73982b78",
+      "text": "One, two, three, two — straight time, thirteen bars. The four-count. Let the final cross land behind the hook.",
+      "durationMs": 8600,
+      "expectedStartTick": 69840,
+      "expectedStartMs": 72750,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s3",
+      "clipId": "li-60f6faa9",
+      "text": "Three, two, three — time-and-a-half, eighteen bars. Hook, cross, hook. Keep the elbow up on both threes.",
+      "durationMs": 8642,
+      "expectedStartTick": 134312,
+      "expectedStartMs": 139908,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s4",
+      "clipId": "li-243d8ad7",
+      "text": "One, two, three, four — straight time, nine bars. Both hooks close the bar. Turn the hips, not the shoulders.",
+      "durationMs": 8560,
+      "expectedStartTick": 180470,
+      "expectedStartMs": 187990,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 54,
   "silentByDesign": [],
   "notes": []
 }

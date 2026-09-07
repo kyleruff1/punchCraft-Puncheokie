@@ -2125,8 +2125,39 @@
       "targetStrikeMs": 236700
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 57,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s2",
+      "clipId": "lt-8ea5723a",
+      "text": "Coast bar — body jab, body cross, empty, empty, straight time, nine bars. Two body shots, then stand back up tall.",
+      "durationMs": 8173,
+      "expectedStartTick": 61034,
+      "expectedStartMs": 63577,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s3",
+      "clipId": "lt-77232573",
+      "text": "Jab, body cross, lead hook — time-and-a-half, twenty-two bars. Head jab, body cross, then the hook comes back upstairs.",
+      "durationMs": 8741,
+      "expectedStartTick": 106569,
+      "expectedStartMs": 111009,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-downstairs/r1s4",
+      "clipId": "lt-cc003918",
+      "text": "Body cross, body lead hook, body cross — straight time, thirteen bars. All downstairs. Elbows in, eyes up.",
+      "durationMs": 8840,
+      "expectedStartTick": 161770,
+      "expectedStartMs": 168510,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 56,
   "silentByDesign": [],
   "notes": []
 }

@@ -2269,8 +2269,39 @@
       "targetStrikeMs": 237300
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 46,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s2",
+      "clipId": "lt-291e4053",
+      "text": "Jab, cross, lead hook, cross — straight time, thirteen bars. The four-count. Let the final cross land behind the hook.",
+      "durationMs": 8432,
+      "expectedStartTick": 70001,
+      "expectedStartMs": 72918,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s3",
+      "clipId": "lt-9daececc",
+      "text": "Lead hook, cross, lead hook — time-and-a-half, eighteen bars. Hook, cross, hook. Keep the elbow up on both lead hooks.",
+      "durationMs": 8745,
+      "expectedStartTick": 134213,
+      "expectedStartMs": 139805,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-hook-line/r1s4",
+      "clipId": "lt-523bb891",
+      "text": "Jab, cross, lead hook, rear hook — straight time, nine bars. Both hooks close the bar. Turn the hips, not the shoulders.",
+      "durationMs": 9000,
+      "expectedStartTick": 180048,
+      "expectedStartMs": 187550,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 53,
   "silentByDesign": [],
   "notes": []
 }

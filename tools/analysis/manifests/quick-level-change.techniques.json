@@ -2881,8 +2881,39 @@
       "targetStrikeMs": 239000
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 68,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s2",
+      "clipId": "lt-50caf372",
+      "text": "Jab, cross, body jab, cross — straight time, ten bars. High, high, low, high. The stance never changes.",
+      "durationMs": 8558,
+      "expectedStartTick": 65272,
+      "expectedStartMs": 67992,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s3",
+      "clipId": "lt-49784884",
+      "text": "Jab, body jab, cross — double-time, twenty bars. Head jab, body jab, cross. Quick level change, clean exit.",
+      "durationMs": 8769,
+      "expectedStartTick": 115758,
+      "expectedStartMs": 120581,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-level-change/r1s4",
+      "clipId": "lt-bb2ec526",
+      "text": "Body jab, cross, jab, cross — time-and-a-half, twenty-four bars. Start low, finish high. Bend the knees, not the back.",
+      "durationMs": 8736,
+      "expectedStartTick": 166477,
+      "expectedStartMs": 173414,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 67,
   "silentByDesign": [],
   "notes": []
 }

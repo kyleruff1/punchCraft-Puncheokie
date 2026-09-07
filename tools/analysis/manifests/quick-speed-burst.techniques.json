@@ -3721,8 +3721,39 @@
       "targetStrikeMs": 238833
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 98,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s2",
+      "clipId": "lt-a9a7376c",
+      "text": "Jab, jab, cross — double-time, thirty-four bars. Quick double jab, cross. Stop on the empty slot every time.",
+      "durationMs": 8231,
+      "expectedStartTick": 53298,
+      "expectedStartMs": 55519,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s3",
+      "clipId": "lt-987eb56b",
+      "text": "Cross, lead hook, cross — double-time, eighteen bars. Fast triple, then clear the page.",
+      "durationMs": 7504,
+      "expectedStartTick": 123116,
+      "expectedStartMs": 128246,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-speed-burst/r1s4",
+      "clipId": "lt-2f49a0da",
+      "text": "Jab, cross, lead hook — time-and-a-half, thirty-two bars. Jab, cross, lead hook, breathe. Keep the hook compact.",
+      "durationMs": 8480,
+      "expectedStartTick": 160579,
+      "expectedStartMs": 167270,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 93,
   "silentByDesign": [],
   "notes": []
 }

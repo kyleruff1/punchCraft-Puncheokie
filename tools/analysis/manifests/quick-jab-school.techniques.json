@@ -2701,8 +2701,39 @@
       "targetStrikeMs": 238350
     }
   ],
-  "coachEvents": [],
-  "expectedCallBars": 70,
+  "coachEvents": [
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s2",
+      "clipId": "lt-6e95c406",
+      "text": "Jab, jab, cross — straight time, nine bars. Double the lead, then the rear hand. The fourth slot is quiet.",
+      "durationMs": 7433,
+      "expectedStartTick": 61744,
+      "expectedStartMs": 64317,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s3",
+      "clipId": "lt-7e40ad86",
+      "text": "Body jab, jab, cross — time-and-a-half, eighteen bars. Body jab, head jab, then the rear hand. Reset on the empty slot.",
+      "durationMs": 8760,
+      "expectedStartTick": 106550,
+      "expectedStartMs": 110990,
+      "source": "clickScript.schedule"
+    },
+    {
+      "kind": "lead-in",
+      "slot": "lead-in/quick-jab-school/r1s4",
+      "clipId": "lt-18e3e639",
+      "text": "Jab, jab, cross — double-time, thirty bars. Quick double jab, cross. Stay long, stay loose.",
+      "durationMs": 7780,
+      "expectedStartTick": 153571,
+      "expectedStartMs": 159970,
+      "source": "clickScript.schedule"
+    }
+  ],
+  "expectedCallBars": 69,
   "silentByDesign": [],
   "notes": []
 }
