@@ -20,6 +20,7 @@ import { DEFAULT_COUNTDOWN_MS } from '@domain/session/WorkoutSessionClock'
 import { createFakeClock, type FakeClock } from '@testing/fakeClock'
 import { defaultRecipe } from '@domain/workout/WorkoutRecipe'
 import { getLive, resetLive, useLiveStore } from '@state/useWorkoutStore'
+import { replaceSinks, type LogRecord } from '@diagnostics/logger'
 import type { GeneratedWorkout } from '@domain/workout/GeneratedWorkout'
 import type { PunchEventSource } from '@domain/punch/PunchEventSource'
 import type { TrackerPunchEvent, PunchHand } from '@domain/punch/PunchEvent'
@@ -200,6 +201,55 @@ afterEach(() => {
 })
 
 // ---------------------------------------------------------------------------
+
+describe('observer join fields on the runner records (GH #291, C0)', () => {
+  // The log sink prints FIELDS only — a record's own monotonicTimeMs never
+  // reaches logcat — so every timestamp the timing analyzer joins on must
+  // be an explicit field, stamped on the runner's own clock.
+  let records: LogRecord[] = []
+  beforeEach(() => {
+    records = []
+    replaceSinks([{ write: (r) => records.push(r) }])
+  })
+  afterEach(() => {
+    replaceSinks([])
+  })
+  const of = (code: string): LogRecord[] => records.filter((r) => r.code === code)
+  const field = (r: LogRecord, k: string): unknown => r.fields[k]?.value
+
+  it('every round.boundary carries monotonicTimeMs from the runner clock', () => {
+    const h = mount()
+    h.begin()
+    h.step(WORK_MS + TICK_INTERVAL_MS)
+    const boundaries = of('puncheokie.round.boundary')
+    expect(boundaries.map((r) => field(r, 'transition'))).toEqual(
+      expect.arrayContaining(['countdown-entered', 'work-entered', 'rest-entered']),
+    )
+    for (const r of boundaries) {
+      expect(typeof field(r, 'monotonicTimeMs')).toBe('number')
+      expect(field(r, 'monotonicTimeMs')).toBeLessThanOrEqual(h.clock.now())
+    }
+    h.unmount()
+  })
+
+  it('every tokenDue carries scheduledMs, and rings fire within one tick at or after it', () => {
+    const h = mount()
+    h.begin()
+    h.step(WORK_MS + TICK_INTERVAL_MS)
+    const rings = of('puncheokie.cue.tokenDue')
+    expect(rings.length).toBeGreaterThan(0)
+    for (const r of rings) {
+      const scheduled = field(r, 'scheduledMs') as number
+      const fired = field(r, 'workElapsedMs') as number
+      expect(typeof scheduled).toBe('number')
+      // Ring lateness without a manifest: never early, never more than a
+      // tick late on an idle test clock.
+      expect(fired - scheduled).toBeGreaterThanOrEqual(0)
+      expect(fired - scheduled).toBeLessThanOrEqual(TICK_INTERVAL_MS)
+    }
+    h.unmount()
+  })
+})
 
 describe('the bell freezes the round result (doc §23)', () => {
   it('publishes the round the moment rest begins', () => {

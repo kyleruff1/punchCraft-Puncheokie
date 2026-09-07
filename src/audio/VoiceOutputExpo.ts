@@ -1121,7 +1121,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * ceremony, but they never mute other calls (they're not chime-ins;
    * they're standalone asides).
    */
-  playInstruction(clip: { text: string; module: number; durationMs: number }): void {
+  playInstruction(clip: { text: string; module: number; durationMs: number; traceId?: string }): void {
     if (this.failed) return
     this.requestFocus()
     try {
@@ -1129,12 +1129,18 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
+      // Stamped immediately before play(): the timing observer measures its
+      // onset latency from THIS instant, on the same clock as cue.tokenDue.
+      const dispatchMs = this.clock()
       player.play()
       this.markBusy(clip.durationMs)
       logger.info('puncheokie.voice.play', 'instruction playing', {
         kind: safe('instruction'),
         text: safe(clip.text),
         durationMs: safe(clip.durationMs),
+        dispatchMs: safe(Math.round(dispatchMs)),
+        traceId: safe(clip.traceId ?? null),
+        volume: safe(player.volume),
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'instruction did not play', {
@@ -1153,7 +1159,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * can separate "coach's aside" from "coach's block-start command."
    * Same duck posture, same bus advance.
    */
-  playComboAnnounce(clip: { text: string; module: number; durationMs: number }): void {
+  playComboAnnounce(clip: { text: string; module: number; durationMs: number; traceId?: string }): void {
     if (this.failed) return
     this.requestFocus()
     try {
@@ -1161,12 +1167,19 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
+      const dispatchMs = this.clock()
       player.play()
       this.markBusy(clip.durationMs)
       logger.info('puncheokie.voice.play', 'combo-announce playing', {
         kind: safe('combo-announce'),
         text: safe(clip.text),
         durationMs: safe(clip.durationMs),
+        dispatchMs: safe(Math.round(dispatchMs)),
+        traceId: safe(clip.traceId ?? null),
+        // volume 0 here = born inside a chime-in duck window: this line
+        // prints and the athlete hears nothing (the dead-phrasePlayer
+        // restore never reaches a one-shot).
+        volume: safe(player.volume),
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'combo-announce did not play', {
@@ -1186,7 +1199,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * other sounding clip.
    */
   playClickScript(
-    clip: { text: string; module: number; durationMs: number },
+    clip: { text: string; module: number; durationMs: number; traceId?: string },
     opts?: { oneShot?: boolean },
   ): void {
     if (this.failed) return
@@ -1251,6 +1264,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // logs "playing" at correct stride. positionMs ≈ durationMs on a
         // silent rep is that wedge, named.
         const positionMs = Math.round((target.currentTime ?? 0) * 1000)
+        const dispatchMs = this.clock()
         target.play()
         // RE-STAMP the busy window from the moment audio actually starts
         // (Kyle 2026-09-04, "calls out about every other set"): the
@@ -1270,6 +1284,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           volume: safe(target.volume),
           positionMs: safe(positionMs),
           path: safe(path),
+          dispatchMs: safe(Math.round(dispatchMs)),
+          traceId: safe(clip.traceId ?? null),
         })
         // Re-arm for the next bar: once this call has finished, park the
         // player back at 0 during the idle gap so the repeat plays
@@ -1804,6 +1820,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // Rewind first: a clip played twice in a row would otherwise resume from
       // its own end and produce silence.
       player.seekTo(0)
+      const dispatchMs = this.clock()
       player.play()
       // A15: advance the busy window so schedulers know the coach is
       // audible for the length of this clip. `assetDurationMs` reads
@@ -1865,6 +1882,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // volume 0 here = born inside a duck window: audibly SILENT even
         // though this success line printed (the 35s-silence tell).
         volume: safe(player.volume),
+        dispatchMs: safe(Math.round(dispatchMs)),
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'clip did not play', {

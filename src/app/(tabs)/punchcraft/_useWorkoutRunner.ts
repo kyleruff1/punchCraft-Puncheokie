@@ -708,6 +708,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       dispatchAtMs: number
       /** Past this, the clip is no longer useful — skip. */
       giveUpAtMs: number
+      /** Calls only: the bar's first punch, which the call must end a breath before. */
+      firstNodeMs?: number
       state: 'pending' | 'played' | 'skipped'
       /** The section's rep-0 call, sequenced right after its lead-in — exempt from the lead-in collision drop. */
       firstRep?: boolean
@@ -780,6 +782,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
         giveUpAtMs: firstNodeMs + 500,
+        firstNodeMs,
         state: 'pending',
         cueId: cue.id,
         ...(firstRep ? { firstRep: true } : {}),
@@ -1175,6 +1178,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           ordinal: safe(ordinal),
           workElapsedMs: safe(event.workElapsedMs),
           monotonicTimeMs: safe(event.nowMs),
+          // Where the beat grid put this ring, on the work axis — so ring
+          // lateness (`workElapsedMs − scheduledMs`) needs no manifest.
+          scheduledMs: safe(
+            event.cue.scheduledStartMs + (event.cue.tokenOffsetsMs[event.tokenIndex] ?? 0),
+          ),
         })
         // No cursor to advance: option C made the ring position a
         // PROJECTION of the clock (`beatOrdinalAt` in `syncFromEngine`),
@@ -1579,6 +1587,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             : (sessionRef.current?.snapshot()?.roundIndex ?? -1),
         ),
         workElapsedMs: safe(sessionRef.current?.snapshot()?.workElapsedMs ?? -1),
+        // Same clock as cue.tokenDue and every voice.play dispatchMs, so a
+        // bell's onset can be measured from the boundary it answers. The log
+        // sink prints fields only — a record's own timestamp never reaches
+        // logcat.
+        monotonicTimeMs: safe(clock.now()),
       })
       switch (transition.type) {
         case 'work-entered': {
@@ -1830,7 +1843,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             { slotId: safe(slot.slotId), roundIndex: safe(slot.roundIndex), reason: safe(reason) },
           )
         },
-        play: (assetId, _atTick, slotId) => {
+        play: (assetId, atTick, slotId) => {
           // The gates the announcer applies before ANY combo-announce.
           // The score path bypasses the announcer entirely, so without
           // these the coach talks when the athlete has asked it not to
@@ -1878,10 +1891,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             )
             return false
           }
+          // The score's own dispatch moment, joined to the audio record by
+          // slotId. `atTick` was discarded here before, which left the
+          // announce path with no scheduled time to measure lateness against.
+          logger.info('puncheokie.comboAnnounce.dispatch', 'combo-announce dispatched', {
+            slotId: safe(slotId),
+            assetId: safe(assetId),
+            atTick: safe(atTick),
+            monotonicTimeMs: safe(clock.now()),
+          })
           voice.output.playComboAnnounce?.({
             text: clip.text,
             module: clip.module,
             durationMs: clip.durationMs,
+            traceId: slotId,
           })
         },
       })
@@ -2113,11 +2136,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               continue
             }
             entry.state = 'played'
+            // Joins this dispatch record to its `voice.play` / observed
+            // records: a slot can be dispatched more than once in a round
+            // (busy-lane retries), so the authored dispatch time is part of
+            // the id.
+            const traceId = `${entry.slot}#${entry.dispatchAtMs}`
             voice.output.playClickScript?.(
               {
                 text: entry.text,
                 module: entry.module,
                 durationMs: entry.durationMs,
+                traceId,
               },
               // A lead-in whisper plays once a workout; its native player
               // releases after the clip instead of parking in the cache
@@ -2128,9 +2157,16 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             logger.info('puncheokie.clickScript.dispatch', 'click script dispatched', {
               kind: safe(entry.kind),
               slot: safe(entry.slot),
+              traceId: safe(traceId),
               dispatchAtMs: safe(entry.dispatchAtMs),
               lateMs: safe(Math.round(snapshot.workElapsedMs - entry.dispatchAtMs)),
               durationMs: safe(entry.durationMs),
+              // The work-axis deadline this clip is placed against: a lead-in
+              // must END before it, a call must end a breath before its bar's
+              // first node — both measurable once the observer reports ends.
+              endByMs: safe(entry.giveUpAtMs),
+              firstNodeMs: safe(entry.firstNodeMs ?? null),
+              monotonicTimeMs: safe(clock.now()),
             })
           }
         }
