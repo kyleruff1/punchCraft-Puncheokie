@@ -44,11 +44,13 @@
  */
 import {
   AudioContext,
+  type AnalyserNode,
   type AudioBuffer,
   type AudioBufferSourceNode,
 } from 'react-native-audio-api'
 
 import { logger, safe } from '@diagnostics/logger'
+import { isTimingObserverEnabled } from '@diagnostics/qaFlags'
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
 import type { InstrumentVoice } from './InstrumentVoice'
 import { kitDrumKey } from './instrumentBankKeys'
@@ -63,11 +65,59 @@ import {
 const BANK_SAMPLE_RATE = 48000
 
 /**
+ * The silent timing tap (GH #291, plan C3) — the technique `voice-latency.tsx`
+ * proved on this tablet, moved into the shipping engine behind the QA flag.
+ *
+ * An analyser sits beside `destination` behind a zero gain: a Web Audio node is
+ * only pulled when it has a path to the output, so the mute keeps the analyser
+ * fed while nothing extra reaches the speaker. Every one-shot's per-hit gain
+ * fans out into it (loops never do), and a 1 ms poll from the trigger until
+ * the frame turns non-silent measures trigger → first rendered frame — the
+ * 1.1 ms the header quotes — at any volume, with no microphone. The speaker
+ * follows by the fast-path output latency, a per-route constant (plan C4).
+ */
+const TAP_FFT_SIZE = 1024
+const TAP_POLL_MS = 1
+/** No rendered audio within this of the trigger is `timeout`; every kit attack is under 10 ms. */
+const TAP_TIMEOUT_MS = 250
+/** 128 is silence for byte time-domain data; above this clears dither and noise. */
+const TAP_SILENCE_PEAK = 2
+
+type TapOutcome = 'ok' | 'timeout' | 'masked' | 'busy' | 'released'
+
+/** The fields every tap record carries, fixed at the trigger. */
+interface TapDispatch {
+  eventId: string
+  hand: string
+  /** Pool keys fired by this trigger, in order. */
+  keys: string
+  receivedMonotonicTimeMs: number
+  dispatchMs: number
+  /** Tracker event → trigger, on the same clock. */
+  pipelineMs: number
+  ctxTimeAtDispatch: number
+}
+
+export interface InstrumentVoiceOutputOboeOptions {
+  /**
+   * The clock every tap field is stamped on. Default `performance.now()` —
+   * the punch event's own `receivedMonotonicTimeMs` domain, so `pipelineMs`
+   * is a plain subtraction.
+   */
+  clock?: () => number
+  /** Arm the silent timing tap. Default: the persisted QA flag, read when the graph is built. */
+  timingTap?: boolean | (() => boolean)
+}
+
+/**
  * Buffer-map key for the legacy five-piece drum. Prefixed for the same
  * reason the expo pool prefixes: the bank's drum keys are bare words
  * (`kick`, `snare`) sharing one map with stab and kit keys.
  */
 const drumPoolKey = (drumKey: string): string => `drum:${drumKey}`
+
+/** Two decimals: the tap resolves sub-millisecond onsets and the log prints primitives. */
+const round2 = (ms: number): number => Math.round(ms * 100) / 100
 
 /** Stop and detach a source; never throws, so a teardown loop cannot abort. */
 function stopSource(source: AudioBufferSourceNode | undefined): void {
@@ -136,6 +186,18 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
    */
   private liveOneShots: { source: AudioBufferSourceNode; endsAt: number }[] = []
 
+  private readonly clock: () => number
+  private readonly tapOption: boolean | (() => boolean) | undefined
+  /** The zero-gain analyser branch, built with the context when the tap is armed. */
+  private tap: { analyser: AnalyserNode; frame: Uint8Array } | null = null
+  /** The one in-flight onset measurement; a trigger arriving inside it is `busy`. */
+  private pending: { handle: ReturnType<typeof setTimeout>; dispatch: TapDispatch } | null = null
+
+  constructor(opts: InstrumentVoiceOutputOboeOptions = {}) {
+    this.clock = opts.clock ?? (() => performance.now())
+    this.tapOption = opts.timingTap
+  }
+
   get available(): boolean {
     return this.availableFlag
   }
@@ -148,6 +210,8 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     try {
       this.ctx ??= new AudioContext({ sampleRate: BANK_SAMPLE_RATE })
       const ctx = this.ctx
+      // Once per context: `release()` and `fail()` drop the tap with it.
+      if (this.tap === null && this.tapArmed()) this.buildTap(ctx)
       const bank = INSTRUMENT_BANKS[textureId]
 
       // One decode per clip, all in flight together. A buffer costs memory,
@@ -230,8 +294,17 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     // the A/B is only honest while both engines select identically.
     const selection = selectInstrumentSamples(gesture, this.texture, this.mode)
 
+    // The tap reads the graph BEFORE this trigger renders anything, so a
+    // one-shot still ringing from the last punch is recognised as masking
+    // this measurement rather than being reported as a 0 ms onset.
+    const armed =
+      this.tap === null
+        ? null
+        : { peakBefore: this.readPeak(), dispatchMs: this.clock(), ctxTime: this.ctx.currentTime }
+    const fired: string[] = []
+
     if (selection.stab !== null) {
-      this.fire(selection.stab, selection.stabGain)
+      if (this.fire(selection.stab, selection.stabGain)) fired.push(selection.stab)
     }
 
     // The kit supersedes the legacy five-piece layer whenever a compiled drum
@@ -242,10 +315,27 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     // no stab either, went completely silent while expo still sounded.
     if (gesture.drums !== undefined && gesture.drums.hits.length > 0) {
       for (const hit of gesture.drums.hits) {
-        this.fire(kitDrumKey(hit.articulation), Math.max(0, Math.min(1, hit.midiVelocity / 127)))
+        const key = kitDrumKey(hit.articulation)
+        if (this.fire(key, Math.max(0, Math.min(1, hit.midiVelocity / 127)))) fired.push(key)
       }
     } else if (selection.drum !== null) {
-      this.fire(drumPoolKey(selection.drum), selection.drumGain)
+      const key = drumPoolKey(selection.drum)
+      if (this.fire(key, selection.drumGain)) fired.push(key)
+    }
+
+    if (armed !== null && fired.length > 0) {
+      this.measure(
+        {
+          eventId: gesture.eventId,
+          hand: gesture.source.hand,
+          keys: fired.join(','),
+          receivedMonotonicTimeMs: gesture.source.receivedMonotonicTimeMs,
+          dispatchMs: armed.dispatchMs,
+          pipelineMs: round2(armed.dispatchMs - gesture.source.receivedMonotonicTimeMs),
+          ctxTimeAtDispatch: armed.ctxTime,
+        },
+        armed.peakBefore,
+      )
     }
 
     // A lane is only touched when its selection CHANGED — a legacy gesture's
@@ -273,6 +363,7 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     this.generation += 1
     this.stopLoops()
     this.stopOneShots()
+    this.dropTap()
     this.buffers.clear()
     const ctx = this.ctx
     this.ctx = null
@@ -389,11 +480,11 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     this.liveOneShots = []
   }
 
-  /** Fire one clip. Fully synchronous — no await, no seek, no rewind. */
-  private fire(poolKey: string, gain: number): void {
+  /** Fire one clip. Fully synchronous — no await, no seek, no rewind. True once the source has started. */
+  private fire(poolKey: string, gain: number): boolean {
     const ctx = this.ctx
     const buffer = this.buffers.get(poolKey)
-    if (ctx === null || buffer === undefined) return
+    if (ctx === null || buffer === undefined) return false
     try {
       const source = ctx.createBufferSource()
       source.buffer = buffer
@@ -404,6 +495,20 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
       level.gain.value = gain
       source.connect(level)
       level.connect(ctx.destination)
+      // The tap hears the same node the speaker does — one extra edge after
+      // the real one, never instead of it: a refused edge disarms the tap and
+      // the hit still sounds.
+      if (this.tap !== null) {
+        try {
+          level.connect(this.tap.analyser)
+        } catch (error) {
+          this.dropTap()
+          logger.warn('puncheokie.instrument.tapFailed', 'tap edge refused — tap disarmed', {
+            key: safe(poolKey),
+            error: safe(String(error)),
+          })
+        }
+      }
       source.start(0)
       // Remember it so `panic()` can cut it, dropping the ones that have
       // already finished. Bounded by clip length × hit rate — a handful even
@@ -413,16 +518,136 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
         this.liveOneShots = this.liveOneShots.filter((entry) => entry.endsAt > now)
       }
       this.liveOneShots.push({ source, endsAt: now + buffer.duration })
+      return true
     } catch (error) {
       logger.warn('puncheokie.instrument.oboeFire', 'trigger failed', {
         key: safe(poolKey),
         error: safe(String(error)),
       })
+      return false
     }
+  }
+
+  // ------------------------------------------------------------ timing tap
+
+  private tapArmed(): boolean {
+    return typeof this.tapOption === 'function'
+      ? this.tapOption()
+      : (this.tapOption ?? isTimingObserverEnabled())
+  }
+
+  private buildTap(ctx: AudioContext): void {
+    try {
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = TAP_FFT_SIZE
+      const mute = ctx.createGain()
+      mute.gain.value = 0
+      analyser.connect(mute)
+      mute.connect(ctx.destination)
+      this.tap = { analyser, frame: new Uint8Array(TAP_FFT_SIZE) }
+      logger.info('puncheokie.instrument.tapArmed', 'silent timing tap armed', {
+        fftSize: safe(TAP_FFT_SIZE),
+        pollMs: safe(TAP_POLL_MS),
+      })
+    } catch (error) {
+      // The instrument sounds without its tap; the run is simply unmeasured.
+      this.tap = null
+      logger.warn('puncheokie.instrument.tapFailed', 'silent timing tap could not be built', {
+        error: safe(String(error)),
+      })
+    }
+  }
+
+  /** Loudest sample in the analyser's current frame, 0 = silence. */
+  private readPeak(): number {
+    const tap = this.tap
+    if (tap === null) return 0
+    tap.analyser.getByteTimeDomainData(tap.frame)
+    let peak = 0
+    for (let i = 0; i < tap.frame.length; i += 1) {
+      peak = Math.max(peak, Math.abs((tap.frame[i] ?? 128) - 128))
+    }
+    return peak
+  }
+
+  /**
+   * Arm one onset measurement for the trigger just fired: a bounded 1 ms
+   * chain reading the analyser until the graph turns non-silent. One at a
+   * time — a trigger landing inside an open measurement is `busy`, and one
+   * whose graph was already sounding at the trigger is `masked`; both are
+   * data (the analyzer reports their ratio), never a fake onset.
+   */
+  private measure(dispatch: TapDispatch, peakBefore: number): void {
+    if (this.pending !== null) {
+      this.observed(dispatch, 'busy', { peak: peakBefore })
+      return
+    }
+    if (peakBefore > TAP_SILENCE_PEAK) {
+      this.observed(dispatch, 'masked', { peak: peakBefore })
+      return
+    }
+    const poll = (): void => {
+      this.pending = null
+      const peak = this.readPeak()
+      const now = this.clock()
+      if (peak > TAP_SILENCE_PEAK) {
+        this.observed(dispatch, 'ok', {
+          peak,
+          firstSampleMs: now,
+          latencyMs: round2(now - dispatch.dispatchMs),
+          ctxTimeAtFirstSample: this.ctx?.currentTime ?? null,
+        })
+        return
+      }
+      if (now - dispatch.dispatchMs >= TAP_TIMEOUT_MS) {
+        this.observed(dispatch, 'timeout', { peak })
+        return
+      }
+      this.pending = { handle: setTimeout(poll, TAP_POLL_MS), dispatch }
+    }
+    this.pending = { handle: setTimeout(poll, TAP_POLL_MS), dispatch }
+  }
+
+  /** Stop the poll and forget the analyser; an open measurement closes as `released`. */
+  private dropTap(): void {
+    if (this.pending !== null) {
+      clearTimeout(this.pending.handle)
+      const { dispatch } = this.pending
+      this.pending = null
+      this.observed(dispatch, 'released', { peak: null })
+    }
+    this.tap = null
+  }
+
+  private observed(
+    dispatch: TapDispatch,
+    outcome: TapOutcome,
+    extra: {
+      peak: number | null
+      firstSampleMs?: number
+      latencyMs?: number
+      ctxTimeAtFirstSample?: number | null
+    },
+  ): void {
+    logger.info('puncheokie.instrument.observed', 'instrument onset observed', {
+      eventId: safe(dispatch.eventId),
+      hand: safe(dispatch.hand),
+      keys: safe(dispatch.keys),
+      receivedMonotonicTimeMs: safe(dispatch.receivedMonotonicTimeMs),
+      dispatchMs: safe(dispatch.dispatchMs),
+      pipelineMs: safe(dispatch.pipelineMs),
+      ctxTimeAtDispatch: safe(dispatch.ctxTimeAtDispatch),
+      firstSampleMs: safe(extra.firstSampleMs ?? null),
+      latencyMs: safe(extra.latencyMs ?? null),
+      ctxTimeAtFirstSample: safe(extra.ctxTimeAtFirstSample ?? null),
+      peak: safe(extra.peak),
+      outcome: safe(outcome),
+    })
   }
 
   private fail(reason: string, error: unknown): void {
     this.availableFlag = false
+    this.dropTap()
     this.buffers.clear()
     const ctx = this.ctx
     this.ctx = null

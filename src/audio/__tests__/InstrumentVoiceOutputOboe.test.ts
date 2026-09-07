@@ -37,11 +37,21 @@ interface FakeSource {
 
 interface FakeGain {
   gain: { value: number }
+  /** Every node this gain was connected to, in order. */
+  connections: unknown[]
+}
+
+interface FakeAnalyser {
+  fftSize: number
+  connections: unknown[]
 }
 
 const mockGraph: {
   sources: FakeSource[]
   gains: FakeGain[]
+  analysers: FakeAnalyser[]
+  /** What every analyser frame reads, as distance from 128 (silence). */
+  analyserPeak: number
   suspendCount: number
   closeCount: number
   decodeCalls: string[]
@@ -51,6 +61,8 @@ const mockGraph: {
 } = {
   sources: [],
   gains: [],
+  analysers: [],
+  analyserPeak: 0,
   suspendCount: 0,
   closeCount: 0,
   decodeCalls: [],
@@ -93,12 +105,28 @@ jest.mock('react-native-audio-api', () => {
       return source
     }
     createGain(): FakeGain {
-      const node: FakeGain = { gain: { value: 1 } }
+      const node: FakeGain = { gain: { value: 1 }, connections: [] }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const g = node as any
-      g.connect = () => undefined
+      g.connect = (target: unknown) => {
+        node.connections.push(target)
+      }
       g.disconnect = () => undefined
       mockGraph.gains.push(node)
+      return node
+    }
+    createAnalyser(): FakeAnalyser {
+      const node: FakeAnalyser = { fftSize: 2048, connections: [] }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const a = node as any
+      a.connect = (target: unknown) => {
+        node.connections.push(target)
+      }
+      a.disconnect = () => undefined
+      a.getByteTimeDomainData = (frame: Uint8Array) => {
+        frame.fill(128 + mockGraph.analyserPeak)
+      }
+      mockGraph.analysers.push(node)
       return node
     }
     createBuffer(): unknown {
@@ -128,6 +156,12 @@ jest.mock('react-native-audio-api', () => {
   return { AudioContext: FakeAudioContext }
 })
 
+jest.mock('@diagnostics/logger', () => ({
+  logger: { info: jest.fn(), warn: jest.fn(), debug: jest.fn(), error: jest.fn() },
+  safe: (v: unknown) => v,
+}))
+
+import { logger } from '@diagnostics/logger'
 import { InstrumentVoiceOutputOboe } from '../InstrumentVoiceOutputOboe'
 import { INSTRUMENT_BANKS } from '../voiceAssets/instrumentBankManifest'
 import { BRASS_ACTIVITY_LAYERS } from '@domain/instrument/brassCube'
@@ -135,12 +169,22 @@ import { BRASS_ACTIVITY_LAYERS } from '@domain/instrument/brassCube'
 beforeEach(() => {
   mockGraph.sources = []
   mockGraph.gains = []
+  mockGraph.analysers = []
+  mockGraph.analyserPeak = 0
   mockGraph.suspendCount = 0
   mockGraph.closeCount = 0
   mockGraph.decodeCalls = []
   mockGraph.failDecodeOnce = new Set()
   mockGraph.decodeSeq = 0
+  jest.clearAllMocks()
 })
+
+/** Every `puncheokie.instrument.observed` record logged so far, oldest first. */
+function observed(): Record<string, unknown>[] {
+  return (logger.info as jest.Mock).mock.calls
+    .filter((call) => call[0] === 'puncheokie.instrument.observed')
+    .map((call) => call[2] as Record<string, unknown>)
+}
 
 // ---------------------------------------------------------------------------
 // Gesture builders
@@ -346,5 +390,141 @@ describe('release', () => {
 
     expect(mockGraph.closeCount).toBe(1)
     expect(sounding.every((s) => s.stopped)).toBe(true)
+  })
+})
+
+describe('the silent timing tap (GH #291, C3)', () => {
+  // Modern fake timers drive Date.now() with the timer queue, so a clock on
+  // Date.now() advances exactly with the tap's 1 ms poll chain.
+  const clock = (): number => Date.now()
+  beforeEach(() => {
+    jest.useFakeTimers()
+  })
+  afterEach(() => {
+    jest.useRealTimers()
+  })
+
+  it('flag off: no analyser is built and a hit connects only to destination', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: false })
+    await voice.preload('brass')
+    mockGraph.gains = []
+    voice.handleGesture(legacyGesture())
+    expect(mockGraph.analysers).toHaveLength(0)
+    const level = mockGraph.gains.at(-1)!
+    expect(level.connections).toHaveLength(1)
+    expect(observed()).toHaveLength(0)
+  })
+
+  it('flag on: one analyser behind a zero gain; hits fan out to destination AND the analyser; loops do not', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    expect(mockGraph.analysers).toHaveLength(1)
+    const analyser = mockGraph.analysers[0]!
+    expect(analyser.fftSize).toBe(1024)
+    // analyser → mute(0) → destination: pulled, so it is fed; silent, so it is not heard.
+    const mute = mockGraph.gains.find((g) => g.gain.value === 0)!
+    expect(analyser.connections).toEqual([mute])
+    expect(mute.connections).toHaveLength(1)
+    const destination = mute.connections[0]
+
+    mockGraph.gains = []
+    voice.handleGesture(legacyGesture())
+    const level = mockGraph.gains.at(-1)!
+    expect(level.connections).toEqual([destination, analyser])
+
+    // A loop lane connects its source straight to destination — the fake
+    // source records no edges, so the proof is that no extra gain appeared.
+    mockGraph.gains = []
+    voice.handleGesture(fieldGesture(3))
+    await settle()
+    expect(mockGraph.sources.filter((s) => s.loop && s.started).length).toBeGreaterThan(0)
+    expect(mockGraph.gains.every((g) => g.connections.includes(destination))).toBe(true)
+  })
+
+  it('measures trigger → first non-silent frame on the injected clock', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    const t0 = Date.now()
+    voice.handleGesture(legacyGesture())
+    expect(observed()).toHaveLength(0)
+
+    jest.advanceTimersByTime(2) // two silent polls
+    expect(observed()).toHaveLength(0)
+    mockGraph.analyserPeak = 40
+    jest.advanceTimersByTime(1)
+
+    const records = observed()
+    expect(records).toHaveLength(1)
+    expect(records[0]).toMatchObject({
+      eventId: 'e1',
+      hand: 'left',
+      outcome: 'ok',
+      receivedMonotonicTimeMs: 1_000,
+      dispatchMs: t0,
+      pipelineMs: t0 - 1_000,
+      firstSampleMs: t0 + 3,
+      latencyMs: 3,
+      peak: 40,
+    })
+    expect(typeof records[0]!.keys).toBe('string')
+    expect((records[0]!.keys as string).length).toBeGreaterThan(0)
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('a graph already sounding at the trigger masks the measurement instead of faking a 0 ms onset', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    mockGraph.analyserPeak = 40 // the previous hit is still ringing
+    voice.handleGesture(legacyGesture())
+    expect(observed()).toHaveLength(1)
+    expect(observed()[0]).toMatchObject({ outcome: 'masked', peak: 40, latencyMs: null })
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('a trigger inside an open measurement is busy; the first measurement still completes', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    voice.handleGesture(legacyGesture())
+    voice.handleGesture({ ...legacyGesture(), eventId: 'e2' } as CompiledPunchGesture)
+    expect(observed()).toHaveLength(1)
+    expect(observed()[0]).toMatchObject({ eventId: 'e2', outcome: 'busy' })
+
+    mockGraph.analyserPeak = 40
+    jest.advanceTimersByTime(1)
+    expect(observed()).toHaveLength(2)
+    expect(observed()[1]).toMatchObject({ eventId: 'e1', outcome: 'ok', latencyMs: 1 })
+  })
+
+  it('times out at 250 ms when the graph never turns non-silent', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    voice.handleGesture(legacyGesture())
+    jest.advanceTimersByTime(249)
+    expect(observed()).toHaveLength(0)
+    jest.advanceTimersByTime(1)
+    expect(observed()).toHaveLength(1)
+    expect(observed()[0]).toMatchObject({ outcome: 'timeout', latencyMs: null })
+    expect(jest.getTimerCount()).toBe(0)
+  })
+
+  it('release stops the poll and closes the open measurement as released', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    voice.handleGesture(legacyGesture())
+    voice.release()
+    expect(jest.getTimerCount()).toBe(0)
+    expect(observed()).toHaveLength(1)
+    expect(observed()[0]).toMatchObject({ outcome: 'released' })
+    mockGraph.analyserPeak = 40
+    jest.advanceTimersByTime(300)
+    expect(observed()).toHaveLength(1)
+  })
+
+  it('the tap is rebuilt with a fresh context after release', async () => {
+    const voice = new InstrumentVoiceOutputOboe({ timingTap: true, clock })
+    await voice.preload('brass')
+    voice.release()
+    await voice.preload('brass')
+    expect(mockGraph.analysers).toHaveLength(2)
   })
 })
