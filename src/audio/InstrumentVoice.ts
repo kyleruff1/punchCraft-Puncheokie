@@ -19,6 +19,7 @@
 import type { CompiledPunchGesture } from '@domain/instrument/gestureSchema'
 import type { InstrumentTextureId } from './voiceAssets/instrumentBankManifest'
 import { InstrumentVoiceOutput } from './InstrumentVoiceOutput'
+import { InstrumentVoiceOutputOboe } from './InstrumentVoiceOutputOboe'
 import type { InstrumentVoiceMode } from './instrumentSelection'
 import type { InstrumentEngine } from './instrumentEngine'
 
@@ -48,15 +49,14 @@ export interface InstrumentVoice {
 /**
  * Build the instrument voice for `engine`.
  *
- * Both branches return the expo-audio implementation today — the Oboe class
- * arrives in step 3. Keeping the branch here, unused, is deliberate: it means
- * step 3 changes one line in this file rather than every call site, and it
- * lets the flag be exercised end to end before there is anything to switch to.
+ * Both engines are real as of step 3. The Oboe branch owns the one-shots and
+ * carries bed/bass on an expo-audio delegate, so flipping the flag changes the
+ * one-shot path and nothing else — which is what makes the A/B honest.
  */
 export function createInstrumentVoice(engine: InstrumentEngine): InstrumentVoice {
   switch (engine) {
     case 'oboe':
-    // falls through — step 3 replaces this with the Oboe implementation.
+      return new InstrumentVoiceOutputOboe()
     case 'expo':
     default:
       return new InstrumentVoiceOutput()
