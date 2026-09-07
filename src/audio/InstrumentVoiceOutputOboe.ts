@@ -62,6 +62,13 @@ import {
 /** The bank is rendered at 48 kHz; matching it means decode never resamples. */
 const BANK_SAMPLE_RATE = 48000
 
+/**
+ * Buffer-map key for the legacy five-piece drum. Prefixed for the same
+ * reason the expo pool prefixes: the bank's drum keys are bare words
+ * (`kick`, `snare`) sharing one map with stab and kit keys.
+ */
+const drumPoolKey = (drumKey: string): string => `drum:${drumKey}`
+
 /** Stop and detach a source; never throws, so a teardown loop cannot abort. */
 function stopSource(source: AudioBufferSourceNode | undefined): void {
   if (source === undefined) return
@@ -101,12 +108,33 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
   private bassLane: { source: AudioBufferSourceNode; key: string } | null = null
 
   /**
-   * What each lane SHOULD be playing. Set before the decode await, so a
+   * What each lane is HEADING TOWARD. Set before the decode await, so a
    * second swap arriving mid-decode can abandon the first — without this a
    * fast chord change would land the older loop on top of the newer one.
+   *
+   * This is an intent, not a commitment: every path that returns without
+   * starting a source rolls it back to whatever is actually sounding
+   * (`rollbackLane`). It used to be both at once, which meant a single
+   * failed decode left the lane's key permanently claimed — `handleGesture`
+   * gates on this field, so that chord was then gated out forever and the
+   * lane stayed silent for the rest of the session with nothing logged.
    */
-  private wantedBedKey: string | null = null
-  private wantedBassKey: string | null = null
+  private pendingBedKey: string | null = null
+  private pendingBassKey: string | null = null
+
+  /**
+   * One-shots that may still be sounding, with the context time each should
+   * finish at.
+   *
+   * `panic()` has to genuinely cut these: the expo sibling pauses every
+   * pooled player, so an Oboe panic that stopped only the loops would
+   * silence LESS than the engine it replaces.
+   *
+   * Pruned by time rather than by an `onEnded` callback — registering one
+   * per hit costs a JSI round trip in the trigger path, and cheapening that
+   * path is the entire reason this engine exists.
+   */
+  private liveOneShots: { source: AudioBufferSourceNode; endsAt: number }[] = []
 
   get available(): boolean {
     return this.availableFlag
@@ -132,6 +160,11 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
         ),
         ...Object.entries(INSTRUMENT_KIT_DRUMS).map(
           ([articulation, clip]) => [kitDrumKey(articulation), clip.module] as [string, number],
+        ),
+        // The legacy five-piece layer, for the patches that never compile a
+        // kit block. Five more buffers, no extra AudioTrack.
+        ...Object.entries(bank.drums).map(
+          ([key, clip]) => [drumPoolKey(key), clip.module] as [string, number],
         ),
       ]
 
@@ -192,7 +225,10 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
 
   handleGesture(gesture: CompiledPunchGesture): void {
     if (!this.availableFlag || this.ctx === null) return
-    const selection = selectInstrumentSamples(gesture, this.texture)
+    // `mode` matters: without it 'notes' still resolves bed/bass and enters
+    // swapLoop for lanes it will never sound. The expo sibling passes it, and
+    // the A/B is only honest while both engines select identically.
+    const selection = selectInstrumentSamples(gesture, this.texture, this.mode)
 
     if (selection.stab !== null) {
       this.fire(selection.stab, selection.stabGain)
@@ -200,33 +236,43 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
 
     // The kit supersedes the legacy five-piece layer whenever a compiled drum
     // block is present — same rule as the expo path, so the A/B is honest.
+    // The `else` matters as much as the `if`: only a field patch compiles a
+    // drum block, so without the fallback every legacy and plain-brassCube
+    // patch lost its drum on this engine — and a latch-only patch, which has
+    // no stab either, went completely silent while expo still sounded.
     if (gesture.drums !== undefined && gesture.drums.hits.length > 0) {
       for (const hit of gesture.drums.hits) {
         this.fire(kitDrumKey(hit.articulation), Math.max(0, Math.min(1, hit.midiVelocity / 127)))
       }
+    } else if (selection.drum !== null) {
+      this.fire(drumPoolKey(selection.drum), selection.drumGain)
     }
 
     // A lane is only touched when its selection CHANGED — a legacy gesture's
     // null bed/bass leaves the sounding loops alone.
-    if (selection.bed !== null && selection.bed !== this.wantedBedKey) {
+    if (selection.bed !== null && selection.bed !== this.pendingBedKey) {
       void this.swapLoop('bed', selection.bed)
     }
-    if (selection.bass !== null && selection.bass !== this.wantedBassKey) {
+    if (selection.bass !== null && selection.bass !== this.pendingBassKey) {
       void this.swapLoop('bass', selection.bass)
     }
   }
 
   panic(): void {
     this.stopLoops()
-    // Source nodes are fire-and-forget and each is at most one clip long;
-    // suspending the context stops the graph immediately, and the next
-    // trigger resumes it.
-    void this.ctx?.suspend().catch(() => undefined)
+    this.stopOneShots()
+    // Deliberately NOT `ctx.suspend()`. That is what this did, on a comment
+    // claiming "the next trigger resumes it" — but nothing in the app ever
+    // calls resume(), and starting a source node does not resume a suspended
+    // context. One panic (or one tap on FREEDOM / NAVIGATION / WINDOW, which
+    // bump the harmonic generation) left the instrument silent for the rest
+    // of the screen visit while every later trigger still reported success.
   }
 
   release(): void {
     this.generation += 1
     this.stopLoops()
+    this.stopOneShots()
     this.buffers.clear()
     const ctx = this.ctx
     this.ctx = null
@@ -245,8 +291,8 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     const ctx = this.ctx
     if (ctx === null) return
     // Claim the lane BEFORE awaiting, so a newer swap wins the race.
-    if (kind === 'bed') this.wantedBedKey = key
-    else this.wantedBassKey = key
+    if (kind === 'bed') this.pendingBedKey = key
+    else this.pendingBassKey = key
     const generation = this.generation
 
     let buffer = this.buffers.get(key)
@@ -257,15 +303,20 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
         logger.warn('puncheokie.instrument.clipMissing', 'no bank entry for loop', {
           key: safe(key),
         })
+        this.rollbackLane(kind, key)
         return
       }
       try {
         buffer = await ctx.decodeAudioData(clip.module)
       } catch (error) {
+        // In a dev client this is an HTTP fetch from Metro, so a single
+        // transient failure is expected. Roll the claim back or this chord
+        // is gated out of `handleGesture` forever.
         logger.warn('puncheokie.instrument.clipMissing', 'loop decode failed', {
           key: safe(key),
           error: safe(String(error)),
         })
+        this.rollbackLane(kind, key)
         return
       }
       // Released, texture-changed, or superseded while we decoded.
@@ -273,8 +324,14 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
       this.buffers.set(key, buffer)
     }
 
-    const stillWanted = kind === 'bed' ? this.wantedBedKey : this.wantedBassKey
-    if (stillWanted !== key || this.mode === 'notes') return
+    // Superseded by a newer swap, which now owns the claim — rolling back
+    // here would clobber ITS intent, so this path deliberately does not.
+    const stillWanted = kind === 'bed' ? this.pendingBedKey : this.pendingBassKey
+    if (stillWanted !== key) return
+    if (this.mode === 'notes') {
+      this.rollbackLane(kind, key)
+      return
+    }
 
     const previous = kind === 'bed' ? this.bedLane : this.bassLane
     try {
@@ -293,6 +350,7 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
         key: safe(key),
         error: safe(String(error)),
       })
+      this.rollbackLane(kind, key)
       return
     }
     // Stop the old one only once the new one is running, so the lane never
@@ -300,13 +358,35 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
     stopSource(previous?.source)
   }
 
+  /**
+   * Give up a claim this swap could not honour, handing the lane back to
+   * whatever is actually sounding so the next punch retries instead of
+   * being gated out.
+   *
+   * No-ops when a newer swap already owns the claim — losing a race is not
+   * a failure, and that swap's intent must survive.
+   */
+  private rollbackLane(kind: 'bed' | 'bass', key: string): void {
+    if (kind === 'bed') {
+      if (this.pendingBedKey === key) this.pendingBedKey = this.bedLane?.key ?? null
+    } else if (this.pendingBassKey === key) {
+      this.pendingBassKey = this.bassLane?.key ?? null
+    }
+  }
+
   private stopLoops(): void {
     stopSource(this.bedLane?.source)
     stopSource(this.bassLane?.source)
     this.bedLane = null
     this.bassLane = null
-    this.wantedBedKey = null
-    this.wantedBassKey = null
+    this.pendingBedKey = null
+    this.pendingBassKey = null
+  }
+
+  /** Cut every one-shot that may still be ringing. */
+  private stopOneShots(): void {
+    for (const entry of this.liveOneShots) stopSource(entry.source)
+    this.liveOneShots = []
   }
 
   /** Fire one clip. Fully synchronous — no await, no seek, no rewind. */
@@ -325,6 +405,14 @@ export class InstrumentVoiceOutputOboe implements InstrumentVoice {
       source.connect(level)
       level.connect(ctx.destination)
       source.start(0)
+      // Remember it so `panic()` can cut it, dropping the ones that have
+      // already finished. Bounded by clip length × hit rate — a handful even
+      // at the fastest playable tempo.
+      const now = ctx.currentTime
+      if (this.liveOneShots.length > 0) {
+        this.liveOneShots = this.liveOneShots.filter((entry) => entry.endsAt > now)
+      }
+      this.liveOneShots.push({ source, endsAt: now + buffer.duration })
     } catch (error) {
       logger.warn('puncheokie.instrument.oboeFire', 'trigger failed', {
         key: safe(poolKey),
