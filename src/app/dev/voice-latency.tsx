@@ -320,7 +320,7 @@ export default function VoiceLatencySpike(): React.JSX.Element {
   }, [])
 
   const run = useCallback(
-    async (mode: 'duckOthers' | 'mixWithOthers') => {
+    async (mode: 'duckOthers' | 'mixWithOthers', forceMethod?: 'sampling' | 'playhead') => {
       setRunning(true)
       setResults([])
       setLog([])
@@ -345,7 +345,15 @@ export default function VoiceLatencySpike(): React.JSX.Element {
         preloadedRef.current = preloaded
         const samplingSupported = preloaded.isAudioSamplingSupported && permission.granted
         if (samplingSupported) preloaded.setAudioSamplingEnabled(true)
-        methodRef.current = samplingSupported ? 'sampling' : 'playhead'
+        // `audioSampleUpdate` reports supported=true on this tablet but has
+        // been observed delivering no samples above the silence threshold,
+        // which turns every rep into a TIMEOUT and yields no data at all.
+        // The playhead override trades resolution for numbers that exist:
+        // it observes the playhead advancing rather than PCM frames, so it
+        // is coarser (one JS loop turn) and is labelled as its own method
+        // rather than mixed into the sampling figures.
+        methodRef.current = forceMethod ?? (samplingSupported ? 'sampling' : 'playhead')
+        if (forceMethod !== undefined) say(`method FORCED to ${forceMethod}`)
         say(
           `sampling supported=${String(preloaded.isAudioSamplingSupported)} ` +
             `→ method=${methodRef.current}`,
@@ -507,6 +515,14 @@ export default function VoiceLatencySpike(): React.JSX.Element {
           style={[styles.button, running && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>Run (duck others)</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          disabled={running}
+          onPress={() => void run('mixWithOthers', 'playhead')}
+          style={[styles.button, running && styles.buttonDisabled]}
+        >
+          <Text style={styles.buttonText}>Run (mix, playhead)</Text>
         </Pressable>
       </View>
 
