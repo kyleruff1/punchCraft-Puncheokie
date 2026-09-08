@@ -8,7 +8,7 @@
  * countdown ends 150 ms before the bell.
  */
 
-import { analyze, fitWorkAxis, renderReport, roundWindows } from '../observed-timing.mjs'
+import { analyze, fitWorkAxis, OBSERVER_ONSET_SKEW_MS, renderReport, roundWindows, SKEW_CROSS_CHECK_MIN_SAMPLES } from '../observed-timing.mjs'
 
 const PID = '( 8286)'
 // The REAL ConsoleSink shape (src/diagnostics/logger.ts), copied from a
@@ -138,7 +138,61 @@ describe('joins', () => {
     // lead-in overrun, which is exactly the finding this analyzer exists for.
     expect(report.verdict.exit).toBe(2)
     expect(report.verdict.hard).toEqual([])
-    expect(report.verdict.soft).toEqual(['1 lead-in(s) ended past endBy (median 30 ms)'])
+    expect(report.verdict.soft).toEqual([
+      // The floor gate. Every one of the fixture's three bars delivers 140 ms
+      // against a 150 ms floor, so 100% breach — soft, not hard, because none
+      // of them reached the punch.
+      '3/3 bars (100%) delivered under the 150 ms breath floor — min 140 ms',
+      '1 lead-in(s) ended past endBy (median 125 ms)',
+    ])
+  })
+
+  it('gates the floor on the constant, and never-late separately from comfort', () => {
+    // Two gates, different severities, and the fixture proves they are not
+    // the same test: 140 ms of delivered breath is under the 150 ms comfort
+    // floor (soft) but nowhere near the punch (hard, and clean here).
+    expect(report.breath.floor).toMatchObject({
+      floorMs: 150,
+      source: 'callPlacement.ts MIN_BREATH_MS',
+      n: 3,
+      barsAtOrPastPunch: 0,
+      barsUnderFloor: 3,
+      barsUnderFloorRatio: 1,
+      minBreathMs: 140,
+    })
+    expect(report.verdict.hard).toEqual([])
+    // The floor is read from the app's own constants, never a literal here.
+    // With it unreadable the block must gate NOTHING rather than fall back to
+    // a number this tool invented — a capture scored against a floor the app
+    // does not use is worse than no floor at all.
+    const noFloor = analyze(capture(), { ...CONSTANTS, breath: { ...CONSTANTS.breath, MIN_BREATH_MS: null } })
+    expect(noFloor.breath.floor.floorMs).toBeNull()
+    expect(noFloor.breath.floor.barsUnderFloor).toBe(0)
+    expect(noFloor.verdict.soft.filter((s) => s.includes('breath floor'))).toEqual([])
+    // ...but never-late still gates: it needs no constant to be true.
+    expect(noFloor.breath.floor.barsAtOrPastPunch).toBe(0)
+  })
+
+  it('is HARD when a call was still sounding at the punch', () => {
+    // Never-late is the one guarantee with no tolerance. `shortfallMs: 250`
+    // eats the fixture's whole 250 ms intended breath, putting the audible
+    // end on the first punch — delivered breath ≤ 0 on all six bars of both
+    // slots this variant carries.
+    const late = analyze(capture({ shortfallMs: 250 }), CONSTANTS)
+    expect(late.breath.floor.n).toBe(6)
+    expect(late.breath.floor.barsAtOrPastPunch).toBe(6)
+    expect(late.breath.floor.minBreathMs).toBeLessThanOrEqual(0)
+    expect(late.verdict.hard.some((h) => h.includes('still sounding at the punch'))).toBe(true)
+    expect(late.verdict.exit).toBe(1)
+    // and the tightest bars are named, so the next question is answerable
+    // without re-reading the logcat
+    expect(late.breath.floor.worstBars).toHaveLength(5)
+    // `path` earns its place in this row: the tightest bar here is the
+    // cold-start `fresh` play, not one of the armed ones. That is the first
+    // thing to know about a floor breach and it is right in the table.
+    expect(late.breath.floor.worstBars[0]).toMatchObject({ vocabulary: 'numbers', intendedBreathMs: 250, path: 'fresh' })
+    // sorted tightest-first, so the worst bar is the one to look at
+    expect(late.breath.floor.worstBars[0].deliveredBreathMs).toBe(late.breath.floor.minBreathMs)
   })
 
   it('scores breath against the AUDIBLE end and the logged intent, not the end event', () => {
@@ -147,33 +201,68 @@ describe('joins', () => {
     // the breath. Delivered = firstNode − (onset + stated duration) = 235;
     // intended = the logged `breathMs` of 250; shortfall = 15.
     const slot = report.breath.bySlot['call/1-2']
-    expect(slot).toMatchObject({ n: 3, vocabulary: 'numbers', plannedBreathMs: 250, medianBreathMs: 235, medianEndLateMs: 15 })
-    expect(report.breath.byVocab.numbers).toMatchObject({ n: 3, medianBreathMs: 235, medianEndLateMs: 15 })
-    // The lag is reported on its own, as a property of the reporting path:
-    // the two armed calls lag 35 ms each (end event 1050 after onset, audio
-    // 1015), the armed lead-in 170 — median 35.
-    expect(report.breath.endLagByPath.armed.medianMs).toBe(35)
+    expect(slot).toMatchObject({ n: 3, vocabulary: 'numbers', plannedBreathMs: 250, medianBreathMs: 140, medianEndLateMs: 110 })
+    expect(report.breath.byVocab.numbers).toMatchObject({ n: 3, medianBreathMs: 140, medianEndLateMs: 110 })
+    // The lag is reported on its own, in the cross-check block.
+    expect(report.breath.skewCrossCheck.residualByPath.armed.medianMs).toBe(-60)
+  })
+
+  it('reports the skew cross-check in BOTH domains, raw exactly one skew above residual', () => {
+    // This is the tool's own corroboration of OBSERVER_ONSET_SKEW_MS, so it
+    // has to be legible without the reader recomputing anything. `raw` is the
+    // end-event lag this tool used to publish as "reporting lag": the armed
+    // calls' end event lands 1050 ms after the RAW onset on a 1000 ms clip,
+    // so raw = +35. Corrected, the same event lands 60 ms EARLY, so the
+    // residual is −60 and the pair differs by exactly the applied 95.
+    const xc = report.breath.skewCrossCheck
+    expect(xc.appliedSkewMs).toBe(OBSERVER_ONSET_SKEW_MS)
+    expect(xc.rawByPath.armed.medianMs).toBe(35)
+    expect(xc.residualByPath.armed.medianMs).toBe(-60)
+    expect(xc.rawByPath.armed.medianMs - xc.residualByPath.armed.medianMs).toBe(OBSERVER_ONSET_SKEW_MS)
+    // The fixture is small enough (n < SKEW_CROSS_CHECK_MIN_SAMPLES) that the
+    // −60 must NOT raise the staleness warning — one slow teardown in a
+    // handful of plays is noise, and warning on it would train the reader to
+    // ignore the line that matters.
+    expect(report.verdict.soft.filter((s) => s.startsWith('skew cross-check'))).toEqual([])
   })
 
   it('measures lead-ins against endBy, on the audible end', () => {
     // onset 30030 + 8000 stated = 38030 audible end, against an endBy of
     // 38000 → 30 ms over. The end EVENT at 38200 would have said 200.
-    expect(report.leadIns).toMatchObject({ n: 1, medianEndMinusEndByMs: 30, walkedOver: 1 })
+    expect(report.leadIns).toMatchObject({ n: 1, medianEndMinusEndByMs: 125, walkedOver: 1 })
   })
 
   it('measures the combo announce against the block’s first ring, on the audible end', () => {
     // onset 60040 + 900 stated = 60940 audible end, first ring 61200 → 260.
     // The end EVENT at 61000 would have said 200 — the announce rail was the
     // last join still scoring reporting lag as the coach overrunning.
-    expect(report.announces).toMatchObject({ n: 1, withRing: 1, medianEndToRingMs: 260, cutByRing: 0 })
+    expect(report.announces).toMatchObject({ n: 1, withRing: 1, medianEndToRingMs: 165, cutByRing: 0 })
   })
 
   it('measures the ceremonies around each work-entered boundary', () => {
+    // The bells are `instruction` plays, so their latency against the round
+    // boundary — a CLOCK event — is corrected: raw 20 and 50 become 115/145.
     expect(report.ceremonies.rounds).toEqual([
-      expect.objectContaining({ roundIndex: 0, bellOnsetLatencyMs: 20, warnEndToBellMs: null, recoveryEndToWarnOnsetMs: null }),
-      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 50, warnEndToBellMs: 150, warnHeldOpenPastAudioMs: 0, recoveryEndToWarnOnsetMs: 30000 }),
+      expect.objectContaining({ roundIndex: 0, bellOnsetLatencyMs: 115, warnEndToBellMs: null, recoveryEndToWarnOnsetMs: null }),
+      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 145, warnEndToBellMs: 150, warnHeldOpenPastAudioMs: 0, recoveryEndToWarnOnsetMs: 30000 }),
     ])
     expect(report.ceremonies.bells).toMatchObject({ n: 2 })
+  })
+
+  it('never subtracts a corrected time from a raw one', () => {
+    // The trap this pins. The bell is a PLAYER (corrected); the round warning
+    // is a `createAudioPlaylist` ceremony the ruler never measured (raw). Had
+    // `warnEndToBellMs` used the corrected bell onset it would have read 245
+    // — the countdown apparently finishing a quarter-second early — and the
+    // whole of that 95 would have been the correction showing up as a finding
+    // in a comparison where it cancels. Both operands raw, the gap is 150.
+    const round1 = report.ceremonies.rounds[1]
+    expect(round1.warnEndToBellMs).toBe(150)
+    expect(round1.warnEndToBellDomain).toBe('raw (playlist uncalibrated)')
+    // The two views of the same bell must therefore DIFFER by exactly the
+    // skew — that difference is the boundary, and it is deliberate.
+    expect(round1.bellOnsetLatencyMs - 50).toBe(OBSERVER_ONSET_SKEW_MS)
+    expect(report.ceremonies.domain).toMatchObject({ bells: 'corrected', metronome: 'raw (playlist uncalibrated)' })
   })
 
   it('reports rings against their own schedule and the instrument tap', () => {
@@ -196,14 +285,20 @@ describe('proposals', () => {
   const by = (name) => report.proposals.find((p) => p.constant === name)
 
   it('flags the rail constant as inert and measures the announce stand-in', () => {
-    expect(by('RAIL_K_MS')).toMatchObject({ current: 120, status: 'inert', measured: { announceEndToRingMedianMs: 260 } })
+    expect(by('RAIL_K_MS')).toMatchObject({ current: 120, status: 'inert', measured: { announceEndToRingMedianMs: 165 } })
   })
-  it('proposes nothing for a shortfall inside the noise band', () => {
-    // 15 ms of shortfall is not a finding. Before breath was scored on the
-    // audible end this same fixture read 50 ms and produced a proposal —
-    // the end-event lag was manufacturing tuning advice.
-    expect(by("CALL_BREATH_OVERRIDES['call/1-2']")).toBeUndefined()
-    expect(by('CALL_DISPATCH_LAG_MS')).toBeUndefined()
+  it('refuses to write a per-slot override from a single slot', () => {
+    // The fixture's shortfall is 110 ms, well past the 40 ms floor, and it
+    // has exactly one qualifying slot. `uniform` needs two slots to compare,
+    // so this capture can never take the global-shift branch — and used to
+    // fall through to per-slot overrides with `apply: true`. One witness
+    // cannot tell "this slot is unusual" from "the dispatch path is slow",
+    // and only the first has a per-slot fix.
+    expect(by("CALL_BREATH_OVERRIDES['call/1-2']")).toMatchObject({
+      apply: false,
+      status: 'insufficient slots',
+      proposed: 'none',
+    })
   })
 
   it('blames the dispatch path, not the breath doctrine, when every slot loses the same time', () => {
@@ -252,8 +347,13 @@ describe('verdicts', () => {
 describe('report', () => {
   it('renders every section', () => {
     const md = renderReport(analyze(capture(), CONSTANTS), 'fixture')
-    for (const heading of ['## Onset latency by family', '## Work axis fit', '## Breath (3 calls)', '## Ceremonies', '## Proposals']) expect(md).toContain(heading)
-    expect(md).toContain('| call/1-2 | 3 | numbers | 250 | 235 | 235 | 15 |')
+    for (const heading of ['## Onset latency by family', '## Work axis fit', '## Breath (3 calls)', '### Floor — never late', '### Skew cross-check', '## Ceremonies', '## Proposals']) expect(md).toContain(heading)
+    // slot | n | vocab | intended | min | low tail | median | p95 | shortfall.
+    // The low tail is labelled `min (n=3, …)` in the cell itself: with three
+    // samples `percentile(v, 5)` IS the minimum, and printing a bare "140"
+    // under a p5 heading would dress one bar as a distribution.
+    expect(md).toContain('| call/1-2 | 3 | numbers | 250 | 140 | 140 (min (n=3, too few for a p5)) | 140 | 140 | 110 |')
+    expect(md).toContain('floor 150 ms · **at or past the punch: 0** · under floor 3/3 (100%)')
     expect(md).toContain('build: release · sha abc1234')
   })
 })

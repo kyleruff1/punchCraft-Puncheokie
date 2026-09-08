@@ -169,7 +169,8 @@ export function renderObservedTable(summary) {
     `observed: coverage ${summary.coverage === null ? 'n/a' : `${Math.round(summary.coverage * 100)}%`} of ${summary.playsWithId} plays · ${summary.ceremonyObserved} ceremony` +
       (summary.observer ? ` · observer maxHandlerMs ${summary.observer.maxHandlerMs}` : ''),
   )
-  lines.push('| kind | n | ok | onset median | p95 | jitter | truncated | silent births | other outcomes |')
+  // Raw status-event onsets — see the note on verify-suite's summary table.
+  lines.push('| kind | n | ok | onset median (status event) | p95 | jitter | truncated | silent births | other outcomes |')
   lines.push('|---|---|---|---|---|---|---|---|---|')
   for (const [kind, k] of Object.entries(summary.byKind)) {
     const other = Object.entries(k.outcomes)

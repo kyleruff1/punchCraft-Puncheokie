@@ -328,7 +328,12 @@ export function renderSummaryMd(rows, meta) {
     `device ${meta.deviceId} · ${meta.launch} launch · vocab ${meta.vocab} · sim ${meta.sim} · ${meta.firstRoundOnly ? 'first round only' : 'full sessions'} · ${rows.length} drives · exit ${meta.exitCode}`,
   )
   lines.push('')
-  lines.push('| workout | vocab | verdict | reason | verify | stats | voice onset (ms) | instrument onset (ms) | AudioTracks arm→end | elapsed |')
+  // "voice onset (status event, ms)" — NOT the audible onset. This column is
+  // the raw `playing: true` latency, which fires ~95 ms before sound leaves
+  // the device (`OBSERVER_ONSET_SKEW_MS` in observed-timing.mjs). Naming it
+  // plainly is the point: the raw and corrected views must never be read as
+  // the same number.
+  lines.push('| workout | vocab | verdict | reason | verify | stats | voice onset (status event, ms) | instrument onset (ms) | AudioTracks arm→end | elapsed |')
   lines.push('|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const voice = r.observed?.byKind

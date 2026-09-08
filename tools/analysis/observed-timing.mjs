@@ -72,9 +72,93 @@ const r1 = (v) => (v === null || v === undefined || !Number.isFinite(v) ? null :
  */
 export const TAIL_MIN_SAMPLES = 20
 
+/**
+ * How much LATER the audio actually starts than the observer's `onsetMs` says.
+ *
+ * The observer stamps onset when `playbackStatusUpdate` reports
+ * `playing: true`. Two full release sessions carried `positionAtOnsetMs: 0`
+ * in 296 of 296 observations — media3 asserts "playing" with the playhead
+ * still at zero, on a buffer floored at 250 ms. So that event fires before
+ * any audio has left the device, and every onset this analyzer reported was
+ * optimistic by roughly this much.
+ *
+ * Measured directly (src/app/dev/voice-latency.tsx "Calibrate ruler", release
+ * build 73f7ea6f, TB125FU, armed path, one play timed two ways at once):
+ *
+ *   call cc-e08318c0 (48 kHz)  status 25.2  playhead 118.8  skew  95.4  (65.5-158.5, n=40)
+ *   bell             (24 kHz)  status 19.2  playhead 119.1  skew 101.4  (76.6-136,   n=40)
+ *
+ * One number for both: they agree within their own spread, and the spread
+ * (~93 ms on the call) dwarfs the 6 ms between them.
+ *
+ * This is a FLOOR, twice over. The playhead moving is itself earlier than
+ * sound reaching the speaker, and `currentTime` is a blocking `runOnMain`
+ * read resolved to one JS loop turn, so it reads late and compresses the gap.
+ * Converting "playhead moving" into "sound at the speaker" needs a
+ * microphone — that measurement is `PLAYHEAD_TO_SPEAKER_MS` and is still open.
+ */
+export const OBSERVER_ONSET_SKEW_MS = 95
+
+/**
+ * The skew was measured on `createAudioPlayer`. The ceremony players are
+ * `createAudioPlaylist` — a different native object whose startup was never
+ * calibrated — so the correction is NOT applied to them and their numbers
+ * stay raw rather than being silently adjusted by a constant borrowed from a
+ * different code path.
+ */
+const SKEW_CORRECTED_KINDS = new Set(['click-script', 'clip', 'instruction', 'combo-announce'])
+
+/**
+ * How far the end-event residual may sit from zero before this tool says the
+ * skew constant has gone stale. The observed spread by path is roughly
+ * +29 / −1 / −28, so 45 admits every path we have measured while still
+ * catching a media3 or expo-audio change that moves the startup cost.
+ */
+export const SKEW_CROSS_CHECK_TOLERANCE_MS = 45
+
+/** Below this, one slow teardown moves the median. Do not warn on noise. */
+export const SKEW_CROSS_CHECK_MIN_SAMPLES = 10
+
+/**
+ * The share of bars allowed under `MIN_BREATH_MS` before the capture warns.
+ *
+ * Not zero, and deliberately so. The floor is a comfort target for the wide
+ * slow bars where the clamp pins the breath; the tighter workouts run 8-15%
+ * under it today and that is the known state this gate exists to watch shrink.
+ * A ratio, not a count, so a 47-bar body-work drive and a 185-bar speed burst
+ * are held to the same standard.
+ *
+ * `barsAtOrPastPunch` is the correctness gate and has no tolerance at all.
+ */
+export const FLOOR_BREACH_SOFT_RATIO = 0.02
+
+/** How many of the tightest bars to name. Enough to see a pattern, not a dump. */
+export const WORST_BARS_LISTED = 5
+
+/**
+ * The mirror of `TAIL_MIN_SAMPLES` at the other end, and NOT the same number.
+ *
+ * `percentile` indexes at `ceil(p/100 * n) - 1`. For p = 5 that clamps to 0 —
+ * the MINIMUM — whenever `ceil(0.05n) <= 1`, i.e. for every n ≤ 20. So a
+ * "p5" needs one more sample than a p95 does before it stops being the
+ * extreme it is supposed to summarise.
+ *
+ * This matters more here than the p95 bug did. The low tail is where
+ * never-late lives: a p5 that is silently the minimum makes a single tight
+ * bar look like a population, and a p5 that is silently the minimum ALSO
+ * makes a population look like a single bar. Both readings are wrong in the
+ * direction that gets a floor breach waved through.
+ */
+export const LOW_TAIL_MIN_SAMPLES = 21
+
 /** `p95` when there are enough samples to mean it, `max (n=…)` when there are not. */
 function tailLabel(stats) {
   return stats.n >= TAIL_MIN_SAMPLES ? 'p95' : `max (n=${stats.n}, too few for a p95)`
+}
+
+/** `p5` when there are enough samples to mean it, `min (n=…)` when there are not. */
+function lowTailLabel(n) {
+  return n >= LOW_TAIL_MIN_SAMPLES ? 'p5' : `min (n=${n}, too few for a p5)`
 }
 
 /**
@@ -130,20 +214,42 @@ export function parseClickDispatches(text) {
  * When the sound actually STOPPED, as opposed to when the observer heard
  * about it.
  *
- * The end event lags the audio: on the tablet `observedDurationMs` ran
- * 113 ms past the stated duration at the median and varied by player path
- * (124/94/67 ms), while every rendered wav matches its manifest
- * `durationMs` to within 0.5 ms — so the excess is reporting, not audio.
- * Scoring breath against `endMs` therefore understates it by that lag and
- * would propose a ~130 ms over-correction. Onset is trustworthy (it is a
- * transition event, and the audio starts when the player says it starts),
- * so the audible end is onset + the clip's own length.
+ * Built from the clip's own length rather than the end event, because the end
+ * event carries a teardown lag of its own and every rendered wav matches its
+ * manifest `durationMs` to within 0.5 ms. Measured against the RAW onset that
+ * lag looked enormous — ~113 ms at the median, 124/94/67 by player path.
+ * Against the corrected onset it collapses to roughly +29 / −1 / −28, which
+ * is how we learned the onset was the liar; see `skewCrossCheck`.
+ *
+ * The onset it is measured from is NOT the raw event. `playing: true` fires
+ * with the playhead still at zero (296 of 296 observations), so it is
+ * corrected by the measured status-event skew first — see
+ * `OBSERVER_ONSET_SKEW_MS` and `trueOnsetMs`. An earlier version of this
+ * comment claimed the onset was trustworthy "because the audio starts when
+ * the player says it starts". That was the assumption the ruler disproved.
  */
 export function audibleEndMs(obs, play) {
   if (obs?.onsetMs == null) return null
   const stated = obs.expectedDurationMs ?? play?.durationMs ?? null
   if (stated === null) return obs.endMs ?? null
-  return obs.onsetMs + stated
+  return trueOnsetMs(obs) + stated
+}
+
+/**
+ * The observer's `onsetMs` moved forward by the measured status-event skew,
+ * for the play kinds the skew was measured on. Everything downstream — the
+ * audible end, delivered breath, the lead-in budget — is built on this rather
+ * than on the raw event.
+ */
+export function trueOnsetMs(obs) {
+  if (obs?.onsetMs == null) return null
+  return obs.onsetMs + (SKEW_CORRECTED_KINDS.has(obs.kind) ? OBSERVER_ONSET_SKEW_MS : 0)
+}
+
+/** `onsetLatencyMs` corrected the same way; null when the raw value is absent. */
+export function trueOnsetLatencyMs(obs) {
+  if (obs?.onsetLatencyMs == null) return null
+  return obs.onsetLatencyMs + (SKEW_CORRECTED_KINDS.has(obs.kind) ? OBSERVER_ONSET_SKEW_MS : 0)
 }
 
 export function parseAnnounceDispatches(text) {
@@ -332,8 +438,9 @@ export function analyze(text, constants = null) {
       plays: rows.length,
       observed: rows.filter((j) => j.obs !== null).length,
       outcomes: tally(rows.map((j) => j.obs ?? { outcome: 'unobserved' }), 'outcome'),
-      onset: latencyStats(ok.map((j) => j.obs.onsetLatencyMs)),
-      byPath: Object.fromEntries(paths.map((path) => [path, latencyStats(ok.filter((j) => j.play.path === path).map((j) => j.obs.onsetLatencyMs))])),
+      onset: latencyStats(ok.map((j) => trueOnsetLatencyMs(j.obs))),
+      onsetRawStatusEvent: latencyStats(ok.map((j) => j.obs.onsetLatencyMs)),
+      byPath: Object.fromEntries(paths.map((path) => [path, latencyStats(ok.filter((j) => j.play.path === path).map((j) => trueOnsetLatencyMs(j.obs)))])),
       truncated: ok.filter((j) => typeof j.obs.observedDurationMs === 'number' && typeof j.obs.expectedDurationMs === 'number' && j.obs.observedDurationMs < j.obs.expectedDurationMs - TRUNCATION_MS).map((j) => ({ playId: j.play.playId, label: j.play.label, expectedMs: j.obs.expectedDurationMs, observedMs: j.obs.observedDurationMs })),
     }
     if (families[kind].truncated.length > 0) hard.push(`${kind}: ${families[kind].truncated.length} play(s) cut short by more than ${TRUNCATION_MS} ms`)
@@ -369,6 +476,11 @@ export function analyze(text, constants = null) {
     const audibleEnd = audibleEndMs(obs, play)
     if (audibleEnd === null) continue
     const endLagMs = r1(obs.endMs - audibleEnd)
+    // The same lag measured against the UNCORRECTED onset. The pair is the
+    // skew cross-check: `rawEndLagMs - endLagMs` is the correction by
+    // construction, but the two are computed from opposite ends of the clip,
+    // and only one of them can be near zero. See `skewCrossCheck`.
+    const rawEndLagMs = r1(endLagMs + (SKEW_CORRECTED_KINDS.has(obs.kind) ? OBSERVER_ONSET_SKEW_MS : 0))
     const endByMono = toMonotonic(roundIndex, d.endByMs)
     if (d.kind === 'call') {
       const firstNodeMono = toMonotonic(roundIndex, d.firstNodeMs)
@@ -397,10 +509,12 @@ export function analyze(text, constants = null) {
         // Positive = the call finished later than intended, eating breath.
         endLateMs: intendedBreathMs === null ? null : r1(intendedBreathMs - deliveredBreathMs),
         giveUpMarginMs: endByMono === null ? null : r1(endByMono - audibleEnd),
-        onsetLatencyMs: obs.onsetLatencyMs ?? null,
+        onsetLatencyMs: trueOnsetLatencyMs(obs),
+        onsetLatencyRawMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
         lagAppliedMs: d.lagMs ?? null,
         endLagMs,
+        rawEndLagMs,
       })
     } else if (d.kind === 'lead-in') {
       leadIns.push({
@@ -409,9 +523,11 @@ export function analyze(text, constants = null) {
         vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
         endMinusEndByMs: endByMono === null ? null : r1(audibleEnd - endByMono),
-        onsetLatencyMs: obs.onsetLatencyMs ?? null,
+        onsetLatencyMs: trueOnsetLatencyMs(obs),
+        onsetLatencyRawMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
         endLagMs,
+        rawEndLagMs,
       })
     }
   }
@@ -423,21 +539,140 @@ export function analyze(text, constants = null) {
     if (c.endLateMs !== null) s.endLate.push(c.endLateMs)
   }
   const breathBySlot = Object.fromEntries(
-    Object.entries(bySlot).map(([slot, s]) => [slot, { n: s.n, vocabulary: s.vocabulary, plannedBreathMs: s.plannedBreathMs, medianBreathMs: r1(median(s.breath)), medianEndLateMs: s.endLate.length > 0 ? r1(median(s.endLate)) : null, p95BreathMs: r1(percentile(s.breath, 95)) }]),
-  )
-  // How far the END EVENT lagged the audio, per player path. Not a defect —
-  // a property of the reporting, and the reason breath is scored against
-  // `onset + stated duration` rather than against the end event.
-  const endLagByPath = Object.fromEntries(
-    [...new Set([...calls, ...leadIns].map((r) => r.path ?? 'unknown'))].map((path) => [
-      path,
-      latencyStats([...calls, ...leadIns].filter((r) => (r.path ?? 'unknown') === path).map((r) => r.endLagMs)),
+    Object.entries(bySlot).map(([slot, s]) => [
+      slot,
+      {
+        n: s.n,
+        vocabulary: s.vocabulary,
+        plannedBreathMs: s.plannedBreathMs,
+        medianBreathMs: r1(median(s.breath)),
+        medianEndLateMs: s.endLate.length > 0 ? r1(median(s.endLate)) : null,
+        p95BreathMs: r1(percentile(s.breath, 95)),
+        // The LOW tail. A median breath of 338 ms says nothing about whether
+        // the coach ever landed on a punch; these two do, and they are the
+        // only numbers in this block the never-late guarantee depends on.
+        minBreathMs: s.breath.length > 0 ? r1(Math.min(...s.breath)) : null,
+        p5BreathMs: r1(percentile(s.breath, 5)),
+        lowTail: lowTailLabel(s.n),
+      },
     ]),
   )
+  // -- THE FLOOR — the never-late guarantee, asserted -------------------------
+  //
+  // Every per-bar call is placed to FINISH a tuned breath before that bar's
+  // first punch. It may be early; it must never be late. Until now that was a
+  // number in a report someone had to read. Two gates:
+  //
+  //   barsAtOrPastPunch — delivered breath ≤ 0. The call was still speaking
+  //     when the athlete threw. HARD, always, at any count. There is no
+  //     acceptable rate of this; one bar is the defect.
+  //   barsUnderFloor — delivered breath below `MIN_BREATH_MS`. SOFT above
+  //     `FLOOR_BREACH_SOFT_RATIO`, because the design floor is a comfort
+  //     target, not a correctness one, and a handful of wide slow bars
+  //     grazing it is the known state this plan is fixing.
+  //
+  // The floor comes from `callPlacement.ts` through `timing-constants.mjs`,
+  // never from a literal here. A capture analysed with a stale floor would
+  // report a breach rate against a number the app has not used for weeks;
+  // when the constant cannot be read the block says so and gates nothing.
+  const floorMs = constants?.breath?.MIN_BREATH_MS ?? null
+  const atOrPast = calls.filter((c) => c.breathMs <= 0)
+  const underFloor = floorMs === null ? [] : calls.filter((c) => c.breathMs < floorMs)
+  const worstBars = [...calls]
+    .sort((a, b) => a.breathMs - b.breathMs)
+    .slice(0, WORST_BARS_LISTED)
+    .map((c) => ({ slot: c.slot, roundIndex: c.roundIndex, vocabulary: c.vocabulary, deliveredBreathMs: c.breathMs, intendedBreathMs: c.plannedBreathMs, lateMs: c.lateMs, path: c.path }))
+  const breathFloor = {
+    floorMs,
+    source: floorMs === null ? 'unavailable — callPlacement.ts not read; the floor gates nothing on this run' : 'callPlacement.ts MIN_BREATH_MS',
+    n: calls.length,
+    barsAtOrPastPunch: atOrPast.length,
+    barsUnderFloor: underFloor.length,
+    barsUnderFloorRatio: calls.length === 0 || floorMs === null ? null : Math.round((underFloor.length / calls.length) * 1000) / 1000,
+    // WHERE the breaches are. A breach concentrated in one slot is a clip or
+    // a cue problem; one spread evenly across every slot is the clamp, and
+    // only the second is what the floor change addresses. Without this the
+    // count alone cannot tell them apart.
+    barsUnderFloorBySlot: Object.fromEntries(
+      [...new Set(underFloor.map((c) => c.slot))].map((slot) => {
+        const rows = underFloor.filter((c) => c.slot === slot)
+        return [slot, { bars: rows.length, ofSlot: calls.filter((c) => c.slot === slot).length, minBreathMs: r1(Math.min(...rows.map((c) => c.breathMs))) }]
+      }),
+    ),
+    minBreathMs: calls.length > 0 ? r1(Math.min(...calls.map((c) => c.breathMs))) : null,
+    p5BreathMs: r1(percentile(calls.map((c) => c.breathMs), 5)),
+    // The reference the tail is read against, over EVERY call in the capture
+    // — not per slot and not per vocabulary. A min of 57 ms means one thing
+    // against a median of 222 and another against a median of 90.
+    medianBreathMs: r1(median(calls.map((c) => c.breathMs))),
+    lowTail: lowTailLabel(calls.length),
+    worstBars,
+  }
+  if (atOrPast.length > 0) {
+    hard.push(`${atOrPast.length} bar(s) with the call still sounding at the punch (delivered breath ≤ 0) — never-late is broken: ${atOrPast.slice(0, 3).map((c) => `${c.slot} r${c.roundIndex} ${c.breathMs} ms`).join(', ')}`)
+  }
+  if (floorMs !== null && breathFloor.barsUnderFloorRatio !== null && breathFloor.barsUnderFloorRatio > FLOOR_BREACH_SOFT_RATIO) {
+    soft.push(`${underFloor.length}/${calls.length} bars (${Math.round(breathFloor.barsUnderFloorRatio * 1000) / 10}%) delivered under the ${floorMs} ms breath floor — min ${breathFloor.minBreathMs} ms`)
+  }
+
+  // THE SKEW CROSS-CHECK — the independent corroboration of
+  // `OBSERVER_ONSET_SKEW_MS`, and the reason this block exists at all.
+  //
+  // A clip's end event should land on `onset + stated duration`. Measured
+  // against the RAW onset it did not: the residual ran +124 / +94 / +67 ms by
+  // path, and for a long time that was written off here as "reporting lag" —
+  // a property of the end event nobody could explain.
+  //
+  // It was never the end event. Re-measured against the CORRECTED onset the
+  // residual collapses to roughly +29 / −1 / −28, straddling zero. The end
+  // event was honest all along; the onset was early by the same ~95 ms the
+  // direct calibration measured at the other end of the clip.
+  //
+  // That is the whole argument. Two instruments that share no code path — a
+  // stopwatch on `voice-latency.tsx` timing one play two ways, and the drift
+  // of an end event against a stated duration across hundreds of plays —
+  // agree on the size of the error and on which end of the clip was lying.
+  // A future capture where `residualByPath` walks away from zero means the
+  // constant has gone stale (a media3 or expo-audio change), not that the
+  // end event has drifted.
+  const allEnds = [...calls, ...leadIns]
+  const pathsSeen = [...new Set(allEnds.map((r) => r.path ?? 'unknown'))]
+  const statsFor = (path, key) => latencyStats(allEnds.filter((r) => (r.path ?? 'unknown') === path).map((r) => r[key]))
+  const skewCrossCheck = {
+    appliedSkewMs: OBSERVER_ONSET_SKEW_MS,
+    measures: 'end event vs onset + stated duration; residual should straddle zero, raw should sit near +skew',
+    /** Against the corrected onset. This is the one that should be ~0. */
+    residualByPath: Object.fromEntries(pathsSeen.map((p) => [p, statsFor(p, 'endLagMs')])),
+    /** Against the raw onset — what this tool used to call "reporting lag". */
+    rawByPath: Object.fromEntries(pathsSeen.map((p) => [p, statsFor(p, 'rawEndLagMs')])),
+    /** Signed: how much closer to zero the correction moved the median. */
+    agreementByPath: Object.fromEntries(
+      pathsSeen.map((p) => {
+        const raw = statsFor(p, 'rawEndLagMs').medianMs
+        const res = statsFor(p, 'endLagMs').medianMs
+        return [p, raw === null || res === null ? null : { rawMedianMs: raw, residualMedianMs: res, improvedByMs: r1(Math.abs(raw) - Math.abs(res)) }]
+      }),
+    ),
+  }
+  // A residual this large means the correction is no longer the right size on
+  // this build. Soft, not hard: one odd path should not fail a whole capture.
+  for (const [path, s] of Object.entries(skewCrossCheck.residualByPath)) {
+    if (s.medianMs !== null && s.n >= SKEW_CROSS_CHECK_MIN_SAMPLES && Math.abs(s.medianMs) > SKEW_CROSS_CHECK_TOLERANCE_MS) {
+      soft.push(`skew cross-check: ${path} end-event residual median ${s.medianMs} ms (n${s.n}) exceeds ±${SKEW_CROSS_CHECK_TOLERANCE_MS} — OBSERVER_ONSET_SKEW_MS (${OBSERVER_ONSET_SKEW_MS}) may be stale on this build`)
+    }
+  }
   const breathByVocab = {}
   for (const vocab of new Set(calls.map((c) => c.vocabulary ?? 'unknown'))) {
     const rows = calls.filter((c) => (c.vocabulary ?? 'unknown') === vocab)
-    breathByVocab[vocab] = { n: rows.length, medianBreathMs: r1(median(rows.map((c) => c.breathMs))), medianEndLateMs: r1(median(rows.map((c) => c.endLateMs).filter((v) => v !== null))) }
+    const b = rows.map((c) => c.breathMs)
+    breathByVocab[vocab] = {
+      n: rows.length,
+      medianBreathMs: r1(median(b)),
+      medianEndLateMs: r1(median(rows.map((c) => c.endLateMs).filter((v) => v !== null))),
+      minBreathMs: b.length > 0 ? r1(Math.min(...b)) : null,
+      p5BreathMs: r1(percentile(b, 5)),
+      lowTail: lowTailLabel(rows.length),
+    }
   }
   const leadInSummary = {
     n: leadIns.length,
@@ -465,7 +700,7 @@ export function analyze(text, constants = null) {
     // last place still scoring against the end EVENT, which would have
     // reported the ~100 ms reporting lag as the coach overrunning the ring.
     const announceEnd = audibleEndMs(obs, play)
-    announces.push({ slotId: d.slotId, cueId, onsetLatencyMs: obs.onsetLatencyMs ?? null, endToRingMs: firstRing && announceEnd !== null ? r1(firstRing.monotonicTimeMs - announceEnd) : null })
+    announces.push({ slotId: d.slotId, cueId, onsetLatencyMs: trueOnsetLatencyMs(obs), endToRingMs: firstRing && announceEnd !== null ? r1(firstRing.monotonicTimeMs - announceEnd) : null })
   }
   const endToRing = announces.map((a) => a.endToRingMs).filter((v) => v !== null)
   const announceSummary = {
@@ -504,12 +739,28 @@ export function analyze(text, constants = null) {
     // actually just "the bell stopped it, then rang". The true gaps were
     // 420 ms and 498 ms, both past this analyzer's own 400 ms band, and no
     // warning fired.
+    // DOMAIN RULE. The skew correction applies to players, not to the ceremony
+    // playlists (`SKEW_CORRECTED_KINDS`), so three kinds of comparison exist
+    // here and only two are legitimate:
+    //
+    //   corrected audio vs a CLOCK event  — fine, and it must be corrected:
+    //       the bell against `round.boundary` is real audio lateness.
+    //   raw audio vs raw audio            — fine: both playlists, one domain.
+    //   corrected audio vs RAW audio      — never. It manufactures the skew as
+    //       a finding. The warning (playlist, uncalibrated) against the bell
+    //       (player, calibrated) is exactly that pairing, so the bell is used
+    //       RAW there and the row says so.
+    //
+    // Once the playlist path is calibrated too (plan 5b), warnEndToBell moves
+    // into the corrected domain and this split goes away.
     const warnAudibleEnd = audibleEndMs(warn)
     const recoveryAudibleEnd = audibleEndMs(recovery)
     const row = {
       roundIndex: b.roundIndex,
-      bellOnsetLatencyMs: bell ? r1(bell.onsetMs - b.monotonicTimeMs) : null,
+      bellOnsetLatencyMs: bell ? r1(trueOnsetMs(bell) - b.monotonicTimeMs) : null,
       warnEndToBellMs: warn && bell && warnAudibleEnd !== null ? r1(bell.onsetMs - warnAudibleEnd) : null,
+      /** Both operands raw: the playlist path has no calibration yet. */
+      warnEndToBellDomain: 'raw (playlist uncalibrated)',
       warnOutcome: warn?.outcome ?? null,
       // How long the playlist was held open past its own audio — the teardown
       // gap, NOT the clip overrunning. Reported separately so the two can
@@ -526,9 +777,15 @@ export function analyze(text, constants = null) {
   }
   const ceremonies = {
     rounds,
+    // Which domain each row is reported in, so a reader never lines these up
+    // against the corrected family medians and reads the difference as a
+    // finding. Intro/metronome/warning/recovery run through
+    // `createAudioPlaylist`, which the ruler has not measured (plan 5b); the
+    // bell is a player and is corrected.
+    domain: { bells: 'corrected', intro: 'raw (playlist uncalibrated)', metronome: 'raw (playlist uncalibrated)', rounds: 'mixed — see per-row *Domain fields' },
     intro: intros.map((o) => ({ onsetLatencyMs: o.onsetLatencyMs ?? null, driftMs: typeof o.observedDurationMs === 'number' && typeof o.expectedDurationMs === 'number' ? r1(o.observedDurationMs - o.expectedDurationMs) : null, outcome: o.outcome })),
     metronome: { n: metronomes.length, onset: latencyStats(metronomes.map((o) => o.onsetLatencyMs)), outcomes: tally(metronomes, 'outcome') },
-    bells: { n: bells.length, onset: latencyStats(bells.map((o) => o.onsetLatencyMs)) },
+    bells: { n: bells.length, onset: latencyStats(bells.map((o) => trueOnsetLatencyMs(o))) },
   }
 
   // -- the token-due dispatch loop against its own schedule -------------------
@@ -580,7 +837,7 @@ export function analyze(text, constants = null) {
     coverage: { playsWithId: playsWithId.length, observed: playsWithId.length - unobserved.length, ratio: coverage === null ? null : Math.round(coverage * 1000) / 1000, unobserved: unobserved.slice(0, 20).map((p) => ({ playId: p.playId, kind: p.kind, label: p.label })) },
     fit: [...fit.values()],
     families,
-    breath: { calls: calls.length, bySlot: breathBySlot, byVocab: breathByVocab, endLagByPath },
+    breath: { calls: calls.length, bySlot: breathBySlot, byVocab: breathByVocab, floor: breathFloor, skewCrossCheck },
     leadIns: leadInSummary,
     announces: announceSummary,
     ceremonies,
@@ -682,6 +939,24 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
       status: 'superseded',
       basis: `the ${slotRows.length} slots agree within ${Math.round(Math.max(...lateByslot) - Math.min(...lateByslot))} ms — the global shift above covers them; per-slot overrides are for a slot that disagrees with its neighbours`,
     })
+  } else if (slotRows.length === 1) {
+    // THE SINGLE-SLOT HOLE. `uniform` needs two slots to compare, so a capture
+    // carrying exactly one qualifying slot can never be uniform — and fell
+    // straight through to the per-slot branch below, which writes
+    // `apply: true` overrides. That is the file's own anti-pattern reached
+    // from the opposite direction: with one witness there is no evidence
+    // distinguishing "this slot is unusual" from "the dispatch path is slow",
+    // and only the first of those readings has a per-slot fix. A short drive
+    // or a heavily filtered capture is enough to land here.
+    const [slot, s] = slotRows[0]
+    proposals.push({
+      constant: `CALL_BREATH_OVERRIDES['${slot}']`,
+      current: c.breath?.CALL_BREATH_OVERRIDES?.[slot] ?? `derived ${s.plannedBreathMs}`,
+      proposed: 'none',
+      status: 'insufficient slots',
+      basis: `only one slot qualified (${s.n} bars, median ${s.medianEndLateMs} ms late) — one witness cannot separate a slot-specific problem from a global dispatch lag, and a per-slot override would bake the wrong one in. Re-drive for a second slot.`,
+      apply: false,
+    })
   } else {
     for (const [slot, s] of slotRows) {
       if (Math.abs(s.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
@@ -716,6 +991,16 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
   }
 
   // Audio output latency: the armed-path onset median is the playhead's own lag.
+  //
+  // INERT. This proposal is kept for the measurement, not for the edit.
+  // `DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS` feeds `calibratedLatencyMs`,
+  // which only `dispatchAtMsForTickTime` reads — and that helper has ZERO
+  // production callers today. Changing the constant changes nothing that
+  // plays. Worse, the compensation it would apply is the same lateness
+  // `CALL_DISPATCH_LAG_MS = 71` already pays in the click-script path, so
+  // wiring it later without retiring that lag double-pays and pulls every
+  // call early by the amount twice. Whoever revives the helper owns
+  // reconciling the two; until then `apply` is hard `false`.
   const click = families['click-script']
   const armed = click?.byPath?.armed ?? click?.onset ?? null
   if (armed && armed.n >= 10 && armed.medianMs !== null) {
@@ -725,7 +1010,8 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
       current,
       proposed: Math.round(armed.medianMs + (cal ?? 0)),
       basis: `armed click-script onset median ${armed.medianMs} ms (p95 ${armed.p95Ms}, jitter ${armed.jitterMs}) over ${armed.n}${cal === null ? ' — uncalibrated, playhead only' : ` + ${cal} ms calibration`}`,
-      apply: cal !== null,
+      apply: false,
+      inert: 'dispatchAtMsForTickTime has no production callers; CALL_DISPATCH_LAG_MS already pays this in the shipping path',
     })
   }
   const fresh = click?.byPath?.fresh ?? null
@@ -780,16 +1066,42 @@ export function renderReport(report, sessionDir = '') {
   for (const r of report.fit) L.push(`- round ${r.roundIndex}: offset ${r.offsetMs} ms from ${r.n} tokenDue (spread ${r.spreadMs}) · boundary ${r.boundaryOffsetMs} · disagreement ${r.disagreementMs ?? '—'} ms`)
   L.push('')
   L.push(`## Breath (${report.breath.calls} calls)`)
-  L.push('| slot | n | vocab | intended | delivered median | p95 | shortfall median |')
-  L.push('|---|---|---|---|---|---|---|')
-  for (const [slot, s] of Object.entries(report.breath.bySlot)) L.push(`| ${slot} | ${s.n} | ${s.vocabulary ?? '—'} | ${s.plannedBreathMs ?? '—'} | ${s.medianBreathMs} | ${s.p95BreathMs} | ${s.medianEndLateMs ?? '—'} |`)
+  L.push('| slot | n | vocab | intended | delivered min | low tail | median | p95 | shortfall median |')
+  L.push('|---|---|---|---|---|---|---|---|---|')
+  for (const [slot, s] of Object.entries(report.breath.bySlot)) L.push(`| ${slot} | ${s.n} | ${s.vocabulary ?? '—'} | ${s.plannedBreathMs ?? '—'} | ${s.minBreathMs ?? '—'} | ${s.p5BreathMs ?? '—'} (${s.lowTail}) | ${s.medianBreathMs} | ${s.p95BreathMs} | ${s.medianEndLateMs ?? '—'} |`)
   L.push('')
-  L.push(
-    'end-event lag (reporting, not audio — breath is scored against onset + stated duration): ' +
-      (Object.entries(report.breath.endLagByPath ?? {})
-        .map(([p, s]) => `${p} ${s.medianMs ?? '—'} ms (n${s.n})`)
-        .join(', ') || '—'),
-  )
+
+  const fl = report.breath.floor
+  L.push('### Floor — never late')
+  L.push('')
+  if (fl.floorMs === null) {
+    L.push(`floor: **${fl.source}**`)
+  } else {
+    L.push(
+      `floor ${fl.floorMs} ms · **at or past the punch: ${fl.barsAtOrPastPunch}**` +
+        ` · under floor ${fl.barsUnderFloor}/${fl.n}` +
+        `${fl.barsUnderFloorRatio === null ? '' : ` (${Math.round(fl.barsUnderFloorRatio * 1000) / 10}%)`}` +
+        ` · min ${fl.minBreathMs ?? '—'} · ${fl.lowTail} ${fl.p5BreathMs ?? '—'}`,
+    )
+  }
+  if (fl.worstBars.length > 0) {
+    L.push('')
+    L.push('| tightest bars | round | vocab | delivered | intended | dispatch late | path |')
+    L.push('|---|---|---|---|---|---|---|')
+    for (const w of fl.worstBars) L.push(`| ${w.slot} | ${w.roundIndex} | ${w.vocabulary ?? '—'} | ${w.deliveredBreathMs} | ${w.intendedBreathMs ?? '—'} | ${w.lateMs ?? '—'} | ${w.path ?? '—'} |`)
+  }
+  L.push('')
+  const xc = report.breath.skewCrossCheck
+  L.push(`### Skew cross-check (applied correction ${xc?.appliedSkewMs ?? '—'} ms)`)
+  L.push('')
+  L.push('End event vs `onset + stated duration`. Raw sits near +skew; residual should straddle zero.')
+  L.push('')
+  L.push('| path | n | raw median | residual median | closer to zero by |')
+  L.push('|---|---|---|---|---|')
+  for (const [p, a] of Object.entries(xc?.agreementByPath ?? {})) {
+    const n = xc.residualByPath[p]?.n ?? 0
+    L.push(`| ${p} | ${n} | ${a?.rawMedianMs ?? '—'} | ${a?.residualMedianMs ?? '—'} | ${a?.improvedByMs ?? '—'} |`)
+  }
   L.push('')
   L.push(`lead-ins: n ${report.leadIns.n} · end − endBy median ${report.leadIns.medianEndMinusEndByMs ?? '—'} ms (p95 ${report.leadIns.p95EndMinusEndByMs ?? '—'}) · walked over ${report.leadIns.walkedOver}`)
   L.push(`combo announces: n ${report.announces.n} · end → first ring median ${report.announces.medianEndToRingMs ?? '—'} ms · spread ${report.announces.spreadMs ?? '—'} · tight(60) ${report.announces.tightWithin60ms ?? '—'} · cut by ring ${report.announces.cutByRing}`)
@@ -810,7 +1122,7 @@ export function renderReport(report, sessionDir = '') {
   L.push('## Proposals (for the ear, never applied here)')
   L.push('| constant | current | proposed | apply? | basis |')
   L.push('|---|---|---|---|---|')
-  for (const p of report.proposals) L.push(`| ${p.constant} | ${p.current ?? '—'} | ${p.proposed ?? '—'} | ${p.status ?? (p.apply ? 'yes' : 'no')} | ${p.basis ?? p.note ?? ''} |`)
+  for (const p of report.proposals) L.push(`| ${p.constant} | ${p.current ?? '—'} | ${p.proposed ?? '—'} | ${p.status ?? (p.inert ? 'INERT' : p.apply ? 'yes' : 'no')} | ${p.basis ?? p.note ?? ''}${p.inert ? ` — **inert:** ${p.inert}` : ''} |`)
   if (report.notes.length) {
     L.push('')
     for (const n of report.notes) L.push(`- ${n}`)
