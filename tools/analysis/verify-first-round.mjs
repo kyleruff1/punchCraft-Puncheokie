@@ -47,7 +47,10 @@ import { extractField, numField, parseTimestampMs, stitchLogRecords } from './lo
 // The manifest anchors every per-word event to the strike beat (the
 // engine's `token-due` moment), so the observed event may lead the
 // expected by up to a phrase's duration. Widen the windows accordingly:
-// matched = "same second"; late = "within the following combo's window".
+// matched = "same second"; outside that, the verdict is `early` or `late` by
+// the SIGN of the delta — an event that fired ahead of its mark is not late,
+// and labelling it so points the reader at the wrong defect (every quick
+// workout's lead-ins read `late` at −1.9 s until the anchor was fixed).
 const MATCH_WINDOW_MS = 1000
 const LATE_WINDOW_MS = 2500
 
@@ -469,10 +472,19 @@ function correlateCoachEvents(expected, observed, deferrals = []) {
         deltaMs: bestDelta,
       })
     } else {
+      // Sign-aware: a clip that fired EARLY is not late, and calling it late
+      // sends whoever reads the row hunting the wrong defect. Every quick
+      // workout's three lead-ins read `late` with deltas of −1.9 to −2.4 s
+      // — they were early, by exactly the amount the manifest's own anchor
+      // was wrong (fixed in callPlacement). The bucketing was on |delta|, so
+      // the sign that would have named the cause was thrown away.
+      //
+      // Both still warn: outside the match window is drift either way. Only
+      // the label changes, and with it the direction it points.
       usedObservedIndex.add(bestIdx)
       verdicts.push({
         expected: exp,
-        verdict: 'late',
+        verdict: bestDelta < 0 ? 'early' : 'late',
         observed: observed[bestIdx],
         deltaMs: bestDelta,
       })
@@ -530,6 +542,8 @@ function classifyRunHealth(t0, reanchor, verdicts, extras, dispatcher, provenanc
   const count = (k) => verdicts.filter((v) => v.verdict === k).length
   const matched = count('matched')
   const late = count('late')
+  /** Outside the match window on the EARLY side — drift, but the opposite drift. */
+  const early = count('early')
   const missing = count('missing')
   const deferred = count('deferred')
   // Still 0, and honestly so. The candidate pool is pre-filtered on the
@@ -571,6 +585,7 @@ function classifyRunHealth(t0, reanchor, verdicts, extras, dispatcher, provenanc
     (!gateSuppressed && newGates)
   const softWarn =
     late > 0 ||
+    early > 0 ||
     extra > 0 ||
     deferredUnattributed > 0 ||
     reanchorRegression ||
@@ -581,6 +596,7 @@ function classifyRunHealth(t0, reanchor, verdicts, extras, dispatcher, provenanc
     comboExpected,
     matched,
     late,
+    early,
     missing,
     deferred,
     deferredUnattributed,
@@ -664,7 +680,8 @@ function renderReport(
   lines.push(`|---|---|`)
   lines.push(`| Total expected coach events | ${health.total} |`)
   lines.push(`| Matched (within ±${MATCH_WINDOW_MS}ms) | ${health.matched} |`)
-  lines.push(`| Late (${MATCH_WINDOW_MS}–${LATE_WINDOW_MS}ms drift) | ${health.late} |`)
+  lines.push(`| Late (fired ${MATCH_WINDOW_MS}–${LATE_WINDOW_MS}ms AFTER its mark) | ${health.late} |`)
+  lines.push(`| Early (fired ${MATCH_WINDOW_MS}–${LATE_WINDOW_MS}ms BEFORE its mark) | ${health.early} |`)
   lines.push(`| Missing | ${health.missing} |`)
   lines.push(`| Deferred (coach lane busy — DROPPED) | ${health.deferred} |`)
   lines.push(`| Duplicated | ${health.duplicated} |`)

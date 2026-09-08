@@ -137,6 +137,55 @@ describe('parseLogcat — defects that were silent', () => {
   })
 })
 
+describe('verify — a drifted event is labelled by the SIGN of its drift', () => {
+  /** The combo announce sounding at `time`, matched to COMBO_EXPECTATION by text. */
+  const announceAt = (time) =>
+    [
+      line(
+        time,
+        "'[INFO] puncheokie.voice.play', 'combo-announce playing', { kind: 'combo-announce',",
+      ),
+      line(time, `  text: '${COMBO_EXPECTATION.text}',`),
+      line(time, '  durationMs: 900 }'),
+    ].join('\n')
+
+  // t0 = 13:49:47.342; the expectation sits at +5559 ms, i.e. 13:49:52.901.
+
+  it('calls an event that fired BEFORE its mark early, not late', () => {
+    // 13:49:50.901 is +3559 ms — 2000 ms EARLY, outside the ±1000 ms match
+    // window. This is the shape every quick workout's lead-ins had while the
+    // manifest anchored them to the first strike: deltas of −1.9 to −2.4 s,
+    // every one of them reported as 'late' because the bucketing was on
+    // |delta| and threw away the sign that named the cause.
+    const result = verify(manifestWith([COMBO_EXPECTATION]), [T0_LINE, announceAt('13:49:50.901'), ''].join('\n'))
+    expect(result.verdicts[0].verdict).toBe('early')
+    expect(result.verdicts[0].deltaMs).toBe(-2000)
+    expect(result.health.early).toBe(1)
+    expect(result.health.late).toBe(0)
+    // Still a warning — outside the match window is drift either way; only
+    // the direction it points has changed.
+    expect(result.health.softWarn).toBe(true)
+    expect(result.health.hardFail).toBe(false)
+  })
+
+  it('still calls an event that fired AFTER its mark late', () => {
+    // 13:49:54.901 is +7559 ms — 2000 ms late.
+    const result = verify(manifestWith([COMBO_EXPECTATION]), [T0_LINE, announceAt('13:49:54.901'), ''].join('\n'))
+    expect(result.verdicts[0].verdict).toBe('late')
+    expect(result.verdicts[0].deltaMs).toBe(2000)
+    expect(result.health.late).toBe(1)
+    expect(result.health.early).toBe(0)
+  })
+
+  it('inside the match window neither label applies', () => {
+    // 13:49:52.401 is −500 ms: early, but within ±1000 ms, so matched.
+    const result = verify(manifestWith([COMBO_EXPECTATION]), [T0_LINE, announceAt('13:49:52.401'), ''].join('\n'))
+    expect(result.verdicts[0].verdict).toBe('matched')
+    expect(result.health.early).toBe(0)
+    expect(result.health.late).toBe(0)
+  })
+})
+
 describe('verify — deferral join', () => {
   const deferredAt = (time, slotId) =>
     [
