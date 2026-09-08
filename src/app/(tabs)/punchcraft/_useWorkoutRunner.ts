@@ -109,6 +109,7 @@ export {
   BREATH_REF_SLOT_MS,
   BREATH_TRACK_GAIN,
   MIN_BREATH_MS,
+  DELIVERED_BREATH_SHORTFALL_MS,
   CALL_BREATH_OVERRIDES,
   breathForBar,
 } from '@domain/coach/callPlacement'

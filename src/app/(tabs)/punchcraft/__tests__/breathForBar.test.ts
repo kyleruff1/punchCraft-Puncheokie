@@ -7,10 +7,21 @@
  */
 import {
   breathForBar,
+  DELIVERED_BREATH_SHORTFALL_MS,
   DENSE_BREATH_MS,
   MIN_BREATH_MS,
   BREATH_REF_SLOT_MS,
 } from '../_useWorkoutRunner'
+
+/**
+ * What the clamp actually floors at. `MIN_BREATH_MS` is the silence Kyle
+ * wants the athlete to HEAR; the audio path eats
+ * `DELIVERED_BREATH_SHORTFALL_MS` of whatever the scheduler asks for, so the
+ * scheduled floor is the sum. Asserting against `MIN_BREATH_MS` alone is how
+ * this test passed for weeks while 8-15% of bars in the tighter workouts
+ * delivered under it.
+ */
+const DELIVERED_FLOOR_MS = MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS
 
 const punch = { kind: 'punch' as const, number: 1 }
 const rest = { kind: 'rest' as const }
@@ -34,11 +45,13 @@ describe('breathForBar — set-aware call breath', () => {
     const { breathMs } = breathForBar(bar([0, 600]), 'numbers', 'call/y')
     expect(breathMs).toBe(DENSE_BREATH_MS.numbers - (600 - BREATH_REF_SLOT_MS))
     expect(breathMs).toBeLessThan(DENSE_BREATH_MS.numbers)
-    expect(breathMs).toBeGreaterThanOrEqual(MIN_BREATH_MS)
+    expect(breathMs).toBeGreaterThanOrEqual(DELIVERED_FLOOR_MS)
   })
 
-  it('a single-punch bar floors to MIN_BREATH_MS (no interval to track)', () => {
-    expect(breathForBar(bar([0]), 'numbers', 'call/z').breathMs).toBe(MIN_BREATH_MS)
+  it('a single-punch bar floors to the DELIVERED floor (no interval to track)', () => {
+    expect(breathForBar(bar([0]), 'numbers', 'call/z').breathMs).toBe(DELIVERED_FLOOR_MS)
+    // and what the athlete hears is the floor Kyle set, which is the point
+    expect(breathForBar(bar([0]), 'numbers', 'call/z').breathMs - DELIVERED_BREATH_SHORTFALL_MS).toBe(MIN_BREATH_MS)
   })
 
   it('anchors to the first PUNCH when the bar opens on a rest', () => {
@@ -53,6 +66,9 @@ describe('breathForBar — set-aware call breath', () => {
       const { breathMs } = breathForBar(bar([0, slot]), 'techniques', 'call/g')
       expect(breathMs).toBeGreaterThan(0) // callEnd is before the first node
       expect(breathMs).toBeLessThanOrEqual(DENSE_BREATH_MS.techniques)
+      // ...and stays before it AT THE EAR, which is the guarantee that was
+      // being read off the scheduled number rather than the delivered one.
+      expect(breathMs - DELIVERED_BREATH_SHORTFALL_MS).toBeGreaterThanOrEqual(MIN_BREATH_MS)
     }
   })
 
