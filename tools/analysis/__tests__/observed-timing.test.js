@@ -161,14 +161,17 @@ describe('joins', () => {
     expect(report.leadIns).toMatchObject({ n: 1, medianEndMinusEndByMs: 30, walkedOver: 1 })
   })
 
-  it('measures the combo announce against the block’s first ring', () => {
-    expect(report.announces).toMatchObject({ n: 1, withRing: 1, medianEndToRingMs: 200, cutByRing: 0 })
+  it('measures the combo announce against the block’s first ring, on the audible end', () => {
+    // onset 60040 + 900 stated = 60940 audible end, first ring 61200 → 260.
+    // The end EVENT at 61000 would have said 200 — the announce rail was the
+    // last join still scoring reporting lag as the coach overrunning.
+    expect(report.announces).toMatchObject({ n: 1, withRing: 1, medianEndToRingMs: 260, cutByRing: 0 })
   })
 
   it('measures the ceremonies around each work-entered boundary', () => {
     expect(report.ceremonies.rounds).toEqual([
       expect.objectContaining({ roundIndex: 0, bellOnsetLatencyMs: 20, warnEndToBellMs: null, recoveryEndToWarnOnsetMs: null }),
-      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 50, warnEndToBellMs: 150, warnLengthVsPlannedMs: 0, recoveryEndToWarnOnsetMs: 30000 }),
+      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 50, warnEndToBellMs: 150, warnHeldOpenPastAudioMs: 0, recoveryEndToWarnOnsetMs: 30000 }),
     ])
     expect(report.ceremonies.bells).toMatchObject({ n: 2 })
   })
@@ -193,7 +196,7 @@ describe('proposals', () => {
   const by = (name) => report.proposals.find((p) => p.constant === name)
 
   it('flags the rail constant as inert and measures the announce stand-in', () => {
-    expect(by('RAIL_K_MS')).toMatchObject({ current: 120, status: 'inert', measured: { announceEndToRingMedianMs: 200 } })
+    expect(by('RAIL_K_MS')).toMatchObject({ current: 120, status: 'inert', measured: { announceEndToRingMedianMs: 260 } })
   })
   it('proposes nothing for a shortfall inside the noise band', () => {
     // 15 ms of shortfall is not a finding. Before breath was scored on the

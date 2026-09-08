@@ -64,6 +64,29 @@ const BELL_WINDOW_MS = [-500, 3000]
 
 const r1 = (v) => (v === null || v === undefined || !Number.isFinite(v) ? null : Math.round(v * 10) / 10)
 
+/**
+ * Below this many samples, `percentile(v, 95)` returns the MAXIMUM — its index
+ * is `ceil(0.95 * n) - 1`, which is the last element for every n ≤ 19. Calling
+ * that "p95" in a proposal's basis line dresses a single worst sample as a
+ * distribution, and both quick-workout reports did exactly that from n = 11.
+ */
+export const TAIL_MIN_SAMPLES = 20
+
+/** `p95` when there are enough samples to mean it, `max (n=…)` when there are not. */
+function tailLabel(stats) {
+  return stats.n >= TAIL_MIN_SAMPLES ? 'p95' : `max (n=${stats.n}, too few for a p95)`
+}
+
+/**
+ * Whether a tail-derived proposal has the evidence to be acted on. Note what
+ * this is NOT: `current !== null`, which is what it used to be — that says
+ * only "the constant exists", so every such proposal shipped `apply: yes`
+ * however thin the sample.
+ */
+function enoughForTail(stats) {
+  return stats.n >= TAIL_MIN_SAMPLES
+}
+
 // ---------------------------------------------------------------------------
 // Parsers
 // ---------------------------------------------------------------------------
@@ -201,6 +224,8 @@ export function fitWorkAxis(tokenDue, boundaries) {
       n: offsets.length,
       spreadMs: offsets.length > 1 ? r1(percentile(offsets, 95) - percentile(offsets, 5)) : 0,
       boundaryOffsetMs,
+      /** The boundary's own `workElapsedMs`; 0 means it is the record that OPENS the round. */
+      boundaryWorkElapsedMs: boundary ? (boundary.workElapsedMs ?? null) : null,
       disagreementMs: offsetMs !== null && boundaryOffsetMs !== null ? r1(Math.abs(offsetMs - boundaryOffsetMs)) : null,
       source: offsets.length > 0 ? 'tokenDue' : boundary ? 'boundary' : 'none',
     })
@@ -274,8 +299,15 @@ export function analyze(text, constants = null) {
   const windows = roundWindows(boundaries)
   for (const round of fit.values()) {
     if (round.disagreementMs === null) continue
+    // A round's OWN opening boundary carries `workElapsedMs: 0` — the session
+    // clock has not advanced yet — so the whole disagreement there is the gap
+    // between the transition firing and the log record being written, not two
+    // clocks disagreeing. Warning on it made every capture report a ~78 ms
+    // "clock disagreement" that was the log site's own latency.
+    const opensTheRound = round.boundaryWorkElapsedMs === 0
     if (round.disagreementMs > FIT_DISAGREEMENT_HARD_MS) hard.push(`round ${round.roundIndex}: tokenDue fit disagrees with its work-entered boundary by ${round.disagreementMs} ms`)
-    else if (round.disagreementMs > FIT_DISAGREEMENT_SOFT_MS) soft.push(`round ${round.roundIndex}: tokenDue fit vs boundary ${round.disagreementMs} ms`)
+    else if (!opensTheRound && round.disagreementMs > FIT_DISAGREEMENT_SOFT_MS) soft.push(`round ${round.roundIndex}: tokenDue fit vs boundary ${round.disagreementMs} ms`)
+    else if (opensTheRound && round.disagreementMs > FIT_DISAGREEMENT_SOFT_MS) notes.push(`round ${round.roundIndex}: the work-entered boundary trails the tokenDue fit by ${round.disagreementMs} ms — that is the boundary log site's latency (its workElapsedMs is 0 by construction), not a clock disagreement`)
   }
   const toMonotonic = (roundIndex, workMs) => {
     const round = fit.get(roundIndex)
@@ -310,11 +342,27 @@ export function analyze(text, constants = null) {
   }
 
   // -- breath per call slot, lead-ins against endBy ---------------------------
-  const playByTrace = new Map(plays.filter((p) => p.traceId).map((p) => [p.traceId, p]))
+  // A traceId is `<slot>#<dispatchAtMs>` on the ROUND's work axis, which
+  // resets every round — so the same id recurs in round 2 and a Map keyed on
+  // it is last-write-wins. That silently scored round 1's onset against round
+  // 0's firstNodeMs on 8 of Six Count's 20 `call/1-2-3-4` bars and dragged
+  // that slot's published median from 308.7 to 299.2 ms. Consume matches in
+  // log order instead, so each dispatch takes the next unclaimed play.
+  const playQueueByTrace = new Map()
+  for (const p of plays) {
+    if (!p.traceId) continue
+    const queue = playQueueByTrace.get(p.traceId)
+    if (queue === undefined) playQueueByTrace.set(p.traceId, [p])
+    else queue.push(p)
+  }
+  const takePlay = (traceId) => {
+    const queue = playQueueByTrace.get(traceId)
+    return queue === undefined || queue.length === 0 ? undefined : queue.shift()
+  }
   const calls = []
   const leadIns = []
   for (const d of clickDispatches) {
-    const play = d.traceId ? playByTrace.get(d.traceId) : undefined
+    const play = d.traceId ? takePlay(d.traceId) : undefined
     const obs = play?.playId ? obsById.get(play.playId) : undefined
     const roundIndex = roundAt(windows, d.monotonicTimeMs)
     if (!obs || obs.outcome !== 'ok' || typeof obs.endMs !== 'number' || roundIndex === null) continue
@@ -403,14 +451,21 @@ export function analyze(text, constants = null) {
   // -- combo announces → first ring ----------------------------------------
   const announces = []
   for (const d of announceDispatches) {
-    const play = d.traceId ? playByTrace.get(d.traceId) : undefined
+    // Same FIFO consumption as the click dispatches above — a combo announce's
+    // traceId is its slotId, which is unique per cue, but taking from the
+    // shared queue keeps one rule for both joins.
+    const play = d.traceId ? takePlay(d.traceId) : undefined
     const obs = play?.playId ? obsById.get(play.playId) : undefined
     if (!obs || obs.outcome !== 'ok' || typeof obs.endMs !== 'number') continue
     const cueId = (d.slotId ?? '').split(':')[0]
     const firstRing = tokenDue
       .filter((t) => t.cueId === cueId && t.tokenIndex === 0 && t.monotonicTimeMs !== undefined && t.monotonicTimeMs >= (obs.onsetMs ?? obs.dispatchMs ?? 0))
       .sort((a, b) => a.monotonicTimeMs - b.monotonicTimeMs)[0]
-    announces.push({ slotId: d.slotId, cueId, onsetLatencyMs: obs.onsetLatencyMs ?? null, endToRingMs: firstRing ? r1(firstRing.monotonicTimeMs - obs.endMs) : null })
+    // The audible end, like calls and lead-ins — the announce rail was the
+    // last place still scoring against the end EVENT, which would have
+    // reported the ~100 ms reporting lag as the coach overrunning the ring.
+    const announceEnd = audibleEndMs(obs, play)
+    announces.push({ slotId: d.slotId, cueId, onsetLatencyMs: obs.onsetLatencyMs ?? null, endToRingMs: firstRing && announceEnd !== null ? r1(firstRing.monotonicTimeMs - announceEnd) : null })
   }
   const endToRing = announces.map((a) => a.endToRingMs).filter((v) => v !== null)
   const announceSummary = {
@@ -441,13 +496,26 @@ export function analyze(text, constants = null) {
     const bellAt = bell?.onsetMs ?? b.monotonicTimeMs
     const warn = warns.filter((o) => typeof o.endMs === 'number' && o.endMs <= bellAt + 2_000 && bellAt - o.endMs < 30_000).sort((x, y) => y.endMs - x.endMs)[0]
     const recovery = warn ? recoveries.filter((o) => typeof o.endMs === 'number' && typeof warn.onsetMs === 'number' && o.endMs < warn.onsetMs + 5_000 && warn.onsetMs - o.endMs < 90_000).sort((x, y) => y.endMs - x.endMs)[0] : undefined
+    // The ceremonies are scored on the AUDIBLE end, exactly as calls and
+    // lead-ins are. The round warning is always torn down by the bell, so its
+    // observation closes as `released` and its `endMs` is the teardown moment
+    // — subtracting that from the bell onset reported 29 ms and 40 ms on the
+    // two quick-workout sessions, which reads as a perfect landing and is
+    // actually just "the bell stopped it, then rang". The true gaps were
+    // 420 ms and 498 ms, both past this analyzer's own 400 ms band, and no
+    // warning fired.
+    const warnAudibleEnd = audibleEndMs(warn)
+    const recoveryAudibleEnd = audibleEndMs(recovery)
     const row = {
       roundIndex: b.roundIndex,
       bellOnsetLatencyMs: bell ? r1(bell.onsetMs - b.monotonicTimeMs) : null,
-      warnEndToBellMs: warn && bell ? r1(bell.onsetMs - warn.endMs) : null,
+      warnEndToBellMs: warn && bell && warnAudibleEnd !== null ? r1(bell.onsetMs - warnAudibleEnd) : null,
       warnOutcome: warn?.outcome ?? null,
-      warnLengthVsPlannedMs: warn && typeof warn.observedDurationMs === 'number' && typeof warn.expectedDurationMs === 'number' ? r1(warn.observedDurationMs - warn.expectedDurationMs) : null,
-      recoveryEndToWarnOnsetMs: recovery && warn && typeof warn.onsetMs === 'number' ? r1(warn.onsetMs - recovery.endMs) : null,
+      // How long the playlist was held open past its own audio — the teardown
+      // gap, NOT the clip overrunning. Reported separately so the two can
+      // never be read as one number again.
+      warnHeldOpenPastAudioMs: warn && typeof warn.endMs === 'number' && warnAudibleEnd !== null ? r1(warn.endMs - warnAudibleEnd) : null,
+      recoveryEndToWarnOnsetMs: recovery && warn && typeof warn.onsetMs === 'number' && recoveryAudibleEnd !== null ? r1(warn.onsetMs - recoveryAudibleEnd) : null,
       recoveryOutcome: recovery?.outcome ?? null,
     }
     if (row.warnEndToBellMs !== null && (row.warnEndToBellMs < WARN_END_TO_BELL_TARGET_MS[0] || row.warnEndToBellMs > WARN_END_TO_BELL_TARGET_MS[1])) {
@@ -463,9 +531,20 @@ export function analyze(text, constants = null) {
     bells: { n: bells.length, onset: latencyStats(bells.map((o) => o.onsetLatencyMs)) },
   }
 
-  // -- rings against their own schedule --------------------------------------
+  // -- the token-due dispatch loop against its own schedule -------------------
+  // NOT ring latency. `cue.tokenDue` is JS-thread telemetry on the runner's
+  // 50 ms loop; the visible ring is a projection driven by
+  // `useRingBeatClock`'s Reanimated frame callback and lands within one
+  // 60 Hz frame (measured max 16.7 ms over 288 bars). The two disagree by a
+  // median 30-34 ms, so reading this as "the rings are 40 ms late" blames the
+  // paint for the probe's own lag.
   const ringLate = tokenDue.filter((t) => t.scheduledMs !== undefined && t.workElapsedMs !== undefined).map((t) => t.workElapsedMs - t.scheduledMs)
-  const rings = { n: tokenDue.length, late: latencyStats(ringLate), maxLateMs: ringLate.length > 0 ? r1(Math.max(...ringLate)) : null }
+  const rings = {
+    n: tokenDue.length,
+    measures: 'token-due dispatch loop, not the painted ring',
+    late: latencyStats(ringLate),
+    maxLateMs: ringLate.length > 0 ? r1(Math.max(...ringLate)) : null,
+  }
 
   // -- ducks -----------------------------------------------------------------
   const silent = joined.filter((j) => j.obs?.silentByVolume)
@@ -560,7 +639,21 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
     lateByslot.length >= 2 && Math.max(...lateByslot) - Math.min(...lateByslot) <= GLOBAL_SHIFT_BAND_MS
   const globalShift = uniform ? Math.round(median(lateByslot)) : null
 
-  if (uniform && Math.abs(globalShift) >= BREATH_PROPOSAL_MIN_MS) {
+  if (uniform && Math.abs(globalShift) < BREATH_PROPOSAL_MIN_MS) {
+    // Uniform, but too small to act on. This branch exists because the old
+    // `if (uniform && big) … else per-slot` fell THROUGH to per-slot overrides
+    // exactly when the slots agreed and the shift was under the floor — the
+    // anti-pattern this file's own comment forbids. Speed Burst hit it:
+    // slots [8.8, 13.5, 32.8, 44.5, 48.8] span 40 ms (uniform), median 33
+    // (< 40), and it emitted two `apply: yes` per-slot overrides.
+    proposals.push({
+      constant: 'CALL_DISPATCH_LAG_MS',
+      current: c.leads?.CALL_DISPATCH_LAG_MS ?? null,
+      proposed: 'unchanged',
+      status: 'within noise',
+      basis: `every slot loses about the same ${globalShift} ms (${slotRows.length} slots spanning ${Math.round(Math.min(...lateByslot))}–${Math.round(Math.max(...lateByslot))} ms), which is under the ${BREATH_PROPOSAL_MIN_MS} ms floor — one drive cannot tell this from jitter`,
+    })
+  } else if (uniform && Math.abs(globalShift) >= BREATH_PROPOSAL_MIN_MS) {
     // A uniform shortfall is the DISPATCH PATH, not the breath doctrine:
     // every slot loses the same milliseconds between the scheduler deciding
     // and the audio sounding. `CALL_DISPATCH_LAG_MS` is the constant that
@@ -638,11 +731,23 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
   const fresh = click?.byPath?.fresh ?? null
   if (fresh && fresh.n >= 10) {
     const current = c.audio?.ONE_SHOT_RELEASE_PAD_MS ?? null
-    proposals.push({ constant: 'ONE_SHOT_RELEASE_PAD_MS', current, proposed: Math.round((fresh.p95Ms + 200) / 50) * 50, basis: `fresh-path onset p95 ${fresh.p95Ms} ms over ${fresh.n} + 200 ms margin`, apply: current !== null })
+    proposals.push({
+      constant: 'ONE_SHOT_RELEASE_PAD_MS',
+      current,
+      proposed: Math.round((fresh.p95Ms + 200) / 50) * 50,
+      basis: `fresh-path onset ${tailLabel(fresh)} ${fresh.p95Ms} ms over ${fresh.n} + 200 ms margin`,
+      apply: enoughForTail(fresh),
+    })
   }
   if (armed && armed.n >= 10) {
     const current = c.audio?.CLICK_SCRIPT_PREARM_PAD_MS ?? null
-    proposals.push({ constant: 'CLICK_SCRIPT_PREARM_PAD_MS', current, proposed: Math.round((armed.p95Ms + 50) / 10) * 10, basis: `armed onset p95 ${armed.p95Ms} ms + 50 ms`, apply: current !== null })
+    proposals.push({
+      constant: 'CLICK_SCRIPT_PREARM_PAD_MS',
+      current,
+      proposed: Math.round((armed.p95Ms + 50) / 10) * 10,
+      basis: `armed onset ${tailLabel(armed)} ${armed.p95Ms} ms + 50 ms`,
+      apply: enoughForTail(armed),
+    })
   }
   if (instrumentSummary.n > 0) {
     proposals.push({ constant: 'instrument (no constant)', current: null, proposed: null, basis: `trigger → first frame median ${instrumentSummary.latency.medianMs} ms, jitter ${instrumentSummary.latency.jitterMs} ms — jitter is the gate; masked ${instrumentSummary.maskedRatio}, busy ${instrumentSummary.busyRatio}`, apply: false })
@@ -688,12 +793,14 @@ export function renderReport(report, sessionDir = '') {
   L.push('')
   L.push(`lead-ins: n ${report.leadIns.n} · end − endBy median ${report.leadIns.medianEndMinusEndByMs ?? '—'} ms (p95 ${report.leadIns.p95EndMinusEndByMs ?? '—'}) · walked over ${report.leadIns.walkedOver}`)
   L.push(`combo announces: n ${report.announces.n} · end → first ring median ${report.announces.medianEndToRingMs ?? '—'} ms · spread ${report.announces.spreadMs ?? '—'} · tight(60) ${report.announces.tightWithin60ms ?? '—'} · cut by ring ${report.announces.cutByRing}`)
-  L.push(`rings: n ${report.rings.n} · fire − schedule median ${report.rings.late.medianMs ?? '—'} p95 ${report.rings.late.p95Ms ?? '—'} max ${report.rings.maxLateMs ?? '—'}`)
+  L.push(
+    `token-due dispatch loop (NOT the painted ring — the ring is a frame-callback projection in useRingBeatClock and lands within one 60 Hz frame): n ${report.rings.n} · fire − schedule median ${report.rings.late.medianMs ?? '—'} p95 ${report.rings.late.p95Ms ?? '—'} max ${report.rings.maxLateMs ?? '—'}`,
+  )
   L.push('')
   L.push('## Ceremonies')
-  L.push('| round | bell onset | warn end → bell | warn len − planned | recovery end → warn | outcomes |')
+  L.push('| round | bell onset | warn end → bell | warn held open past audio | recovery end → warn | outcomes |')
   L.push('|---|---|---|---|---|---|')
-  for (const r of report.ceremonies.rounds) L.push(`| ${r.roundIndex} | ${r.bellOnsetLatencyMs ?? '—'} | ${r.warnEndToBellMs ?? '—'} | ${r.warnLengthVsPlannedMs ?? '—'} | ${r.recoveryEndToWarnOnsetMs ?? '—'} | warn ${r.warnOutcome ?? '—'} / recovery ${r.recoveryOutcome ?? '—'} |`)
+  for (const r of report.ceremonies.rounds) L.push(`| ${r.roundIndex} | ${r.bellOnsetLatencyMs ?? '—'} | ${r.warnEndToBellMs ?? '—'} | ${r.warnHeldOpenPastAudioMs ?? '—'} | ${r.recoveryEndToWarnOnsetMs ?? '—'} | warn ${r.warnOutcome ?? '—'} / recovery ${r.recoveryOutcome ?? '—'} |`)
   if (report.ceremonies.intro.length) L.push(`intro: ${report.ceremonies.intro.map((i) => `onset ${i.onsetLatencyMs ?? '—'} drift ${i.driftMs ?? '—'} (${i.outcome})`).join('; ')}`)
   L.push(`metronome: n ${report.ceremonies.metronome.n} onset median ${report.ceremonies.metronome.onset.medianMs ?? '—'} · bells: n ${report.ceremonies.bells.n} onset median ${report.ceremonies.bells.onset.medianMs ?? '—'}`)
   L.push(`ducks: ${report.duck.silentBirths} silent birth(s)${report.duck.silentBirths ? ` — ${report.duck.labels.join(', ')}` : ''}`)
