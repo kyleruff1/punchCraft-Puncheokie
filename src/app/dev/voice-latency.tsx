@@ -75,6 +75,8 @@ import {
   type AudioBuffer as OboeBuffer,
 } from 'react-native-audio-api'
 import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
+import { logger, safe } from '@/diagnostics/logger'
+import { findClickScript } from '@audio/voiceAssets/clickScriptManifest'
 
 import { colors } from '@/theme/colors'
 import { INSTRUMENT_KIT_DRUMS } from '@audio/voiceAssets/instrumentBankManifest'
@@ -105,6 +107,8 @@ const PLAYER_OPTIONS = { updateInterval: 10 } as const
 /* eslint-disable @typescript-eslint/no-require-imports */
 const SHORT_CLIP = require('../../../assets/spike-voice/tone-short.wav')
 const LONG_CLIP = require('../../../assets/spike-voice/tone-long.wav')
+/** The round bell — the only coach asset rendered at 24 kHz, and the slowest measured. */
+const BELL_MODULE = require('../../../assets/voice/numbers/standalone/bell.wav')
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 type CaseId =
@@ -211,6 +215,56 @@ async function armPlayer(player: AudioPlayer): Promise<void> {
  * not of the engine — which is exactly what has to be separated before
  * deciding whether the audio engine needs replacing at all.
  */
+/**
+ * RULER CALIBRATION (2026-09-07). Fire ONE play and time it two ways at once.
+ *
+ * Why this exists: the shipping coach observer calls a play's onset the moment
+ * `playbackStatusUpdate` reports `playing: true`. Across two full release
+ * sessions that event arrived with `positionAtOnsetMs === 0` in 296 of 296
+ * observations — media3 asserts "playing" with the playhead still at zero, on
+ * a buffer floored at 250 ms. So the number every coach latency figure in this
+ * project is built on does not measure sound leaving the device.
+ *
+ * This measures the same play against the playhead actually MOVING. The gap is
+ * the skew our reported onsets are optimistic by. It is a LOWER bound on the
+ * true skew, twice over: the playhead crossing zero is itself earlier than
+ * audio reaching the speaker, and `currentTime` is a blocking `runOnMain` hop
+ * resolved to one JS loop turn, so it reads late and compresses the gap.
+ *
+ * The third candidate instrument, `audioSampleUpdate` (real PCM frames), is
+ * NOT usable here: it reports `supported: true` on this tablet and delivers no
+ * samples above the silence threshold — every rep times out
+ * (docs/puncheokie-voice-spike.md:396). It is also post-volume, so it could
+ * never work on the muted unattended runs.
+ */
+async function timeBothClocks(
+  player: AudioPlayer,
+  timeoutMs = 3_000,
+): Promise<{ statusMs: number | null; playheadMs: number | null }> {
+  let statusMs: number | null = null
+  const startedAt = performance.now()
+  // Attached BEFORE play() so the transition cannot be missed. This is the
+  // exact predicate PlaybackObserver.onStatus uses for onset.
+  const subscription = player.addListener('playbackStatusUpdate', (status: { playing?: boolean }) => {
+    if (statusMs === null && status.playing === true) statusMs = performance.now() - startedAt
+  })
+  player.play()
+  let playheadMs: number | null = null
+  for (;;) {
+    if (player.currentTime > 0) {
+      playheadMs = performance.now() - startedAt
+      break
+    }
+    if (performance.now() - startedAt > timeoutMs) break
+    await new Promise<void>((resolve) => setTimeout(resolve, 1))
+  }
+  // Give a status event that is merely slow a fair chance to land before the
+  // pair is scored — otherwise a late callback would read as "never fired".
+  if (statusMs === null) await new Promise<void>((resolve) => setTimeout(resolve, 120))
+  subscription.remove()
+  return { statusMs, playheadMs }
+}
+
 async function timeArmedPlay(
   player: AudioPlayer,
   method: 'sampling' | 'playhead',
@@ -388,6 +442,77 @@ async function timeArmedOboe(
    * punches pinned at MIDI 127; if the fix works, the measured peaks should
    * spread instead of clustering at the top.
    */
+  /**
+   * RULER CALIBRATION — how optimistic is the coach's reported onset?
+   *
+   * Runs on REAL shipped coach clips (the click-script bank the workouts
+   * actually play), on the ARMED path the runner uses, and logs every pair so
+   * an unattended drive can read the result out of logcat.
+   */
+  const probeRuler = useCallback(async () => {
+    const REPS = 40
+    try {
+      // Real coach assets, not a synthetic tone: the question is about the
+      // clips the workouts actually play. Two lengths, because the bell (the
+      // one asset that is 24 kHz, and the slowest thing measured) may behave
+      // differently from a 48 kHz call.
+      const call = findClickScript('call/1-2-.-.', 'numbers') ?? findClickScript('call/1-1-2-.', 'numbers')
+      const cases: { label: string; module: number }[] = [
+        ...(call ? [{ label: `call ${call.id} (48k)`, module: call.module }] : []),
+        { label: 'bell (24k)', module: BELL_MODULE },
+      ]
+      say(`ruler: ${cases.length} asset(s) x ${REPS} reps — status event vs playhead moving`)
+
+      for (const c of cases) {
+        const player = createAudioPlayer(c.module, PLAYER_OPTIONS)
+        const pairs: { statusMs: number; playheadMs: number }[] = []
+        // Arm once, then reuse — the runner's hot path is a bare play() on an
+        // already-loaded player, and that is what we are calibrating.
+        await new Promise<void>((resolve) => setTimeout(resolve, 400))
+        for (let i = 0; i < REPS; i += 1) {
+          player.seekTo(0)
+          await new Promise<void>((resolve) => setTimeout(resolve, 250))
+          const { statusMs, playheadMs } = await timeBothClocks(player)
+          if (statusMs !== null && playheadMs !== null) pairs.push({ statusMs, playheadMs })
+          player.pause()
+          await new Promise<void>((resolve) => setTimeout(resolve, 150))
+        }
+        releaseAudioPlayer(player)
+
+        if (pairs.length === 0) {
+          say(`  ${c.label}: no paired samples (both clocks must fire)`)
+          logger.info('puncheokie.ruler', 'no paired samples', { asset: safe(c.label) })
+          continue
+        }
+        const med = (v: number[]): number => {
+          const s = [...v].sort((a, b) => a - b)
+          const m = Math.floor(s.length / 2)
+          return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
+        }
+        const st = pairs.map((p) => p.statusMs)
+        const ph = pairs.map((p) => p.playheadMs)
+        const skew = pairs.map((p) => p.playheadMs - p.statusMs)
+        const r = (v: number): number => Math.round(v * 10) / 10
+        say(`  ${c.label}: n=${pairs.length} status=${r(med(st))} playhead=${r(med(ph))} SKEW=${r(med(skew))} ms`)
+        logger.info('puncheokie.ruler', 'paired onset calibration', {
+          asset: safe(c.label),
+          n: safe(pairs.length),
+          statusMedianMs: safe(r(med(st))),
+          playheadMedianMs: safe(r(med(ph))),
+          skewMedianMs: safe(r(med(skew))),
+          skewMinMs: safe(r(Math.min(...skew))),
+          skewMaxMs: safe(r(Math.max(...skew))),
+        })
+      }
+      say('ruler: done — skew is how much our reported onsets UNDERSTATE, and it is a lower bound')
+      logger.info('puncheokie.ruler.done', 'ruler calibration complete', { reps: safe(REPS) })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      say(`ruler FAILED: ${message}`)
+      logger.warn('puncheokie.ruler', 'calibration failed', { error: safe(message) })
+    }
+  }, [say])
+
   const probeDynamics = useCallback(async () => {
     try {
       const ctx = new OboeAudioContext({ sampleRate: 48000 })
@@ -740,6 +865,15 @@ async function timeArmedOboe(
           style={[styles.button, running && styles.buttonDisabled]}
         >
           <Text style={styles.buttonText}>Run (mix, playhead)</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Calibrate ruler"
+          testID="probe-ruler"
+          onPress={() => void probeRuler()}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Calibrate ruler (status vs playhead)</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
