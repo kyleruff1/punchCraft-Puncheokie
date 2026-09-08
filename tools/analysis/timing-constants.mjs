@@ -136,6 +136,7 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
   const breath = {
     DENSE_BREATH_MS: readRecordConst(placement, 'DENSE_BREATH_MS', leadScope),
     MIN_BREATH_MS: readNumberConst(placement, 'MIN_BREATH_MS'),
+    DELIVERED_BREATH_SHORTFALL_MS: readNumberConst(placement, 'DELIVERED_BREATH_SHORTFALL_MS'),
     BREATH_REF_SLOT_MS: readNumberConst(placement, 'BREATH_REF_SLOT_MS'),
     BREATH_TRACK_GAIN: readNumberConst(placement, 'BREATH_TRACK_GAIN'),
     CALL_BREATH_OVERRIDES: readOverrides(placement, 'CALL_BREATH_OVERRIDES'),

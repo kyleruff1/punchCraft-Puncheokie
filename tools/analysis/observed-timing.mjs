@@ -120,6 +120,14 @@ export const SKEW_CROSS_CHECK_TOLERANCE_MS = 45
 export const SKEW_CROSS_CHECK_MIN_SAMPLES = 10
 
 /**
+ * How long after a lead-in's audible end its section's first call may sound
+ * and still be counted as that lead-in's pair. Past this the next sound is
+ * the following section, and pairing across it would report a gap of tens of
+ * seconds as though it were a placement finding.
+ */
+export const LEAD_IN_TO_CALL_WINDOW_MS = 6_000
+
+/**
  * The share of bars allowed under `MIN_BREATH_MS` before the capture warns.
  *
  * Not zero, and deliberately so. The floor is a comfort target for the wide
@@ -513,6 +521,8 @@ export function analyze(text, constants = null) {
         onsetLatencyRawMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
         lagAppliedMs: d.lagMs ?? null,
+        /** Paired with a lead-in's audible end for the skew-invariant gap. */
+        audibleOnsetMs: trueOnsetMs(obs),
         endLagMs,
         rawEndLagMs,
       })
@@ -523,6 +533,9 @@ export function analyze(text, constants = null) {
         vocabulary: play.vocabulary ?? build.vocab ?? null,
         path: play.path ?? null,
         endMinusEndByMs: endByMono === null ? null : r1(audibleEnd - endByMono),
+        /** Kept so the skew-invariant gap to the next call can be measured. */
+        audibleEndMs: audibleEnd,
+        audibleOnsetMs: trueOnsetMs(obs),
         onsetLatencyMs: trueOnsetLatencyMs(obs),
         onsetLatencyRawMs: obs.onsetLatencyMs ?? null,
         lateMs: d.lateMs ?? null,
@@ -674,8 +687,41 @@ export function analyze(text, constants = null) {
       lowTail: lowTailLabel(rows.length),
     }
   }
+  // THE SKEW-INVARIANT LEAD-IN METRIC.
+  //
+  // `endMinusEndByMs` compares a CORRECTED audible end against `endByMs`, a
+  // planned time on the work axis with no audio path of its own. Every
+  // millisecond of `OBSERVER_ONSET_SKEW_MS` therefore lands in it, and the
+  // number got 95 ms worse the day the ruler was corrected — which reads as
+  // "the lead-ins regressed" and drives a `LEAD_IN_PAD_MS` proposal that
+  // would pay for the audio path a second time.
+  //
+  // This one compares two OBSERVED sounds: the lead-in's audible end and the
+  // audible onset of the first call after it. Both carry the same correction,
+  // so it cancels exactly, and the number means the same thing before and
+  // after any future re-calibration. It is the gap the athlete actually hears
+  // between the whisper and the first call of the section.
+  const leadInGaps = []
+  for (const l of leadIns) {
+    if (l.audibleEndMs === null) continue
+    // Paired from the lead-in's ONSET, not its end. Pairing from the end
+    // would make an overlap unrepresentable — the call that a long lead-in
+    // runs into starts BEFORE that end, so it would be skipped and the next
+    // section's call reported as a comfortable gap. That is the one case this
+    // metric exists to catch.
+    const next = calls
+      .filter((c) => c.roundIndex === l.roundIndex && c.audibleOnsetMs !== null && l.audibleOnsetMs !== null && c.audibleOnsetMs >= l.audibleOnsetMs)
+      .sort((a, b) => a.audibleOnsetMs - b.audibleOnsetMs)[0]
+    // A section's rep-0 call follows its lead-in closely; anything past this
+    // window is the NEXT section and would report a gap of many seconds.
+    if (next && next.audibleOnsetMs - l.audibleEndMs <= LEAD_IN_TO_CALL_WINDOW_MS) {
+      leadInGaps.push(r1(next.audibleOnsetMs - l.audibleEndMs))
+    }
+  }
   const leadInSummary = {
     n: leadIns.length,
+    /** Skew-invariant: observed → observed. Prefer this over endMinusEndBy. */
+    gapToFirstCall: { n: leadInGaps.length, ...latencyStats(leadInGaps), minMs: leadInGaps.length > 0 ? r1(Math.min(...leadInGaps)) : null, overlapping: leadInGaps.filter((g) => g < 0).length },
     medianEndMinusEndByMs: r1(median(leadIns.map((l) => l.endMinusEndByMs).filter((v) => v !== null))),
     p95EndMinusEndByMs: r1(percentile(leadIns.map((l) => l.endMinusEndByMs).filter((v) => v !== null), 95)),
     walkedOver: leadIns.filter((l) => l.endMinusEndByMs !== null && l.endMinusEndByMs > 0).length,
@@ -866,21 +912,43 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
     measured: { announceEndToRingMedianMs: announceSummary.medianEndToRingMs, spreadMs: announceSummary.spreadMs, tightWithin60ms: announceSummary.tightWithin60ms },
   })
 
-  // Lead-in pad: the observed end past the runner's endBy budget is the shortfall.
+  // Lead-in pad.
+  //
+  // `endMinusEndByMs` is NOT a basis for changing a constant any more. It
+  // compares corrected audio against a planned work-axis time, so the whole
+  // of OBSERVER_ONSET_SKEW_MS sits inside it and it got 95 ms worse the day
+  // the ruler was corrected — with nothing about the lead-ins having changed.
+  // Growing LEAD_IN_PAD_MS on that basis pays for the audio path twice.
+  //
+  // The gap to the section's first call is observed on both ends, so the
+  // correction cancels; it is reported either way, but only the invariant
+  // number can move a constant.
+  const gap = leadInSummary.gapToFirstCall
   const leadShift = leadInSummary.medianEndMinusEndByMs
   if (leadShift !== null && leadInSummary.n >= 3) {
     const current = c.leads?.LEAD_IN_PAD_MS ?? null
+    const overlapping = gap.overlapping > 0
     proposals.push({
       constant: 'LEAD_IN_PAD_MS',
       current,
-      proposed: current === null || leadShift <= 0 ? current : Math.round((current + leadShift) / 10) * 10,
-      basis: `median observed lead-in end − endBy = ${leadShift} ms over ${leadInSummary.n} lead-ins (p95 ${leadInSummary.p95EndMinusEndByMs})`,
-      apply: leadShift > 0,
+      proposed: !overlapping || current === null || gap.minMs === null ? current : Math.round((current + Math.abs(gap.minMs)) / 10) * 10,
+      status: overlapping ? undefined : 'held (skew-contaminated basis)',
+      basis: overlapping
+        ? `${gap.overlapping} of ${gap.n} lead-ins ran INTO their section's first call (worst ${gap.minMs} ms) — measured sound-to-sound, so the observer skew cancels`
+        : `lead-in end → first call onset median ${gap.medianMs ?? '—'} ms over ${gap.n}, none overlapping. The end − endBy figure (${leadShift} ms) compares corrected audio against a planned time and carries the full ${OBSERVER_ONSET_SKEW_MS} ms skew; it is reported, not acted on.`,
+      apply: overlapping,
     })
     const tech = leadInSummary.byVocab?.techniques
     if (tech !== null && tech !== undefined) {
       const cur = c.leads?.TECHNIQUE_LEADIN_LEAD_MS ?? null
-      proposals.push({ constant: 'TECHNIQUE_LEADIN_LEAD_MS', current: cur, proposed: cur === null || tech <= 0 ? cur : Math.round((cur + tech) / 10) * 10, basis: `techniques lead-ins end − endBy median ${tech} ms`, apply: tech > 0 })
+      proposals.push({
+        constant: 'TECHNIQUE_LEADIN_LEAD_MS',
+        current: cur,
+        proposed: cur,
+        status: 'held (skew-contaminated basis)',
+        basis: `techniques lead-ins end − endBy median ${tech} ms — same contaminated basis as LEAD_IN_PAD_MS above; a per-vocabulary lead needs a sound-to-sound measurement to move`,
+        apply: false,
+      })
     }
   }
 
@@ -888,10 +956,34 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
   // breathMs. But FIRST ask whether one number explains every slot: a uniform
   // lag is a global constant, and writing it into per-slot overrides would
   // bake a latency into exceptions and hide its single cause.
+  //
+  // And before either question, subtract what the audio path was ALWAYS going
+  // to cost. Delivered breath is measured from the corrected onset, so every
+  // bar's shortfall carries OBSERVER_ONSET_SKEW_MS whether or not anything is
+  // mistuned: the status event fires ~95 ms before sound moves, and that is a
+  // property of media3, not of how long the coach should be silent.
+  //
+  // Leaving it in produced exactly the finding this file exists to prevent.
+  // On quick-six-count the five slots came back 79.8-131.3 ms short — a
+  // 51.5 ms spread, 1.5 ms wider than GLOBAL_SHIFT_BAND_MS, so `uniform` was
+  // false and the tool emitted five `apply: yes` per-slot overrides plus
+  // DENSE_BREATH_MS 600 → 687. Net of the skew those shortfalls are −15 to
+  // +36, every one inside the noise band, and the correct output is silence.
+  //
+  // The allowance is the analyzer's own measured constant, not the coach's
+  // `DELIVERED_BREATH_SHORTFALL_MS`. Those are the same physical quantity
+  // seen from opposite sides — one measures the path, the other pays for it —
+  // and a proposal must be built on the measurement, so that if the two ever
+  // disagree the report says so instead of quietly agreeing with itself.
+  const skewAllowanceMs = OBSERVER_ONSET_SKEW_MS
+  notes.push(
+    `breath proposals are net of the ${skewAllowanceMs} ms observer skew — the audio path costs that on every bar by construction, and CALL_DISPATCH_LAG_MS is the constant that compensates it`,
+  )
+  const netLate = (s) => (s.medianEndLateMs === null ? null : r1(s.medianEndLateMs - skewAllowanceMs))
   const slotRows = Object.entries(breathBySlot).filter(
     ([, s]) => s.n >= 3 && s.medianEndLateMs !== null && s.plannedBreathMs !== null,
   )
-  const lateByslot = slotRows.map(([, s]) => s.medianEndLateMs)
+  const lateByslot = slotRows.map(([, s]) => netLate(s))
   const uniform =
     lateByslot.length >= 2 && Math.max(...lateByslot) - Math.min(...lateByslot) <= GLOBAL_SHIFT_BAND_MS
   const globalShift = uniform ? Math.round(median(lateByslot)) : null
@@ -954,40 +1046,64 @@ function buildProposals({ constants, families, breathBySlot, breathByVocab, lead
       current: c.breath?.CALL_BREATH_OVERRIDES?.[slot] ?? `derived ${s.plannedBreathMs}`,
       proposed: 'none',
       status: 'insufficient slots',
-      basis: `only one slot qualified (${s.n} bars, median ${s.medianEndLateMs} ms late) — one witness cannot separate a slot-specific problem from a global dispatch lag, and a per-slot override would bake the wrong one in. Re-drive for a second slot.`,
+      basis: `only one slot qualified (${s.n} bars, median ${s.medianEndLateMs} ms late, ${netLate(s)} ms net of the ${skewAllowanceMs} ms skew) — one witness cannot separate a slot-specific problem from a global dispatch lag, and a per-slot override would bake the wrong one in. Re-drive for a second slot.`,
       apply: false,
     })
   } else {
     for (const [slot, s] of slotRows) {
-      if (Math.abs(s.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
+      const net = netLate(s)
+      if (Math.abs(net) < BREATH_PROPOSAL_MIN_MS) continue
       const override = c.breath?.CALL_BREATH_OVERRIDES?.[slot] ?? null
       proposals.push({
         constant: `CALL_BREATH_OVERRIDES['${slot}']`,
         current: override ?? `derived ${s.plannedBreathMs}`,
-        proposed: Math.round(s.plannedBreathMs + s.medianEndLateMs),
-        basis: `observed call end − planned end median ${s.medianEndLateMs} ms over ${s.n} bars (measured breath ${s.medianBreathMs} vs planned ${s.plannedBreathMs})`,
+        proposed: Math.round(s.plannedBreathMs + net),
+        basis: `observed call end − planned end median ${s.medianEndLateMs} ms over ${s.n} bars, ${net} ms net of the ${skewAllowanceMs} ms skew (measured breath ${s.medianBreathMs} vs planned ${s.plannedBreathMs})`,
         apply: true,
       })
     }
     for (const [vocab, v] of Object.entries(breathByVocab)) {
-      if (v.n < 10 || v.medianEndLateMs === null || Math.abs(v.medianEndLateMs) < BREATH_PROPOSAL_MIN_MS) continue
+      if (v.n < 10 || v.medianEndLateMs === null) continue
+      const net = netLate(v)
+      if (Math.abs(net) < BREATH_PROPOSAL_MIN_MS) continue
       const dense = c.breath?.DENSE_BREATH_MS?.[vocab] ?? null
-      proposals.push({ constant: `DENSE_BREATH_MS.${vocab}`, current: dense, proposed: dense === null ? null : Math.round(dense + v.medianEndLateMs), basis: `${vocab} calls end late by median ${v.medianEndLateMs} ms over ${v.n} bars`, apply: dense !== null })
+      proposals.push({ constant: `DENSE_BREATH_MS.${vocab}`, current: dense, proposed: dense === null ? null : Math.round(dense + net), basis: `${vocab} calls end late by median ${v.medianEndLateMs} ms over ${v.n} bars, ${net} ms net of the ${skewAllowanceMs} ms skew`, apply: dense !== null })
     }
   }
   // The floor only needs raising when a slot's own shortfall would push it
   // below the floor — a uniform lag moves every slot together and leaves the
   // floor's job unchanged.
+  //
+  // WHICH constant to name depends on what the app already pays. `MIN_BREATH_MS`
+  // is Kyle's comfort target: how much silence he wants before the punch, set
+  // by ear. `DELIVERED_BREATH_SHORTFALL_MS` is what the clamp adds so that
+  // much silence survives the audio path. A floor breach measured HERE — from
+  // corrected onsets, at the ear — means the allowance is short, not that the
+  // comfort target is wrong, so once the allowance exists this proposal names
+  // it. Naming MIN_BREATH_MS then would raise the target Kyle tuned AND leave
+  // the path cost unpaid.
   const minBreath = c.breath?.MIN_BREATH_MS ?? null
+  const shortfallAllowance = c.breath?.DELIVERED_BREATH_SHORTFALL_MS ?? null
   const worstMeasured = slotRows.length > 0 ? Math.min(...slotRows.map(([, s]) => s.medianBreathMs)) : null
   if (minBreath !== null && worstMeasured !== null && worstMeasured < minBreath) {
-    proposals.push({
-      constant: 'MIN_BREATH_MS',
-      current: minBreath,
-      proposed: Math.round(minBreath + (minBreath - worstMeasured)),
-      basis: `the tightest slot delivered ${worstMeasured} ms of breath against a ${minBreath} ms floor${uniform ? ' — but the global shift above is the real cause; revisit after applying it' : ''}`,
-      apply: !uniform,
-    })
+    const deficit = Math.round(minBreath - worstMeasured)
+    proposals.push(
+      shortfallAllowance === null
+        ? {
+            constant: 'MIN_BREATH_MS',
+            current: minBreath,
+            proposed: minBreath + deficit,
+            basis: `the tightest slot delivered ${worstMeasured} ms of breath against a ${minBreath} ms floor${uniform ? ' — but the global shift above is the real cause; revisit after applying it' : ''}`,
+            apply: !uniform,
+          }
+        : {
+            constant: 'DELIVERED_BREATH_SHORTFALL_MS',
+            current: shortfallAllowance,
+            proposed: shortfallAllowance + deficit,
+            basis: `the tightest slot delivered ${worstMeasured} ms at the ear against a ${minBreath} ms floor — the clamp's ${shortfallAllowance} ms allowance is ${deficit} ms short${uniform ? '; but the global shift above is the real cause, revisit after applying it' : ''}. MIN_BREATH_MS is Kyle's comfort target and is not the constant at fault.`,
+            apply: !uniform,
+          },
+    )
   }
 
   // Audio output latency: the armed-path onset median is the playhead's own lag.
@@ -1103,7 +1219,9 @@ export function renderReport(report, sessionDir = '') {
     L.push(`| ${p} | ${n} | ${a?.rawMedianMs ?? '—'} | ${a?.residualMedianMs ?? '—'} | ${a?.improvedByMs ?? '—'} |`)
   }
   L.push('')
-  L.push(`lead-ins: n ${report.leadIns.n} · end − endBy median ${report.leadIns.medianEndMinusEndByMs ?? '—'} ms (p95 ${report.leadIns.p95EndMinusEndByMs ?? '—'}) · walked over ${report.leadIns.walkedOver}`)
+  const g = report.leadIns.gapToFirstCall
+  L.push(`lead-ins: n ${report.leadIns.n} · **end → first call median ${g?.medianMs ?? '—'} ms** (min ${g?.minMs ?? '—'}, n${g?.n ?? 0}, overlapping ${g?.overlapping ?? 0}) — sound-to-sound, skew-invariant`)
+  L.push(`  · end − endBy median ${report.leadIns.medianEndMinusEndByMs ?? '—'} ms (p95 ${report.leadIns.p95EndMinusEndByMs ?? '—'}) · walked over ${report.leadIns.walkedOver} — carries the ${OBSERVER_ONSET_SKEW_MS} ms skew; reported, not acted on`)
   L.push(`combo announces: n ${report.announces.n} · end → first ring median ${report.announces.medianEndToRingMs ?? '—'} ms · spread ${report.announces.spreadMs ?? '—'} · tight(60) ${report.announces.tightWithin60ms ?? '—'} · cut by ring ${report.announces.cutByRing}`)
   L.push(
     `token-due dispatch loop (NOT the painted ring — the ring is a frame-callback projection in useRingBeatClock and lands within one 60 Hz frame): n ${report.rings.n} · fire − schedule median ${report.rings.late.medianMs ?? '—'} p95 ${report.rings.late.p95Ms ?? '—'} max ${report.rings.maxLateMs ?? '—'}`,

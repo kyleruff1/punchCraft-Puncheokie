@@ -34,7 +34,24 @@ const observed = (time, fields) => rec(time, 'puncheokie.voice.observed', fields
  * loss is blamed on the dispatch path rather than on the breath doctrine.
  * Delivered breath = 250 − (shortfall − 15) − 15; see the breath test.
  */
-function capture({ truncateCall = false, dropObservation = false, shortfallMs = null } = {}) {
+/**
+ * `extraLeadIns` adds two more lead-ins so the pad proposal's `n >= 3` guard
+ * opens. Opt-in rather than baked in, because the single-lead-in fixture is
+ * what pins `medianEndMinusEndByMs` and the `walked over` warning above.
+ *
+ * The second one is placed to END 300 ms before the first call sounds, so the
+ * skew-invariant gap has a real pair to measure; the third sits far from any
+ * call and must be left unpaired rather than reaching across a section.
+ */
+function leadInAt({ id, dispatchAtMs, monotonicTimeMs, durationMs, endByMs, onsetMs }) {
+  return [
+    rec('10:00:40.000', 'puncheokie.clickScript.dispatch', { kind: 'lead-in', slot: `lead-in/x/${id}`, traceId: `lead-in/x/${id}#${dispatchAtMs}`, dispatchAtMs, lateMs: 3, durationMs, endByMs, firstNodeMs: endByMs + 500, monotonicTimeMs }),
+    play('10:00:40.000', { asset: `li-${id}`, kind: 'click-script', label: `lead-in/x/${id}`, playId: `p-li-${id}`, traceId: `lead-in/x/${id}#${dispatchAtMs}`, path: 'armed', vocabulary: 'numbers', dispatchMs: monotonicTimeMs, durationMs }),
+    observed('10:00:48.000', { playId: `p-li-${id}`, kind: 'click-script', label: `lead-in/x/${id}`, path: 'armed', traceId: `lead-in/x/${id}#${dispatchAtMs}`, outcome: 'ok', dispatchMs: monotonicTimeMs, onsetMs, endMs: onsetMs + durationMs + 170, onsetLatencyMs: onsetMs - monotonicTimeMs, observedDurationMs: durationMs + 170, expectedDurationMs: durationMs, silentByVolume: false }),
+  ]
+}
+
+function capture({ truncateCall = false, dropObservation = false, shortfallMs = null, extraLeadIns = false, leadInStretchMs = 0 } = {}) {
   const extra = shortfallMs === null ? 0 : shortfallMs - 15
   const secondSlot = shortfallMs === null
     ? []
@@ -43,7 +60,18 @@ function capture({ truncateCall = false, dropObservation = false, shortfallMs = 
         play('10:01:10.000', { asset: 'call-3-4', kind: 'click-script', label: 'call/3-4', playId: `p-call2-${i}`, traceId: `call/3-4#${at}`, path: 'armed', vocabulary: 'numbers', dispatchMs: 10000 + at, durationMs: 1000 }),
         observed('10:01:11.000', { playId: `p-call2-${i}`, kind: 'click-script', label: 'call/3-4', path: 'armed', traceId: `call/3-4#${at}`, outcome: 'ok', dispatchMs: 10000 + at, onsetMs: 10000 + at + 15 + extra, endMs: 10000 + at + 1050 + extra, onsetLatencyMs: 15 + extra, observedDurationMs: 1035, expectedDurationMs: 1000, silentByVolume: false }),
       ])
-  return captureLines({ truncateCall, dropObservation, extra, secondSlot })
+  const moreLeadIns = !extraLeadIns
+    ? []
+    : [
+        // Ends audibly at 46715 + 95 + 3000 = 49810, and the first call sounds
+        // at 50015 + 95 = 50110 — a 300 ms gap, measured sound to sound.
+        // `leadInStretchMs` lengthens only this one, to push its audio INTO
+        // the call it precedes.
+        ...leadInAt({ id: 'a', dispatchAtMs: 36700, monotonicTimeMs: 46700, durationMs: 3000 + leadInStretchMs, endByMs: 39800, onsetMs: 46715 }),
+        // Ends audibly at 22125, 28 s from the nearest call: unpaired.
+        ...leadInAt({ id: 'b', dispatchAtMs: 10000, monotonicTimeMs: 20000, durationMs: 2000, endByMs: 12000, onsetMs: 20030 }),
+      ]
+  return captureLines({ truncateCall, dropObservation, extra, secondSlot: [...secondSlot, ...moreLeadIns] })
 }
 
 function captureLines({ truncateCall, dropObservation, extra, secondSlot }) {
@@ -226,6 +254,22 @@ describe('joins', () => {
     expect(report.verdict.soft.filter((s) => s.startsWith('skew cross-check'))).toEqual([])
   })
 
+  it('measures a lead-in sound-to-sound so the skew cancels', () => {
+    // `endMinusEndByMs` compares a corrected audible end against a PLANNED
+    // work-axis time, so the full 95 ms correction sits inside it — the
+    // fixture's lead-in reads 125 ms over budget where it read 30 before,
+    // with nothing about the lead-in having changed.
+    //
+    // The gap to the section's first call is observed on BOTH ends, so the
+    // correction cancels and the number survives any future re-calibration.
+    // The fixture's lead-in ends audibly at 30030 + 95 + 8000 = 38125 and the
+    // next call sounds at 60040 + 95 — far past the pairing window, so this
+    // capture has no pair and the metric says so rather than reporting a
+    // 22-second "gap" as a placement finding.
+    expect(report.leadIns.medianEndMinusEndByMs).toBe(125)
+    expect(report.leadIns.gapToFirstCall).toMatchObject({ n: 0, medianMs: null, overlapping: 0 })
+  })
+
   it('measures lead-ins against endBy, on the audible end', () => {
     // onset 30030 + 8000 stated = 38030 audible end, against an endBy of
     // 38000 → 30 ms over. The end EVENT at 38200 would have said 200.
@@ -299,6 +343,52 @@ describe('proposals', () => {
       status: 'insufficient slots',
       proposed: 'none',
     })
+  })
+
+  it('never proposes growing the breath by the observer skew', () => {
+    // The trap this closes, with the numbers that sprang it. On the real
+    // quick-six-count capture the five slots came back 79.8-131.3 ms short.
+    // That is a 51.5 ms spread — 1.5 ms wider than GLOBAL_SHIFT_BAND_MS — so
+    // `uniform` was false and the tool emitted five `apply: yes` per-slot
+    // CALL_BREATH_OVERRIDES plus DENSE_BREATH_MS 600 → 687, writing the audio
+    // path into the breath doctrine on every one of them.
+    //
+    // Delivered breath is measured from the CORRECTED onset, so every bar
+    // carries the ~95 ms skew whether or not anything is mistuned. Net of it
+    // those shortfalls are −15 to +36, all inside the noise band.
+    //
+    // The fixture's single slot is 110 ms short, 15 ms net — under the 40 ms
+    // floor, so no override is proposed at all, and no DENSE_BREATH_MS
+    // proposal either.
+    expect(by("CALL_BREATH_OVERRIDES['call/1-2']")).toMatchObject({ status: 'insufficient slots', apply: false })
+    expect(by('DENSE_BREATH_MS.numbers')).toBeUndefined()
+    expect(report.notes.some((n) => n.includes('net of the 95 ms observer skew'))).toBe(true)
+  })
+
+  it('holds the lead-in pad rather than paying for the audio path twice', () => {
+    // The other trap. `end − endBy` got 95 ms worse the day the ruler was
+    // corrected, and the pad proposal used to grow on exactly that basis —
+    // here it reads 125 ms over budget with nothing about the lead-ins having
+    // changed. Sound to sound they are fine: 300 ms of air before the call.
+    const three = analyze(capture({ extraLeadIns: true }), CONSTANTS)
+    const pad = three.proposals.find((p) => p.constant === 'LEAD_IN_PAD_MS')
+    expect(three.leadIns.n).toBe(3)
+    expect(three.leadIns.medianEndMinusEndByMs).toBe(125)
+    expect(three.leadIns.gapToFirstCall).toMatchObject({ n: 1, medianMs: 300, minMs: 300, overlapping: 0 })
+    expect(pad).toMatchObject({ current: 250, proposed: 250, apply: false, status: 'held (skew-contaminated basis)' })
+    expect(pad.basis).toContain('carries the full 95 ms skew')
+  })
+
+  it('DOES move the pad when a lead-in genuinely runs into its call', () => {
+    // The gate must still fire on the thing it exists for. Stretching the
+    // paired lead-in by 500 ms puts its audio 200 ms INTO the call — an
+    // overlap measured sound-to-sound, where the skew cancels and the finding
+    // is real however the ruler is calibrated.
+    const over = analyze(capture({ extraLeadIns: true, leadInStretchMs: 500 }), CONSTANTS)
+    expect(over.leadIns.gapToFirstCall).toMatchObject({ n: 1, minMs: -200, overlapping: 1 })
+    const pad = over.proposals.find((p) => p.constant === 'LEAD_IN_PAD_MS')
+    expect(pad).toMatchObject({ current: 250, proposed: 450, apply: true })
+    expect(pad.basis).toContain('ran INTO')
   })
 
   it('blames the dispatch path, not the breath doctrine, when every slot loses the same time', () => {
