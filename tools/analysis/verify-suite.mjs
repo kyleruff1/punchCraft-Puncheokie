@@ -23,6 +23,15 @@
  *       [--only=a,b] [--device=<serial>] [--expect-release] [--first-round-only]
  *       [--sim=captured-jam|alternating-1-2|none] [--sim-force] [--sim-bpm=N]
  *       [--gh-ledger] [--dry-run] [--tap-fallback] [--keep-volume] [--out=<dir>]
+ *       [--timing-gate=off|warn|fail]
+ *
+ * Each drive is judged twice: by `verify-first-round.mjs` (did the coach say
+ * the right thing at the right mark) and by `observed-timing.mjs` (did the
+ * audio actually get there in time). The second is what `--timing-gate`
+ * controls, and it defaults to `warn` so the gate can be introduced without
+ * failing the fleet on its first contact with it — see
+ * `timingVerdictFromExit`. Its hard finding is `barsAtOrPastPunch`: a call
+ * still sounding when the athlete threw.
  *
  * Outputs tools/analysis/suites/<epoch>/{summary.json,summary.md,suite.log}
  * plus one session dir per drive. Exit: 1 any FAIL/ERROR, 4 any STALE (after
@@ -91,6 +100,7 @@ export function parseArgs(argv) {
     tapFallback: false,
     keepVolume: false,
     out: undefined,
+    timingGate: 'warn',
   }
   for (const a of argv) {
     if (a === '--all') args.all = true
@@ -108,7 +118,11 @@ export function parseArgs(argv) {
     else if (a === '--tap-fallback') args.tapFallback = true
     else if (a === '--keep-volume') args.keepVolume = true
     else if (a.startsWith('--out=')) args.out = a.slice('--out='.length)
+    else if (a.startsWith('--timing-gate=')) args.timingGate = a.slice('--timing-gate='.length)
     else throw new Error(`unknown argument: ${a}`)
+  }
+  if (!['off', 'warn', 'fail'].includes(args.timingGate)) {
+    throw new Error(`--timing-gate must be off, warn or fail, got '${args.timingGate}'`)
   }
   if (!['numbers', 'techniques', 'both'].includes(args.vocab)) {
     throw new Error(`--vocab must be numbers, techniques or both, got '${args.vocab}'`)
@@ -200,6 +214,45 @@ export function verdictFromVerifyExit(code) {
     default:
       return 'ERROR'
   }
+}
+
+/**
+ * The timing analyzer's exit code as a verdict, under the staged gate.
+ *
+ * Deliberately NOT folded into `verdictFromVerifyExit`. That function judges
+ * the correlator, is pure, exported and unit-tested, and its four codes mean
+ * what they have always meant; overloading it would make one call site's
+ * behaviour depend on a flag the other call site does not have.
+ *
+ * The gate is staged because a new gate that fails on its first contact with
+ * the fleet teaches everyone to pass `--timing-gate=off`:
+ *   off  — measure and report, judge nothing.
+ *   warn — the default. A hard finding is a WARN, so one suite run
+ *          establishes the baseline without blocking anything.
+ *   fail — a hard finding is a FAIL. Flipped in its own commit once the
+ *          baseline is green.
+ */
+export function timingVerdictFromExit(code, gate) {
+  if (gate === 'off' || code === null || code === undefined) return 'PASS'
+  switch (code) {
+    case 0:
+      return 'PASS'
+    case 2:
+      return 'WARN'
+    case 1:
+      return gate === 'fail' ? 'FAIL' : 'WARN'
+    default:
+      // The analyzer crashed or could not read the capture. That is a broken
+      // instrument, not a broken coach: never upgrade it past WARN, or a bad
+      // logcat fails a drive that may well have been perfect.
+      return 'WARN'
+  }
+}
+
+/** The more severe of two verdicts, by `aggregateVerdicts`' own ordering. */
+export function worstVerdict(a, b) {
+  const rank = (v) => (v === 'FAIL' || v === 'ERROR' ? 3 : v === 'STALE' ? 2 : v === 'WARN' ? 1 : 0)
+  return rank(b) > rank(a) ? b : a
 }
 
 /** Suite exit code: 1 any FAIL/ERROR, 4 any STALE, 2 any WARN, else 0. */
@@ -325,7 +378,7 @@ export function renderSummaryMd(rows, meta) {
   lines.push(`# Suite ${meta.suiteId}`)
   lines.push('')
   lines.push(
-    `device ${meta.deviceId} · ${meta.launch} launch · vocab ${meta.vocab} · sim ${meta.sim} · ${meta.firstRoundOnly ? 'first round only' : 'full sessions'} · ${rows.length} drives · exit ${meta.exitCode}`,
+    `device ${meta.deviceId} · ${meta.launch} launch · vocab ${meta.vocab} · sim ${meta.sim} · ${meta.firstRoundOnly ? 'first round only' : 'full sessions'} · timing gate ${meta.timingGate ?? 'warn'} · ${rows.length} drives · exit ${meta.exitCode}`,
   )
   lines.push('')
   // "voice onset (status event, ms)" — NOT the audible onset. This column is
@@ -333,8 +386,8 @@ export function renderSummaryMd(rows, meta) {
   // the device (`OBSERVER_ONSET_SKEW_MS` in observed-timing.mjs). Naming it
   // plainly is the point: the raw and corrected views must never be read as
   // the same number.
-  lines.push('| workout | vocab | verdict | reason | verify | stats | voice onset (status event, ms) | instrument onset (ms) | AudioTracks arm→end | elapsed |')
-  lines.push('|---|---|---|---|---|---|---|---|---|---|')
+  lines.push('| workout | vocab | verdict | reason | verify | timing | breath min / p5 | at·past punch | under floor | stats | voice onset (status event, ms) | instrument onset (ms) | AudioTracks arm→end | elapsed |')
+  lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {
     const voice = r.observed?.byKind
       ? Object.entries(r.observed.byKind)
@@ -343,9 +396,25 @@ export function renderSummaryMd(rows, meta) {
       : '—'
     const inst = r.observed?.instrument?.n > 0 ? `${r.observed.instrument.latency.medianMs}/${r.observed.instrument.latency.p95Ms}` : '—'
     const tracks = `${r.audioTracks?.arm?.ours ?? '—'}→${r.audioTracks?.end?.ours ?? '—'}`
+    const f = r.breathFloor
+    // The two floor cells are separate on purpose: `at·past punch` is the
+    // correctness gate and any non-zero is a defect, `under floor` is the
+    // comfort target and is expected to be non-zero until the clamp moves.
+    // One combined cell would let a reader's eye slide over the first.
+    const breath = f ? `${f.minBreathMs ?? '—'} / ${f.p5BreathMs ?? '—'}` : '—'
+    const past = f ? String(f.barsAtOrPastPunch) : '—'
+    const under = f ? `${f.barsUnderFloor}/${f.n}${f.barsUnderFloorRatio === null ? '' : ` (${Math.round(f.barsUnderFloorRatio * 1000) / 10}%)`}` : '—'
+    const timing = r.timingVerdict ? `${r.timingExit ?? '—'} ${r.timingVerdict}` : '—'
     lines.push(
-      `| ${r.workoutId} | ${r.vocab} | ${r.verdict} | ${r.reason ?? ''} | ${r.verifyExit ?? '—'} | ${r.stats ?? '—'} | ${voice || '—'} | ${inst} | ${tracks} | ${Math.round((r.elapsedMs ?? 0) / 1000)}s |`,
+      `| ${r.workoutId} | ${r.vocab} | ${r.verdict} | ${r.reason ?? ''} | ${r.verifyExit ?? '—'} | ${timing} | ${breath} | ${past} | ${under} | ${r.stats ?? '—'} | ${voice || '—'} | ${inst} | ${tracks} | ${Math.round((r.elapsedMs ?? 0) / 1000)}s |`,
     )
+  }
+  const hardRows = rows.filter((r) => (r.timingHard?.length ?? 0) > 0)
+  if (hardRows.length > 0) {
+    lines.push('')
+    lines.push('### Timing — hard findings')
+    lines.push('')
+    for (const r of hardRows) for (const h of r.timingHard) lines.push(`- **${r.workoutId} (${r.vocab})** — ${h}`)
   }
   return lines.join('\n') + '\n'
 }
@@ -467,6 +536,11 @@ async function driveOne(ctx, job, attempt = 1) {
     verdict: 'ERROR',
     reason: null,
     verifyExit: null,
+    timingExit: null,
+    timingVerdict: null,
+    timingHard: null,
+    timingSoft: null,
+    breathFloor: null,
     stats: null,
     build: {},
     audioTracks: {},
@@ -694,6 +768,39 @@ async function driveOne(ctx, job, attempt = 1) {
         }
         slog(`   manifest regen failed (${regen.status}); keeping STALE`)
       }
+
+      // The timing analyzer, which this suite has never run. It writes its
+      // own report into the drive directory, so a WARN here is always
+      // traceable to named bars rather than to a number in this ledger.
+      //
+      // It runs AFTER the STALE retry path above returns, so a re-driven
+      // workout is analyzed once, on the capture that was actually judged.
+      if (args.timingGate !== 'off') {
+        const timing = spawnSync(
+          'node',
+          [join(REPO_ROOT, 'tools', 'analysis', 'observed-timing.mjs'), '--session', dir],
+          { encoding: 'utf8', cwd: REPO_ROOT },
+        )
+        row.timingExit = timing.status
+        const timingReportPath = join(dir, 'observed-timing-report.json')
+        if (existsSync(timingReportPath)) {
+          const treport = JSON.parse(readFileSync(timingReportPath, 'utf8'))
+          row.breathFloor = treport.breath?.floor ?? null
+          row.timingHard = treport.verdict?.hard ?? []
+          row.timingSoft = treport.verdict?.soft ?? []
+        }
+        const timingVerdict = timingVerdictFromExit(timing.status, args.timingGate)
+        row.timingVerdict = timingVerdict
+        // Only ever makes a drive worse. A clean timing report cannot rescue
+        // a drive the correlator failed.
+        row.verdict = worstVerdict(row.verdict, timingVerdict)
+        const f = row.breathFloor
+        slog(
+          `   timing exit ${timing.status} → ${timingVerdict}` +
+            (f ? ` · breath min ${f.minBreathMs ?? '—'} · at/past punch ${f.barsAtOrPastPunch} · under floor ${f.barsUnderFloor}/${f.n}` : ''),
+        )
+        for (const h of row.timingHard ?? []) slog(`   TIMING HARD: ${h}`)
+      }
     }
     slog(`   ${renderObservedTable(row.observed).split('\n')[0]}`)
     if (row.counters.redbox > 0) slog(`   WARN: ${row.counters.redbox} AndroidRuntime lines in the capture`)
@@ -848,6 +955,7 @@ async function main() {
       vocab: args.vocab,
       sim: args.sim,
       firstRoundOnly: args.firstRoundOnly,
+      timingGate: args.timingGate,
       exitCode,
     })
     writeFileSync(join(suiteDir, 'summary.md'), md, 'utf8')

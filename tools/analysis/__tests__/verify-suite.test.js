@@ -22,8 +22,11 @@ import {
   parseVolumeGet,
   planJobs,
   quoteForDeviceShell,
+  renderSummaryMd,
+  timingVerdictFromExit,
   verdictFromVerifyExit,
   WALKOUT_ALLOWANCE_MS,
+  worstVerdict,
 } from '../verify-suite.mjs'
 import { latencyStats, summarizeObserved } from '../observed-summary.mjs'
 
@@ -86,6 +89,90 @@ describe('verdicts', () => {
     expect(aggregateVerdicts(['STALE', 'FAIL'])).toBe(1)
     expect(aggregateVerdicts(['ERROR'])).toBe(1)
     expect(aggregateVerdicts([])).toBe(0)
+  })
+
+  it('stages the timing gate: the same hard finding warns, then fails', () => {
+    // Exit 1 from the analyzer is `barsAtOrPastPunch` — a call still
+    // sounding at the punch. Under `warn` (the default) it must not block a
+    // suite, or the baseline run this gate needs can never be collected.
+    expect(timingVerdictFromExit(1, 'warn')).toBe('WARN')
+    expect(timingVerdictFromExit(1, 'fail')).toBe('FAIL')
+    expect(timingVerdictFromExit(2, 'fail')).toBe('WARN')
+    expect(timingVerdictFromExit(0, 'fail')).toBe('PASS')
+  })
+
+  it('never fails a drive because the ANALYZER broke', () => {
+    // Exit 3 is "no session / could not read the capture" and any other code
+    // is a crash. That is a broken instrument, not a broken coach: capping it
+    // at WARN keeps a bad logcat from failing a drive that may have been
+    // perfect. `off` and a missing exit judge nothing at all.
+    expect(timingVerdictFromExit(3, 'fail')).toBe('WARN')
+    expect(timingVerdictFromExit(99, 'fail')).toBe('WARN')
+    expect(timingVerdictFromExit(1, 'off')).toBe('PASS')
+    expect(timingVerdictFromExit(null, 'fail')).toBe('PASS')
+    expect(timingVerdictFromExit(undefined, 'warn')).toBe('PASS')
+  })
+
+  it('lets the timing verdict only make a drive worse', () => {
+    expect(worstVerdict('PASS', 'WARN')).toBe('WARN')
+    expect(worstVerdict('FAIL', 'WARN')).toBe('FAIL')
+    expect(worstVerdict('STALE', 'WARN')).toBe('STALE')
+    expect(worstVerdict('WARN', 'FAIL')).toBe('FAIL')
+    // A clean timing report cannot rescue a drive the correlator failed.
+    expect(worstVerdict('FAIL', 'PASS')).toBe('FAIL')
+    expect(worstVerdict('STALE', 'PASS')).toBe('STALE')
+  })
+})
+
+describe('args', () => {
+  it('defaults the timing gate to warn and rejects anything else', () => {
+    expect(parseArgs(['--all']).timingGate).toBe('warn')
+    expect(parseArgs(['--all', '--timing-gate=fail']).timingGate).toBe('fail')
+    expect(parseArgs(['--all', '--timing-gate=off']).timingGate).toBe('off')
+    expect(() => parseArgs(['--all', '--timing-gate=yes'])).toThrow(/--timing-gate/)
+  })
+})
+
+describe('summary rendering', () => {
+  const meta = { suiteId: '1', deviceId: 'dev', launch: 'cold', vocab: 'numbers', sim: 'captured-jam', firstRoundOnly: false, timingGate: 'warn', exitCode: 2 }
+
+  it('separates the never-late cell from the comfort-floor cell', () => {
+    // These are different questions with different severities, and a single
+    // combined cell would let the eye slide past the one that is a defect.
+    const md = renderSummaryMd(
+      [
+        {
+          workoutId: 'quick-six-count',
+          vocab: 'numbers',
+          verdict: 'WARN',
+          verifyExit: 0,
+          timingExit: 2,
+          timingVerdict: 'WARN',
+          breathFloor: { minBreathMs: 56.7, p5BreathMs: 118.7, barsAtOrPastPunch: 0, barsUnderFloor: 12, n: 85, barsUnderFloorRatio: 0.141 },
+          elapsedMs: 1000,
+        },
+      ],
+      meta,
+    )
+    expect(md).toContain('| 56.7 / 118.7 | 0 | 12/85 (14.1%) |')
+    expect(md).toContain('timing gate warn')
+  })
+
+  it('names the workout behind every hard timing finding', () => {
+    // A count in a ledger nobody can act on is a number, not a gate.
+    const md = renderSummaryMd(
+      [{ workoutId: 'body-work', vocab: 'numbers', verdict: 'WARN', timingVerdict: 'WARN', timingExit: 1, timingHard: ['1 bar(s) with the call still sounding at the punch'], breathFloor: null, elapsedMs: 0 }],
+      meta,
+    )
+    expect(md).toContain('### Timing — hard findings')
+    expect(md).toContain('**body-work (numbers)** — 1 bar(s) with the call still sounding at the punch')
+  })
+
+  it('renders a drive that has no timing report at all', () => {
+    // `--timing-gate=off`, or a launch failure with no round to analyze.
+    const md = renderSummaryMd([{ workoutId: 'body-work', vocab: 'numbers', verdict: 'ERROR', reason: 'launch timeout', elapsedMs: 0 }], { ...meta, timingGate: 'off' })
+    expect(md).toContain('| body-work | numbers | ERROR | launch timeout | — | — | — | — | — |')
+    expect(md).not.toContain('### Timing — hard findings')
   })
 })
 
