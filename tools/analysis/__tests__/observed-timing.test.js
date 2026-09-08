@@ -150,9 +150,52 @@ describe('work axis fit', () => {
       { transition: 'work-entered', roundIndex: 1, monotonicTimeMs: 310 },
     ])
     expect(windows).toEqual([
-      { roundIndex: 0, startMs: 10, endMs: 250 },
-      { roundIndex: 1, startMs: 310, endMs: Number.POSITIVE_INFINITY },
+      { roundIndex: 0, startMs: 10, endMs: 250, source: 'boundary' },
+      { roundIndex: 1, startMs: 310, endMs: Number.POSITIVE_INFINITY, source: 'boundary' },
     ])
+  })
+
+  it('rebuilds a round whose work-entered line was dropped, instead of discarding it', () => {
+    // THE FAILURE THIS PREVENTS. Every dispatch is placed in a round by
+    // `roundAt`, and one landing in no window is silently dropped — so one
+    // missing log line used to delete a whole round's evidence with no
+    // warning. It happened: logcat lost a `work-entered` under load on a
+    // pump-and-coast capture and the drive analysed 171 call bars against the
+    // baseline's 233, while both runs dispatched exactly 233 and logged
+    // `completed`. The survivors then read as a large improvement.
+    //
+    // Round 1's boundary is missing here. Its tokenDue records carry both
+    // clocks, so `monotonicTimeMs − workElapsedMs` = 310 recovers the exact
+    // start the boundary would have given.
+    const windows = roundWindows(
+      [
+        { transition: 'work-entered', roundIndex: 0, monotonicTimeMs: 10 },
+        { transition: 'rest-entered', roundIndex: 0, monotonicTimeMs: 250 },
+        { transition: 'completed', roundIndex: 1, monotonicTimeMs: 900 },
+      ],
+      [
+        { roundIndex: 1, workElapsedMs: 40, monotonicTimeMs: 350 },
+        { roundIndex: 1, workElapsedMs: 90, monotonicTimeMs: 400 },
+        { roundIndex: 1, workElapsedMs: 140, monotonicTimeMs: 450 },
+      ],
+    )
+    expect(windows).toEqual([
+      { roundIndex: 0, startMs: 10, endMs: 250, source: 'boundary' },
+      { roundIndex: 1, startMs: 310, endMs: 900, source: 'tokenDue', tokenDueN: 3 },
+    ])
+    // A dispatch inside the rebuilt round is now attributable — that is the
+    // whole point; before the fix it fell in no window and vanished.
+    expect(windows.find((w) => 500 >= w.startMs && 500 < w.endMs).roundIndex).toBe(1)
+  })
+
+  it('prefers the real boundary and never double-counts a round', () => {
+    // tokenDue for a round that DOES have its boundary must not create a
+    // second, competing window — the boundary is the observed truth.
+    const windows = roundWindows(
+      [{ transition: 'work-entered', roundIndex: 0, monotonicTimeMs: 10 }],
+      [{ roundIndex: 0, workElapsedMs: 40, monotonicTimeMs: 999 }],
+    )
+    expect(windows).toEqual([{ roundIndex: 0, startMs: 10, endMs: Number.POSITIVE_INFINITY, source: 'boundary' }])
   })
 })
 

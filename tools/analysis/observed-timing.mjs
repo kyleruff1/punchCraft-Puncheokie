@@ -347,17 +347,69 @@ export function fitWorkAxis(tokenDue, boundaries) {
   return rounds
 }
 
-/** Round windows on the monotonic clock: work-entered → the next boundary. */
-export function roundWindows(boundaries) {
+/**
+ * Round windows on the monotonic clock: work-entered → the next boundary.
+ *
+ * A round with NO `work-entered` record is reconstructed from its own
+ * `cue.tokenDue` stream instead of being dropped.
+ *
+ * Why that matters more than it sounds: every dispatch is placed in a round by
+ * `roundAt`, and one that lands in no window is silently discarded. So a
+ * single missing boundary line removed an entire round's evidence with no
+ * warning anywhere. It happened — logcat dropped one `work-entered` under load
+ * on a post-floor pump-and-coast capture (19 650 lines vs 19 733), and the
+ * drive analysed 171 call bars against the baseline's 233 while both runs
+ * dispatched exactly 233 and logged `completed`. The remainder then looked
+ * like a large improvement. Only a bar-count check across the A/B caught it.
+ *
+ * The reconstruction is not a guess. `tokenDue` carries both clocks, so
+ * `monotonicTimeMs − workElapsedMs` IS the moment that round's work axis
+ * started — the same arithmetic `fitWorkAxis` already trusts for its offset,
+ * which is why the fit reported four rounds on a capture with three
+ * boundaries. Synthesised windows are marked `source: 'tokenDue'` so a report
+ * can never present a reconstructed round as a directly observed one.
+ */
+export function roundWindows(boundaries, tokenDue = []) {
   const sorted = boundaries.filter((b) => b.monotonicTimeMs !== undefined).sort((a, b) => a.monotonicTimeMs - b.monotonicTimeMs)
-  const windows = []
-  for (let i = 0; i < sorted.length; i += 1) {
-    const b = sorted[i]
+  const starts = []
+  const seen = new Set()
+  for (const b of sorted) {
     if (b.transition !== 'work-entered') continue
-    const next = sorted.slice(i + 1).find((x) => x.transition !== 'work-entered' || x.roundIndex !== b.roundIndex)
-    windows.push({ roundIndex: b.roundIndex, startMs: b.monotonicTimeMs, endMs: next ? next.monotonicTimeMs : Number.POSITIVE_INFINITY })
+    starts.push({ roundIndex: b.roundIndex, startMs: b.monotonicTimeMs, source: 'boundary' })
+    seen.add(b.roundIndex)
   }
-  return windows
+
+  // Rounds the boundaries never mentioned, rebuilt from their token stream.
+  const byRound = new Map()
+  for (const t of tokenDue) {
+    if (t.roundIndex === undefined || t.workElapsedMs === undefined || t.monotonicTimeMs === undefined) continue
+    if (seen.has(t.roundIndex)) continue
+    const list = byRound.get(t.roundIndex) ?? []
+    list.push(t.monotonicTimeMs - t.workElapsedMs)
+    byRound.set(t.roundIndex, list)
+  }
+  for (const [roundIndex, offsets] of byRound) {
+    if (offsets.length === 0) continue
+    starts.push({ roundIndex, startMs: median(offsets), source: 'tokenDue', n: offsets.length })
+  }
+
+  starts.sort((a, b) => a.startMs - b.startMs)
+  return starts.map((s, i) => {
+    // The round ends at whichever comes first: the next round, or the next
+    // boundary that is not this same round opening. With every boundary
+    // present that is the round's own rest-entered, exactly as before.
+    const nextStart = starts[i + 1]?.startMs ?? Number.POSITIVE_INFINITY
+    const nextBoundary = sorted.find(
+      (x) => x.monotonicTimeMs > s.startMs && (x.transition !== 'work-entered' || x.roundIndex !== s.roundIndex),
+    )
+    return {
+      roundIndex: s.roundIndex,
+      startMs: s.startMs,
+      endMs: Math.min(nextStart, nextBoundary ? nextBoundary.monotonicTimeMs : Number.POSITIVE_INFINITY),
+      source: s.source,
+      ...(s.n === undefined ? {} : { tokenDueN: s.n }),
+    }
+  })
 }
 
 function roundAt(windows, monotonicMs) {
@@ -410,7 +462,15 @@ export function analyze(text, constants = null) {
 
   // -- work axis -----------------------------------------------------------
   const fit = fitWorkAxis(tokenDue, boundaries)
-  const windows = roundWindows(boundaries)
+  const windows = roundWindows(boundaries, tokenDue)
+  // A reconstructed round is usable evidence but not observed evidence, and
+  // the reader is entitled to know which they are looking at.
+  for (const w of windows.filter((x) => x.source === 'tokenDue')) {
+    soft.push(
+      `round ${w.roundIndex} had no work-entered record — window rebuilt from ${w.tokenDueN} tokenDue records ` +
+        `(a dropped log line, not a missing round; its bars would otherwise have been discarded)`,
+    )
+  }
   for (const round of fit.values()) {
     if (round.disagreementMs === null) continue
     // A round's OWN opening boundary carries `workElapsedMs: 0` — the session
