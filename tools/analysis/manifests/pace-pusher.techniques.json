@@ -2320,8 +2320,8 @@
       "clipId": "lt-04d2597a",
       "text": "Coast bar — jab, cross, empty, empty, time-and-a-half, thirty-nine bars. Same one-two, quicker slots, same empty finish.",
       "durationMs": 10134,
-      "expectedStartTick": 70671,
-      "expectedStartMs": 73616,
+      "expectedStartTick": 68461,
+      "expectedStartMs": 71313.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2330,12 +2330,12 @@
       "clipId": "lt-b43471a2",
       "text": "Coast bar — jab, cross, empty, empty, double-time, thirty-nine bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean.",
       "durationMs": 11508,
-      "expectedStartTick": 144232,
-      "expectedStartMs": 150242,
+      "expectedStartTick": 141990,
+      "expectedStartMs": 147906,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 90,
+  "expectedCallBars": 88,
   "silentByDesign": [],
   "notes": []
 }

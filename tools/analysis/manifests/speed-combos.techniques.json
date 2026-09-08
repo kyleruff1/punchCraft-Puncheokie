@@ -3112,8 +3112,8 @@
       "clipId": "lt-5b4f6d35",
       "text": "Jab, jab, cross — time-and-a-half, eighteen bars. Double jab, cross, empty fourth slot. Let the reset stay visible.",
       "durationMs": 8720,
-      "expectedStartTick": 52829,
-      "expectedStartMs": 55030,
+      "expectedStartTick": 50411,
+      "expectedStartMs": 52511.333333333336,
       "source": "clickScript.schedule"
     },
     {
@@ -3122,8 +3122,8 @@
       "clipId": "lt-5d4a6660",
       "text": "Coast bar — jab, cross, empty, empty, double-time, twenty-eight bars. Jab, cross, then two empty slots. Speed lives inside the pair.",
       "durationMs": 9600,
-      "expectedStartTick": 90384,
-      "expectedStartMs": 94150,
+      "expectedStartTick": 88141,
+      "expectedStartMs": 91814,
       "source": "clickScript.schedule"
     },
     {
@@ -3132,8 +3132,8 @@
       "clipId": "lt-6b58a17c",
       "text": "Cross, lead hook, cross — double-time, eighteen bars. Cross, lead hook, cross. Three fast hits, then clear the page.",
       "durationMs": 8920,
-      "expectedStartTick": 144797,
-      "expectedStartMs": 150830,
+      "expectedStartTick": 142211,
+      "expectedStartMs": 148136,
       "source": "clickScript.schedule"
     },
     {
@@ -3142,12 +3142,12 @@
       "clipId": "lt-9c46ec3a",
       "text": "Long set: jabs only, straight time — ten bars. Finish with fast clean jabs. No reaching.",
       "durationMs": 7631,
-      "expectedStartTick": 184434,
-      "expectedStartMs": 192119,
+      "expectedStartTick": 182110,
+      "expectedStartMs": 189698,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 78,
+  "expectedCallBars": 74,
   "silentByDesign": [],
   "notes": []
 }

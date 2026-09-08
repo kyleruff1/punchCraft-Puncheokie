@@ -2360,8 +2360,8 @@
       "clipId": "li-ee09babc",
       "text": "One, two, one, two — straight time, fourteen bars. Four straight slots and back to guard.",
       "durationMs": 7960,
-      "expectedStartTick": 57398,
-      "expectedStartMs": 59790,
+      "expectedStartTick": 55646,
+      "expectedStartMs": 57965,
       "source": "clickScript.schedule"
     },
     {
@@ -2370,8 +2370,8 @@
       "clipId": "li-04496715",
       "text": "Coast bar — one, two, empty, empty, time-and-a-half, twenty-six bars. Same pair, a little quicker. The reset stays visible.",
       "durationMs": 7736,
-      "expectedStartTick": 115213,
-      "expectedStartMs": 120014,
+      "expectedStartTick": 113711,
+      "expectedStartMs": 118449.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2380,12 +2380,12 @@
       "clipId": "li-c0133747",
       "text": "Coast bar — one, two, empty, empty, double-time, twenty-eight bars. Speed lives inside the pair, not in the reset.",
       "durationMs": 8313,
-      "expectedStartTick": 168420,
-      "expectedStartMs": 175437,
+      "expectedStartTick": 166885,
+      "expectedStartMs": 173839,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 79,
+  "expectedCallBars": 78,
   "silentByDesign": [],
   "notes": []
 }

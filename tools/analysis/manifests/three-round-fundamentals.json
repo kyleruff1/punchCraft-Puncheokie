@@ -2880,8 +2880,8 @@
       "clipId": "li-5c4bc990",
       "text": "One, two, one, two — straight time, thirteen bars. Loose shoulders. Let the two arrive behind the one.",
       "durationMs": 8227,
-      "expectedStartTick": 34102,
-      "expectedStartMs": 35523,
+      "expectedStartTick": 32350,
+      "expectedStartMs": 33698,
       "source": "clickScript.schedule"
     },
     {
@@ -2890,8 +2890,8 @@
       "clipId": "li-93f9c07b",
       "text": "One, one, two — straight time, nine bars. Leave the fourth slot open. Reset there.",
       "durationMs": 8480,
-      "expectedStartTick": 87619,
-      "expectedStartMs": 91270,
+      "expectedStartTick": 85837,
+      "expectedStartMs": 89414,
       "source": "clickScript.schedule"
     },
     {
@@ -2900,8 +2900,8 @@
       "clipId": "li-48699010",
       "text": "One, two, one — double-time, eighteen bars. Three quick shots, then clear the page.",
       "durationMs": 7080,
-      "expectedStartTick": 127363,
-      "expectedStartMs": 132670,
+      "expectedStartTick": 125432,
+      "expectedStartMs": 130658,
       "source": "clickScript.schedule"
     },
     {
@@ -2910,8 +2910,8 @@
       "clipId": "li-3a1b5a8e",
       "text": "One, two, three — time-and-a-half, thirteen bars. Turn the three and take the empty slot.",
       "durationMs": 7197,
-      "expectedStartTick": 161811,
-      "expectedStartMs": 168553,
+      "expectedStartTick": 159869,
+      "expectedStartMs": 166530.33333333334,
       "source": "clickScript.schedule"
     },
     {
@@ -2920,8 +2920,8 @@
       "clipId": "li-8f8a4870",
       "text": "Three, two, three, two — straight time, five bars. Short and balanced. Finish each pair back in guard.",
       "durationMs": 8200,
-      "expectedStartTick": 189648,
-      "expectedStartMs": 197550,
+      "expectedStartTick": 187808,
+      "expectedStartMs": 195633,
       "source": "clickScript.schedule"
     },
     {
@@ -2930,12 +2930,12 @@
       "clipId": "li-c2b5619e",
       "text": "One, three, two — time-and-a-half, five bars. One, three, two. Let the last two land together.",
       "durationMs": 8201,
-      "expectedStartTick": 212687,
-      "expectedStartMs": 221549,
+      "expectedStartTick": 210668,
+      "expectedStartMs": 219446.33333333334,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 64,
+  "expectedCallBars": 61,
   "silentByDesign": [],
   "notes": []
 }

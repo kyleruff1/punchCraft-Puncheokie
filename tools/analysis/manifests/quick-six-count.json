@@ -2480,8 +2480,8 @@
       "clipId": "li-e75d1ffe",
       "text": "One, two, five, six — straight time, twelve bars. Straight line, then both uppercuts. Bend for the fives and sixes.",
       "durationMs": 8755,
-      "expectedStartTick": 42043,
-      "expectedStartMs": 43795,
+      "expectedStartTick": 40237,
+      "expectedStartMs": 41914,
       "source": "clickScript.schedule"
     },
     {
@@ -2490,8 +2490,8 @@
       "clipId": "li-2c31bc63",
       "text": "Big phrase — two pages: one, two, three, four, five, six, empty, empty. Straight time, ten times through. The whole alphabet, then breathe.",
       "durationMs": 8965,
-      "expectedStartTick": 101746,
-      "expectedStartMs": 105985,
+      "expectedStartTick": 99443,
+      "expectedStartMs": 103586,
       "source": "clickScript.schedule"
     },
     {
@@ -2500,12 +2500,12 @@
       "clipId": "li-7ef88806",
       "text": "One, six, three — time-and-a-half, twenty bars. Jab, rear uppercut, hook. Up, then around.",
       "durationMs": 7840,
-      "expectedStartTick": 176554,
-      "expectedStartMs": 183910,
+      "expectedStartTick": 174735,
+      "expectedStartMs": 182016,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 50,
+  "expectedCallBars": 49,
   "silentByDesign": [],
   "notes": []
 }

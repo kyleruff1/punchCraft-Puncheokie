@@ -10,6 +10,7 @@
 import { measuresPerRep, type ClickRate } from '../clickMaps'
 import { allClickMaps } from '../allClickMaps'
 import { findClickScript } from '../../../../audio/voiceAssets/clickScriptManifest'
+import { MIN_BREATH_MS } from '../../../coach/callPlacement'
 
 // Every map the app plays — the literal ten AND the composed quick twelve.
 // Iterating `CLICK_MAPS` alone let a motif introduced by a composed workout
@@ -87,7 +88,11 @@ describe.each(['numbers', 'techniques'] as const)('loop-call fit (%s)', (vocabul
     // must END at least a minimum breath before the first node — never
     // late. This trips at render time if a future clip re-render outgrows
     // its round's pad, instead of on Kyle's ear.
-    const MIN_BREATH_MS = 150 // mirrors _useWorkoutRunner.MIN_BREATH_MS (RN module — not importable here)
+    // The real constant, not a copy of it. This used to read
+    // `const MIN_BREATH_MS = 150 // mirrors _useWorkoutRunner.MIN_BREATH_MS
+    // (RN module — not importable here)` — a third statement of a number the
+    // runner and the manifest generator each also stated, which is exactly
+    // how the lead-in anchor drifted two seconds apart from the runtime.
     const overruns: string[] = []
     for (const [id, map] of Object.entries(MAPS)) {
       const measureMs = 4 * (60_000 / map.bpm)

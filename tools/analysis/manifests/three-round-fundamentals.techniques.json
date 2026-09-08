@@ -2880,8 +2880,8 @@
       "clipId": "lt-e0658d76",
       "text": "Jab, cross, jab, cross — straight time, thirteen bars. Loose shoulders. Let the cross arrive behind the jab.",
       "durationMs": 8843,
-      "expectedStartTick": 33511,
-      "expectedStartMs": 34907,
+      "expectedStartTick": 30780,
+      "expectedStartMs": 32063,
       "source": "clickScript.schedule"
     },
     {
@@ -2890,8 +2890,8 @@
       "clipId": "lt-6d60f5ae",
       "text": "Jab, jab, cross — straight time, nine bars. Leave the fourth slot open. Reset there.",
       "durationMs": 6566,
-      "expectedStartTick": 89457,
-      "expectedStartMs": 93184,
+      "expectedStartTick": 87199,
+      "expectedStartMs": 90832,
       "source": "clickScript.schedule"
     },
     {
@@ -2900,8 +2900,8 @@
       "clipId": "lt-2852abb5",
       "text": "Jab, cross, jab — double-time, eighteen bars. Three quick shots, then clear the page.",
       "durationMs": 7160,
-      "expectedStartTick": 127286,
-      "expectedStartMs": 132590,
+      "expectedStartTick": 124660,
+      "expectedStartMs": 129854,
       "source": "clickScript.schedule"
     },
     {
@@ -2910,8 +2910,8 @@
       "clipId": "lt-d0391616",
       "text": "Jab, cross, lead hook — time-and-a-half, thirteen bars. Turn the lead hook and take the empty slot.",
       "durationMs": 7642,
-      "expectedStartTick": 161384,
-      "expectedStartMs": 168108,
+      "expectedStartTick": 158906,
+      "expectedStartMs": 165527.33333333334,
       "source": "clickScript.schedule"
     },
     {
@@ -2920,8 +2920,8 @@
       "clipId": "lt-cb88478d",
       "text": "Lead hook, cross, lead hook, cross — straight time, five bars. Short and balanced. Finish each pair back in guard.",
       "durationMs": 8831,
-      "expectedStartTick": 189042,
-      "expectedStartMs": 196919,
+      "expectedStartTick": 186430,
+      "expectedStartMs": 194198,
       "source": "clickScript.schedule"
     },
     {
@@ -2930,12 +2930,12 @@
       "clipId": "lt-8083efca",
       "text": "Jab, lead hook, cross — time-and-a-half, five bars. Jab, lead hook, cross. Let the last two land together.",
       "durationMs": 8426,
-      "expectedStartTick": 212471,
-      "expectedStartMs": 221324,
+      "expectedStartTick": 210072,
+      "expectedStartMs": 218825.33333333334,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 64,
+  "expectedCallBars": 58,
   "silentByDesign": [],
   "notes": []
 }

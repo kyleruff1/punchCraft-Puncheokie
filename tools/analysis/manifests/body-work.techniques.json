@@ -2944,8 +2944,8 @@
       "clipId": "lt-39c18f1d",
       "text": "Coast bar — body jab, body cross, empty, empty, straight time, nine bars. Body jab, body cross, then two empty slots. Come back tall and balanced.",
       "durationMs": 11200,
-      "expectedStartTick": 58128,
-      "expectedStartMs": 60550,
+      "expectedStartTick": 55420,
+      "expectedStartMs": 57729,
       "source": "clickScript.schedule"
     },
     {
@@ -2954,8 +2954,8 @@
       "clipId": "lt-6dc4943b",
       "text": "Jab, body cross, body lead hook, cross — time-and-a-half, thirty bars. Head jab, body cross, body lead hook, head cross. Move between floors smoothly.",
       "durationMs": 10840,
-      "expectedStartTick": 104554,
-      "expectedStartMs": 108910,
+      "expectedStartTick": 101535,
+      "expectedStartMs": 105766,
       "source": "clickScript.schedule"
     },
     {
@@ -2964,12 +2964,12 @@
       "clipId": "lt-f0271e92",
       "text": "Jab, body jab, cross — double-time, twenty bars. Jab, body jab, cross. Quick level change, then reset.",
       "durationMs": 8403,
-      "expectedStartTick": 176013,
-      "expectedStartMs": 183347,
+      "expectedStartTick": 173037,
+      "expectedStartMs": 180247,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 67,
+  "expectedCallBars": 63,
   "silentByDesign": [],
   "notes": []
 }

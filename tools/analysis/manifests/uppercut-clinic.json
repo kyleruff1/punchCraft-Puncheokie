@@ -2260,8 +2260,8 @@
       "clipId": "li-a1a7f947",
       "text": "One, six, three, two — straight time, eight bars. One, six, three, two. Rise through the six, turn the three.",
       "durationMs": 8640,
-      "expectedStartTick": 83626,
-      "expectedStartMs": 87110,
+      "expectedStartTick": 81451,
+      "expectedStartMs": 84844.88235294117,
       "source": "clickScript.schedule"
     },
     {
@@ -2270,8 +2270,8 @@
       "clipId": "li-6d8b888d",
       "text": "Five, six, five — time-and-a-half, sixteen bars. Five, six, five. Three short shots and a reset.",
       "durationMs": 8760,
-      "expectedStartTick": 132301,
-      "expectedStartMs": 137813.5294117647,
+      "expectedStartTick": 130669,
+      "expectedStartMs": 136113.11764705883,
       "source": "clickScript.schedule"
     },
     {
@@ -2280,12 +2280,12 @@
       "clipId": "li-9d082688",
       "text": "One, five, two — double-time, seventeen bars. One, five, two. Fast and compact, then stop.",
       "durationMs": 8863,
-      "expectedStartTick": 180993,
-      "expectedStartMs": 188534.0588235294,
+      "expectedStartTick": 179181,
+      "expectedStartMs": 186647,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 53,
+  "expectedCallBars": 51,
   "silentByDesign": [],
   "notes": []
 }

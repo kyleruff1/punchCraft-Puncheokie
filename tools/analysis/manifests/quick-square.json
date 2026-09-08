@@ -2912,8 +2912,8 @@
       "clipId": "li-d016c656",
       "text": "One, two, three, four — straight time, nine bars. Same corners, walked in order. Feet under you.",
       "durationMs": 8471,
-      "expectedStartTick": 42316,
-      "expectedStartMs": 44079,
+      "expectedStartTick": 40394,
+      "expectedStartMs": 42077,
       "source": "clickScript.schedule"
     },
     {
@@ -2922,8 +2922,8 @@
       "clipId": "li-1d607f88",
       "text": "One, four, two, three — time-and-a-half, fourteen bars. The square, quicker. Do not cut the corners.",
       "durationMs": 8149,
-      "expectedStartTick": 88705,
-      "expectedStartMs": 92401,
+      "expectedStartTick": 86503,
+      "expectedStartMs": 90107,
       "source": "clickScript.schedule"
     },
     {
@@ -2932,12 +2932,12 @@
       "clipId": "li-258b9fd2",
       "text": "Big phrase — two pages: one, two, three, two, one, four, three, two. Straight time, fourteen times through. Page one is the four-count. Page two crosses the square.",
       "durationMs": 11480,
-      "expectedStartTick": 122371,
-      "expectedStartMs": 127470,
+      "expectedStartTick": 119268,
+      "expectedStartMs": 124237,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 43,
+  "expectedCallBars": 40,
   "silentByDesign": [],
   "notes": []
 }

@@ -3196,8 +3196,8 @@
       "clipId": "lt-831ccbd0",
       "text": "Jab, jab, cross — straight time, nine bars. Double one, then two. Fourth slot is quiet.",
       "durationMs": 8266,
-      "expectedStartTick": 60945,
-      "expectedStartMs": 63484,
+      "expectedStartTick": 58783,
+      "expectedStartMs": 61232,
       "source": "clickScript.schedule"
     },
     {
@@ -3206,8 +3206,8 @@
       "clipId": "lt-1b5db8aa",
       "text": "Long set: body jabs only, double-time — eighteen bars. Same lead hand, lower target. Keep your eyes up.",
       "durationMs": 8000,
-      "expectedStartTick": 107280,
-      "expectedStartMs": 111750,
+      "expectedStartTick": 105004,
+      "expectedStartMs": 109379,
       "source": "clickScript.schedule"
     },
     {
@@ -3216,8 +3216,8 @@
       "clipId": "lt-91c7f7dd",
       "text": "Jab, cross, jab, lead hook — time-and-a-half, fifteen bars. The jab comes back before the lead hook turns.",
       "durationMs": 8525,
-      "expectedStartTick": 148248,
-      "expectedStartMs": 154425,
+      "expectedStartTick": 145732,
+      "expectedStartMs": 151804,
       "source": "clickScript.schedule"
     },
     {
@@ -3226,12 +3226,12 @@
       "clipId": "lt-d51205fb",
       "text": "Pump: jabs only, time-and-a-half — fifteen bars. Finish the round owning the lead hand. Crisp, not tense.",
       "durationMs": 7504,
-      "expectedStartTick": 188396,
-      "expectedStartMs": 196246,
+      "expectedStartTick": 185976,
+      "expectedStartMs": 193725,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 66,
+  "expectedCallBars": 62,
   "silentByDesign": [],
   "notes": []
 }

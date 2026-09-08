@@ -3196,8 +3196,8 @@
       "clipId": "li-f55b35b6",
       "text": "One, one, two — straight time, nine bars. Double one, then two. Fourth slot is quiet.",
       "durationMs": 7807,
-      "expectedStartTick": 61385,
-      "expectedStartMs": 63943,
+      "expectedStartTick": 59700,
+      "expectedStartMs": 62187,
       "source": "clickScript.schedule"
     },
     {
@@ -3206,8 +3206,8 @@
       "clipId": "li-ddbe9a47",
       "text": "Long set: one-bees only, double-time — eighteen bars. Same lead hand, lower target. Keep your eyes up.",
       "durationMs": 8800,
-      "expectedStartTick": 106512,
-      "expectedStartMs": 110950,
+      "expectedStartTick": 104092,
+      "expectedStartMs": 108429,
       "source": "clickScript.schedule"
     },
     {
@@ -3216,8 +3216,8 @@
       "clipId": "li-bf378145",
       "text": "One, two, one, three — time-and-a-half, fifteen bars. The one comes back before the three turns.",
       "durationMs": 6964,
-      "expectedStartTick": 149747,
-      "expectedStartMs": 155986,
+      "expectedStartTick": 147548,
+      "expectedStartMs": 153696,
       "source": "clickScript.schedule"
     },
     {
@@ -3226,12 +3226,12 @@
       "clipId": "li-dfb302b7",
       "text": "Pump: ones only, time-and-a-half — fifteen bars. Finish the round owning the lead hand. Crisp, not tense.",
       "durationMs": 8414,
-      "expectedStartTick": 187523,
-      "expectedStartMs": 195336,
+      "expectedStartTick": 185479,
+      "expectedStartMs": 193207,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 66,
+  "expectedCallBars": 62,
   "silentByDesign": [],
   "notes": []
 }

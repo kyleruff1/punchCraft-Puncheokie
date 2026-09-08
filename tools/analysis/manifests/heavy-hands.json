@@ -2920,8 +2920,8 @@
       "clipId": "li-9d8ff8ba",
       "text": "One, two, three, two — straight time, twelve bars. One, two, three, two. Stay heavy without getting slow.",
       "durationMs": 8096,
-      "expectedStartTick": 57268,
-      "expectedStartMs": 59654,
+      "expectedStartTick": 55280,
+      "expectedStartMs": 57583,
       "source": "clickScript.schedule"
     },
     {
@@ -2930,8 +2930,8 @@
       "clipId": "li-8f55a23d",
       "text": "Two, three, two — time-and-a-half, eighteen bars. Two, three, two. Sit down, then get back under yourself.",
       "durationMs": 8494,
-      "expectedStartTick": 106806,
-      "expectedStartMs": 111256,
+      "expectedStartTick": 104805,
+      "expectedStartMs": 109172.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2940,8 +2940,8 @@
       "clipId": "li-93a822ba",
       "text": "One, two, three — double-time, twenty-six bars. Three fast power shots, one empty slot. Do not chase the bag.",
       "durationMs": 8902,
-      "expectedStartTick": 144814,
-      "expectedStartMs": 150848,
+      "expectedStartTick": 142840,
+      "expectedStartMs": 148792,
       "source": "clickScript.schedule"
     },
     {
@@ -2950,12 +2950,12 @@
       "clipId": "li-b64a8ac9",
       "text": "One, one, two — straight time, seven bars. Double one, two. Finish the round behind the straight shot.",
       "durationMs": 7858,
-      "expectedStartTick": 195736,
-      "expectedStartMs": 203892,
+      "expectedStartTick": 193955,
+      "expectedStartMs": 202036,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 70,
+  "expectedCallBars": 68,
   "silentByDesign": [],
   "notes": []
 }

@@ -3728,8 +3728,8 @@
       "clipId": "li-4c3a8e05",
       "text": "One, one, two — double-time, thirty-four bars. Quick double one, two. Stop on the empty slot every time.",
       "durationMs": 8251,
-      "expectedStartTick": 53279,
-      "expectedStartMs": 55499,
+      "expectedStartTick": 51305,
+      "expectedStartMs": 53443,
       "source": "clickScript.schedule"
     },
     {
@@ -3738,8 +3738,8 @@
       "clipId": "li-38565a86",
       "text": "Two, three, two — double-time, eighteen bars. Fast triple, then clear the page.",
       "durationMs": 7120,
-      "expectedStartTick": 123485,
-      "expectedStartMs": 128630,
+      "expectedStartTick": 121452,
+      "expectedStartMs": 126513,
       "source": "clickScript.schedule"
     },
     {
@@ -3748,12 +3748,12 @@
       "clipId": "li-d7997ba6",
       "text": "One, two, three — time-and-a-half, thirty-two bars. One, two, three, breathe. Keep the hook compact.",
       "durationMs": 8920,
-      "expectedStartTick": 160157,
-      "expectedStartMs": 166830,
+      "expectedStartTick": 158215,
+      "expectedStartMs": 164807.33333333334,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 94,
+  "expectedCallBars": 92,
   "silentByDesign": [],
   "notes": []
 }

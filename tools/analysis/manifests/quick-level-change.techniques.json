@@ -2888,8 +2888,8 @@
       "clipId": "lt-50caf372",
       "text": "Jab, cross, body jab, cross — straight time, ten bars. High, high, low, high. The stance never changes.",
       "durationMs": 8558,
-      "expectedStartTick": 65272,
-      "expectedStartMs": 67992,
+      "expectedStartTick": 62342,
+      "expectedStartMs": 64940,
       "source": "clickScript.schedule"
     },
     {
@@ -2898,8 +2898,8 @@
       "clipId": "lt-49784884",
       "text": "Jab, body jab, cross — double-time, twenty bars. Head jab, body jab, cross. Quick level change, clean exit.",
       "durationMs": 8769,
-      "expectedStartTick": 115758,
-      "expectedStartMs": 120581,
+      "expectedStartTick": 112782,
+      "expectedStartMs": 117481,
       "source": "clickScript.schedule"
     },
     {
@@ -2908,12 +2908,12 @@
       "clipId": "lt-bb2ec526",
       "text": "Body jab, cross, jab, cross — time-and-a-half, twenty-four bars. Start low, finish high. Bend the knees, not the back.",
       "durationMs": 8736,
-      "expectedStartTick": 166477,
-      "expectedStartMs": 173414,
+      "expectedStartTick": 163577,
+      "expectedStartMs": 170393,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 67,
+  "expectedCallBars": 63,
   "silentByDesign": [],
   "notes": []
 }

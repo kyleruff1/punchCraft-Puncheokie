@@ -2164,8 +2164,8 @@
       "clipId": "li-b15c30bb",
       "text": "One, one, two — straight time, eight bars. Double one, two. Fourth slot is your stance check.",
       "durationMs": 7280,
-      "expectedStartTick": 84931,
-      "expectedStartMs": 88470,
+      "expectedStartTick": 83347,
+      "expectedStartMs": 86819.88235294117,
       "source": "clickScript.schedule"
     },
     {
@@ -2174,8 +2174,8 @@
       "clipId": "li-c2245d5a",
       "text": "One, two, three — double-time, sixteen bars. Three quick shots. Stop clean before the next bar.",
       "durationMs": 7556,
-      "expectedStartTick": 133457,
-      "expectedStartMs": 139017.5294117647,
+      "expectedStartTick": 131534,
+      "expectedStartMs": 137014.4705882353,
       "source": "clickScript.schedule"
     },
     {
@@ -2184,12 +2184,12 @@
       "clipId": "li-4949f2dd",
       "text": "One, two-bee, three — time-and-a-half, seventeen bars. One upstairs, two-bee downstairs, three back upstairs.",
       "durationMs": 8960,
-      "expectedStartTick": 180900,
-      "expectedStartMs": 188437.0588235294,
+      "expectedStartTick": 178883,
+      "expectedStartMs": 186336.64705882352,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 53,
+  "expectedCallBars": 52,
   "silentByDesign": [],
   "notes": []
 }

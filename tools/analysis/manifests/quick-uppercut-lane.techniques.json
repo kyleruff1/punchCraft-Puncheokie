@@ -2300,8 +2300,8 @@
       "clipId": "lt-6b3d342d",
       "text": "Lead uppercut, rear uppercut, lead uppercut — time-and-a-half, sixteen bars. Uppercuts only, lead, rear, lead. Rip them short.",
       "durationMs": 8728,
-      "expectedStartTick": 72699,
-      "expectedStartMs": 75727.88235294117,
+      "expectedStartTick": 69252,
+      "expectedStartMs": 72137.47058823529,
       "source": "clickScript.schedule"
     },
     {
@@ -2310,8 +2310,8 @@
       "clipId": "lt-7d2b0e68",
       "text": "Jab, rear uppercut, lead hook, cross — straight time, eight bars. Jab, rear uppercut, hook, cross. Level up, then over.",
       "durationMs": 8463,
-      "expectedStartTick": 121744,
-      "expectedStartMs": 126816.41176470587,
+      "expectedStartTick": 119137,
+      "expectedStartMs": 124101.29411764705,
       "source": "clickScript.schedule"
     },
     {
@@ -2320,12 +2320,12 @@
       "clipId": "lt-44c0077c",
       "text": "Jab, lead uppercut, cross — double-time, nineteen bars. Jab, lead uppercut, cross. Quick up the middle, then finish long.",
       "durationMs": 7800,
-      "expectedStartTick": 171171,
-      "expectedStartMs": 178302.94117647057,
+      "expectedStartTick": 168417,
+      "expectedStartMs": 175434.88235294117,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 55,
+  "expectedCallBars": 52,
   "silentByDesign": [],
   "notes": []
 }

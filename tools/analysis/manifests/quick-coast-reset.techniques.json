@@ -1592,8 +1592,8 @@
       "clipId": "lt-223c9e4d",
       "text": "Coast bar — one, then three empty slots, straight time, eight bars. One shot, then recover on your feet. The empty slots are the work.",
       "durationMs": 9040,
-      "expectedStartTick": 41770,
-      "expectedStartMs": 43510,
+      "expectedStartTick": 40348,
+      "expectedStartMs": 42029,
       "source": "clickScript.schedule"
     },
     {
@@ -1602,8 +1602,8 @@
       "clipId": "lt-3d9fa5fb",
       "text": "Pump: crosses only, double-time — ten bars. Rear hand, fast and straight. Then we breathe.",
       "durationMs": 7158,
-      "expectedStartTick": 85048,
-      "expectedStartMs": 88592,
+      "expectedStartTick": 82257,
+      "expectedStartMs": 85684,
       "source": "clickScript.schedule"
     },
     {
@@ -1612,8 +1612,8 @@
       "clipId": "lt-66bf6cdf",
       "text": "Jab, cross — with a hold after each, straight time, fourteen bars. Punch, wait, punch, wait. Reset between every shot.",
       "durationMs": 9000,
-      "expectedStartTick": 110928,
-      "expectedStartMs": 115550,
+      "expectedStartTick": 109261,
+      "expectedStartMs": 113814,
       "source": "clickScript.schedule"
     },
     {
@@ -1622,12 +1622,12 @@
       "clipId": "lt-882b7ca9",
       "text": "Coast bar — cross, lead hook, empty, empty, straight time, nine bars. Cross, hook, then stand tall and breathe.",
       "durationMs": 8673,
-      "expectedStartTick": 180362,
-      "expectedStartMs": 187877,
+      "expectedStartTick": 178614,
+      "expectedStartMs": 186056,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 47,
+  "expectedCallBars": 45,
   "silentByDesign": [],
   "notes": []
 }

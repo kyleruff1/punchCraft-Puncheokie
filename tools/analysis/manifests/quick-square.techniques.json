@@ -2912,8 +2912,8 @@
       "clipId": "lt-f11b20d9",
       "text": "Jab, cross, lead hook, rear hook — straight time, nine bars. Same corners, walked in order. Feet under you.",
       "durationMs": 8876,
-      "expectedStartTick": 41927,
-      "expectedStartMs": 43674,
+      "expectedStartTick": 39145,
+      "expectedStartMs": 40776,
       "source": "clickScript.schedule"
     },
     {
@@ -2922,8 +2922,8 @@
       "clipId": "lt-60d86512",
       "text": "Jab, rear hook, cross, lead hook — time-and-a-half, fourteen bars. The square, quicker. Do not cut the corners.",
       "durationMs": 7363,
-      "expectedStartTick": 89460,
-      "expectedStartMs": 93187,
+      "expectedStartTick": 86367,
+      "expectedStartMs": 89966,
       "source": "clickScript.schedule"
     },
     {
@@ -2932,12 +2932,12 @@
       "clipId": "lt-d65f0ca6",
       "text": "Big phrase — two pages: jab, cross, lead hook, cross, jab, rear hook, lead hook, cross. Straight time, fourteen times through. Page one is the four-count. Page two crosses the square.",
       "durationMs": 13200,
-      "expectedStartTick": 120720,
-      "expectedStartMs": 125750,
+      "expectedStartTick": 116883,
+      "expectedStartMs": 121753,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 43,
+  "expectedCallBars": 39,
   "silentByDesign": [],
   "notes": []
 }

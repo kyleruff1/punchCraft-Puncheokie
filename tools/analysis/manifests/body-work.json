@@ -2944,8 +2944,8 @@
       "clipId": "li-92756a1b",
       "text": "Coast bar — one-bee, two-bee, empty, empty, straight time, nine bars. One-bee, two-bee, then two empty slots. Come back tall and balanced.",
       "durationMs": 10286,
-      "expectedStartTick": 59005,
-      "expectedStartMs": 61464,
+      "expectedStartTick": 57401,
+      "expectedStartMs": 59793,
       "source": "clickScript.schedule"
     },
     {
@@ -2954,8 +2954,8 @@
       "clipId": "li-cf9f6763",
       "text": "One, two-bee, three-bee, two — time-and-a-half, thirty bars. Head one, body two-bee, body three-bee, head two. Move between floors smoothly.",
       "durationMs": 8480,
-      "expectedStartTick": 106819,
-      "expectedStartMs": 111270,
+      "expectedStartTick": 104085,
+      "expectedStartMs": 108422,
       "source": "clickScript.schedule"
     },
     {
@@ -2964,12 +2964,12 @@
       "clipId": "li-b36502d4",
       "text": "One, one-bee, two — double-time, twenty bars. One, one-bee, two. Quick level change, then reset.",
       "durationMs": 8573,
-      "expectedStartTick": 175850,
-      "expectedStartMs": 183177,
+      "expectedStartTick": 173876,
+      "expectedStartMs": 181121,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 68,
+  "expectedCallBars": 66,
   "silentByDesign": [],
   "notes": []
 }

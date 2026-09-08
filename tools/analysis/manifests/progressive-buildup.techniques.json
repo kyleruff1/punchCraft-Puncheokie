@@ -3088,8 +3088,8 @@
       "clipId": "lt-edeeb8b0",
       "text": "Jab, jab, cross — time-and-a-half, twenty-eight bars. Now double the jab and add the cross. Fourth slot stays open.",
       "durationMs": 8707,
-      "expectedStartTick": 111209,
-      "expectedStartMs": 115843,
+      "expectedStartTick": 108855,
+      "expectedStartMs": 113391,
       "source": "clickScript.schedule"
     },
     {
@@ -3098,12 +3098,12 @@
       "clipId": "lt-817ccf59",
       "text": "Jab, jab, cross, lead hook — double-time, twenty bars. Add the lead hook to the end. Keep the build connected.",
       "durationMs": 8541,
-      "expectedStartTick": 175881,
-      "expectedStartMs": 183209,
+      "expectedStartTick": 172988,
+      "expectedStartMs": 180196,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 69,
+  "expectedCallBars": 66,
   "silentByDesign": [],
   "notes": []
 }

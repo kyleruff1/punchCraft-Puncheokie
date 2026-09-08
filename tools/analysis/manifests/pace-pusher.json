@@ -2320,8 +2320,8 @@
       "clipId": "li-feb6d135",
       "text": "Coast bar — one, two, empty, empty, time-and-a-half, thirty-nine bars. Same one-two, quicker slots, same empty finish.",
       "durationMs": 8703,
-      "expectedStartTick": 72045,
-      "expectedStartMs": 75047,
+      "expectedStartTick": 70543,
+      "expectedStartMs": 73482.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2330,12 +2330,12 @@
       "clipId": "li-3202c438",
       "text": "Coast bar — one, two, empty, empty, double-time, thirty-nine bars. Same pair at double-time. Two fast shots, two empty slots. Stay clean.",
       "durationMs": 11143,
-      "expectedStartTick": 144583,
-      "expectedStartMs": 150607,
+      "expectedStartTick": 143049,
+      "expectedStartMs": 149009,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 91,
+  "expectedCallBars": 90,
   "silentByDesign": [],
   "notes": []
 }

@@ -3728,8 +3728,8 @@
       "clipId": "lt-a9a7376c",
       "text": "Jab, jab, cross — double-time, thirty-four bars. Quick double jab, cross. Stop on the empty slot every time.",
       "durationMs": 8231,
-      "expectedStartTick": 53298,
-      "expectedStartMs": 55519,
+      "expectedStartTick": 50848,
+      "expectedStartMs": 52967,
       "source": "clickScript.schedule"
     },
     {
@@ -3738,8 +3738,8 @@
       "clipId": "lt-987eb56b",
       "text": "Cross, lead hook, cross — double-time, eighteen bars. Fast triple, then clear the page.",
       "durationMs": 7504,
-      "expectedStartTick": 123116,
-      "expectedStartMs": 128246,
+      "expectedStartTick": 120530,
+      "expectedStartMs": 125552,
       "source": "clickScript.schedule"
     },
     {
@@ -3748,12 +3748,12 @@
       "clipId": "lt-2f49a0da",
       "text": "Jab, cross, lead hook — time-and-a-half, thirty-two bars. Jab, cross, lead hook, breathe. Keep the hook compact.",
       "durationMs": 8480,
-      "expectedStartTick": 160579,
-      "expectedStartMs": 167270,
+      "expectedStartTick": 158102,
+      "expectedStartMs": 164689.33333333334,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 93,
+  "expectedCallBars": 91,
   "silentByDesign": [],
   "notes": []
 }

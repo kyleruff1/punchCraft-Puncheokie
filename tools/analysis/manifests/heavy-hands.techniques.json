@@ -2920,8 +2920,8 @@
       "clipId": "lt-2890a775",
       "text": "Jab, cross, lead hook, cross — straight time, twelve bars. Jab, cross, lead hook, cross. Stay heavy without getting slow.",
       "durationMs": 8840,
-      "expectedStartTick": 56554,
-      "expectedStartMs": 58910,
+      "expectedStartTick": 53705,
+      "expectedStartMs": 55943,
       "source": "clickScript.schedule"
     },
     {
@@ -2930,8 +2930,8 @@
       "clipId": "lt-8d71a64b",
       "text": "Cross, lead hook, cross — time-and-a-half, eighteen bars. Cross, lead hook, cross. Sit down, then get back under yourself.",
       "durationMs": 8294,
-      "expectedStartTick": 106998,
-      "expectedStartMs": 111456,
+      "expectedStartTick": 104444,
+      "expectedStartMs": 108795.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2940,8 +2940,8 @@
       "clipId": "lt-22637db8",
       "text": "Jab, cross, lead hook — double-time, twenty-six bars. Three fast power shots, one empty slot. Do not chase the bag.",
       "durationMs": 8249,
-      "expectedStartTick": 145441,
-      "expectedStartMs": 151501,
+      "expectedStartTick": 142932,
+      "expectedStartMs": 148887,
       "source": "clickScript.schedule"
     },
     {
@@ -2950,12 +2950,12 @@
       "clipId": "lt-9a52f2d7",
       "text": "Jab, jab, cross — straight time, seven bars. Double jab, cross. Finish the round behind the straight shot.",
       "durationMs": 7360,
-      "expectedStartTick": 196214,
-      "expectedStartMs": 204390,
+      "expectedStartTick": 193956,
+      "expectedStartMs": 202038,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 70,
+  "expectedCallBars": 67,
   "silentByDesign": [],
   "notes": []
 }

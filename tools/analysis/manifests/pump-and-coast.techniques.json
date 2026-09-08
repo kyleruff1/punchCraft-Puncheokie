@@ -2248,8 +2248,8 @@
       "clipId": "lt-34d12a3a",
       "text": "Coast bar — one, empty, empty, empty, straight time, eight bars. One touch, three empty slots. Move, breathe, stay ready.",
       "durationMs": 9065,
-      "expectedStartTick": 41746,
-      "expectedStartMs": 43485,
+      "expectedStartTick": 40324,
+      "expectedStartMs": 42004,
       "source": "clickScript.schedule"
     },
     {
@@ -2258,8 +2258,8 @@
       "clipId": "lt-8544b670",
       "text": "Pump: crosses only, double-time — ten bars. Pump the crosses in a short burst. Keep the shoulder behind them.",
       "durationMs": 8200,
-      "expectedStartTick": 84048,
-      "expectedStartMs": 87550,
+      "expectedStartTick": 81256,
+      "expectedStartMs": 84642,
       "source": "clickScript.schedule"
     },
     {
@@ -2268,8 +2268,8 @@
       "clipId": "lt-f5cdc389",
       "text": "Coast bar — one, empty, two, empty, straight time, fourteen bars. One, empty, two, empty. Let the coast stay active.",
       "durationMs": 9720,
-      "expectedStartTick": 110237,
-      "expectedStartMs": 114830,
+      "expectedStartTick": 108570,
+      "expectedStartMs": 113094,
       "source": "clickScript.schedule"
     },
     {
@@ -2278,12 +2278,12 @@
       "clipId": "lt-72bd5333",
       "text": "Long set: body jabs only, time-and-a-half — twenty bars. Pump the body jabs. Small level change, fast return.",
       "durationMs": 8372,
-      "expectedStartTick": 180651,
-      "expectedStartMs": 188178,
+      "expectedStartTick": 178471,
+      "expectedStartMs": 185907,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 56,
+  "expectedCallBars": 53,
   "silentByDesign": [],
   "notes": [
     "Pump & Coast pump / coast blocks are DELIBERATELY coach-silent — sustained + coast runtime consumers not yet wired. silentByDesign is TBD until the manifest generator learns to detect those block spans (Slice 6)."

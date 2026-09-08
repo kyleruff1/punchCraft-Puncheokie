@@ -2276,8 +2276,8 @@
       "clipId": "li-73982b78",
       "text": "One, two, three, two — straight time, thirteen bars. The four-count. Let the final cross land behind the hook.",
       "durationMs": 8600,
-      "expectedStartTick": 69840,
-      "expectedStartMs": 72750,
+      "expectedStartTick": 67948,
+      "expectedStartMs": 70779,
       "source": "clickScript.schedule"
     },
     {
@@ -2286,8 +2286,8 @@
       "clipId": "li-60f6faa9",
       "text": "Three, two, three — time-and-a-half, eighteen bars. Hook, cross, hook. Keep the elbow up on both threes.",
       "durationMs": 8642,
-      "expectedStartTick": 134312,
-      "expectedStartMs": 139908,
+      "expectedStartTick": 132552,
+      "expectedStartMs": 138075,
       "source": "clickScript.schedule"
     },
     {
@@ -2296,12 +2296,12 @@
       "clipId": "li-243d8ad7",
       "text": "One, two, three, four — straight time, nine bars. Both hooks close the bar. Turn the hips, not the shoulders.",
       "durationMs": 8560,
-      "expectedStartTick": 180470,
-      "expectedStartMs": 187990,
+      "expectedStartTick": 178548,
+      "expectedStartMs": 185988,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 54,
+  "expectedCallBars": 51,
   "silentByDesign": [],
   "notes": []
 }

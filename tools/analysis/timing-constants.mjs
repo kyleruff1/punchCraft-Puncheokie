@@ -24,6 +24,13 @@ const REPO_ROOT = import.meta.url
 export const TIMING_CONSTANTS_PATH = join(REPO_ROOT, 'tools', 'analysis', 'reports', 'timing-constants.json')
 
 const RUNNER = join('src', 'app', '(tabs)', 'punchcraft', '_useWorkoutRunner.ts')
+/**
+ * Call and lead-in placement moved out of the runner into the domain so the
+ * analysis tools and the manifest generator could share it. Read it from its
+ * real home — regexing the runner returned `null` for every one of these the
+ * moment they moved, and a null reads as "renamed?" rather than "wrong file".
+ */
+const PLACEMENT = join('src', 'domain', 'coach', 'callPlacement.ts')
 const VOICE = join('src', 'audio', 'VoiceOutputExpo.ts')
 const RHYTHM_MAP = join('src', 'domain', 'programs', 'RhythmMap.ts')
 const RHYTHM_SPINE = join('src', 'domain', 'programs', 'RhythmSpine.ts')
@@ -98,6 +105,7 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
     return existsSync(path) ? readFileSync(path, 'utf8') : ''
   }
   const runner = src(RUNNER)
+  const placement = src(PLACEMENT)
   const voice = src(VOICE)
   const map = src(RHYTHM_MAP)
   const spine = src(RHYTHM_SPINE)
@@ -122,27 +130,27 @@ export function readTimingConstants(repoRoot = REPO_ROOT) {
     'METRONOME_SWAP_LEAD_MS',
     'AVATAR_LEAD_MS',
   ]) {
-    const value = readNumberConst(runner, name)
+    const value = readNumberConst(placement, name)
     if (value !== null) leadScope[name] = value
   }
   const breath = {
-    DENSE_BREATH_MS: readRecordConst(runner, 'DENSE_BREATH_MS', leadScope),
-    MIN_BREATH_MS: readNumberConst(runner, 'MIN_BREATH_MS'),
-    BREATH_REF_SLOT_MS: readNumberConst(runner, 'BREATH_REF_SLOT_MS'),
-    BREATH_TRACK_GAIN: readNumberConst(runner, 'BREATH_TRACK_GAIN'),
-    CALL_BREATH_OVERRIDES: readOverrides(runner, 'CALL_BREATH_OVERRIDES'),
-    source: RUNNER,
+    DENSE_BREATH_MS: readRecordConst(placement, 'DENSE_BREATH_MS', leadScope),
+    MIN_BREATH_MS: readNumberConst(placement, 'MIN_BREATH_MS'),
+    BREATH_REF_SLOT_MS: readNumberConst(placement, 'BREATH_REF_SLOT_MS'),
+    BREATH_TRACK_GAIN: readNumberConst(placement, 'BREATH_TRACK_GAIN'),
+    CALL_BREATH_OVERRIDES: readOverrides(placement, 'CALL_BREATH_OVERRIDES'),
+    source: PLACEMENT,
   }
   const leads = {
-    LEAD_IN_PAD_MS: readNumberConst(runner, 'LEAD_IN_PAD_MS'),
-    CALL_PAD_MS: readNumberConst(runner, 'CALL_PAD_MS'),
-    CALL_DISPATCH_LAG_MS: readNumberConst(runner, 'CALL_DISPATCH_LAG_MS'),
-    TECHNIQUE_CALL_LEAD_MS: readNumberConst(runner, 'TECHNIQUE_CALL_LEAD_MS'),
-    TECHNIQUE_LEADIN_LEAD_MS: readNumberConst(runner, 'TECHNIQUE_LEADIN_LEAD_MS'),
-    NUMBERS_CALL_LEAD_MS: readNumberConst(runner, 'NUMBERS_CALL_LEAD_MS'),
+    LEAD_IN_PAD_MS: readNumberConst(placement, 'LEAD_IN_PAD_MS'),
+    CALL_PAD_MS: readNumberConst(placement, 'CALL_PAD_MS'),
+    CALL_DISPATCH_LAG_MS: readNumberConst(placement, 'CALL_DISPATCH_LAG_MS'),
+    TECHNIQUE_CALL_LEAD_MS: readNumberConst(placement, 'TECHNIQUE_CALL_LEAD_MS'),
+    TECHNIQUE_LEADIN_LEAD_MS: readNumberConst(placement, 'TECHNIQUE_LEADIN_LEAD_MS'),
+    NUMBERS_CALL_LEAD_MS: readNumberConst(placement, 'NUMBERS_CALL_LEAD_MS'),
     METRONOME_SWAP_LEAD_MS: readNumberConst(runner, 'METRONOME_SWAP_LEAD_MS'),
     AVATAR_LEAD_MS: readNumberConst(runner, 'AVATAR_LEAD_MS'),
-    source: RUNNER,
+    source: PLACEMENT,
   }
   const audio = {
     DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS: readNumberConst(voice, 'DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS'),

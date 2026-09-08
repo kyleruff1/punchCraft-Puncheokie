@@ -2248,8 +2248,8 @@
       "clipId": "li-34d12a3a",
       "text": "Coast bar — one, empty, empty, empty, straight time, eight bars. One touch, three empty slots. Move, breathe, stay ready.",
       "durationMs": 9241,
-      "expectedStartTick": 41577,
-      "expectedStartMs": 43309,
+      "expectedStartTick": 40673,
+      "expectedStartMs": 42368,
       "source": "clickScript.schedule"
     },
     {
@@ -2258,8 +2258,8 @@
       "clipId": "li-10beb36f",
       "text": "Pump: twos only, double-time — ten bars. Pump the twos in a short burst. Keep the shoulder behind them.",
       "durationMs": 7800,
-      "expectedStartTick": 84432,
-      "expectedStartMs": 87950,
+      "expectedStartTick": 82311,
+      "expectedStartMs": 85741,
       "source": "clickScript.schedule"
     },
     {
@@ -2268,8 +2268,8 @@
       "clipId": "li-f5cdc389",
       "text": "Coast bar — one, empty, two, empty, straight time, fourteen bars. One, empty, two, empty. Let the coast stay active.",
       "durationMs": 8522,
-      "expectedStartTick": 111387,
-      "expectedStartMs": 116028,
+      "expectedStartTick": 110285,
+      "expectedStartMs": 114880,
       "source": "clickScript.schedule"
     },
     {
@@ -2278,12 +2278,12 @@
       "clipId": "li-746b0bd0",
       "text": "Long set: one-bees only, time-and-a-half — twenty bars. Pump the one-bees. Small level change, fast return.",
       "durationMs": 8560,
-      "expectedStartTick": 180470,
-      "expectedStartMs": 187990,
+      "expectedStartTick": 178146,
+      "expectedStartMs": 185569,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 57,
+  "expectedCallBars": 54,
   "silentByDesign": [],
   "notes": [
     "Pump & Coast pump / coast blocks are DELIBERATELY coach-silent — sustained + coast runtime consumers not yet wired. silentByDesign is TBD until the manifest generator learns to detect those block spans (Slice 6)."

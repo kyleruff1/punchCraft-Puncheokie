@@ -3088,8 +3088,8 @@
       "clipId": "li-2d2f2854",
       "text": "One, one, two — time-and-a-half, twenty-eight bars. Now double the one and add the two. Fourth slot stays open.",
       "durationMs": 8230,
-      "expectedStartTick": 111667,
-      "expectedStartMs": 116320,
+      "expectedStartTick": 109789,
+      "expectedStartMs": 114364,
       "source": "clickScript.schedule"
     },
     {
@@ -3098,12 +3098,12 @@
       "clipId": "li-bb04bbb9",
       "text": "One, one, two, three — double-time, twenty bars. Add the three to the end. Keep the build connected.",
       "durationMs": 7649,
-      "expectedStartTick": 176737,
-      "expectedStartMs": 184101,
+      "expectedStartTick": 174732,
+      "expectedStartMs": 182012,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 69,
+  "expectedCallBars": 67,
   "silentByDesign": [],
   "notes": []
 }

@@ -2708,8 +2708,8 @@
       "clipId": "li-e4cf45f6",
       "text": "One, one, two — straight time, nine bars. Double the lead, then the rear hand. The fourth slot is quiet.",
       "durationMs": 8112,
-      "expectedStartTick": 61092,
-      "expectedStartMs": 63638,
+      "expectedStartTick": 59407,
+      "expectedStartMs": 61882,
       "source": "clickScript.schedule"
     },
     {
@@ -2718,8 +2718,8 @@
       "clipId": "li-f2c2a9ac",
       "text": "One-bee, one, two — time-and-a-half, eighteen bars. Body one-bee, head one, then the rear hand. Reset on the empty slot.",
       "durationMs": 9066,
-      "expectedStartTick": 106257,
-      "expectedStartMs": 110684,
+      "expectedStartTick": 104330,
+      "expectedStartMs": 108677,
       "source": "clickScript.schedule"
     },
     {
@@ -2728,12 +2728,12 @@
       "clipId": "li-73c4911c",
       "text": "One, one, two — double-time, thirty bars. Quick double one, two. Stay long, stay loose.",
       "durationMs": 8475,
-      "expectedStartTick": 152904,
-      "expectedStartMs": 159275,
+      "expectedStartTick": 150930,
+      "expectedStartMs": 157219,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 68,
+  "expectedCallBars": 66,
   "silentByDesign": [],
   "notes": []
 }

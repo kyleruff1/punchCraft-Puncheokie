@@ -2204,8 +2204,8 @@
       "clipId": "lt-72ec3b06",
       "text": "Jab, jab, cross — straight time, eight bars. Double the lead, then the rear hand. Notice which foot is forward.",
       "durationMs": 8000,
-      "expectedStartTick": 73398,
-      "expectedStartMs": 76455.88235294117,
+      "expectedStartTick": 71337,
+      "expectedStartMs": 74309.76470588235,
       "source": "clickScript.schedule"
     },
     {
@@ -2214,8 +2214,8 @@
       "clipId": "lt-262b479d",
       "text": "Jab, cross, lead hook — double-time, seventeen bars. Quick jab, cross, hook. Same shape you will mirror next round.",
       "durationMs": 8580,
-      "expectedStartTick": 121631,
-      "expectedStartMs": 126699.41176470587,
+      "expectedStartTick": 119173,
+      "expectedStartMs": 124138.35294117648,
       "source": "clickScript.schedule"
     },
     {
@@ -2224,12 +2224,12 @@
       "clipId": "lt-ba75e28b",
       "text": "Jab, body cross, lead hook — time-and-a-half, eighteen bars. Head, body, hook. Remember this set — it comes back the other way.",
       "durationMs": 8840,
-      "expectedStartTick": 172883,
-      "expectedStartMs": 180086.47058823527,
+      "expectedStartTick": 170291,
+      "expectedStartMs": 177386.0588235294,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 55,
+  "expectedCallBars": 53,
   "silentByDesign": [],
   "notes": []
 }

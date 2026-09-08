@@ -2360,8 +2360,8 @@
       "clipId": "lt-4992f1a4",
       "text": "Jab, cross, jab, cross — straight time, fourteen bars. Four straight slots and back to guard.",
       "durationMs": 7219,
-      "expectedStartTick": 58110,
-      "expectedStartMs": 60531,
+      "expectedStartTick": 55380,
+      "expectedStartMs": 57687,
       "source": "clickScript.schedule"
     },
     {
@@ -2370,8 +2370,8 @@
       "clipId": "lt-80e43810",
       "text": "Coast bar — jab, cross, empty, empty, time-and-a-half, twenty-six bars. Same pair, a little quicker. The reset stays visible.",
       "durationMs": 9120,
-      "expectedStartTick": 113885,
-      "expectedStartMs": 118630,
+      "expectedStartTick": 111674,
+      "expectedStartMs": 116327.33333333333,
       "source": "clickScript.schedule"
     },
     {
@@ -2380,12 +2380,12 @@
       "clipId": "lt-9e0cae29",
       "text": "Coast bar — jab, cross, empty, empty, double-time, twenty-eight bars. Speed lives inside the pair, not in the reset.",
       "durationMs": 8478,
-      "expectedStartTick": 168261,
-      "expectedStartMs": 175272,
+      "expectedStartTick": 166019,
+      "expectedStartMs": 172936,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 80,
+  "expectedCallBars": 77,
   "silentByDesign": [],
   "notes": []
 }

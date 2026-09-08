@@ -2204,8 +2204,8 @@
       "clipId": "li-42c47c8a",
       "text": "One, one, two — straight time, eight bars. Double the lead, then the rear hand. Notice which foot is forward.",
       "durationMs": 7489,
-      "expectedStartTick": 73888,
-      "expectedStartMs": 76966.88235294117,
+      "expectedStartTick": 72304,
+      "expectedStartMs": 75316.76470588235,
       "source": "clickScript.schedule"
     },
     {
@@ -2214,8 +2214,8 @@
       "clipId": "li-2295a31e",
       "text": "One, two, three — double-time, seventeen bars. Quick one, two, hook. Same shape you will mirror next round.",
       "durationMs": 8179,
-      "expectedStartTick": 122016,
-      "expectedStartMs": 127100.41176470587,
+      "expectedStartTick": 120093,
+      "expectedStartMs": 125097.35294117648,
       "source": "clickScript.schedule"
     },
     {
@@ -2224,12 +2224,12 @@
       "clipId": "li-20853f56",
       "text": "One, two-bee, three — time-and-a-half, eighteen bars. Head, body, hook. Remember this set — it comes back the other way.",
       "durationMs": 8544,
-      "expectedStartTick": 173167,
-      "expectedStartMs": 180382.47058823527,
+      "expectedStartTick": 171151,
+      "expectedStartMs": 178282.0588235294,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 55,
+  "expectedCallBars": 54,
   "silentByDesign": [],
   "notes": []
 }

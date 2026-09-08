@@ -3112,8 +3112,8 @@
       "clipId": "li-817f2672",
       "text": "One, one, two — time-and-a-half, eighteen bars. Double one, two, empty fourth slot. Let the reset stay visible.",
       "durationMs": 8454,
-      "expectedStartTick": 53084,
-      "expectedStartMs": 55296,
+      "expectedStartTick": 51142,
+      "expectedStartMs": 53273.333333333336,
       "source": "clickScript.schedule"
     },
     {
@@ -3122,8 +3122,8 @@
       "clipId": "li-18509842",
       "text": "Coast bar — one, two, empty, empty, double-time, twenty-eight bars. One, two, then two empty slots. Speed lives inside the pair.",
       "durationMs": 10140,
-      "expectedStartTick": 89866,
-      "expectedStartMs": 93610,
+      "expectedStartTick": 88332,
+      "expectedStartMs": 92012,
       "source": "clickScript.schedule"
     },
     {
@@ -3132,8 +3132,8 @@
       "clipId": "li-d010e6df",
       "text": "Two, three, two — double-time, eighteen bars. Two, three, two. Three fast hits, then clear the page.",
       "durationMs": 7079,
-      "expectedStartTick": 146564,
-      "expectedStartMs": 152671,
+      "expectedStartTick": 144532,
+      "expectedStartMs": 150554,
       "source": "clickScript.schedule"
     },
     {
@@ -3142,12 +3142,12 @@
       "clipId": "li-ee77364c",
       "text": "Long set: ones only, straight time — ten bars. Finish with fast clean ones. No reaching.",
       "durationMs": 8352,
-      "expectedStartTick": 183742,
-      "expectedStartMs": 191398,
+      "expectedStartTick": 181794,
+      "expectedStartMs": 189369,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 79,
+  "expectedCallBars": 76,
   "silentByDesign": [],
   "notes": []
 }

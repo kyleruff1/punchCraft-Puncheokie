@@ -2480,8 +2480,8 @@
       "clipId": "lt-0a043683",
       "text": "Jab, cross, lead uppercut, rear uppercut — straight time, twelve bars. Straight line, then both uppercuts. Bend for the lead uppercuts and sixes.",
       "durationMs": 9908,
-      "expectedStartTick": 40936,
-      "expectedStartMs": 42642,
+      "expectedStartTick": 37748,
+      "expectedStartMs": 39321,
       "source": "clickScript.schedule"
     },
     {
@@ -2490,8 +2490,8 @@
       "clipId": "lt-aa1e54bf",
       "text": "Big phrase — two pages: jab, cross, lead hook, rear hook, lead uppercut, rear uppercut, empty, empty. Straight time, ten times through. The whole alphabet, then breathe.",
       "durationMs": 13421,
-      "expectedStartTick": 97468,
-      "expectedStartMs": 101529,
+      "expectedStartTick": 93560,
+      "expectedStartMs": 97458,
       "source": "clickScript.schedule"
     },
     {
@@ -2500,12 +2500,12 @@
       "clipId": "lt-c78c778a",
       "text": "Jab, rear uppercut, lead hook — time-and-a-half, twenty bars. Jab, rear uppercut, hook. Up, then around.",
       "durationMs": 8600,
-      "expectedStartTick": 175824,
-      "expectedStartMs": 183150,
+      "expectedStartTick": 173222,
+      "expectedStartMs": 180440,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 49,
+  "expectedCallBars": 48,
   "silentByDesign": [],
   "notes": []
 }

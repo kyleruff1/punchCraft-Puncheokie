@@ -2164,8 +2164,8 @@
       "clipId": "lt-a0558b0f",
       "text": "Jab, jab, cross — straight time, eight bars. Double jab, cross. Fourth slot is your stance check.",
       "durationMs": 7807,
-      "expectedStartTick": 84425,
-      "expectedStartMs": 87943,
+      "expectedStartTick": 82365,
+      "expectedStartMs": 85796.88235294117,
       "source": "clickScript.schedule"
     },
     {
@@ -2174,8 +2174,8 @@
       "clipId": "lt-d72da406",
       "text": "Jab, cross, lead hook — double-time, sixteen bars. Three quick shots. Stop clean before the next bar.",
       "durationMs": 7491,
-      "expectedStartTick": 133519,
-      "expectedStartMs": 139082.5294117647,
+      "expectedStartTick": 131061,
+      "expectedStartMs": 136521.4705882353,
       "source": "clickScript.schedule"
     },
     {
@@ -2184,12 +2184,12 @@
       "clipId": "lt-795e7e56",
       "text": "Jab, body cross, lead hook — time-and-a-half, seventeen bars. One upstairs, body cross downstairs, three back upstairs.",
       "durationMs": 9903,
-      "expectedStartTick": 179994,
-      "expectedStartMs": 187494.0588235294,
+      "expectedStartTick": 177402,
+      "expectedStartMs": 184793.64705882352,
       "source": "clickScript.schedule"
     }
   ],
-  "expectedCallBars": 53,
+  "expectedCallBars": 52,
   "silentByDesign": [],
   "notes": []
 }
