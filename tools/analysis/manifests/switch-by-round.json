@@ -2164,8 +2164,8 @@
       "clipId": "li-b15c30bb",
       "text": "One, one, two — straight time, eight bars. Double one, two. Fourth slot is your stance check.",
       "durationMs": 7280,
-      "expectedStartTick": 83347,
-      "expectedStartMs": 86819.88235294117,
+      "expectedStartTick": 83298,
+      "expectedStartMs": 86769,
       "source": "clickScript.schedule"
     },
     {

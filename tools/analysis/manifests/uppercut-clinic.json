@@ -2260,8 +2260,8 @@
       "clipId": "li-a1a7f947",
       "text": "One, six, three, two — straight time, eight bars. One, six, three, two. Rise through the six, turn the three.",
       "durationMs": 8640,
-      "expectedStartTick": 81451,
-      "expectedStartMs": 84844.88235294117,
+      "expectedStartTick": 81402,
+      "expectedStartMs": 84794,
       "source": "clickScript.schedule"
     },
     {

@@ -2204,8 +2204,8 @@
       "clipId": "li-42c47c8a",
       "text": "One, one, two — straight time, eight bars. Double the lead, then the rear hand. Notice which foot is forward.",
       "durationMs": 7489,
-      "expectedStartTick": 72304,
-      "expectedStartMs": 75316.76470588235,
+      "expectedStartTick": 72255,
+      "expectedStartMs": 75265.88235294117,
       "source": "clickScript.schedule"
     },
     {

@@ -2310,8 +2310,8 @@
       "clipId": "li-df2437cb",
       "text": "One, six, three, two — straight time, eight bars. Jab, rear uppercut, hook, cross. Level up, then over.",
       "durationMs": 8680,
-      "expectedStartTick": 119361,
-      "expectedStartMs": 124334.29411764705,
+      "expectedStartTick": 119312,
+      "expectedStartMs": 124283.41176470587,
       "source": "clickScript.schedule"
     },
     {

@@ -19,7 +19,9 @@ import {
   callDispatchAtMs,
   leadInDispatchAtMs,
   BREATH_REF_SLOT_MS,
+  BREATH_TRACK_GAIN,
   CALL_DISPATCH_LAG_MS,
+  DELIVERED_BREATH_SHORTFALL_MS,
   DENSE_BREATH_MS,
   LEAD_IN_PAD_MS,
   MIN_BREATH_MS,
@@ -51,7 +53,52 @@ describe('breathForBar', () => {
   })
 
   it('floors a single-punch bar, which has no interval to track', () => {
-    expect(breathForBar(bar([0]), 'numbers', 'call/z').breathMs).toBe(MIN_BREATH_MS)
+    // The floor is the DELIVERED one. A bar with one punch has no interval,
+    // so it lands on the clamp — and the clamp now promises 150 ms at the
+    // ear rather than 150 ms at the scheduler.
+    expect(breathForBar(bar([0]), 'numbers', 'call/z').breathMs).toBe(
+      MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS,
+    )
+  })
+
+  it('NEVER LATE: every bar in the catalogue range keeps 150 ms at the ear', () => {
+    // The guarantee as a property of the arithmetic rather than a number
+    // read off a report. The observer's onset is optimistic by
+    // DELIVERED_BREATH_SHORTFALL_MS, so the breath the athlete actually hears
+    // is `breathMs − shortfall`; that is what must clear MIN_BREATH_MS.
+    //
+    // Swept across the whole range the maps produce — 100 ms (the tightest
+    // dense combo) to 1500 ms (wider than switch-by-round's widest bar at
+    // 1412 ms) — in both vocabularies, so a future map that widens a bar
+    // cannot walk out of the tested band without widening this sweep first.
+    for (const vocabulary of ['numbers', 'techniques'] as const) {
+      for (let slotMs = 100; slotMs <= 1500; slotMs += 5) {
+        const { breathMs } = breathForBar(bar([0, slotMs]), vocabulary, 'call/sweep')
+        expect(breathMs - DELIVERED_BREATH_SHORTFALL_MS).toBeGreaterThanOrEqual(MIN_BREATH_MS)
+      }
+    }
+  })
+
+  it('does not move a single dense bar — the upper clamp is untouched', () => {
+    // The other half of the change, and the one that protects Kyle's tuning.
+    // Everything at or inside the reference slot must come out at exactly the
+    // mic-tuned dense breath; the raised floor may only lift bars that were
+    // sitting on it.
+    for (const vocabulary of ['numbers', 'techniques'] as const) {
+      const dense = DENSE_BREATH_MS[vocabulary]
+      for (let slotMs = 100; slotMs <= BREATH_REF_SLOT_MS; slotMs += 5) {
+        expect(breathForBar(bar([0, slotMs]), vocabulary, 'call/dense').breathMs).toBe(dense)
+      }
+      // ...and through the shrink band, until the raised floor takes over at
+      // `dense − (slotMs − REF) = MIN + SHORTFALL`, i.e. slotMs 655 / 805.
+      const bites = BREATH_REF_SLOT_MS + (dense - (MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS)) / BREATH_TRACK_GAIN
+      expect(breathForBar(bar([0, bites - 5]), vocabulary, 'call/track').breathMs).toBe(
+        dense - (bites - 5 - BREATH_REF_SLOT_MS),
+      )
+      expect(breathForBar(bar([0, bites + 5]), vocabulary, 'call/track').breathMs).toBe(
+        MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS,
+      )
+    }
   })
 
   it('anchors to the first PUNCH, not the bar start — a bar may open on a rest', () => {

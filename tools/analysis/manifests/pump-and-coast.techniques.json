@@ -2248,8 +2248,8 @@
       "clipId": "lt-34d12a3a",
       "text": "Coast bar — one, empty, empty, empty, straight time, eight bars. One touch, three empty slots. Move, breathe, stay ready.",
       "durationMs": 9065,
-      "expectedStartTick": 40324,
-      "expectedStartMs": 42004,
+      "expectedStartTick": 40233,
+      "expectedStartMs": 41909,
       "source": "clickScript.schedule"
     },
     {
@@ -2268,8 +2268,8 @@
       "clipId": "lt-f5cdc389",
       "text": "Coast bar — one, empty, two, empty, straight time, fourteen bars. One, empty, two, empty. Let the coast stay active.",
       "durationMs": 9720,
-      "expectedStartTick": 108570,
-      "expectedStartMs": 113094,
+      "expectedStartTick": 108479,
+      "expectedStartMs": 112999,
       "source": "clickScript.schedule"
     },
     {

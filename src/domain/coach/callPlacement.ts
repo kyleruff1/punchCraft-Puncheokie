@@ -131,6 +131,53 @@ export const BREATH_TRACK_GAIN = 1.0
 export const MIN_BREATH_MS = 150
 
 /**
+ * How much of the intended breath the audio path eats before the sound
+ * reaches the athlete — the gap between "the player says it is playing" and
+ * "the playhead is moving".
+ *
+ * `PlaybackObserver` stamps a play's onset at `playbackStatusUpdate
+ * playing: true`. Across two full release sessions that event carried
+ * `positionAtOnsetMs: 0` in 296 of 296 observations: media3 asserts "playing"
+ * with the playhead still at zero, on a buffer floored at 250 ms. Timing one
+ * play two ways at once (src/app/dev/voice-latency.tsx "Calibrate ruler",
+ * release 73f7ea6f, TB125FU, armed path, 40 reps/asset) measured the gap:
+ *
+ *   call cc-e08318c0 (48 kHz)  status 25.2  playhead 118.8  skew  95.4
+ *   bell             (24 kHz)  status 19.2  playhead 119.1  skew 101.4
+ *
+ * So `MIN_BREATH_MS = 150` was a lie at the ear. Recomputed per bar from the
+ * raw logs, 8-15% of bars in the tighter workouts delivered under the floor,
+ * the worst at 57 ms, and one pre-lag-fix capture put a call ON the punch
+ * (−7.5 ms). This constant is what makes the floor mean 150 ms of silence the
+ * athlete actually hears.
+ *
+ * Used ONLY in `breathForBar`'s lower clamp, and that restriction is the
+ * whole design:
+ *
+ *  - NOT added to `CALL_DISPATCH_LAG_MS`. That would move every dense bar
+ *    95 ms earlier, back toward the setting Kyle rejected on glass as "too
+ *    early". His ear tuned the DELIVERED state, not the intended one — the
+ *    breath he approved is today's delivered breath, and dense bars never
+ *    breach the floor anyway (quick-speed-burst: 0 of 185 under it).
+ *  - NOT added to `DENSE_BREATH_MS`, `CALL_PAD_MS` or the lead constants,
+ *    all of which are mic-tuned. How long the coach stays silent is Kyle's
+ *    call; this only stops the clamp from promising silence that is not
+ *    there.
+ *
+ * The clamp therefore starts biting at `slotMs > 655` (numbers) / `> 805`
+ * (techniques) rather than 750/900, and the bars it moves are exactly the
+ * wide, slow ones already pinned at the floor. Dense bars are unchanged to
+ * the millisecond.
+ *
+ * This is a FLOOR, twice over: the playhead moving is itself earlier than
+ * sound leaving the speaker, and `currentTime` is a blocking `runOnMain` read
+ * resolved to one JS loop turn, so it reads late and compresses the gap.
+ * Closing that last stretch needs a microphone — see the still-open
+ * `PLAYHEAD_TO_SPEAKER_MS`.
+ */
+export const DELIVERED_BREATH_SHORTFALL_MS = 95
+
+/**
  * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
  * by design — the escape hatch when the mic says a specific bucket wants a
  * bespoke breath the formula doesn't nail. A value here replaces the formula.
@@ -167,8 +214,12 @@ export function breathForBar(
     punchIdx.length >= 2
       ? (cue.tokenOffsetsMs[punchIdx[1]!] ?? 0) - firstPunchOffsetMs
       : Number.POSITIVE_INFINITY
+  // The floor is raised by the delivered shortfall so that 150 ms of it
+  // survives the audio path. Only the LOWER clamp moves: the upper bound is
+  // still the mic-tuned dense breath, so a dense bar comes out of here with
+  // the number Kyle approved, unchanged.
   const breathMs = Math.max(
-    MIN_BREATH_MS,
+    MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS,
     Math.min(dense, dense - BREATH_TRACK_GAIN * Math.max(0, slotMs - BREATH_REF_SLOT_MS)),
   )
   return { breathMs, firstPunchOffsetMs }
