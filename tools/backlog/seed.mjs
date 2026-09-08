@@ -348,8 +348,20 @@ async function assignEpicsToProject(epicByPhase) {
 async function setSingleSelect(itemId, projectId, fields, fieldName, optionName) {
   const f = fields[fieldName]
   if (!f?.id) return
+  // No value to set is not an unknown option. The [LOOP] verification issues
+  // deliberately carry no priority (neither does #302, the one they were
+  // modelled on), and reporting each as `Unknown Priority option: null`
+  // buried the two warnings that DO mean something in seven that do not.
+  if (optionName === null || optionName === undefined || optionName === '') return
   const opt = f.options?.[optionName]
-  if (!opt?.id) { console.error(`Unknown ${fieldName} option: ${optionName}`); return }
+  if (!opt?.id) {
+    // A real gap: the project's field has no such option. `Phase 8` is the
+    // standing one — the phase exists in backlog-issues.json and in the
+    // labels, but was never added to the project's Phase field, so every
+    // M40 item lands on the board with no phase.
+    console.error(`Unknown ${fieldName} option: ${optionName} — add it to the project's ${fieldName} field`)
+    return
+  }
   const r = gh(['project', 'item-edit', '--project-id', projectId, '--id', itemId, '--field-id', f.id, '--single-select-option-id', opt.id], { allowFail: true })
   if (r.status === 0) summary.fieldSets.c++
 }
