@@ -125,9 +125,11 @@ describe('verdicts', () => {
 })
 
 describe('args', () => {
-  it('defaults the timing gate to warn and rejects anything else', () => {
-    expect(parseArgs(['--all']).timingGate).toBe('warn')
-    expect(parseArgs(['--all', '--timing-gate=fail']).timingGate).toBe('fail')
+  it('defaults the timing gate to fail and rejects anything else', () => {
+    // Staging is over. `warn` established the baseline (41 calls at or past
+    // the punch across 24 drives); `fail` is what keeps it from coming back.
+    expect(parseArgs(['--all']).timingGate).toBe('fail')
+    expect(parseArgs(['--all', '--timing-gate=warn']).timingGate).toBe('warn')
     expect(parseArgs(['--all', '--timing-gate=off']).timingGate).toBe('off')
     expect(() => parseArgs(['--all', '--timing-gate=yes'])).toThrow(/--timing-gate/)
   })

@@ -28,10 +28,10 @@
  * Each drive is judged twice: by `verify-first-round.mjs` (did the coach say
  * the right thing at the right mark) and by `observed-timing.mjs` (did the
  * audio actually get there in time). The second is what `--timing-gate`
- * controls, and it defaults to `warn` so the gate can be introduced without
- * failing the fleet on its first contact with it — see
- * `timingVerdictFromExit`. Its hard finding is `barsAtOrPastPunch`: a call
- * still sounding when the athlete threw.
+ * controls, and it now defaults to `fail` — see `timingVerdictFromExit`. Its
+ * hard finding is `barsAtOrPastPunch`: a call still sounding when the athlete
+ * threw, which is the one guarantee the whole call-placement design exists to
+ * provide.
  *
  * Outputs tools/analysis/suites/<epoch>/{summary.json,summary.md,suite.log}
  * plus one session dir per drive. Exit: 1 any FAIL/ERROR, 4 any STALE (after
@@ -100,7 +100,7 @@ export function parseArgs(argv) {
     tapFallback: false,
     keepVolume: false,
     out: undefined,
-    timingGate: 'warn',
+    timingGate: 'fail',
   }
   for (const a of argv) {
     if (a === '--all') args.all = true
@@ -224,13 +224,24 @@ export function verdictFromVerifyExit(code) {
  * what they have always meant; overloading it would make one call site's
  * behaviour depend on a flag the other call site does not have.
  *
- * The gate is staged because a new gate that fails on its first contact with
- * the fleet teaches everyone to pass `--timing-gate=off`:
+ * The gate was staged, because one that fails on its first contact with the
+ * fleet teaches everyone to pass `--timing-gate=off`:
  *   off  — measure and report, judge nothing.
- *   warn — the default. A hard finding is a WARN, so one suite run
- *          establishes the baseline without blocking anything.
- *   fail — a hard finding is a FAIL. Flipped in its own commit once the
- *          baseline is green.
+ *   warn — a hard finding is a WARN. Used to establish the baseline.
+ *   fail — a hard finding is a FAIL. **Now the default.**
+ *
+ * Staging is finished. The pre-floor baseline measured 41 calls landing at or
+ * past the punch across 24 drives; the post-floor run measured 1. That is the
+ * regression this gate now exists to prevent, and the number is small enough
+ * that a new one is a signal rather than noise.
+ *
+ * It is flipped with that last violation still outstanding, deliberately:
+ * `quick-coast-reset/numbers` has one bar at −3.9 ms, so a full suite FAILS
+ * today. That is the gate telling the truth — never-late has no tolerance by
+ * design — not a gate that needs loosening. Do not raise its threshold to get
+ * green; either fix the bar or accept a red suite until the audio path is
+ * steadier (the tail that causes it is `PLAYHEAD_TO_SPEAKER_MS`, still
+ * unmeasured).
  */
 export function timingVerdictFromExit(code, gate) {
   if (gate === 'off' || code === null || code === undefined) return 'PASS'
