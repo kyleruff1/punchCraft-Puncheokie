@@ -103,6 +103,8 @@ export default function VoiceSettingsScreen(): React.JSX.Element {
   const setVolumes = useVoiceSettingsStore((s) => s.setVolumes)
   const clickEnabled = useVoiceSettingsStore((s) => s.clickEnabled)
   const setClickEnabled = useVoiceSettingsStore((s) => s.setClickEnabled)
+  const legacyBreathFloor = useVoiceSettingsStore((s) => s.legacyBreathFloor)
+  const setLegacyBreathFloor = useVoiceSettingsStore((s) => s.setLegacyBreathFloor)
 
   const detectionAvailable = React.useMemo(() => createPlaybackDetector().available, [])
 
@@ -199,6 +201,22 @@ export default function VoiceSettingsScreen(): React.JSX.Element {
             onValueChange={setClickEnabled}
             testID="voice-click"
             value={clickEnabled}
+          />
+        </View>
+
+        <View style={styles.switchRow}>
+          <View style={styles.optionText}>
+            <Text style={styles.optionLabel}>Old call placement (A/B)</Text>
+            <Text style={styles.optionHint}>
+              Places calls the way the coach did before the delivered-breath fix. Takes effect on
+              the next bar, so you can flip it mid-round. Off = the shipped placement.
+            </Text>
+          </View>
+          <Switch
+            accessibilityLabel="Old call placement"
+            onValueChange={setLegacyBreathFloor}
+            testID="voice-legacy-breath-floor"
+            value={legacyBreathFloor}
           />
         </View>
       </View>

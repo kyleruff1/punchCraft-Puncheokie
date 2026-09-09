@@ -138,6 +138,7 @@ export default function LiveScreen(): React.JSX.Element {
   // default, flipped on when mapping/verifying markers. Gates only the click's
   // volume in the runner; the visual grid, coach, and avatar are unaffected.
   const clickEnabled = useVoiceSettingsStore((s) => s.clickEnabled)
+  const legacyBreathFloor = useVoiceSettingsStore((s) => s.legacyBreathFloor)
   const detector = React.useMemo(() => createPlaybackDetector(), [])
   // Built once, never per render: the output owns players and a focus
   // request, and rebuilding it mid-workout would drop both.
@@ -393,6 +394,7 @@ export default function LiveScreen(): React.JSX.Element {
     haptics,
     backdrop: backdropBus,
     clickAudible: clickEnabled,
+    legacyBreathFloor,
   })
 
   // THE missing wire (Kyle 2026-09-04: flipped the radio, "still running

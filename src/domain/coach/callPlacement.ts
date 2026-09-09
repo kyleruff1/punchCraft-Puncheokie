@@ -201,6 +201,17 @@ export function breathForBar(
   cue: PlaceableBar,
   vocabulary: CallVocabulary,
   slot: string,
+  /**
+   * The delivered-shortfall allowance, overridable ONLY so the on-glass A/B
+   * can hear the change with and without it inside one session (pass 0 for
+   * the pre-floor behaviour). Nothing in the shipping path passes it; the
+   * default is the constant, so production placement cannot depend on a
+   * caller remembering to supply it.
+   *
+   * This module stays pure (Rule 2): the flag is read from settings by the
+   * runner and handed down, never imported from a store here.
+   */
+  shortfallMs: number = DELIVERED_BREATH_SHORTFALL_MS,
 ): { breathMs: number; firstPunchOffsetMs: number } {
   const punchIdx: number[] = []
   cue.tokens.forEach((t, i) => {
@@ -219,7 +230,7 @@ export function breathForBar(
   // still the mic-tuned dense breath, so a dense bar comes out of here with
   // the number Kyle approved, unchanged.
   const breathMs = Math.max(
-    MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS,
+    MIN_BREATH_MS + shortfallMs,
     Math.min(dense, dense - BREATH_TRACK_GAIN * Math.max(0, slotMs - BREATH_REF_SLOT_MS)),
   )
   return { breathMs, firstPunchOffsetMs }
@@ -240,8 +251,10 @@ export function callDispatchAtMs(args: {
   vocabulary: CallVocabulary
   slot: string
   clipDurationMs: number
+  /** A/B override only — see `breathForBar`. Omit in the shipping path. */
+  shortfallMs?: number
 }): { dispatchAtMs: number; firstNodeMs: number; breathMs: number } {
-  const { breathMs, firstPunchOffsetMs } = breathForBar(args.cue, args.vocabulary, args.slot)
+  const { breathMs, firstPunchOffsetMs } = breathForBar(args.cue, args.vocabulary, args.slot, args.shortfallMs)
   const firstNodeMs = args.scheduledStartMs + firstPunchOffsetMs
   return {
     dispatchAtMs: Math.max(0, firstNodeMs - args.clipDurationMs - breathMs - CALL_DISPATCH_LAG_MS),

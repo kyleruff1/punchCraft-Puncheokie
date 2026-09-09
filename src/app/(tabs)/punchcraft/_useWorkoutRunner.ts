@@ -368,6 +368,11 @@ export interface UseWorkoutRunnerArgs {
    * `recipe.metronome.enabled`, which would move the visual grid.
    */
   clickAudible?: boolean
+  /**
+   * A/B ONLY (plan step 5a): place calls the way the coach did before
+   * `DELIVERED_BREATH_SHORTFALL_MS`. Absent means the shipped placement.
+   */
+  legacyBreathFloor?: boolean
 }
 
 /** What the runner reports when a workout ends. */
@@ -425,6 +430,12 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
   // settings toggle, applied at the next work-entered.
   const clickAudibleRef = useRef(clickAudible)
   clickAudibleRef.current = clickAudible
+  // Unlike the click, this is read at PLACEMENT time rather than fixed for
+  // the run: flipping it mid-workout must change the very next bar, because
+  // hearing the two placements a few bars apart is the whole point of the
+  // A/B. Nothing else in the session changes when it moves.
+  const legacyBreathFloorRef = useRef(args.legacyBreathFloor ?? false)
+  legacyBreathFloorRef.current = args.legacyBreathFloor ?? false
   const clock = useMemo(() => args.clock ?? systemMonotonicClock(), [args.clock])
 
   // M39-V1b: engine tempo when the recipe opts in (`metronome.enabled`),
@@ -706,6 +717,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
         vocabulary,
         slot,
         clipDurationMs: clip.durationMs,
+        // undefined keeps the shipped allowance; 0 is the retired placement.
+        shortfallMs: legacyBreathFloorRef.current ? 0 : undefined,
       })
       return {
         kind: 'call',

@@ -61,6 +61,27 @@ describe('breathForBar', () => {
     )
   })
 
+  it('defaults to the shipped allowance — the A/B override cannot be forgotten into production', () => {
+    // The override exists only so the on-glass test can hear both placements
+    // in one session. A caller that omits it must get the measured behaviour,
+    // never the retired one, so forgetting to thread the flag can only ever
+    // fail safe.
+    const bar1 = bar([0, 1200])
+    expect(breathForBar(bar1, 'numbers', 'call/x').breathMs).toBe(
+      breathForBar(bar1, 'numbers', 'call/x', DELIVERED_BREATH_SHORTFALL_MS).breathMs,
+    )
+    expect(breathForBar(bar1, 'numbers', 'call/x').breathMs).toBe(MIN_BREATH_MS + DELIVERED_BREATH_SHORTFALL_MS)
+    // ...and passing 0 reproduces the pre-fix placement exactly, which is the
+    // only thing the A/B toggle is allowed to do.
+    expect(breathForBar(bar1, 'numbers', 'call/x', 0).breathMs).toBe(MIN_BREATH_MS)
+    // A dense bar is identical either way — the override moves the lower
+    // clamp only, so the A/B cannot accidentally re-tune what Kyle approved.
+    const dense = bar([0, 250, 500, 750])
+    expect(breathForBar(dense, 'numbers', 'call/d', 0).breathMs).toBe(
+      breathForBar(dense, 'numbers', 'call/d').breathMs,
+    )
+  })
+
   it('NEVER LATE: every bar in the catalogue range keeps 150 ms at the ear', () => {
     // The guarantee as a property of the arithmetic rather than a number
     // read off a report. The observer's onset is optimistic by
