@@ -8,6 +8,20 @@ one recorded workout: real launch latencies, real RN starvation gaps, real
 Whisper word timestamps against the mic capture, and — critically — the
 real `puncheokie.cue.tokenDue` events the runner logged (Part A).
 
+## Status (2026-09-07): TIER-2, mic only
+
+The phrase-play half of this analyzer is retired with the per-punch phrase
+corpus (V2 Phase 5-iv). The standing live check is now mic-free:
+
+    node tools/analysis/observed-timing.mjs --session <dir>
+
+which joins the silent playhead observer's real onsets and ends (GH #291)
+to the runner's dispatch records — no Whisper, no ffmpeg, no room. Reach for
+THIS tool only when the runtime schedule is provably right and the audio
+still reads drifty to the ear: that is a clip-render question, and only a
+microphone can answer it. The `tokenDue` parser lives in
+`tools/audition/logparse.py` and is shared.
+
 ## Inputs
 
 A session directory produced by `tools/audition/monitor-session.mjs`:
@@ -86,14 +100,20 @@ _TOKEN_DUE_RE = re.compile(
     re.DOTALL,
 )
 
-_VOICE_PLAY_RE = re.compile(
-    r"^\s*(\d+\.\d+)\s.*puncheokie\.voice\.play.*"
-    r"'combination phrase playing'.*"
-    r"cueId:\s*'([^']+)'.*combination:\s*'([^']+)'.*"
-    r"cadence:\s*'([^']+)'.*durationMs:\s*(\d+).*"
-    r"(?:launchLateMs:\s*(-?\d+))?",
-    re.DOTALL,
-)
+# RETIRED (V2 Phase 5-iv, commit 369a2c6): the per-punch phrase corpus is
+# gone, and with it the `'combination phrase playing'` message and its
+# `cueId` / `cadence` / `launchLateMs` fields. This regex matched nothing on
+# every capture since — `parse_log` returned zero plays and every consumer
+# printed a clean "0 rows" instead of failing. It is kept, disabled, only so
+# nobody re-derives it from an old report.
+#
+# What a coach play looks like today (src/audio/VoiceOutputExpo.ts):
+#   '[puncheokie.voice.play] clip playing', { asset, kind, label, playId,
+#     traceId, path, dispatchMs, durationMs, volume, … }
+# Parse it with tools/audition/logparse.py, which also reads the silent
+# observer's `puncheokie.voice.observed` records (GH #291) — those carry the
+# real onset and end, which is what this file's mic pass was approximating.
+_VOICE_PLAY_RE = None
 
 
 def parse_log(log_path: str) -> tuple[list[dict], list[dict]]:
@@ -131,7 +151,7 @@ def parse_log(log_path: str) -> tuple[list[dict], list[dict]]:
                 "monotonicTimeMs": int(m.group(7)),
             })
             continue
-        m = _VOICE_PLAY_RE.search(rec)
+        m = _VOICE_PLAY_RE.search(rec) if _VOICE_PLAY_RE is not None else None
         if m:
             voice_play.append({
                 "epochMs": int(round(float(m.group(1)) * 1000)),
@@ -141,6 +161,14 @@ def parse_log(log_path: str) -> tuple[list[dict], list[dict]]:
                 "durationMs": int(m.group(5)),
                 "launchLateMs": int(m.group(6)) if m.group(6) else 0,
             })
+    if token_due and not voice_play:
+        print(
+            "note: 0 phrase plays — the per-punch phrase corpus was retired in\n"
+            "      V2 Phase 5-iv, so this tool's Whisper pass has nothing to align.\n"
+            "      The mic-free replacement is:\n"
+            "        node tools/analysis/observed-timing.mjs --session <dir>",
+            file=sys.stderr,
+        )
     return token_due, voice_play
 
 

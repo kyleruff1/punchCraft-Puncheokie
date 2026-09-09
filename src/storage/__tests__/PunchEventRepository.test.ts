@@ -133,8 +133,8 @@ describe('PunchEventRepository', () => {
     repo.insertMany([evt({ recovered: true, qualityFlags: ['duringPause'] })])
 
     const params = db.inserts[0]!
-    expect(params[15]).toBe(1) // recovered
-    expect(params[18]).toBe('["duringPause"]') // quality_flags
+    expect(params[16]).toBe(1) // recovered (shifted +1 by acceleration_raw, migration 008)
+    expect(params[19]).toBe('["duringPause"]') // quality_flags
   })
 
   it('writes undefined optional fields as SQL NULL, not undefined', () => {

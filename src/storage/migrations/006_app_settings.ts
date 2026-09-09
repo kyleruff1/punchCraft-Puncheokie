@@ -54,6 +54,36 @@ export const SETTINGS_KEYS = {
    * loop volume, never `recipe.metronome.enabled` or the visual grid.
    */
   click: 'click.enabled',
+  /** Puncheoke instrument: `{ patchId }` — the selected PunchPatch. */
+  instrumentPatch: 'instrument.patch',
+  /** Puncheoke instrument: `{ url }` — the PunchBridge WebSocket address. */
+  instrumentBridge: 'instrument.bridge',
+  /**
+   * Puncheoke brass-cube options: `{ patternId, retrigger, backend }` —
+   * the jam-screen selections for a brass patch (brass-cube-design).
+   */
+  instrumentBrass: 'instrument.brass',
+  /**
+   * Puncheoke tablet instrument voice (M40-15): `{ output, texture }` —
+   * where compiled gestures sound (bridge/tablet/both) and which sample-
+   * bank texture the tablet engine plays.
+   */
+  instrumentTablet: 'instrument.tabletVoice',
+  /**
+   * Puncheoke harmonic-field settings (M40-18): versioned blob
+   * `{ schemaVersion: 1, freedom, navigation, commitIntervalTicks }` —
+   * the FREEDOM/NAVIGATION/WINDOW selections a field patch folds into
+   * its section (harmonic-field-v2).
+   */
+  instrumentHarmonic: 'instrument.harmonic',
+  /**
+   * QA mode (GH #291): `{ enabled: boolean }`. Off by default. When on, the
+   * `punchcraft://qa/run` deep link may autostart a workout and drive it
+   * with a simulated punch script, and the timing observers may attach.
+   * Persisted — NOT `__DEV__` — because the unattended suite runs against a
+   * release build.
+   */
+  qa: 'qa.mode',
 } as const
 
 export type SettingsKey = (typeof SETTINGS_KEYS)[keyof typeof SETTINGS_KEYS]

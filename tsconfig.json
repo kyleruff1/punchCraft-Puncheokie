@@ -34,5 +34,6 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ],
-  "exclude": ["node_modules", "android", "ios", "dist", ".expo"]
+  "//exclude": "tools/punchbridge is a SEPARATE Node package — its own package.json, lockfile, tsconfig and node_modules — built and typechecked by its own tooling. jest.config.js already excludes it for exactly that reason; this did not, so the app's typecheck pulled in files whose `ws` types resolve only through tools/punchbridge/node_modules. That directory exists on a dev machine and never in CI, so `tsc --noEmit` passed locally and failed on the runner with TS7016. Typecheck punchbridge from inside tools/punchbridge.",
+  "exclude": ["node_modules", "android", "ios", "dist", ".expo", "tools/punchbridge"]
 }

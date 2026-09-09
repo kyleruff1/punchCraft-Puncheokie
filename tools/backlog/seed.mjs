@@ -53,8 +53,11 @@ if (!existsSync(ISSUES_FILE)) {
 }
 const ISSUES_DOC = JSON.parse(readFileSync(ISSUES_FILE, 'utf8'))
 const FRAGMENTS = (ISSUES_DOC.fragments || []).filter(Boolean)
-if (FRAGMENTS.length !== 8) {
-  console.error(`[seed] Expected 8 phase fragments, got ${FRAGMENTS.length}. Aborting.`)
+// The original backlog is exactly 8 phase fragments (0..7); later arcs
+// append (Phase 8 = Puncheoke instrument). Fewer than 8 means a truncated
+// file — abort; more is legitimate growth.
+if (FRAGMENTS.length < 8) {
+  console.error(`[seed] Expected >= 8 phase fragments, got ${FRAGMENTS.length}. Aborting.`)
   process.exit(2)
 }
 let PROJECT = null
@@ -166,7 +169,10 @@ function derivedLabels(issue, phaseIndex, isEpic = false) {
   labels.add(`phase:${phaseIndex}`)
   if (!isEpic) {
     labels.add(`area:${issue.areaSlug}`)
-    labels.add(issue.priority)
+    // Priority is optional: the [LOOP] verification issues carry none, and
+    // adding `undefined` to the set ships a literal "undefined" label.
+    if (issue.priority) labels.add(issue.priority)
+    for (const extra of issue.extraLabels ?? []) labels.add(extra)
     if (issue.sprint === 'sprint-1') labels.add('sprint-1')
     if (issue.hardwareRequired) labels.add('hardware-required')
     if (issue.goNoGo) labels.add('go-no-go')
@@ -226,10 +232,20 @@ async function seedIssues(msByKey, epicByPhase, allExisting) {
   const created = [] // {frag, issue, ghInfo}
   for (const frag of FRAGMENTS) {
     for (const issue of frag.issues) {
-      const title = `${issue.key} ${issue.title}`
+      // `key: null` means the title IS the title. The [LOOP] per-workout
+      // issues are matched by EXACT title — by this seeder's idempotency
+      // check and by verify-suite.mjs --gh-ledger — so an `M39-x ` prefix
+      // would fork every one of them into a duplicate.
+      const title = issue.key ? `${issue.key} ${issue.title}` : issue.title
       const ms = msByKey.get(issue.milestoneKey)
       const labels = derivedLabels(issue, frag.phase, false)
-      const bodyWithHeader = `> Milestone: **${issue.milestoneKey}** · Phase ${frag.phase} · Epic: ${frag.epic.title} · Area: ${STATIC.areaSlugToName[issue.areaSlug] || issue.areaSlug}\n\n${issue.body}`
+      const headerParts = [
+        ...(issue.milestoneKey ? [`Milestone: **${issue.milestoneKey}**`] : []),
+        `Phase ${frag.phase}`,
+        `Epic: ${frag.epic.title}`,
+        `Area: ${STATIC.areaSlugToName[issue.areaSlug] || issue.areaSlug}`,
+      ]
+      const bodyWithHeader = `> ${headerParts.join(' · ')}\n\n${issue.body}`
       const info = await findOrCreateIssue({ title, body: bodyWithHeader, labels, milestoneTitle: ms?.title }, allExisting)
       if (!info) continue
       if (info.created) { summary.issues.c++; log(`Issue ${issue.key} ${issue.title.slice(0, 60)}`) } else { summary.issues.s++ }
@@ -332,8 +348,20 @@ async function assignEpicsToProject(epicByPhase) {
 async function setSingleSelect(itemId, projectId, fields, fieldName, optionName) {
   const f = fields[fieldName]
   if (!f?.id) return
+  // No value to set is not an unknown option. The [LOOP] verification issues
+  // deliberately carry no priority (neither does #302, the one they were
+  // modelled on), and reporting each as `Unknown Priority option: null`
+  // buried the two warnings that DO mean something in seven that do not.
+  if (optionName === null || optionName === undefined || optionName === '') return
   const opt = f.options?.[optionName]
-  if (!opt?.id) { console.error(`Unknown ${fieldName} option: ${optionName}`); return }
+  if (!opt?.id) {
+    // A real gap: the project's field has no such option. `Phase 8` is the
+    // standing one — the phase exists in backlog-issues.json and in the
+    // labels, but was never added to the project's Phase field, so every
+    // M40 item lands on the board with no phase.
+    console.error(`Unknown ${fieldName} option: ${optionName} — add it to the project's ${fieldName} field`)
+    return
+  }
   const r = gh(['project', 'item-edit', '--project-id', projectId, '--id', itemId, '--field-id', f.id, '--single-select-option-id', opt.id], { allowFail: true })
   if (r.status === 0) summary.fieldSets.c++
 }

@@ -352,3 +352,58 @@ persona. Not yet wired into the runtime.
 Kokoro reports no word boundaries and natural delivery leaves no envelope gaps
 to measure, so circle activation stays on the cue clock. Playback-driven
 visuals still need a forced aligner — the one thing SAPI did better.
+
+---
+
+## Addendum — 2026-09-06: the ARMED path, and the instrument verdict
+
+The table above measures the coach. It was then used to argue that expo-audio
+is too slow to monitor a live **instrument** on. That reasoning had a hole: the
+`preloaded` case calls `seekTo(0)` and starts the clock *before* `play()`, and
+`seekTo` is async — so the seek is still in flight while the clock runs. The
+shipping instrument never does that; `fireOneShot` arms its pooled player ahead
+of time and its hot path is a bare `player.play()` with zero awaits
+(`InstrumentVoiceOutput.ts:400-407`).
+
+So two ARMED cases were added, with the arming awaited before the clock starts.
+
+**Measured on the TB125FU, `mixWithOthers`, n=30 per case:**
+
+| Case | median | p95 | **jitter** |
+|---|---|---|---|
+| Preloaded clip (seek inside the measurement) | 152 ms | 197.7 ms | 45.7 ms |
+| **ARMED — instrument hot path** | **127 ms** | 203.8 ms | **76.8 ms** |
+| **ARMED — real kit one-shot (snare-center)** | **111.4 ms** | 167.1 ms | **55.6 ms** |
+| Cold clip (new player each rep) | 176.9 ms | 208.6 ms | 31.7 ms |
+| expo-speech phrase | 210.5 ms | 254.2 ms | 43.7 ms |
+| expo-speech single number | 232.1 ms | 265.7 ms | 33.6 ms |
+
+**The seek was not the problem.** It accounts for about 25 ms (152 → 127). The
+hypothesis that the original figure was mostly seek is refuted; the engine is
+the cost.
+
+**Verdict against the decision rule in `dev/voice-latency.tsx`** — ship on
+expo-audio if armed median ≤ 40 ms and jitter ≤ 15 ms; migrate if median > 60 ms
+or jitter > 25 ms:
+
+> **MIGRATE.** The real kit one-shot lands at 111.4 ms median and 55.6 ms
+> jitter — roughly double the migrate threshold on the median and more than
+> double on jitter, which is the gate that actually matters. A constant offset
+> can be compensated; 55 ms of jitter cannot, and for a percussive instrument
+> where the fist supplies an unambiguous t=0 it reads as slap-back.
+
+**Method caveat, and it matters.** These were taken with the `playhead` method,
+not `sampling`. `audioSampleUpdate` reports `supported=true` on this tablet but
+delivered no samples above the silence threshold — every rep timed out — so the
+run was forced to the fallback. Playhead resolution is one JS loop turn, so
+these figures carry JS scheduling noise and the jitter in particular is likely
+inflated. They are an upper bound. Even discounted generously, 111 ms median is
+4-10x what an Oboe/AAudio path would give.
+
+**Corroborating hardware evidence.** The tablet declares
+`android.hardware.audio.low_latency`, and `dumpsys media.audio_flinger` shows a
+fast output path (`AUDIO_OUTPUT_FLAG_FAST`, `mixPeriod 5.33 ms`,
+`latency 10.33 ms`) sitting COLD_IDLE while our own tracks run at `Flags 0x000`
+with a 16416-frame buffer. media3 floors its PCM buffer at
+`MIN_PCM_BUFFER_DURATION_US = 250_000`, which is never admitted to the
+FastMixer. The capability is there; the engine cannot reach it.

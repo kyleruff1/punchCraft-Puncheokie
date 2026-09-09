@@ -86,26 +86,33 @@ import type {
   AdaptationRecord,
   RealizedTokenStream,
 } from '@storage/repositories/WorkoutRepository'
+import { CALL_DISPATCH_LAG_MS, callDispatchAtMs, leadInDispatchAtMs } from '@domain/coach/callPlacement'
+import { isQaEnabled } from '@state/useQaStore'
 import { getLive, resetLive, setLive, type LiveVelocity } from '@state/useWorkoutStore'
 
 /** Loop cadence — fine enough that a cue fires within a frame of its time. */
 export const TICK_INTERVAL_MS = 50
 
-/**
- * Breath between a section lead-in's last word and its section's first
- * strike (Script Bible v2). The clip is scheduled to END this far before
- * the block starts; the 50 ms tick granularity eats into it, never past it.
- */
-export const LEAD_IN_PAD_MS = 250
-
-/**
- * Per-bar loop calls finish ~half a second before the bar's first strike
- * (Kyle, on-glass 2026-09-02: the 100ms pad "creates pressure" — with
- * the setup pauses giving each section clean air, the call now leads its
- * bar with real separation). Long clips still start as early as the
- * previous audio allows; the pad is the target, the busy check the law.
- */
-export const CALL_PAD_MS = 500
+// Call and lead-in PLACEMENT — constants and arithmetic — now live in
+// `src/domain/coach/callPlacement.ts` so the Node analysis tools and the
+// domain tests can import the same numbers instead of restating them.
+// Re-exported here because this module was their only home for a long
+// time and plenty of code (and every existing test) imports them from it.
+export {
+  LEAD_IN_PAD_MS,
+  CALL_PAD_MS,
+  CALL_DISPATCH_LAG_MS,
+  TECHNIQUE_CALL_LEAD_MS,
+  TECHNIQUE_LEADIN_LEAD_MS,
+  NUMBERS_CALL_LEAD_MS,
+  DENSE_BREATH_MS,
+  BREATH_REF_SLOT_MS,
+  BREATH_TRACK_GAIN,
+  MIN_BREATH_MS,
+  DELIVERED_BREATH_SHORTFALL_MS,
+  CALL_BREATH_OVERRIDES,
+  breathForBar,
+} from '@domain/coach/callPlacement'
 
 /**
  * How many reps before a section ends to start previewing the NEXT distinct
@@ -114,62 +121,6 @@ export const CALL_PAD_MS = 500
  * lead-in whisper + setup-pause window at typical strides.
  */
 export const PREVIEW_LEAD_REPS = 2
-
-/**
- * Technique-vocabulary lead: per-bar CALLS and section LEAD-INS dispatch
- * this much EARLIER than numbers (a pure time-shift of the technique
- * track; numbers stay at 0). Split into two knobs so the shot-calling
- * calls tune independently of the setup-pause lead-ins.
- *
- * CALL lead settled by mic measurement (Kyle, 2026-09-04): at 500 the
- * call ended ~1s before the shot across every extreme set (body-work
- * +1053, uppercut +984, speed-combos +1091 mean; 0 late) — his "too
- * early." Pulling back a quarter second lands a comfortable breath while
- * the tightest set (speed-combos, +445 worst at 500) stays safely
- * never-late (~+195 worst). His "we need a quarter-second delay."
- */
-export const TECHNIQUE_CALL_LEAD_MS = 250
-/** Lead-ins (the setup-pause whisper) keep the original lead — not the "too early" complaint. */
-export const TECHNIQUE_LEADIN_LEAD_MS = 500
-/**
- * Numbers CALL lead (Kyle, 2026-09-04): the same measure-and-promote pass
- * on numbers found it already tight (~525ms breath, Kyle liked it) but
- * with one marginal late (-31ms worst on the long 1-2b-3b-2 body motif
- * after the bright/pre-arm re-render). A small nudge guarantees the
- * never-late floor (-31 -> +69 worst) without pushing numbers to
- * technique's wider breath. Numbers lead-ins stay at 0.
- */
-export const NUMBERS_CALL_LEAD_MS = 100
-
-/**
- * Set-aware call breath (Kyle, 2026-09-04). The old breath (node − call-end)
- * was a fixed `CALL_PAD_MS + callLead` = 600ms(numbers)/750ms(techniques),
- * tuned by mic on DENSE 4-node combos only. On a dense bar the call's words
- * fill that pre-node window at combo tempo → "snaps to perfect." On a 1-2
- * node SLOW bar (wide inter-node interval) the same short call ends the full
- * 600ms early and then sparse punches unfold under a long silence → Kyle's
- * "offset by a delay too much." So the breath now SHRINKS as the bar's
- * inter-node interval (slotMs) widens past the dense reference, degenerating
- * to the exact old constant on tight bars (dense combos unchanged, still
- * snap). `breath = clamp(DENSE − GAIN·max(0, slotMs − REF), MIN, DENSE)`.
- * All knobs are mic-tunable via tools/audition/call_offset_analysis.py.
- */
-export const DENSE_BREATH_MS = {
-  numbers: CALL_PAD_MS + NUMBERS_CALL_LEAD_MS, // 600 — the value tuned on dense numbers combos
-  techniques: CALL_PAD_MS + TECHNIQUE_CALL_LEAD_MS, // 750 — dense techniques
-} as const
-/** Inter-node interval the dense breath was tuned at (dense combos run ~250-333ms slots); at/below this, breath = the full dense value. */
-export const BREATH_REF_SLOT_MS = 300
-/** How hard the breath shrinks per ms the bar's inter-node interval exceeds the reference. */
-export const BREATH_TRACK_GAIN = 1.0
-/** Floor: the call still finishes at least this far before the bar's first shot, on the widest/slowest bars. */
-export const MIN_BREATH_MS = 150
-/**
- * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
- * by design — the escape hatch when the mic says a specific bucket wants a
- * bespoke breath the formula doesn't nail. A value here replaces the formula.
- */
-export const CALL_BREATH_OVERRIDES: Record<string, number> = {}
 
 /**
  * How far before a section's first node the audible-grid loop swap is
@@ -214,36 +165,6 @@ export function audibleDivisionForSlot(
   return undefined
 }
 
-/**
- * The breath (node − call-end) for one bar's call, and the offset of the
- * bar's first PUNCH (a bar may open on a rest slot, so anchor to the punch,
- * not scheduledStartMs). Breath shrinks as the inter-node interval widens
- * past BREATH_REF_SLOT_MS; a single-punch bar has no interval → floors to
- * MIN_BREATH_MS. An override for the call slot wins outright.
- */
-export function breathForBar(
-  cue: { tokens: readonly { kind: string }[]; tokenOffsetsMs: readonly number[] },
-  vocabulary: 'numbers' | 'techniques',
-  slot: string,
-): { breathMs: number; firstPunchOffsetMs: number } {
-  const punchIdx: number[] = []
-  cue.tokens.forEach((t, i) => {
-    if (t.kind === 'punch') punchIdx.push(i)
-  })
-  const firstPunchOffsetMs = punchIdx.length > 0 ? (cue.tokenOffsetsMs[punchIdx[0]!] ?? 0) : 0
-  const dense = DENSE_BREATH_MS[vocabulary]
-  const override = CALL_BREATH_OVERRIDES[slot]
-  if (override !== undefined) return { breathMs: override, firstPunchOffsetMs }
-  const slotMs =
-    punchIdx.length >= 2
-      ? (cue.tokenOffsetsMs[punchIdx[1]!] ?? 0) - firstPunchOffsetMs
-      : Number.POSITIVE_INFINITY
-  const breathMs = Math.max(
-    MIN_BREATH_MS,
-    Math.min(dense, dense - BREATH_TRACK_GAIN * Math.max(0, slotMs - BREATH_REF_SLOT_MS)),
-  )
-  return { breathMs, firstPunchOffsetMs }
-}
 
 /**
  * Dim-until-called mask (Kyle 2026-09-04: "lit = spoken"). Two rules, both
@@ -708,6 +629,15 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       dispatchAtMs: number
       /** Past this, the clip is no longer useful — skip. */
       giveUpAtMs: number
+      /** Calls only: the bar's first punch, which the call must end a breath before. */
+      firstNodeMs?: number
+      /**
+       * Calls only: the breath `breathForBar` INTENDED — logged so the
+       * analyzer compares the delivered breath against the intent instead
+       * of re-deriving it from the dispatch time (which now carries the
+       * dispatch-lag compensation and would read 71 ms too generous).
+       */
+      breathMs?: number
       state: 'pending' | 'played' | 'skipped'
       /** The section's rep-0 call, sequenced right after its lead-in — exempt from the lead-in collision drop. */
       firstRep?: boolean
@@ -749,8 +679,8 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     const vocabulary = clickVocabularyRef.current
     // Lead-ins ride ahead of numbers by a fixed lead (Kyle, 2026-09-03);
     // per-bar calls use the set-aware breath (breathForBar) instead, folded
-    // from the same tuned dense values via DENSE_BREATH_MS.
-    const leadInLeadMs = vocabulary === 'techniques' ? TECHNIQUE_LEADIN_LEAD_MS : 0
+    // from the same tuned dense values via DENSE_BREATH_MS. Both leads now
+    // live inside `callPlacement`, which the manifest generator shares.
     const cues = timelineRef.current[roundIndex]?.cues ?? []
     const seenBlocks = new Set<string>()
     type Entry = NonNullable<typeof leadInScheduleRef.current>['entries'][number]
@@ -768,18 +698,30 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
       const slot = `call/${motif}`
       const clip = findClickScript(slot, vocabulary)
       if (!clip) return null
-      const { breathMs, firstPunchOffsetMs } = breathForBar(cue, vocabulary, slot)
-      const firstNodeMs = cue.scheduledStartMs + firstPunchOffsetMs
+      // The placement itself lives in the domain (`callPlacement`) so the
+      // manifest generator computes the identical number instead of its own.
+      const { dispatchAtMs, firstNodeMs, breathMs } = callDispatchAtMs({
+        cue,
+        scheduledStartMs: cue.scheduledStartMs,
+        vocabulary,
+        slot,
+        clipDurationMs: clip.durationMs,
+      })
       return {
         kind: 'call',
         slot,
         text: clip.text,
         module: clip.module,
         durationMs: clip.durationMs,
-        dispatchAtMs: Math.max(0, firstNodeMs - clip.durationMs - breathMs),
+        breathMs,
+        // Asks CALL_DISPATCH_LAG_MS early: the scheduler fires late and the
+        // player takes time to sound, and the measured sum of the two was
+        // eating ~71 ms out of every bar's breath.
+        dispatchAtMs,
         // A call that could not start by the bar's first beats is noise —
         // the next bar's call is seconds away.
         giveUpAtMs: firstNodeMs + 500,
+        firstNodeMs,
         state: 'pending',
         cueId: cue.id,
         ...(firstRep ? { firstRep: true } : {}),
@@ -810,16 +752,23 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           const clip = findClickScript(slot, vocabulary)
           if (clip) {
             // End before the rep-0 call starts (fallback: before the first
-            // shot, the old target, if there is no rep-0 call).
-            const endBy = rep0Call ? rep0Call.dispatchAtMs : cue.scheduledStartMs
+            // shot, the old target, if there is no rep-0 call). Shared with
+            // the manifest generator, which used to anchor to the first shot
+            // unconditionally and so expected every lead-in ~2 s late.
+            const { dispatchAtMs, endByMs } = leadInDispatchAtMs({
+              ...(rep0Call ? { rep0CallDispatchAtMs: rep0Call.dispatchAtMs } : {}),
+              scheduledStartMs: cue.scheduledStartMs,
+              clipDurationMs: clip.durationMs,
+              vocabulary,
+            })
             leadIns.push({
               kind: 'lead-in',
               slot,
               text: clip.text,
               module: clip.module,
               durationMs: clip.durationMs,
-              dispatchAtMs: Math.max(0, endBy - clip.durationMs - LEAD_IN_PAD_MS - leadInLeadMs),
-              giveUpAtMs: endBy,
+              dispatchAtMs,
+              giveUpAtMs: endByMs,
               state: 'pending',
             })
           }
@@ -1175,6 +1124,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
           ordinal: safe(ordinal),
           workElapsedMs: safe(event.workElapsedMs),
           monotonicTimeMs: safe(event.nowMs),
+          // Where the beat grid put this ring, on the work axis — so ring
+          // lateness (`workElapsedMs − scheduledMs`) needs no manifest.
+          scheduledMs: safe(
+            event.cue.scheduledStartMs + (event.cue.tokenOffsetsMs[event.tokenIndex] ?? 0),
+          ),
         })
         // No cursor to advance: option C made the ring position a
         // PROJECTION of the clock (`beatOrdinalAt` in `syncFromEngine`),
@@ -1579,6 +1533,11 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             : (sessionRef.current?.snapshot()?.roundIndex ?? -1),
         ),
         workElapsedMs: safe(sessionRef.current?.snapshot()?.workElapsedMs ?? -1),
+        // Same clock as cue.tokenDue and every voice.play dispatchMs, so a
+        // bell's onset can be measured from the boundary it answers. The log
+        // sink prints fields only — a record's own timestamp never reaches
+        // logcat.
+        monotonicTimeMs: safe(clock.now()),
       })
       switch (transition.type) {
         case 'work-entered': {
@@ -1830,7 +1789,7 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             { slotId: safe(slot.slotId), roundIndex: safe(slot.roundIndex), reason: safe(reason) },
           )
         },
-        play: (assetId, _atTick, slotId) => {
+        play: (assetId, atTick, slotId) => {
           // The gates the announcer applies before ANY combo-announce.
           // The score path bypasses the announcer entirely, so without
           // these the coach talks when the athlete has asked it not to
@@ -1878,10 +1837,20 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             )
             return false
           }
+          // The score's own dispatch moment, joined to the audio record by
+          // slotId. `atTick` was discarded here before, which left the
+          // announce path with no scheduled time to measure lateness against.
+          logger.info('puncheokie.comboAnnounce.dispatch', 'combo-announce dispatched', {
+            slotId: safe(slotId),
+            assetId: safe(assetId),
+            atTick: safe(atTick),
+            monotonicTimeMs: safe(clock.now()),
+          })
           voice.output.playComboAnnounce?.({
             text: clip.text,
             module: clip.module,
             durationMs: clip.durationMs,
+            traceId: slotId,
           })
         },
       })
@@ -2008,8 +1977,10 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
     // under Metro debug). Cost is near zero when nothing is anomalous:
     // clock records are written only past the stall threshold.
     // The recorder is per-arm, so a new workout starts with a clean buffer.
+    // The persisted QA flag (GH #291/#292) arms it too, so the unattended
+    // suite's token-forensics survive a release build without a rebuild.
     vizRef.current = new VizForensics({
-      enabled: __DEV__ || process.env.EXPO_PUBLIC_VIZ_FORENSICS === '1',
+      enabled: __DEV__ || process.env.EXPO_PUBLIC_VIZ_FORENSICS === '1' || isQaEnabled(),
       now: () => clock.now(),
       emit: (batch: readonly VizRecord[]) => {
         logger.info('puncheokie.viz.batch', 'visual transition batch', {
@@ -2113,11 +2084,17 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
               continue
             }
             entry.state = 'played'
+            // Joins this dispatch record to its `voice.play` / observed
+            // records: a slot can be dispatched more than once in a round
+            // (busy-lane retries), so the authored dispatch time is part of
+            // the id.
+            const traceId = `${entry.slot}#${entry.dispatchAtMs}`
             voice.output.playClickScript?.(
               {
                 text: entry.text,
                 module: entry.module,
                 durationMs: entry.durationMs,
+                traceId,
               },
               // A lead-in whisper plays once a workout; its native player
               // releases after the clip instead of parking in the cache
@@ -2128,9 +2105,21 @@ export function useWorkoutRunner(args: UseWorkoutRunnerArgs): WorkoutRunner {
             logger.info('puncheokie.clickScript.dispatch', 'click script dispatched', {
               kind: safe(entry.kind),
               slot: safe(entry.slot),
+              traceId: safe(traceId),
               dispatchAtMs: safe(entry.dispatchAtMs),
               lateMs: safe(Math.round(snapshot.workElapsedMs - entry.dispatchAtMs)),
               durationMs: safe(entry.durationMs),
+              // The work-axis deadline this clip is placed against: a lead-in
+              // must END before it, a call must end a breath before its bar's
+              // first node — both measurable once the observer reports ends.
+              endByMs: safe(entry.giveUpAtMs),
+              firstNodeMs: safe(entry.firstNodeMs ?? null),
+              // Calls only: the INTENDED breath and the lag compensation
+              // applied to reach it. The analyzer scores the delivered
+              // breath against `breathMs`, never against the dispatch time.
+              breathMs: safe(entry.breathMs ?? null),
+              lagMs: safe(entry.kind === 'call' ? CALL_DISPATCH_LAG_MS : null),
+              monotonicTimeMs: safe(clock.now()),
             })
           }
         }

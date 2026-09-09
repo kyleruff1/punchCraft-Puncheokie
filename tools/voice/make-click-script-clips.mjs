@@ -30,7 +30,7 @@ import { createHash } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
@@ -255,6 +255,69 @@ const allJobs = [
 if (process.argv.includes('--list')) {
   for (const j of allJobs) console.log(`${j.id}\t${j.slots.length} slot(s)\t${JSON.stringify(j.text)}`)
   console.log(`\n${allJobs.length} unique clips covering ${allJobs.reduce((a, j) => a + j.slots.length, 0)} slots`)
+  process.exit(0)
+}
+
+// `--dump-expectations=<path>` writes the exact render-script text for every
+// clip — the same `expectText` the ASR gate scored — and exits. The token
+// audit (tools/voice/phrase_token_audit.py) then transcribes the SHIPPED wavs
+// and holds them to these texts token-for-token, which is the exactness the
+// fuzzy 0.8-similarity gate lacks: a dropped or doubled word inside a
+// repeat-heavy call ("One, two-bee. One, two-bee!") clears the fuzzy score
+// and is exactly what the athlete hears as a hole. The phrase bank has had
+// this gate since #269; the click bank ships without one until now.
+//
+// Pair it with --persona=cornerman3, or the paths point at another bank.
+const dumpArg = process.argv.find((a) => a.startsWith('--dump-expectations='))
+if (dumpArg) {
+  const out = dumpArg.slice('--dump-expectations='.length)
+  const entries = {}
+  for (const j of allJobs) {
+    entries[j.id] = {
+      wav: j.wav.replaceAll('\\', '/'),
+      text: j.plan.renderedText,
+      tokens: j.tokens ?? [],
+      vocabulary: j.vocabulary ?? 'numbers',
+      kind: j.kind,
+      slots: j.slots,
+    }
+  }
+  mkdirSync(dirname(out), { recursive: true })
+  writeFileSync(out, JSON.stringify(entries, null, 1))
+  console.log(`Wrote ${Object.keys(entries).length} expectations to ${out}`)
+
+  // The two Tier-0 gates want different shapes, so write both from the one
+  // source: `phrase_token_audit.py` reads a map keyed by clip id (above),
+  // `validate_clips.py` reads `{ entries: [...] }` with `key/kind/file/text`
+  // (below, the export-expectations.mjs shape). One producer, so the exact
+  // text both gates score can never drift apart.
+  const validateOut = out.replace(/\.json$/, '') + '.validate.json'
+  writeFileSync(
+    validateOut,
+    JSON.stringify(
+      {
+        persona: PERSONA.id,
+        renderer: RENDERER,
+        entries: allJobs.map((j) => ({
+          key: j.id,
+          // `kind: 'phrase'` is the VALIDATOR's taxonomy (speech vs tone),
+          // not this bank's lead-in/rest/call — every click clip is speech.
+          kind: 'phrase',
+          file: j.wav.replaceAll('\\', '/'),
+          text: j.plan.renderedText,
+          clickKind: j.kind,
+          vocabulary: j.vocabulary ?? 'numbers',
+          ...(j.minDurationMs !== undefined ? { minDurationMs: j.minDurationMs } : {}),
+          ...(j.maxDurationMs !== undefined ? { maxDurationMs: j.maxDurationMs } : {}),
+          exists: existsSync(j.wav),
+        })),
+      },
+      null,
+      1,
+    ),
+  )
+  console.log(`Wrote ${allJobs.length} validator entries to ${validateOut}`)
+  console.log(`  persona ${PERSONA.id} — wavs under ${OUT_ROOT}`)
   process.exit(0)
 }
 

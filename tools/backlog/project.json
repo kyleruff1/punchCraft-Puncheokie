@@ -34,6 +34,9 @@
         },
         "Phase 7": {
           "id": "4694b20e"
+        },
+        "Phase 8": {
+          "id": "62fa2697"
         }
       }
     },
@@ -105,38 +108,7 @@
     },
     "Sprint": {
       "id": "PVTIF_lAHOAvpEDc4BhJtGzhgGjLk",
-      "iterations": {
-        "Sprint 1": {
-          "id": "d102bcc4",
-          "startDate": "2026-08-24",
-          "duration": 14
-        },
-        "Sprint 2": {
-          "id": "b8d17a83",
-          "startDate": "2026-09-07",
-          "duration": 14
-        },
-        "Sprint 3": {
-          "id": "dfbca05c",
-          "startDate": "2026-09-21",
-          "duration": 14
-        },
-        "Sprint 4": {
-          "id": "abff78b4",
-          "startDate": "2026-10-05",
-          "duration": 14
-        },
-        "Sprint 5": {
-          "id": "adcba37c",
-          "startDate": "2026-10-19",
-          "duration": 14
-        },
-        "Sprint 6": {
-          "id": "a806fcf6",
-          "startDate": "2026-11-02",
-          "duration": 14
-        }
-      }
+      "iterations": {}
     }
   }
 }

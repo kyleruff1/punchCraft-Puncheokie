@@ -15,7 +15,8 @@ import {
   resetBleManagerSingleton,
   type BleManagerFacade,
 } from '@ble/BleManagerFacade'
-import { replaceSinks } from '@diagnostics/logger'
+import { replaceSinks, type LogRecord } from '@diagnostics/logger'
+import { SIM_SCRIPTS } from '@simulation/scripts'
 import { createFakeClock } from '@testing/fakeClock'
 import { systemMonotonicClock } from '@domain/time/MonotonicClock'
 import { useTrackerStore, type SlotState } from '@state/useTrackerStore'
@@ -38,17 +39,23 @@ function fakeFacade(): BleManagerFacade {
 }
 
 let captured: LivePunchSource | null = null
+/** The clock the probe handed the hook — so a test can drive the simulator it built. */
+let probeClock: ReturnType<typeof createFakeClock> | null = null
 
-function Probe(): null {
-  captured = useLivePunchSource(createFakeClock())
+type HookOptions = NonNullable<Parameters<typeof useLivePunchSource>[1]>
+
+function Probe({ options }: { options?: HookOptions }): null {
+  const clock = React.useMemo(() => createFakeClock(), [])
+  probeClock = clock
+  captured = useLivePunchSource(clock, options)
   return null
 }
 
 const mounted: ReactTestRenderer[] = []
 
-function render(): void {
+function render(options?: HookOptions): void {
   act(() => {
-    mounted.push(create(<Probe />))
+    mounted.push(create(<Probe options={options} />))
   })
 }
 
@@ -164,6 +171,70 @@ describe('the source is latched on entry (spec §19.3)', () => {
     render()
     setSlots(slot(LEFT_DEVICE, 'ready'), slot(RIGHT_DEVICE, 'ready'))
     expect(captured?.kind).toBe('simulated')
+  })
+})
+
+describe('QA forceSim / simLoop (GH #291)', () => {
+  let records: LogRecord[] = []
+  beforeEach(() => {
+    records = []
+    replaceSinks([{ write: (r) => records.push(r) }])
+  })
+  afterEach(() => {
+    replaceSinks([])
+  })
+
+  it('takes the simulator even with both gloves live, and says so', () => {
+    setSlots(slot(LEFT_DEVICE, 'ready'), slot(RIGHT_DEVICE, 'streaming'))
+    render({ forceSim: true })
+    expect(captured?.kind).toBe('simulated')
+    expect(captured?.sim).not.toBeNull()
+    // The top bar will read SIM under connected gloves; the log must explain why.
+    expect(records.filter((r) => r.code === 'puncheokie.source.forcedSim')).toHaveLength(1)
+  })
+
+  it('is silent about it when no gloves were live anyway', () => {
+    render({ forceSim: true })
+    expect(captured?.kind).toBe('simulated')
+    expect(records.filter((r) => r.code === 'puncheokie.source.forcedSim')).toHaveLength(0)
+  })
+
+  it('never upgrades away from the simulator while forced, even in the idle window', () => {
+    render({ forceSim: true, allowUpgrade: true })
+    const before = captured?.source
+    setSlots(slot(LEFT_DEVICE, 'ready'), slot(RIGHT_DEVICE, 'ready'))
+    expect(captured?.kind).toBe('simulated')
+    expect(captured?.source).toBe(before)
+  })
+
+  it('still upgrades in the idle window when NOT forced (the existing rescue path)', () => {
+    render({ allowUpgrade: true })
+    setSlots(slot(LEFT_DEVICE, 'ready'), slot(RIGHT_DEVICE, 'ready'))
+    expect(captured?.kind).toBe('tracker')
+  })
+
+  it('builds a looping simulator when asked, and a one-pass one otherwise', () => {
+    const steps = SIM_SCRIPTS['alternating-1-2'].length
+    const passes = (loop: boolean): number => {
+      render(loop ? { simLoop: true } : {})
+      const sim = captured?.sim
+      const clock = probeClock
+      if (!sim || !clock) throw new Error('simulator not built')
+      const events: unknown[] = []
+      sim.subscribe((e) => events.push(e))
+      sim.start()
+      sim.playScript('alternating-1-2')
+      act(() => {
+        clock.advance(120_000)
+      })
+      sim.stop()
+      return events.length
+    }
+    expect(passes(false)).toBe(steps)
+    act(() => {
+      for (const tree of mounted.splice(0)) tree.unmount()
+    })
+    expect(passes(true)).toBeGreaterThan(steps)
   })
 })
 

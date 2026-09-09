@@ -12,9 +12,13 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sys
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from asr_match import expand_numerals  # noqa: E402
 
 PATH = sys.argv[1] if len(sys.argv) > 1 else "tools/analysis/reports/phrase-token-audit.json"
 
@@ -22,7 +26,15 @@ FOLDS = {"uppercut": "upper"}
 
 
 def fold(tokens: list[str]) -> list[str]:
-    return [FOLDS.get(t, t) for t in tokens]
+    """The current canonical folds, applied to a stored token sequence.
+
+    `expand_numerals` matters as much as FOLDS: Whisper writes a spoken count
+    as a NUMERAL — the coach says "thirty four bars" and the transcript reads
+    "34 bars" — which is a two-token replace against copy written in words.
+    That alone was 102 of the 141 failures in the 2026-09-07 click-bank
+    audit, every one of them on a clip whose audio is correct.
+    """
+    return expand_numerals([FOLDS.get(t, t) for t in tokens])
 
 
 with open(PATH, encoding="utf-8") as fh:

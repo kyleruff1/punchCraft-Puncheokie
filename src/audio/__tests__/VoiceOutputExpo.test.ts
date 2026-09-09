@@ -30,6 +30,7 @@ jest.mock('expo-speech', () => ({ speak: () => {}, stop: () => {} }))
 
 import {
   CLICK_SCRIPT_PREARM_PAD_MS,
+  ONE_SHOT_RELEASE_PAD_MS,
   CLICK_SCRIPT_RESIDENT_CAP,
   COACH_LANE_RELEASE_GRACE_MS,
   DEFAULT_CALIBRATED_AUDIO_OUTPUT_LATENCY_MS,
@@ -1235,7 +1236,13 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     const timers: Array<{ at: number; fn: () => void; id: number }> = []
     let nextId = 1
     const removed: number[] = []
+    const released: number[] = []
     const live = new Set<number>()
+    // `live` is cleared by release(), NOT by remove(). That asymmetry is the
+    // whole point: expo-audio's remove() is a registry map-delete that frees
+    // no AudioTrack, so a fake whose remove() also cleared `live` would report
+    // a clean teardown for code that leaks every native player — which is
+    // exactly the false confidence this suite gave before #356 was traced.
     const makeFake = (source: number) =>
       ({
         source,
@@ -1246,6 +1253,9 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
         pause: () => {},
         remove: () => {
           removed.push(source)
+        },
+        release: () => {
+          released.push(source)
           live.delete(source)
         },
       }) as never
@@ -1283,14 +1293,27 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
       module,
       durationMs,
     })
-    return { output, advance, removed, live, clip }
+    return { output, advance, removed, released, live, clip }
   }
+
+  it('every teardown site RELEASES, not merely unlinks — the #356 defect itself', () => {
+    // remove() is `players.remove(player.id)` against a ConcurrentHashMap
+    // (AudioModule.kt:544-546): the ExoPlayer, its MediaSession and its
+    // AudioTrack all survive it. Four in-workout sites called only remove(),
+    // so the three caps that exist to stay under the ~48 ceiling bounded the
+    // JS maps while the native players accumulated until GC happened to run.
+    const h = rig()
+    h.output.playClickScript(h.clip(700), { oneShot: true })
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1)
+    expect(h.removed).toContain(700)
+    expect(h.released).toContain(700)
+  })
 
   it('a one-shot lead-in releases its player after the clip instead of parking it', () => {
     const h = rig()
     h.output.playClickScript(h.clip(500), { oneShot: true })
     expect(h.live.has(500)).toBe(true)
-    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1)
     expect(h.removed).toEqual([500])
     expect(h.live.has(500)).toBe(false)
   })
@@ -1302,7 +1325,7 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     h.output.playClickScript(h.clip(501), { oneShot: true }) // busy-lane retry
     await Promise.resolve() // let the retry's rewind settle
     await Promise.resolve()
-    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1) // first timer fires mid-way: gen mismatch
+    h.advance(700 + ONE_SHOT_RELEASE_PAD_MS + 1) // first timer fires mid-way: gen mismatch
     h.advance(400) // second timer fires
     expect(h.removed).toEqual([501])
   })
@@ -1340,6 +1363,32 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     expect(h.live.has(601)).toBe(false)
   })
 
+  it('a one-shot survives past the re-arm pad — the release is destructive now', () => {
+    // Regression guard. The one-shot branch reuses the re-arm timer, which is
+    // armed from play(), not from audible onset — and a one-shot lead-in is
+    // always a FRESH downloadFirst player, which holds no media item at
+    // play() and only sounds once Metro has delivered the whole file. On the
+    // 200 ms re-arm pad the release therefore landed inside the clip. That
+    // was invisible while remove() was a no-op; once it genuinely frees the
+    // ExoPlayer it truncates the whisper.
+    const h = rig()
+    h.output.playClickScript(h.clip(710, 700), { oneShot: true })
+    h.advance(700 + CLICK_SCRIPT_PREARM_PAD_MS + 1)
+    expect(h.live.has(710)).toBe(true) // still sounding at the re-arm pad
+    h.advance(ONE_SHOT_RELEASE_PAD_MS)
+    expect(h.live.has(710)).toBe(false) // freed at the release pad
+  })
+
+  it('the click-script cap releases what it evicts, not just unlinks it', () => {
+    const h = rig()
+    for (let m = 1; m <= CLICK_SCRIPT_RESIDENT_CAP + 3; m += 1) {
+      h.output.playClickScript(h.clip(m))
+    }
+    // The same three the recency test pins — but now proven actually FREED.
+    expect(h.released).toEqual([1, 2, 3])
+    expect(h.live.has(1)).toBe(false)
+  })
+
   it('release() sweeps tracked one-shots that have not timed out yet', () => {
     const h = rig()
     h.output.playInstruction({ text: 'aside', module: 610, durationMs: 5_000 })
@@ -1359,5 +1408,259 @@ describe('leak hunt (2026-09-05) — native players are bounded and released', (
     const h = harness()
     await h.output.preload()
     expect(h.created).toHaveLength(20)
+  })
+})
+
+describe('focus-scoped reuse (#356) — release() frees, the SAME instance re-warms', () => {
+  // Measured on the tablet: leaving punchCraft Live left 21 native
+  // AudioTracks resident for the rest of the session, and the instrument's
+  // 30 stacked on top of them (40 observed against a documented ~48 ceiling,
+  // past which the app goes silent with no error at all).
+  //
+  // The fix frees the pool on blur and re-warms it on focus WITHOUT
+  // replacing the VoiceOutputExpo. That is deliberate: `output` feeds the
+  // `voice` memo, which is a dependency of the workout runner's arm effect,
+  // so a new identity would re-arm the runner mid-workout. These tests pin
+  // the property that makes keeping the identity possible — that a released
+  // output is not a dead one.
+  // Tracks player OBJECTS, not module ids. Jest's asset transform maps every
+  // require()'d wav to the same numeric id, so a Set keyed on the source
+  // would collapse four distinct native players into one entry and quietly
+  // under-report the very thing these tests measure.
+  function rig() {
+    const clock = 1_000
+    const removed: object[] = []
+    const live = new Set<object>()
+    const keys: string[] = []
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          removed.push(player)
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      keys.push(String(source))
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => clock,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+    return { output, removed, live, keys }
+  }
+
+  it('release() removes every resident player', async () => {
+    const h = rig()
+    await h.output.preload({ light: true })
+    const warmed = h.live.size
+    expect(warmed).toBeGreaterThan(0)
+    h.output.release()
+    expect(h.live.size).toBe(0)
+    expect(h.removed).toHaveLength(warmed)
+  })
+
+  it('preload() after release() re-warms the same clips on the same instance', async () => {
+    const h = rig()
+    await h.output.preload({ light: true })
+    const first = h.live.size
+    h.output.release()
+    expect(h.live.size).toBe(0)
+    // The load-bearing claim: no terminal flag is set by release(), so the
+    // instance a blurred screen kept is the instance a refocused screen can
+    // use. If this ever regresses, the coach goes permanently silent after
+    // the first tab switch — and nothing would throw.
+    await h.output.preload({ light: true })
+    expect(h.live.size).toBe(first)
+  })
+
+  it('a full preload survives a release/re-preload cycle too', async () => {
+    const h = rig()
+    await h.output.preload()
+    const first = h.live.size
+    h.output.release()
+    await h.output.preload()
+    expect(h.live.size).toBe(first)
+  })
+
+  it('a release DURING an in-flight preload wins — the pool is not resurrected', async () => {
+    // The race that would have defeated the whole fix. preload() awaits
+    // setAudioMode before it creates anything, so a blur landing inside that
+    // await used to let release() empty the pool and then have the awaiting
+    // continuation refill it — up to 20 native players rebuilt for a screen
+    // that had already gone, with nothing left to free them. That is also a
+    // candidate explanation for the 21 tracks measured surviving on device.
+    let releaseNow: () => void = () => {}
+    const gate = new Promise<void>((resolve) => {
+      releaseNow = resolve
+    })
+    const removed: object[] = []
+    const live = new Set<object>()
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          removed.push(player)
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      // Suspend the preload exactly where the real one suspends.
+      setAudioMode: (async () => {
+        await gate
+      }) as never,
+    })
+
+    const inFlight = output.preload()
+    expect(live.size).toBe(0) // still suspended, nothing created yet
+    output.release() // the screen blurs mid-await
+    releaseNow()
+    await inFlight
+
+    expect(live.size).toBe(0)
+  })
+
+  it('the generation is strictly monotonic — a superseded preload does not populate', async () => {
+    // Two preloads overlap. The second supersedes the first, so when the
+    // first finally resumes it must NOT also fill the pool. Without the bump
+    // in preload() both would capture the same generation and both proceed.
+    const live = new Set<object>()
+    let releaseFirst: () => void = () => {}
+    let gateCount = 0
+    const makeFake = (source: number): never => {
+      const player = {
+        source,
+        volume: 1,
+        currentTime: 0,
+        seekTo: () => Promise.resolve(),
+        play: () => {},
+        pause: () => {},
+        remove: () => {
+          live.delete(player)
+        },
+      }
+      live.add(player)
+      return player as never
+    }
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (source: number) => makeFake(source),
+      createClickScriptPlayer: ((source: number) => makeFake(source)) as never,
+      setAudioMode: (async () => {
+        gateCount += 1
+        // Only the FIRST call is held open.
+        if (gateCount === 1) {
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve
+          })
+        }
+      }) as never,
+    })
+
+    const first = output.preload({ light: true })
+    const second = output.preload({ light: true })
+    await second
+    const afterSecond = live.size
+    expect(afterSecond).toBeGreaterThan(0)
+
+    releaseFirst()
+    await first
+    // The superseded preload contributed nothing.
+    expect(live.size).toBe(afterSecond)
+  })
+
+  it('retries once after an UNKNOWN failure, then fails closed', async () => {
+    // A transient audio-stack error should not mute the coach for the rest of
+    // the session — but an endless recreate/fail loop is no better, so the
+    // retry is bounded to one.
+    let attempts = 0
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (() => ({ volume: 1, seekTo: () => {}, play: () => {}, remove: () => {} })) as never,
+      createClickScriptPlayer: (() => ({ volume: 1, seekTo: () => {}, play: () => {}, remove: () => {} })) as never,
+      setAudioMode: (async () => {
+        attempts += 1
+        throw new Error('audio stack down')
+      }) as never,
+    })
+
+    await output.preload({ light: true })
+    expect(output.available).toBe(false)
+    expect(attempts).toBe(1)
+
+    // One retry is allowed.
+    await output.preload({ light: true })
+    expect(attempts).toBe(2)
+
+    // …and then it stops trying.
+    await output.preload({ light: true })
+    await output.preload({ light: true })
+    expect(attempts).toBe(2)
+    expect(output.available).toBe(false)
+  })
+
+  it('never retries an INVALID-ASSET failure — the same failure would just recur', async () => {
+    // Nothing in the warm set could be created. That is the asset layer, not
+    // the device, so retrying re-runs the identical failure.
+    let creates = 0
+    const output = new VoiceOutputExpo({
+      clock: () => 1_000,
+      schedule: () => 1,
+      cancelScheduled: () => {},
+      createPlayer: (() => {
+        creates += 1
+        throw new Error('no such clip')
+      }) as never,
+      createClickScriptPlayer: (() => {
+        throw new Error('no such clip')
+      }) as never,
+      setAudioMode: (async () => {}) as never,
+    })
+
+    await output.preload({ light: true })
+    expect(output.available).toBe(false)
+    const afterFirst = creates
+    expect(afterFirst).toBeGreaterThan(0)
+
+    await output.preload({ light: true })
+    await output.preload({ light: true })
+    // Not one further creation attempt: it failed CLOSED.
+    expect(creates).toBe(afterFirst)
+  })
+
+  it('release() is safe with nothing warmed, and safe called twice', () => {
+    const h = rig()
+    expect(() => {
+      h.output.release()
+      h.output.release()
+    }).not.toThrow()
+    expect(h.live.size).toBe(0)
   })
 })

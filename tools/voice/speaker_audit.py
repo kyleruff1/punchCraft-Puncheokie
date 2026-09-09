@@ -18,7 +18,11 @@ import numpy as np
 from resemblyzer import VoiceEncoder, preprocess_wav
 
 REFERENCE = os.environ.get("SPEAKER_AUDIT_REFERENCE", "tools/voice/reference/cornerman3-selfref-30s.wav")
-BASE = "assets/voice/numbers/standalone/"
+# The announcer library's home, and the default every glob is resolved
+# against. Overridable because the click-script bank lives elsewhere
+# (assets/voice/click-scripts/<persona>/) — before this it silently matched
+# zero files there and printed `clips=0 mean=nan`, which reads like a pass.
+BASE = os.environ.get("SPEAKER_AUDIT_BASE", "assets/voice/numbers/standalone/")
 DEFAULT_GLOBS = ["intro-*.wav", "warn-*.wav", "co-*.wav", "theme-*.wav", "joke-*.wav"]
 
 patterns = sys.argv[1:] or DEFAULT_GLOBS

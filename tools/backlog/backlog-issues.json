@@ -2050,6 +2050,174 @@
           "areaSlug": "qa-docs",
           "priority": "P1",
           "size": "S"
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Jab School — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-jab-school`\n**Loop order**: 11 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-jab-school --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Two rounds on the lead hand — touch, return, then double it into the two) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] One-Two — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-one-two`\n**Loop order**: 12 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-one-two --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (The straight pair at three speeds, then the double jab in front of it) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Hook Line — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-hook-line`\n**Loop order**: 13 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-hook-line --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motifs `1-2-3-4` and `3-4-3-4`: their `call/` clips ship with this workout, so a missing-asset here is a render gap, not a runtime bug.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] The Square — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-square`\n**Loop order**: 14 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-square --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Trace the square — one, four, two, three — then close it with the four-count) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Uppercut Lane — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-uppercut-lane`\n**Loop order**: 15 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-uppercut-lane --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motifs `1-2-5-6` and `6-3-6-3` at 85 bpm — the slowest stride in the catalogue, so the call has the most room and the least excuse for a late end.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Downstairs — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-downstairs`\n**Loop order**: 16 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-downstairs --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `1-2-3b-2`; every bar carries a fused body call (`3b`), which is the pronunciation the numbers vocabulary is most likely to run together.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Level Change — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-level-change`\n**Loop order**: 17 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-level-change --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Head, body, head — every bar changes floors without changing the stance) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Southpaw Mirror — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-southpaw-mirror`\n**Loop order**: 18 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-southpaw-mirror --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: `stanceMode: 'switch-by-round'` with `cadenceProfile: 'technical'` — round 2 mirrors round 1's four chunks. The stance card must appear at the bell only, and R2's calls must not re-announce the stance.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Speed Burst — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-speed-burst`\n**Loop order**: 19 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-speed-burst --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: 120 bpm with an 8-slot bar at 2x — the tightest call window in the catalogue and the first place a breath shortfall becomes audible.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Heavy Two — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-heavy-two`\n**Loop order**: 20 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-heavy-two --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: Composed from the shared chunk library (Hooks and crosses with weight behind them, two rounds, no wasted motion) — every motif already has a rendered call clip, so a missing asset here means the manifest and the catalogue disagree.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Coast & Reset — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-coast-reset`\n**Loop order**: 21 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-coast-reset --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `2-3-.-.` and k=5 sections; the trailing rests are deliberate silence, so `clickScript.skipped` on a coast bar is expected, not a miss.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
+        },
+        {
+          "key": null,
+          "milestoneKey": null,
+          "type": "task",
+          "title": "[LOOP] Six Count — first-round audio verification",
+          "body": "## Context\n\nPart of the 10-Workout Audio Verification Loop, extended to the twelve quick workouts (2 rounds x 4:00 work + 1:00 rest). Iterative on-glass validation that every authored combo in this workout's first round lands correctly via score-authoritative dispatch.\n\n**Workout id**: `quick-six-count`\n**Loop order**: 22 of 22\n**Verifier**: `node tools/analysis/verify-suite.mjs --only=quick-six-count --expect-release`\n**Pass gate**: log correlator clean + per-event correlation >= 0.6 (now from the silent playhead observer, mic-free), zero hard-zero regressions, re-anchor count under budget, stable across 3 consecutive drives.\n\n**Known context**: New motif `1-2-3-4-5-6-.-.` — the longest phrase in the bank. Its clip is the one most likely to run past its breath budget.\n\nTiming evidence comes from the silent observers (GH #291) rather than a microphone: `node tools/analysis/observed-timing.mjs --session <dir>` reports this workout's per-slot call breath, lead-in end vs its budget, ceremony gaps and onset latency. See the `qa-audio-verify` skill for the loop and the failure playbook.\n\n## Status\n\n- [ ] Manifest generated\n- [ ] First drive captured\n- [ ] Log correlator PASS\n- [ ] Observed-timing PASS (coverage >= 98%, no truncation)\n- [ ] Three consecutive stable drives\n\n## Failures log\n_Populated as we discover them._\n\n## Fix attempts\n_Design -> implement -> test each pass._\n\n## Test-drive results\n\n| Drive | Timestamp | Commit | Verdict | Top mismatches | Closer? |\n|---|---|---|---|---|---|\n\n## Analysis\n_Per-drive summary._\n",
+          "areaSlug": "puncheokie",
+          "extraLabels": [
+            "area:qa-docs"
+          ],
+          "priority": null,
+          "size": "S",
+          "sprint": null
         }
       ]
     },
@@ -2362,6 +2530,159 @@
           "priority": "P0",
           "size": "S",
           "hardwareRequired": false
+        }
+      ]
+    },
+    {
+      "phase": 8,
+      "epicKey": "PHASE8",
+      "epic": {
+        "title": "[EPIC] Phase 8 — Puncheoke instrument (Note Cube + PunchBridge)",
+        "body": "## Objectives\n\n- Fork Puncheoke into a standalone punch-driven instrument under the PunchEoke tab: a two-handed sample-and-hold latched-voice instrument with elastic pitch bends (design authority: docs/puncheoke/instrument-design.md + docs/puncheoke/note-cube-design.md).\n- Governing rule: pitch set chooses the notes; cube topology assigns them to hands and velocity zones; harmony policy resolves two-hand combinations; the four-route patch matrix changes the sound without redefining the notes; Z changes density, never latched pitches.\n- Tablet compiles semantic gestures (single-mapping doctrine, patchHash-validated); PunchBridge renders MIDI for Studio One; instrument math is pure domain code.\n- Milestone 1 = the decisive test: Two-Handed Pentatonic, each hand latching and bending only its own voice, no stuck notes ever.\n\n## Status at filing\n\nP1 (M40-01) and P2 (M40-02) shipped on branch puncheoke/instrument; P3 in progress this session."
+      },
+      "issues": [
+        {
+          "key": "M40-01",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Instrument event plumbing: accelerationRaw + per-hand scalers + instrument-lab bench",
+          "body": "## Context\n\nPuncheoke P1 (instrument-design §24). The 9-byte punch record's peak-acceleration u16 (bytes 1-2 LE) was parsed and discarded by the decoder; the instrument needs it as its articulation axis.\n\n**Shipped** on branch `puncheoke/instrument` @ 183aa78; on-glass verified (71 live punches, accel 143-425 raw across near-constant velocity bytes).\n\n## Acceptance criteria\n\n- [x] `TrackerPunchEvent.accelerationRaw` populated by FightCampV1Decoder (golden pins 272/189/112/100)\n- [x] Migration 008 `punch_events.acceleration_raw` + both writers + capture path\n- [x] `src/domain/instrument/rollingScale.ts` — parameterized per-hand normalizer, parity-proven vs backdrop scaler\n- [x] `dev/instrument-lab` shows hand / vel / vel01 / accel / acc01 / inter-punch gap live; recovered events flagged + excluded",
+          "areaSlug": "puncheokie",
+          "priority": "P0",
+          "size": "M",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-02",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "PunchBridge: WS gesture wire, MIDI backend abstraction, tablet client",
+          "body": "## Context\n\nPuncheoke P2 (instrument-design §11, §24). Semantic gestures over WebSocket to a desktop Node service that renders MIDI; the app never emits raw MIDI bytes.\n\n**Shipped** @ 91cedb4; on-glass verified: tablet↔bridge rtt 5ms, notes audible via Microsoft GS Wavetable Synth.\n\n## Acceptance criteria\n\n- [x] `src/domain/instrument/gestureSchema.ts` — shared wire contract + dependency-free FNV-1a mapHash\n- [x] `tools/punchbridge/` — WS server, MidiOutputBackend (real + console), VoiceRenderer latch, heartbeat watchdog → All Notes Off; 8 node:test cases\n- [x] `src/instrument/bridgeClient.ts` + instrument-lab Connect / Note L / Note R / Panic + rtt readout\n- [x] mapHash + schema-version validation refuses mismatched gestures",
+          "areaSlug": "puncheokie",
+          "priority": "P0",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-03",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Note Cube domain model: pitch sets, topologies, harmony, cube compiler",
+          "body": "## Context\n\nPuncheoke P3 (note-cube-design §3-§10). Pure domain: PunchPatch (root x pitch set x topology x harmony x registers x transition x 4 mod routes) compiled once into a zoneCount² CompiledCubeMap consumed identically by MIDI, cube, and clouds. patchHash via mapHashOf.\n\n## Acceptance criteria\n\n- [ ] `pitchSets.ts` launch bank (min/maj pentatonic, minor blues, dorian-six, mixolydian-six, power lattice; cents internally)\n- [ ] `punchPatch.ts` schema + 5 launch patches (Two-Handed Pentatonic default)\n- [ ] `cubeCompiler.ts` — parallel / bass-lead / root-interval topologies; free / soft-guard / interval-lock harmony resolved at compile time; cell tension + labels + hues\n- [ ] `zoneQuantizer.ts` (4/5/6 zones, hysteresis), `latchedVoice.ts`, `activityEnvelope.ts` (Z never moves latched pitch), `transitions.ts`, `gestureCompiler.ts` (recovered refused; deterministic with injected now)\n- [ ] Jest: compiler determinism + 36-cell snapshot, topology math, soft-guard tritone→fifth, hysteresis, latch no-stack",
+          "areaSlug": "puncheokie",
+          "priority": "P0",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-04",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Jam screen + bridge transition rendering — the decisive two-voice test",
+          "body": "## Context\n\nPuncheoke P4. The playable milestone: jam screen under the PunchEoke tab (six-row selector: KEY / PITCH SET / CUBE LAYOUT / HARMONY / REGISTERS / TRANSITION), keepalive punch feed, bridge with pitch-bend transition ramps + InstrumentProfile CC mapping. Patch changes apply Next Punch; profile/channel changes Reset (panic first).\n\n## Acceptance criteria\n\n- [ ] `(tabs)/puncheokie/_layout.tsx` + `jam.tsx`; session mode puncheokie; settings-persisted patch + bridge URL\n- [ ] Bridge renders transitionDurationMs as 14-bit bend ramps with overshoot-then-settle; retrigger mode; CC routes per profile (studio-one-stock + gs-fallback)\n- [ ] Decisive test on-glass: left punch holds low note, right adds high note, each later punch bends only its own voice, alternating flurry = coherent changing harmony, panic/disconnect = silence\n- [ ] Node tests: bend ramp bounds + center-on-release, CC clamping, profile mapping",
+          "areaSlug": "puncheokie",
+          "priority": "P0",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-05",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Studio One routing: install MIDI loopback + external instrument template",
+          "body": "## Context\n\nThe PC has no virtual MIDI loopback (verified: no loopMIDI, no Windows MIDI Services; bridge currently sounds through the Microsoft GS Wavetable Synth). Routing into Studio One 4 (Mai Tai/Mojito voices ch2/ch3; Superior Drummer transient ch10 later) needs a loopback driver — an operator install.\n\n## Acceptance criteria\n\n- [ ] loopMIDI (or Windows MIDI Services loopback) installed and a port created\n- [ ] `npm run bridge -- --midi \"<port>\"` targets it; Studio One receives ch2/ch3\n- [ ] Song template saved: Mai Tai/Mojito left+right (bend range matched to profile), panned per design\n- [ ] Decisive test re-run audible through Studio One",
+          "areaSlug": "puncheokie",
+          "priority": "P1",
+          "size": "S",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-06",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Harmonic Cube visual (Skia isometric lattice)",
+          "body": "## Context\n\nPuncheoke P5 (instrument-design §16). Skia-projected isometric zoneCount² x 4 lattice on jam.tsx: persistent cursor glow, transition ribbons sharing transitionDurationMs, activity depth. No expo-gl (shader-spike proves the Skia plumbing).\n\n## Acceptance criteria\n\n- [ ] Cube renders the CompiledCubeMap cells (hues from compiler; no parallel mapping)\n- [ ] Cursor latches on the current cell; ribbon animates old→new over the gesture's transition duration\n- [ ] Z layer visualized without moving the latched cell",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "M",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-07",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Cloud painting layer",
+          "body": "## Context\n\nPuncheoke P6 (instrument-design §16). Quadrant clouds: hand → horizontal, intensity → vertical, hue from scale zone, radius from velocity01, opacity from acceleration01, persistence/turbulence from punch rate, alternation pulls center-ward. Deterministic variety via hash01.\n\n## Acceptance criteria\n\n- [ ] Cloud field on jam.tsx driven solely by CompiledPunchGesture.visual\n- [ ] Persists seconds and thins; flurries visibly densify; rest clears",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "M",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-08",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Guided twelve-strike articulations (InstrumentPort in the runner)",
+          "body": "## Context\n\nPuncheoke P7 (instrument-design §12; note-cube-design guided mappings). A D17-style InstrumentPort in the workout runner attaches the expected strike token; articulation families (straights/hooks/uppercuts/body) shape the sound; Guided PunchScore mode.\n\n## Acceptance criteria\n\n- [ ] InstrumentPort cloned from BackdropImpulsePort posture (may drop; never affects counts/matching/pacing)\n- [ ] expectedStrikeToken on MusicalPunchInput from the cue engine token context\n- [ ] Head/Body Octaves + Guided Chromatic 12 mappings; family articulations per §12",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-09",
+          "milestoneKey": "M40",
+          "type": "spike",
+          "title": "Type-code research: per-device classifier from labeled captures",
+          "body": "## Context\n\nPuncheoke P8 + the parked Rosetta capture campaign. punchTypeRaw is device-local (H12); a per-device classifier needs the labeled corpus from the Versatility Muscle Confusion capture workout (see M40-11). Until validated, free play exposes the byte only as Tracker Texture.\n\n## Acceptance criteria\n\n- [ ] Labeled corpus ≥ Sessions A+B collected via VMC\n- [ ] Confusion matrix per device; classifier only if accuracy warrants; confidence exposed; generic fallback",
+          "areaSlug": "puncheokie",
+          "priority": "P3",
+          "size": "M",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-10",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Studio performance system: gesture recording, replay, preset library",
+          "body": "## Context\n\nPuncheoke P9 (instrument-design §22). Store raw event + compiled gesture + patchHash per session; deterministic replay through any preset; MIDI export; preset library UI.\n\n## Acceptance criteria\n\n- [ ] `instrument_gestures` persistence (raw + compiled + patchHash)\n- [ ] Replay reproduces identical gestures under the same patchHash (acceptance #12)\n- [ ] Preset library with the launch patches + custom saves",
+          "areaSlug": "puncheokie",
+          "priority": "P3",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-11",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Versatility Muscle Confusion — capture-campaign workout (Rosetta sessions A+B)",
+          "body": "## Context\n\nThe 11th designed workout doubling as the labeled tracker-capture protocol (plan approved 2026-09-05, parked for the instrument fork): single-technique blocks at varied intensities, cue_results as ground-truth labels, ble_frames capture armed for raw frames (acceleration included). Feeds M40-09.\n\n## Acceptance criteria\n\n- [ ] CLICK_MAPS + samples registration + tests (exact-fill honored)\n- [ ] Labeled capture session armed during the workout; ble_frames + punch_events land with capture id\n- [ ] DB pull + Rosetta analysis (type confusion matrix, velocity curves, detection rates)",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "L",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-12",
+          "milestoneKey": "M40",
+          "type": "spike",
+          "title": "Tracker sensitivity floor: probe config chars + modes for a lower transmit threshold",
+          "body": "## Context\n\nSoft punches produce NO frame at all: the firmware punch-detection threshold is set by init command 17 (vendor log “Set new Threshold to 30”) and the write carries no argument — the value is firmware-fixed. Kyle’s jam feedback (2026-09-05): low-velocity play needs feedback. High-sensitivity scaling now covers detected punches; this spike hunts a lever for the floor itself.\n\n## Acceptance criteria\n\n- [ ] READ ca281074/75/76 on both trackers (safe reads first) and document contents; correlate with threshold behavior\n- [ ] Candidate writes tested on ONE tracker only (cradle-reset recovery plan; wrong-length-write clock-scramble precedent respected)\n- [ ] Modes 2 (Gym), 4 (Test), 5 (Normal Kick) probed for different detection floors\n- [ ] Verdict: achievable sensitivity range, or documented dead end",
+          "areaSlug": "protocol",
+          "priority": "P1",
+          "size": "M",
+          "sprint": "sprint-2"
+        },
+        {
+          "key": "M40-13",
+          "milestoneKey": "M40",
+          "type": "task",
+          "title": "Whammy + formant + Ampire wah — the deferred expression backends",
+          "body": "## Context\n\ntransition-design.md ships the first implementation (legato glide + elastic ornament + synth-filter wah). Deferred expression work: Whammy Rise/Dive (full-octave bends on PEAK events only, 200-500ms), Punch Scoop (-1..-2 semitones into center), formant wah (Mai Tai Talky/Voxil, second CC to Character Sound), and the Ampire Pedalboard wah backend (requires Studio One >= 4.6 + Ampire license; Control Link mapping).\n\n## Acceptance criteria\n\n- [ ] Whammy transition preset: scoop on hard punches, octave rise only on a new-peak event\n- [ ] PitchTransitionProfile / WahTransitionProfile shapes from transition-design §4 in the profile schema\n- [ ] Formant backend prototype (CC -> Character Sound) behind a profile flag\n- [ ] Ampire backend documented/gated on the installed Studio One version",
+          "areaSlug": "puncheokie",
+          "priority": "P2",
+          "size": "M",
+          "sprint": "sprint-2"
         }
       ]
     }

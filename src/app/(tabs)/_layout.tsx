@@ -42,10 +42,15 @@ export const unstable_settings = { initialRouteName: 'punchcraft' }
 export const TAB_BAR_STYLE = {
   backgroundColor: colors.surface,
   borderTopColor: colors.border,
-  // Sized to fit the `tab` Wordmark (40pt) with breathing room; without an
+  // Sized to fit the `tab` Wordmark with breathing room; without an
   // explicit height the bar collapses to its content, and the wordmark
   // buttons render at zero height on lazily-mounted tabs.
-  height: 72,
+  // 80 (was 72, Kyle 2026-09-05): the wordmarks read as sunk into the
+  // bottom rail — a taller bar plus more bottom pad lifts them clear.
+  // 168 (Kyle 2026-09-06): the wordmark itself went 40 -> 100 (2.5x) to
+  // make the tabs prominent; the bar has to grow with it or the art is
+  // clipped. 100 art + 26 bottom pad + breathing room.
+  height: 168,
 } as const
 
 /**
@@ -347,7 +352,9 @@ const styles = StyleSheet.create({
     // Ride the wordmark toward the top of the bar: the tablet's floating
     // OS taskbar overlays the bottom edge of the app window, and a
     // dead-centred wordmark gets its lower half clipped behind it.
-    paddingBottom: 18,
+    // 26 (was 18, Kyle 2026-09-05): still read as sunk — lift further.
+    // Held at 26 with the 2.5x art: the taller bar does the lifting now.
+    paddingBottom: 26,
   },
   // The inactive wordmarks dim rather than tint — the art is an image, so
   // opacity is the "inactive" signal where a text label would grey out.

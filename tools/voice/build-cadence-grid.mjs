@@ -57,3 +57,11 @@ writeFileSync(
   ),
 )
 console.log(`Wrote ${outPath}`)
+
+// The timing constants every analyzer proposes against (rail K, breath
+// and lead constants, audio pads, the C4 calibration) — read from their
+// TypeScript sources, dumped beside this grid so the Python audit tools
+// and observed-timing.mjs stop carrying their own literals.
+const { writeTimingConstants } = await import('../analysis/timing-constants.mjs')
+const { out: constantsPath } = writeTimingConstants()
+console.log(`Wrote ${constantsPath}`)

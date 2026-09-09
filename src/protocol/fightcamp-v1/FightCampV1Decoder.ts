@@ -142,6 +142,11 @@ export function decodeFrame(
       receivedWallTimeIso: frame.wallTimeIso,
       punchTypeRaw: decoded.punchTypeRaw,
       punchType: decoded.punchType,
+      // Peak acceleration u16, verbatim — promoted onto the event for the
+      // Puncheoke instrument (instrument-design §14). Tracker-scale; the
+      // vendor divides by 100 but that scale is unvalidated, so consumers
+      // normalize per hand instead.
+      accelerationRaw: decoded.accelerationRaw,
       // Per task brief: the raw device byte, before any scaling.
       velocityRaw: decoded.velocityByteRaw,
       velocityCalibrated: decoded.velocityCalibrated,

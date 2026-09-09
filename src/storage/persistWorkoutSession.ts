@@ -157,6 +157,9 @@ export function persistWorkoutSession(
           : {}),
         ...(event.punchTypeRaw !== undefined ? { punchTypeRaw: event.punchTypeRaw } : {}),
         ...(event.punchType !== undefined ? { punchType: event.punchType } : {}),
+        ...(event.accelerationRaw !== undefined
+          ? { accelerationRaw: event.accelerationRaw }
+          : {}),
         ...(event.velocityRaw !== undefined ? { velocityRaw: event.velocityRaw } : {}),
         velocityUnit: event.velocityUnit,
         recovered: event.recovered ?? false,

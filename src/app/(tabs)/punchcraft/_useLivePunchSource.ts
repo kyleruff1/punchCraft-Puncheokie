@@ -91,8 +91,8 @@ interface ChosenSource {
   sim: SimulatedPunchSource | null
 }
 
-function simulated(clock: MonotonicClock): ChosenSource {
-  const sim = new SimulatedPunchSource({ clock, seed: 'live-screen', velocity: true })
+function simulated(clock: MonotonicClock, loop: boolean): ChosenSource {
+  const sim = new SimulatedPunchSource({ clock, seed: 'live-screen', velocity: true, loop })
   return { kind: 'simulated', source: sim, sim }
 }
 
@@ -129,8 +129,18 @@ function chooseSource(
   clock: MonotonicClock,
   left: SlotState | null,
   right: SlotState | null,
+  qa: { forceSim: boolean; simLoop: boolean },
 ): ChosenSource {
-  if (!(left && right && isLive(left) && isLive(right))) return simulated(clock)
+  // QA (GH #291): a suite run may insist on the simulator even with both
+  // gloves live — say so, because the top bar will read SIM while the
+  // athlete's gloves sit connected and it must not look like a BLE fault.
+  if (qa.forceSim) {
+    if (left && right && isLive(left) && isLive(right)) {
+      logger.info('puncheokie.source.forcedSim', 'QA run forced the simulator over live trackers', {})
+    }
+    return simulated(clock, qa.simLoop)
+  }
+  if (!(left && right && isLive(left) && isLive(right))) return simulated(clock, qa.simLoop)
 
   // The one stream per device rule: when the app-wide keepalive is
   // running (it is, from the root layout), the live screen ATTACHES to
@@ -148,7 +158,7 @@ function chooseSource(
     .find((a) => a.id === FIGHTCAMP_V1_ID)
   if (!adapter) {
     logger.warn('puncheokie.source.adapter.missing', 'no FightCamp v1 adapter registered', {})
-    return simulated(clock)
+    return simulated(clock, qa.simLoop)
   }
 
   try {
@@ -164,7 +174,7 @@ function chooseSource(
     logger.warn('puncheokie.source.tracker.unavailable', 'falling back to the simulator', {
       errorMessage: safe(err instanceof Error ? err.message : String(err)),
     })
-    return simulated(clock)
+    return simulated(clock, qa.simLoop)
   }
 }
 
@@ -181,25 +191,36 @@ export function useLivePunchSource(
      * window the whole workout would silently run on the simulator.
      */
     allowUpgrade?: boolean
+    /**
+     * QA (GH #291): take the simulator even when both gloves are live, and
+     * never upgrade away from it. Read on the FIRST render only — the
+     * `qa/run` route stages it before this screen mounts.
+     */
+    forceSim?: boolean
+    /** QA: build the simulator looping, so a scripted pass repeats until stopped. */
+    simLoop?: boolean
   } = {},
 ): LivePunchSource {
   const left = useLeftSlot()
   const right = useRightSlot()
   const allowUpgrade = options.allowUpgrade ?? false
+  const forceSim = options.forceSim ?? false
+  const qa = { forceSim, simLoop: options.simLoop ?? false }
 
   // Latched on first render — see decision 1 in the header. The one
   // exception: an idle-phase upgrade from simulator to trackers, above.
   const chosenRef = useRef<ChosenSource | null>(null)
-  if (chosenRef.current === null) chosenRef.current = chooseSource(clock, left, right)
+  if (chosenRef.current === null) chosenRef.current = chooseSource(clock, left, right, qa)
   if (
     allowUpgrade &&
+    !forceSim &&
     chosenRef.current.kind === 'simulated' &&
     left !== null &&
     right !== null &&
     isLive(left) &&
     isLive(right)
   ) {
-    const upgraded = chooseSource(clock, left, right)
+    const upgraded = chooseSource(clock, left, right, qa)
     if (upgraded.kind === 'tracker') {
       logger.info('puncheokie.source.upgraded', 'idle-phase upgrade from simulator to trackers', {})
       chosenRef.current = upgraded

@@ -1,0 +1,573 @@
+/**
+ * Dev route. The Twelve-Signature Audition: punchcraft://dev/signature-audition
+ *
+ * Second-pass review amendment 2: during M40 the tracker cannot supply a
+ * trustworthy technique identity in free jam — the live workout
+ * InstrumentPort that carries expectedStrikeToken is M44-01, and the raw
+ * type byte is not validated until M44-02. Without a synthetic canonical
+ * source the M40 ear gate would have NOTHING on glass to assess the twelve
+ * signatures with.
+ *
+ * So: twelve buttons (1, 1B, 2, 2B … 6, 6B) feed synthetic punches carrying
+ * the chosen expectedStrikeToken through the REAL compiler path — the same
+ * gestureCompiler, the same compiled patch/field, the same BridgeClient the
+ * jam uses — plus sliders for velocity, acceleration, activity layer, and
+ * the current harmonic cell. Nothing here fabricates MIDI; it fabricates a
+ * PUNCH and lets the shipped pipeline decide what it sounds like.
+ *
+ * Dev-only surface, instrument-lab style: local state, no stores.
+ */
+import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { SIM_SCRIPTS } from '@simulation/scripts'
+import {
+  createRollingScaler,
+  HIGH_SENSITIVITY_ACCELERATION_DEFAULTS,
+  HIGH_SENSITIVITY_VELOCITY_DEFAULTS,
+} from '@domain/instrument/rollingScale'
+import { Stack, useFocusEffect } from 'expo-router'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+
+import { colors } from '@/theme/colors'
+import { fonts, sizes } from '@/theme/typography'
+import { BridgeClient, type BridgeStatus, type PatchIdentity } from '@/instrument/bridgeClient'
+import { createInstrumentVoice, type InstrumentVoice } from '@audio/InstrumentVoice'
+import { useInstrumentSettingsStore } from '@state/useInstrumentSettingsStore'
+import { INSTRUMENT_TEXTURE_IDS, type InstrumentTextureId } from '@audio/voiceAssets/instrumentBankManifest'
+import { compileBrassCube } from '@domain/instrument/brassCube'
+import { compilePunchPatch, midiNoteName } from '@domain/instrument/cubeCompiler'
+import {
+  compileGesture,
+  emptySessionState,
+  type InstrumentSessionState,
+} from '@domain/instrument/gestureCompiler'
+import type { StrikeToken } from '@domain/instrument/gestureSchema'
+import { compileHarmonicField } from '@domain/instrument/harmonicField'
+import { launchPatchById } from '@domain/instrument/punchPatch'
+import {
+  resolveStrikeArticulation,
+  resolveStrikeIdentity,
+  STRIKE_TOKENS,
+  strikeSignatureKeyOf,
+} from '@domain/instrument/strikeArticulationCatalog'
+
+const DEFAULT_BRIDGE_URL = 'ws://192.168.86.35:8787'
+/** Which hand physically throws each token in the orthodox default. */
+const TOKEN_HAND: Readonly<Record<string, 'left' | 'right'>> = STRIKE_TOKENS.reduce(
+  (acc, token) => ({
+    ...acc,
+    [token]: strikeSignatureKeyOf(token).hand === 'physical-left' ? 'left' : 'right',
+  }),
+  {},
+)
+
+/** Kyle's compact diagnostic sequence (M40-28 audition protocol). */
+const DIAGNOSTIC: readonly StrikeToken[] = ['1', '3', '2', '5', '2', '1', '5', '3', '2B', '2']
+
+const VELOCITIES = [0.15, 0.45, 0.75, 0.95] as const
+const ACCELERATIONS = [0.2, 0.5, 0.8, 0.98] as const
+/** Velocity that lands the OTHER hand in each cube zone, for cell control. */
+const ZONE_VELOCITIES = [0.05, 0.22, 0.38, 0.55, 0.72, 0.92] as const
+
+interface AuditionRow {
+  key: string
+  token: StrikeToken
+  signatureId: string
+  emphasis: string
+  stab: string
+  contour: string
+  cell: string
+  note: string
+}
+
+export default function SignatureAuditionScreen(): React.JSX.Element {
+  const [patchId, setPatchId] = useState('dorian-brass-v2')
+  const [velocityIndex, setVelocityIndex] = useState(1)
+  const [accelerationIndex, setAccelerationIndex] = useState(1)
+  const [leftZone, setLeftZone] = useState(0)
+  const [rightZone, setRightZone] = useState(0)
+  const [bridgeStatus, setBridgeStatus] = useState<BridgeStatus>('idle')
+  // ON-DEVICE output (M40-26/28): the audition is the ear gate, and the
+  // tablet is the shipping surface — it must sound HERE, not only on the
+  // PC rig. 'tablet' is the default for exactly that reason.
+  const [output, setOutput] = useState<'tablet' | 'bridge' | 'both'>('tablet')
+  const [textureId, setTextureId] = useState<InstrumentTextureId>('brass')
+  // The engine is a GLOBAL choice, not a per-screen one, so it comes from the
+  // store rather than local state like the rows around it — the jam must hear
+  // the same engine this screen is auditioning.
+  const audioEngine = useInstrumentSettingsStore((s) => s.engine)
+  const setAudioEngine = useInstrumentSettingsStore((s) => s.setEngine)
+  const [voiceReady, setVoiceReady] = useState(false)
+  /**
+   * The audition's layer passes, on-device. Pass 1 is the one that
+   * matters: if the families do not separate on the brass stab alone, the
+   * drums are carrying the classification.
+   */
+  const [layers, setLayers] = useState<'stab' | 'stab+arp' | 'all'>('stab')
+  const [auditionSlot, setAuditionSlot] = useState<number | null>(null)
+  const [auditionKey, setAuditionKey] = useState<readonly string[]>([])
+  const runningRef = useRef(false)
+  const [rows, setRows] = useState<readonly AuditionRow[]>([])
+
+  const patch = useMemo(() => launchPatchById(patchId), [patchId])
+  const cubeMap = useMemo(() => compilePunchPatch(patch), [patch])
+  const brassMap = useMemo(() => (patch.brassCube ? compileBrassCube(patch) : null), [patch])
+  const field = useMemo(
+    () =>
+      patch.harmonicField && brassMap
+        ? compileHarmonicField(patch.id, patch.harmonicField, brassMap)
+        : null,
+    [patch, brassMap],
+  )
+
+  const bridgeRef = useRef<BridgeClient | null>(null)
+  const [replaying, setReplaying] = useState(false)
+  const replayTimers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const engineRef = useRef<InstrumentVoice | null>(null)
+  const sessionRef = useRef<InstrumentSessionState>(emptySessionState())
+  const clockRef = useRef(0)
+
+  // Focus-scoped, matching the jam screen's isolation rule: a blurred dev
+  // screen must not hold ~25 native players or sound under a workout.
+  useFocusEffect(
+    useCallback(() => {
+      if (output === 'bridge') {
+        engineRef.current?.panic()
+        return
+      }
+      if (engineRef.current === null) {
+        engineRef.current = createInstrumentVoice(audioEngine)
+        void engineRef.current.preload(textureId).then(() => setVoiceReady(true))
+      } else {
+        engineRef.current.setTexture(textureId)
+      }
+      // 'stab' hears the brass hit alone: no beds, no bass.
+      engineRef.current.setMode(layers === 'stab' ? 'notes' : 'arp')
+      return () => {
+        engineRef.current?.release()
+        engineRef.current = null
+        setVoiceReady(false)
+      }
+    }, [output, textureId, layers, audioEngine]),
+  )
+
+
+  const connect = useCallback(() => {
+    bridgeRef.current?.disconnect()
+    const client = new BridgeClient({ onStatus: (status) => setBridgeStatus(status) })
+    bridgeRef.current = client
+    const identity: PatchIdentity = field
+      ? {
+          mapHash: cubeMap.patchHash,
+          worldManifestHash: field.worldManifestHash,
+          compiledFieldHash: field.compiledFieldHash,
+          effectivePatchHash: cubeMap.patchHash,
+          patchGeneration: 0,
+        }
+      : { mapHash: cubeMap.patchHash }
+    const { mapHash, ...rest } = identity
+    client.connect(DEFAULT_BRIDGE_URL, `audition-${Math.floor(globalThis.performance.now())}`, mapHash, rest)
+  }, [cubeMap.patchHash, field])
+
+  /**
+   * Throw one synthetic punch carrying the token. The OTHER hand's latched
+   * zone is pre-seeded by the cell selectors, so a token can be auditioned
+   * against any harmonic cell without re-punching the other hand.
+   */
+  const throwToken = useCallback(
+    (token: StrikeToken, dynamics?: { velocity01: number; acceleration01: number }) => {
+      const hand = TOKEN_HAND[token] ?? 'left'
+      // Advance the synthetic clock past a commit window so each audition
+      // punch lands in its own window (no coalescing during a listen).
+      clockRef.current += 700
+      const zoneVelocity = hand === 'left' ? ZONE_VELOCITIES[leftZone] : ZONE_VELOCITIES[rightZone]
+      const result = compileGesture(
+        {
+          eventId: `audition-${token}-${clockRef.current}`,
+          hand,
+          receivedMonotonicTimeMs: clockRef.current,
+          velocityRaw: Math.round(100 * (VELOCITIES[velocityIndex] ?? 0.5)),
+          recovered: false,
+          expectedStrikeToken: token,
+        },
+        sessionRef.current,
+        {
+          sessionId: 'audition',
+          patch,
+          cubeMap,
+          ...(brassMap ? { brassMap } : {}),
+          ...(field ? { field } : {}),
+          // The cell selector drives the punching hand's zone; the other
+          // hand keeps whatever it last latched.
+          // A replay supplies its own dynamics; the buttons use the
+          // selectors. Everything else about the compile is identical, so a
+          // replayed punch travels the shipping path exactly as a tapped one.
+          velocity01: dynamics?.velocity01 ?? zoneVelocity ?? VELOCITIES[velocityIndex] ?? 0.5,
+          acceleration01: dynamics?.acceleration01 ?? ACCELERATIONS[accelerationIndex] ?? 0.5,
+        },
+      )
+      if (!result) return
+      sessionRef.current = result.state
+      // Tee: the tablet is the shipping output, the bridge is the desk rig.
+      if (output !== 'tablet') bridgeRef.current?.sendGesture(result.gesture)
+      if (output !== 'bridge') {
+        // Layer muting for the audition passes. The drum is silenced by
+        // its own gain rather than by a special engine path, so what
+        // sounds is the shipping selection logic either way.
+        // Layer muting has to cover BOTH drum paths. Zeroing `transient`
+        // alone silenced the legacy five-piece layer but left the Punch Kit
+        // block sounding at full volume, so "BRASS STAB ONLY" was neither.
+        const voiced =
+          layers === 'all'
+            ? result.gesture
+            : {
+                ...result.gesture,
+                transient: { ...result.gesture.transient, velocity: 1 },
+                ...(result.gesture.drums
+                  ? { drums: { ...result.gesture.drums, hits: [] } }
+                  : {}),
+              }
+        engineRef.current?.handleGesture(voiced)
+      }
+
+      const identity = resolveStrikeIdentity({ expectedStrikeToken: token, hand })
+      const articulation = resolveStrikeArticulation(identity, hand)
+      const q = result.gesture.quantized
+      setRows((prev) =>
+        [
+          {
+            key: `${token}-${clockRef.current}`,
+            token,
+            signatureId: articulation.signatureId,
+            emphasis: articulation.emphasis,
+            stab: `${articulation.immediate.stabRole} · ${articulation.immediate.baseGateMs}ms · ${articulation.immediate.filterShape}`,
+            contour: `${articulation.microArp.operations.join(' → ')} (rot ${articulation.microArp.rotation})`,
+            cell: q ? `${q.chordName} ${q.cubeCellId}` : '—',
+            note: result.gesture.accent ? midiNoteName(result.gesture.accent.midiNote) : '—',
+          },
+          ...prev,
+        ].slice(0, 14),
+      )
+    },
+    [patch, cubeMap, brassMap, field, velocityIndex, accelerationIndex, leftZone, rightZone, output, layers],
+  )
+
+  /**
+   * Replay the captured jam signatures through the full twelve-signature
+   * mapping.
+   *
+   * Every (velocityRaw, accelerationRaw) pair in `captured-jam` was logged
+   * off the gloves on 2026-09-06. Two things make this worth having over the
+   * token buttons:
+   *
+   * 1. REAL DYNAMICS. The buttons use fixed selector values, so every punch
+   *    sounds equally hard. These are the actual spread the trackers
+   *    reported, including the half that saturate — which is the thing worth
+   *    hearing.
+   * 2. REPEATABLE. The same 24 punches every run, so an instrument change
+   *    can be A/B'd by ear instead of by throwing and hoping.
+   *
+   * The raws go through the SAME rolling scalers the jam builds
+   * (jam.tsx:243-244), freshly constructed per run so the warm-up is
+   * identical every time — otherwise the first few punches would read
+   * differently on a second run and the comparison would be worthless.
+   *
+   * Tokens are assigned round-robin within the captured hand, so a left
+   * capture drives 1/1B/3/3B/5/5B and a right one 2/2B/4/4B/6/6B. That is
+   * what turns two-piece jam data into a twelve-articulation audition.
+   */
+  const replayCaptured = useCallback(() => {
+    if (replaying) return
+    setReplaying(true)
+    const steps = SIM_SCRIPTS['captured-jam']
+    // Fresh per run: deterministic warm-up, so run N sounds like run N+1.
+    const scalers = {
+      velocity: createRollingScaler(HIGH_SENSITIVITY_VELOCITY_DEFAULTS),
+      acceleration: createRollingScaler(HIGH_SENSITIVITY_ACCELERATION_DEFAULTS),
+    }
+    const LEFT_TOKENS: StrikeToken[] = ['1', '1B', '3', '3B', '5', '5B']
+    const RIGHT_TOKENS: StrikeToken[] = ['2', '2B', '4', '4B', '6', '6B']
+    let leftAt = 0
+    let rightAt = 0
+
+    steps.forEach((step, index) => {
+      const handle = setTimeout(() => {
+        const token =
+          step.hand === 'left'
+            ? (LEFT_TOKENS[leftAt++ % LEFT_TOKENS.length] as StrikeToken)
+            : (RIGHT_TOKENS[rightAt++ % RIGHT_TOKENS.length] as StrikeToken)
+        throwToken(token, {
+          velocity01: scalers.velocity.scale(step.hand, step.velocityRaw),
+          acceleration01: scalers.acceleration.scale(step.hand, step.accelerationRaw),
+        })
+        if (index === steps.length - 1) setReplaying(false)
+      }, step.offsetMs)
+      replayTimers.current.push(handle)
+    })
+  }, [replaying, throwToken])
+
+  // Leaving mid-replay must not fire punches into a released engine.
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        // Clear the pending punches only. Setting state here would fire on
+        // an unmounting component — React warns, and the flag is reset by
+        // the next run anyway.
+        for (const handle of replayTimers.current.splice(0)) clearTimeout(handle)
+      },
+      [],
+    ),
+  )
+
+
+  /**
+   * Kyle's diagnostic sequence, played blind on-device: the screen shows
+   * the slot number only, and reveals the key when the pass finishes.
+   */
+  const runAudition = useCallback(() => {
+    if (runningRef.current) return
+    runningRef.current = true
+    setAuditionKey([])
+    const order = [...DIAGNOSTIC].sort(() => (Math.random() < 0.5 ? -1 : 1))
+    const key: string[] = []
+    order.forEach((token, index) => {
+      setTimeout(() => {
+        setAuditionSlot(index + 1)
+        throwToken(token)
+        const k = strikeSignatureKeyOf(token)
+        const body = k.target === 'body' ? ' BODY' : ''
+        key.push(`${index + 1}.  ${token}  ${k.family.toUpperCase()}${body}`)
+        if (index === order.length - 1) {
+          setTimeout(() => {
+            setAuditionSlot(null)
+            setAuditionKey(key)
+            runningRef.current = false
+          }, 1600)
+        }
+      }, index * 1900)
+    })
+  }, [throwToken])
+
+  const cycleRow = (
+    label: string,
+    value: string,
+    onPress: () => void,
+    testID: string,
+  ): React.JSX.Element => (
+    <Pressable key={label} onPress={onPress} style={styles.controlRow} testID={testID}>
+      <Text style={styles.controlLabel}>{label}</Text>
+      <Text style={styles.controlValue}>{value}</Text>
+    </Pressable>
+  )
+
+  return (
+    <View style={styles.root}>
+      <Stack.Screen options={{ title: 'Twelve-Signature Audition' }} />
+      <View style={styles.header}>
+        <Text style={styles.title}>Twelve-Signature Audition</Text>
+        <Pressable onPress={connect} style={styles.connectBtn} testID="audition-connect">
+          <Text style={styles.connectText}>{bridgeStatus === 'open' ? 'bridge open' : 'connect'}</Text>
+        </Pressable>
+      </View>
+      <Text style={styles.subtitle}>
+        Synthetic canonical tokens through the real compiler — the ear gate&apos;s identity source
+        until the M44 classifier lands.
+      </Text>
+
+      <Pressable onPress={runAudition} style={styles.runBtn} testID="audition-run">
+        <Text style={styles.runText}>
+          {auditionSlot === null ? 'RUN BLIND AUDITION  (10 strikes)' : `▶  ${auditionSlot} / 10`}
+        </Text>
+      </Pressable>
+
+      {/* Real captured dynamics, not selector values — see replayCaptured. */}
+      <Pressable onPress={replayCaptured} style={styles.runBtn} testID="audition-replay">
+        <Text style={styles.runText}>
+          {replaying ? '▶  REPLAYING CAPTURED JAM…' : 'REPLAY CAPTURED JAM  (24 real punches)'}
+        </Text>
+      </Pressable>
+      {auditionKey.length > 0 ? (
+        <View style={styles.keyBox} testID="audition-key">
+          <Text style={styles.logLine}>── key ──</Text>
+          {auditionKey.map((line) => (
+            <Text key={line} style={styles.logDim}>
+              {line}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.grid}>
+        {STRIKE_TOKENS.map((token) => (
+          <Pressable
+            key={token}
+            onPress={() => throwToken(token)}
+            style={styles.tokenBtn}
+            testID={`audition-token-${token}`}
+          >
+            <Text style={styles.tokenText}>{token}</Text>
+            <Text style={styles.tokenHand}>{TOKEN_HAND[token]}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <View style={styles.controls}>
+        {cycleRow(
+          'ENGINE',
+          audioEngine === 'oboe' ? 'OBOE (low latency)' : 'EXPO-AUDIO',
+          () => setAudioEngine(audioEngine === 'expo' ? 'oboe' : 'expo'),
+          'audition-engine',
+        )}
+        {cycleRow(
+          'LAYERS',
+          layers === 'stab' ? 'BRASS STAB ONLY' : layers === 'stab+arp' ? '+ ARP' : 'FULL MIX',
+          () => setLayers((l) => (l === 'stab' ? 'stab+arp' : l === 'stab+arp' ? 'all' : 'stab')),
+          'audition-layers',
+        )}
+        {cycleRow(
+          'OUTPUT',
+          // preload() RESOLVES even when it failed internally (it catches
+          // and calls fail()), so a resolved promise is not evidence of a
+          // working engine — read the engine's own flag instead, or this
+          // row lies about a permanently dead instrument.
+          output.toUpperCase() +
+            (output === 'bridge'
+              ? ''
+              : !voiceReady
+                ? ' (loading)'
+                : engineRef.current?.available === false
+                  ? ' (UNAVAILABLE)'
+                  : ''),
+          () => setOutput((o) => (o === 'tablet' ? 'both' : o === 'both' ? 'bridge' : 'tablet')),
+          'audition-output',
+        )}
+        {cycleRow(
+          'TEXTURE',
+          textureId,
+          () =>
+            setTextureId(
+              (t) =>
+                INSTRUMENT_TEXTURE_IDS[
+                  (INSTRUMENT_TEXTURE_IDS.indexOf(t) + 1) % INSTRUMENT_TEXTURE_IDS.length
+                ] ?? 'brass',
+            ),
+          'audition-texture',
+        )}
+        {cycleRow(
+          'PATCH',
+          patchId,
+          () => setPatchId((p) => (p === 'dorian-brass-v2' ? 'dorian-brass-cube' : 'dorian-brass-v2')),
+          'audition-patch',
+        )}
+        {cycleRow(
+          'VELOCITY',
+          String(VELOCITIES[velocityIndex]),
+          () => setVelocityIndex((i) => (i + 1) % VELOCITIES.length),
+          'audition-velocity',
+        )}
+        {cycleRow(
+          'ACCELERATION',
+          String(ACCELERATIONS[accelerationIndex]),
+          () => setAccelerationIndex((i) => (i + 1) % ACCELERATIONS.length),
+          'audition-acceleration',
+        )}
+        {cycleRow(
+          'CELL LEFT',
+          `zone ${leftZone}`,
+          () => setLeftZone((z) => (z + 1) % 6),
+          'audition-cell-left',
+        )}
+        {cycleRow(
+          'CELL RIGHT',
+          `zone ${rightZone}`,
+          () => setRightZone((z) => (z + 1) % 6),
+          'audition-cell-right',
+        )}
+      </View>
+
+      <ScrollView style={styles.log} contentContainerStyle={styles.logContent}>
+        {rows.map((row) => (
+          <View key={row.key} style={styles.logRow} testID={`audition-row-${row.token}`}>
+            <Text style={styles.logToken}>{row.token}</Text>
+            <View style={styles.logBody}>
+              <Text style={styles.logLine}>{`${row.signatureId} · ${row.emphasis}`}</Text>
+              <Text style={styles.logDim}>{row.stab}</Text>
+              <Text style={styles.logDim}>{row.contour}</Text>
+              <Text style={styles.logDim}>{`${row.cell} · stab ${row.note}`}</Text>
+            </View>
+          </View>
+        ))}
+        {rows.length === 0 ? <Text style={styles.logDim}>press a token to audition it</Text> : null}
+      </ScrollView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background, padding: 16, gap: 10 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  title: { flex: 1, fontSize: sizes.title, fontFamily: fonts.heading, color: colors.textPrimary },
+  subtitle: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
+  connectBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  connectText: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textPrimary },
+  runBtn: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.trackerRight,
+    backgroundColor: colors.surface,
+  },
+  runText: { fontSize: sizes.body, fontFamily: fonts.heading, color: colors.trackerRight },
+  keyBox: {
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    gap: 2,
+  },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tokenBtn: {
+    minWidth: 68,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  tokenText: { fontSize: sizes.body, fontFamily: fonts.heading, color: colors.textPrimary },
+  tokenHand: { fontSize: 10, fontFamily: fonts.label, color: colors.textSecondary },
+  controls: { gap: 6 },
+  controlRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  controlLabel: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
+  controlValue: { fontSize: sizes.label, fontFamily: fonts.heading, color: colors.textPrimary },
+  log: { flex: 1 },
+  logContent: { gap: 8, paddingBottom: 24 },
+  logRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  logToken: {
+    width: 40,
+    fontSize: sizes.body,
+    fontFamily: fonts.heading,
+    color: colors.trackerRight,
+  },
+  logBody: { flex: 1, gap: 2 },
+  logLine: { fontSize: sizes.label, fontFamily: fonts.heading, color: colors.textPrimary },
+  logDim: { fontSize: sizes.label, fontFamily: fonts.label, color: colors.textSecondary },
+})

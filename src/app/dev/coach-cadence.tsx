@@ -26,7 +26,7 @@
  */
 import React, { useCallback, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack, useFocusEffect } from 'expo-router'
 import {
   AudioModule,
   RecordingPresets,
@@ -131,6 +131,47 @@ export default function CoachCadenceScreen(): React.JSX.Element {
   const [log, setLog] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const outputRef = useRef<VoiceOutputExpo | null>(null)
+  /**
+   * The live recorder, held OUTSIDE `measure()`'s try so both its finally and
+   * the focus cleanup can reach it. It used to be a local: any throw between
+   * `record()` and `stop()` left the microphone held by an object nothing
+   * could reach again (GH #357 audit).
+   */
+  const recorderRef = useRef<InstanceType<typeof AudioModule.AudioRecorder> | null>(null)
+
+  /**
+   * Free the measurement rig's players when this screen goes away (GH #356).
+   *
+   * This is a SECOND VoiceOutputExpo, on top of whatever the rest of the app
+   * is holding, and `measure()` full-preloads it — 20 native players. Nothing
+   * released it, so a single visit to this dev screen cost 20 players for the
+   * remainder of the session, on a device where the audio stack goes silent
+   * with no error once it can no longer create a track.
+   *
+   * Focus-scoped rather than unmount-scoped for the usual reason: a visited
+   * route can stay mounted. The ref is nulled because `measure()` reuses it
+   * via `??` and a released output must not be handed a second life here —
+   * it re-preloads from scratch on the next run anyway.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        outputRef.current?.release()
+        outputRef.current = null
+        const recorder = recorderRef.current
+        recorderRef.current = null
+        if (recorder) {
+          // Leaving mid-measurement must not walk away with the mic open.
+          void recorder.stop().catch(() => undefined)
+          try {
+            ;(recorder as unknown as { release?: () => void }).release?.()
+          } catch {
+            // Already gone.
+          }
+        }
+      }
+    }, []),
+  )
 
   const say = useCallback((line: string) => setLog((prev) => [...prev, line]), [])
 
@@ -158,6 +199,7 @@ export default function CoachCadenceScreen(): React.JSX.Element {
           ...RecordingPresets.HIGH_QUALITY,
           isMeteringEnabled: true,
         })
+        recorderRef.current = recorder
         await recorder.prepareToRecordAsync()
         recorder.record()
 
@@ -222,6 +264,23 @@ export default function CoachCadenceScreen(): React.JSX.Element {
       } catch (err) {
         say(`FAILED: ${String(err)}`)
       } finally {
+        // Always release the microphone, on every exit path. expo-audio's
+        // AudioRecorder has no remove(); stop() halts capture and release()
+        // (SharedObject) frees the native object.
+        const recorder = recorderRef.current
+        recorderRef.current = null
+        if (recorder) {
+          try {
+            await recorder.stop()
+          } catch {
+            // Never started, or already stopped.
+          }
+          try {
+            ;(recorder as unknown as { release?: () => void }).release?.()
+          } catch {
+            // Already gone.
+          }
+        }
         setBusy(false)
       }
     },

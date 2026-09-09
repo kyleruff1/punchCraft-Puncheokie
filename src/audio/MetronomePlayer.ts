@@ -36,6 +36,8 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
+import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -90,6 +92,19 @@ export class MetronomePlayer {
    * never leak listeners across playlist rebuilds.
    */
   private unsubscribeStatus: (() => void) | null = null
+  /**
+   * The silent timing observer (GH #291, C2), or null — distinct from the
+   * transport position `observer` above. What it measures on a loop is the
+   * swap gap: `puncheokie.metronome.swap` dispatch → the new loop's first
+   * `playing:true`. A loop never ends on its own, so its observation closes
+   * as `timeout` one period plus grace after onset (or `released` at stop);
+   * either way the onset latency is on the record.
+   */
+  private readonly timing: PlaybackObserver | null
+
+  constructor(opts: { timing?: PlaybackObserver | null } = {}) {
+    this.timing = opts.timing ?? null
+  }
 
   /**
    * Start (or restart) the click at `loop`, `volume`. Idempotent when
@@ -127,30 +142,49 @@ export class MetronomePlayer {
     // New loop (first start of the workout, or a division change).
     if (this.playlist !== null) {
       this.detachStatusListener()
-      try {
-        this.playlist.pause()
-        this.playlist.destroy()
-      } catch {
-        // Already gone.
-      }
+      this.timing?.forget(this.playlist, 'released')
+      releaseAudioPlaylist(this.playlist)
       this.playlist = null
     }
     try {
       this.playlist = createAudioPlaylist({
         sources: [loop.module],
         loop: 'single',
-        updateInterval: 500,
+        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
       })
       this.playlist.volume = this.volume
+      const dispatchMs = this.timing?.nowMs()
       this.playlist.play()
       this.loaded = loop
       this.attachStatusListener(this.playlist)
+      const playId = this.timing?.mintPlayId('metronome') ?? null
       logger.info('puncheokie.metronome', 'loop started', {
         division: safe(loop.division),
         swing: safe(loop.swing),
         durationMs: safe(loop.durationMs),
+        playId: safe(playId),
       })
+      if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
+        this.timing.watch(
+          this.playlist,
+          {
+            playId,
+            kind: 'metronome',
+            label: `loop-d${loop.division}`,
+            expectedDurationMs: loop.durationMs,
+            dispatchMs,
+            volumeAtDispatch: this.volume,
+          },
+          { statusEvent: 'playlistStatusUpdate' },
+        )
+      }
     } catch (error) {
+      // The throw may have come from the volume/play calls AFTER the field
+      // was assigned, in which case a live native playlist exists. Nulling
+      // the field without releasing it would orphan it permanently.
+      this.detachStatusListener()
+      if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
+      releaseAudioPlaylist(this.playlist)
       this.available = false
       this.playlist = null
       this.loaded = null
@@ -223,19 +257,13 @@ export class MetronomePlayer {
    * accumulate across a rest.
    */
   stop(): void {
-    if (!this.available) return
+    // Deliberately NOT gated on `available`: a failed start can leave a
+    // playlist behind, and a teardown that refuses to run is how handles
+    // are stranded.
     this.detachStatusListener()
     this.observer = null
-    if (this.playlist !== null) {
-      try {
-        this.playlist.pause()
-        this.playlist.destroy()
-      } catch (error) {
-        logger.warn('puncheokie.metronome', 'stop failed', {
-          error: safe(String(error)),
-        })
-      }
-    }
+    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
     this.loaded = null
   }

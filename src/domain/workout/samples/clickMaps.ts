@@ -157,9 +157,9 @@ export const MAX_SUSTAINED_PUNCHES_PER_SEC = 2.5
  * authored spoken copy, every non-final round carries a rest script, and
  * every row sits under the achievability ceilings above.
  */
-export function clickMapsSelfCheck(): string[] {
+export function clickMapsSelfCheck(maps: Record<string, ClickMap> = CLICK_MAPS): string[] {
   const problems: string[] = []
-  for (const [key, map] of Object.entries(CLICK_MAPS)) {
+  for (const [key, map] of Object.entries(maps)) {
     const budget = (map.bpm * 4) / 4 // beats per 240s round / beats per measure
     map.rounds.forEach((round, r) => {
       let sum = 0

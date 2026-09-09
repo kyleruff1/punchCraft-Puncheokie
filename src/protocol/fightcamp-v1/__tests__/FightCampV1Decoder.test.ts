@@ -66,6 +66,9 @@ describe('FightCampV1Decoder', () => {
     expect(event.velocityRaw).toBe(10)
     expect(event.velocityCalibrated).toBeCloseTo(8.5, 9)
     expect(event.velocityUnit).toBe('tracker-unit')
+    // Bytes 1-2 LE: 0x10 + 0x01*256 = 272 — promoted onto the event
+    // verbatim (instrument-design §14, migration 008).
+    expect(event.accelerationRaw).toBe(272)
     expect(event.sourceFrameId).toBe('golden')
     expect(event.decoderId).toBe('fightcamp-v1')
     expect(event.decoderVersion).toBe('1.0.0')
@@ -121,6 +124,9 @@ describe('FightCampV1Decoder', () => {
     expect(result.events[1]!.id).toBe('multi-r1')
     expect(result.events[0]!.sourceFrameId).toBe('multi')
     expect(result.events[1]!.sourceFrameId).toBe('multi')
+    // Each record keeps its own acceleration: 0xbd = 189, 0x70 = 112.
+    expect(result.events[0]!.accelerationRaw).toBe(189)
+    expect(result.events[1]!.accelerationRaw).toBe(112)
   })
 
   it('flags malformed on odd-length payload', () => {
@@ -217,5 +223,7 @@ describe('FightCampV1Decoder', () => {
     expect(event.velocityRaw).toBe(8)
     expect(event.velocityCalibrated).toBeCloseTo(4.0, 9)
     expect(event.velocityUnit).toBe('tracker-unit')
+    // Legacy layout reads accel from bytes 2-3 LE: 0x64 = 100.
+    expect(event.accelerationRaw).toBe(100)
   })
 })

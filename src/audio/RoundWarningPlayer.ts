@@ -21,6 +21,8 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
+import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -38,7 +40,13 @@ const LEAD_SLACK_MS = 400
 
 export class RoundWarningPlayer {
   private playlist: AudioPlaylist | null = null
+  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
+  private readonly timing: PlaybackObserver | null
   private totalMs = 0
+
+  constructor(opts: { observer?: PlaybackObserver | null } = {}) {
+    this.timing = opts.observer ?? null
+  }
   private preparedRound: number | null = null
   private played = false
   private paused = false
@@ -93,7 +101,11 @@ export class RoundWarningPlayer {
     pushWithBreath(core.module, core.durationMs)
 
     try {
-      this.playlist = createAudioPlaylist({ sources, loop: 'none', updateInterval: 500 })
+      this.playlist = createAudioPlaylist({
+        sources,
+        loop: 'none',
+        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
+      })
       this.totalMs = totalMs
       logger.info('puncheokie.warn', 'round warning prepared', {
         round: safe(roundNumber),
@@ -101,7 +113,10 @@ export class RoundWarningPlayer {
         totalMs: safe(totalMs),
       })
     } catch (error) {
-      this.playlist = null
+      // Dispose rather than merely drop the reference: if the throw came
+      // from AFTER the field was assigned, nulling it would orphan a live
+      // native playlist with no handle left to free it.
+      this.dispose()
       logger.warn('puncheokie.warn', 'round warning playlist failed', {
         error: safe(String(error)),
       })
@@ -155,12 +170,32 @@ export class RoundWarningPlayer {
     this.played = true
     try {
       this.playlist.volume = volume
+      const dispatchMs = this.timing?.nowMs()
       this.playlist.play()
+      const playId = this.timing?.mintPlayId('warn') ?? null
       logger.info('puncheokie.warn', 'round warning playing', {
         round: safe(this.preparedRound),
         remainingMs: safe(remainingMs),
         totalMs: safe(this.totalMs),
+        playId: safe(playId),
       })
+      if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
+        // The contract is "the countdown ends ON the bell": the analyzer
+        // compares this play's observed end with the next work-entered
+        // bell's onset (target [0, LEAD_SLACK_MS]; negative = cut off).
+        this.timing.watch(
+          this.playlist,
+          {
+            playId,
+            kind: 'round-warning',
+            label: `warn-round-${this.preparedRound ?? 0}`,
+            expectedDurationMs: this.totalMs,
+            dispatchMs,
+            volumeAtDispatch: volume,
+          },
+          { statusEvent: 'playlistStatusUpdate' },
+        )
+      }
     } catch (error) {
       logger.warn('puncheokie.warn', 'round warning play failed', {
         error: safe(String(error)),
@@ -177,16 +212,10 @@ export class RoundWarningPlayer {
   }
 
   private dispose(): void {
-    try {
-      this.playlist?.pause()
-    } catch {
-      // Already stopped.
-    }
-    try {
-      this.playlist?.destroy()
-    } catch {
-      // Already gone.
-    }
+    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
+    // pause + destroy + release. `destroy()` alone is only a registry
+    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
     this.totalMs = 0
   }

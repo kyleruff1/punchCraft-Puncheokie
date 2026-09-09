@@ -25,7 +25,7 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Stack, useFocusEffect, useNavigation, useRouter } from 'expo-router'
+import { Stack, useFocusEffect, useIsFocused, useNavigation, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import * as ScreenOrientation from 'expo-screen-orientation'
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake'
@@ -49,6 +49,9 @@ import { getSampleWorkout } from '@domain/workout/samples'
 import { generateWorkout } from '@domain/workout/generateWorkout'
 import { resetLive, setLive, useLive, useRecipe, useSelectedSampleKey } from '@state/useWorkoutStore'
 import { useBackdropQuality } from '@state/useBackdropSettingsStore'
+import { useQaStore } from '@state/useQaStore'
+import { logger, safe } from '@diagnostics/logger'
+import { simBpmForWorkout } from '@simulation/simPace'
 import { useLivePunchSource } from './_useLivePunchSource'
 import { useWorkoutRunner, type SessionEndOutcome } from './_useWorkoutRunner'
 import { useSharedTransportAnchor } from '@audio/useSharedTransportAnchor'
@@ -57,6 +60,7 @@ import {
   type SharedWorkClock,
 } from '@domain/timing/SharedWorkClock'
 import { VoiceOutputExpo } from '@audio/VoiceOutputExpo'
+import { shouldHoldAudio } from './_audioHold'
 import { findComboAnnounce } from '@audio/voiceAssets/comboAnnounceManifest'
 import { IntroPlayer } from '@audio/IntroPlayer'
 import { RecoveryPlayer } from '@audio/RecoveryPlayer'
@@ -82,6 +86,14 @@ import type { SimScriptId } from '@simulation/scripts'
 const LIVE_KEEP_AWAKE_TAG = 'punchcraft-live'
 
 /**
+ * How long a QA autostart waits after the runner arms before pressing Hit It
+ * (GH #291). Mirrors the settle the tap driver used: `output.preload()` and
+ * `IntroPlayer.load()` both fire on idle, and a start landing under them
+ * measures their cost instead of the workout's.
+ */
+const QA_AUTOSTART_SETTLE_MS = 2_500
+
+/**
  * Workout backdrop art (§17, D17). The wide-format hero from the branding
  * kit — fist on the left, cyan spikes fading into dark negative space that
  * the cue stage sits over. Not audio-reactive; not a signal — ambience only.
@@ -95,6 +107,10 @@ export default function LiveScreen(): React.JSX.Element {
   const selectedSampleKey = useSelectedSampleKey()
   const recipe = useRecipe()
   const live = useLive()
+  // The run staged by the `qa/run` deep link, if any (GH #291). Read here,
+  // above the punch-source hook, because that hook latches its choice on
+  // the first render and must see `simForce` then.
+  const qaRun = useQaStore((s) => s.run)
   const [confirmingStop, setConfirmingStop] = useState(false)
   /**
    * How the finished workout was written (M33-08). Held here rather than in
@@ -126,6 +142,10 @@ export default function LiveScreen(): React.JSX.Element {
   // Built once, never per render: the output owns players and a focus
   // request, and rebuilding it mid-workout would drop both.
   const output = React.useMemo(() => new VoiceOutputExpo(), [])
+  // The silent timing observer (GH #291), or null with the QA flag off. One
+  // per output, fixed at its construction — so this is referentially stable
+  // and inert in the ceremony effects' dependency lists below.
+  const timingObserver = output.timingObserver
   // Felt feedback, built once and gated by the haptics volume — turning it off
   // in settings silences the motor rather than just muting a number.
   const haptics = React.useMemo(() => new HapticOutputExpo(), [])
@@ -145,6 +165,23 @@ export default function LiveScreen(): React.JSX.Element {
       output.release()
     }
   }, [output])
+
+  /**
+   * Whether this screen may free its native audio right now (GH #356).
+   *
+   * `(tabs)` keeps a once-visited screen MOUNTED, so the unmount cleanup just
+   * above never ran in practice: measured on the tablet, leaving punchCraft
+   * Live left 21 AudioTracks resident for the rest of the session, and the
+   * instrument's 30 stacked on top (40 against a ~48 ceiling past which the
+   * app goes silent with no error).
+   *
+   * But blur is NOT "finished" here — the runner ticks from a plain effect and
+   * is not focus-aware, so a workout keeps running, ringing and calling while
+   * the screen is blurred. Hence the OR: focused, or a live workout. See
+   * `_audioHold.ts` for the full argument and its exhaustive test.
+   */
+  const isFocused = useIsFocused()
+  const holdAudio = shouldHoldAudio({ phase: live.phase, isFocused })
 
   // Live vocabulary override (Kyle's mid-workout radio): dispatch-time
   // only. Clips resolve at play time and preload keeps BOTH tracks warm,
@@ -180,9 +217,16 @@ export default function LiveScreen(): React.JSX.Element {
     // Preload during the countdown, not at the first cue: M34-01 measured a
     // cold clip at roughly twice the jitter of a preloaded one. Re-runs on a
     // vocabulary change; preload also warms the OTHER vocabulary's openers.
+    //
+    // Also the RE-WARM half of the #356 release below: refocusing a screen
+    // whose pool was freed re-enters here and rebuilds it. Guarded so the
+    // blur transition does not immediately re-warm what it just released —
+    // this effect is declared BEFORE the release effect, so on the way down
+    // it returns early and the release runs after it.
+    if (!holdAudio) return
     output.setVocabulary(effectiveVocabulary)
     void output.preload({ light: preloadLight })
-  }, [output, effectiveVocabulary, preloadLight])
+  }, [output, effectiveVocabulary, preloadLight, holdAudio])
 
   React.useEffect(() => {
     output.setVolumes(volumes)
@@ -212,6 +256,10 @@ export default function LiveScreen(): React.JSX.Element {
     // the simulator to freshly-connected trackers is safe — and rescues
     // the athlete who opened the screen while a reconnect was in flight.
     allowUpgrade: live.phase === 'idle',
+    // QA (GH #291): a suite run may insist on the simulator, and wants a
+    // scripted pass to loop for the whole work phase.
+    forceSim: qaRun?.simForce ?? false,
+    simLoop: (qaRun?.sim ?? 'none') !== 'none',
   })
 
   // The auto-retry scheduler must not scan or evict while a workout is
@@ -367,9 +415,17 @@ export default function LiveScreen(): React.JSX.Element {
   const introRef = useRef<IntroPlayer | null>(null)
   React.useEffect(() => {
     if (live.phase !== 'idle' || policy.mode === 'off') return
-    introRef.current ??= new IntroPlayer()
+    introRef.current ??= new IntroPlayer({ observer: timingObserver })
     introRef.current.load(intro.segments)
-  }, [live.phase, policy.mode, intro.segments])
+    // `holdAudio` is a dependency because the release below DISCARDS the
+    // player (it is single-use — see the phase effect). Without it, a blur
+    // and refocus while still in the lobby would leave the ref null with no
+    // reason to re-run: `live.phase` is still 'idle', `policy.mode` is
+    // unchanged and `intro.segments` is referentially stable. The walkout
+    // would then never be spoken, and because the countdown's length comes
+    // from `intro.totalMs` rather than from the player, the athlete would
+    // watch ~20 s of silence before a bell arrived out of nowhere.
+  }, [live.phase, policy.mode, intro.segments, holdAudio, timingObserver])
   React.useEffect(() => {
     if (live.phase !== 'countdown' || policy.mode === 'off') return
     introRef.current?.play(volumes.voice, {
@@ -388,7 +444,15 @@ export default function LiveScreen(): React.JSX.Element {
       introRef.current?.pause()
       return
     }
-    if (live.phase !== 'idle' && live.phase !== 'countdown') introRef.current?.stop()
+    if (live.phase !== 'idle' && live.phase !== 'countdown') {
+      introRef.current?.stop()
+      // DISCARD it, do not just stop it. IntroPlayer's `started` latch is
+      // never reset, so a stopped instance refuses to load() again — and the
+      // `??=` above would happily reuse it, leaving the next workout's
+      // walkout silent with nothing thrown and nothing logged. Since the
+      // screen stays mounted between workouts, that was already reachable.
+      introRef.current = null
+    }
   }, [live.phase])
   React.useEffect(() => () => introRef.current?.stop(), [])
 
@@ -409,7 +473,7 @@ export default function LiveScreen(): React.JSX.Element {
       warnRef.current?.stop()
       return
     }
-    warnRef.current ??= new RoundWarningPlayer()
+    warnRef.current ??= new RoundWarningPlayer({ observer: timingObserver })
     // During rest, roundIndex still names the round just finished; the
     // athlete is being readied for the NEXT one (1-based: index + 2).
     // The next round's theme ("Coming up — the Square Builder!") joins
@@ -425,7 +489,7 @@ export default function LiveScreen(): React.JSX.Element {
       nextLead ? { module: nextLead.module, durationMs: nextLead.durationMs } : undefined,
     )
     warnRef.current.playIfDue(live.roundRemainingMs, volumes.voice)
-  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule, clickVocabulary])
+  }, [live.phase, live.roundIndex, live.roundRemainingMs, policy.mode, volumes.voice, workout.id, workout.schedule, clickVocabulary, timingObserver])
   React.useEffect(() => () => warnRef.current?.stop(), [])
 
   // Inter-round recovery walkthrough — the cornerman works the corner
@@ -535,7 +599,7 @@ export default function LiveScreen(): React.JSX.Element {
         }
       : RECOVERY_SCRIPTS.find((s) => s.scriptId === recoveryPlan[live.roundIndex])
     if (!script) return
-    recoveryRef.current ??= new RecoveryPlayer()
+    recoveryRef.current ??= new RecoveryPlayer({ observer: timingObserver })
     recoveryRef.current.prepare(script)
     // Rest elapsed from the same monotonic timer the rest phase reads —
     // never a wall clock, never a timer of its own (D6). Duplicated
@@ -554,8 +618,46 @@ export default function LiveScreen(): React.JSX.Element {
     workout.id,
     workout.schedule,
     clickVocabulary,
+    timingObserver,
   ])
   React.useEffect(() => () => recoveryRef.current?.stop(), [])
+
+  /**
+   * Free every native audio handle once the screen is neither focused nor
+   * running a workout (GH #356). Declared AFTER the ceremony refs so it can
+   * reach them, and after the preload effect so the two never fight.
+   *
+   * `output` deliberately keeps its identity — it is not rebuilt. The `voice`
+   * memo below feeds the workout runner's arm effect, so a new VoiceOutputExpo
+   * would re-arm the runner mid-round, reset the phase to idle and strand
+   * `startedRef` at true: a start button that does nothing. release() clears
+   * the pools without marking the instance dead and preload() re-warms it
+   * (pinned in VoiceOutputExpo.test.ts, "focus-scoped reuse").
+   */
+  React.useEffect(() => {
+    if (holdAudio) return
+    const freeEverything = (): void => {
+      output.release()
+      // The three ceremony players are one AudioPlaylist each. They have no
+      // release() — stop() IS their native teardown (pause + destroy + null).
+      introRef.current?.stop()
+      introRef.current = null // single-use; see the note at the phase effect
+      warnRef.current?.stop()
+      recoveryRef.current?.stop()
+    }
+    // Never cut a sounding clip. A workout that ENDS while blurred flips
+    // this effect on the very tick that starts the closing ding-ding, so
+    // releasing immediately would kill the bell about 0 ms into its ring.
+    // Quiet lane (the ordinary case: leaving an idle lobby) → 0, and the
+    // release happens in this commit.
+    const graceMs = output.msUntilQuiet()
+    if (graceMs === 0) {
+      freeEverything()
+      return
+    }
+    const timer = setTimeout(freeEverything, graceMs)
+    return () => clearTimeout(timer)
+  }, [holdAudio, output])
 
   React.useEffect(() => {
     runner.setVocabulary(clickVocabulary)
@@ -604,6 +706,53 @@ export default function LiveScreen(): React.JSX.Element {
     startedRef.current = true
     runner.start()
   }, [runner])
+
+  // QA autostart (GH #291): the `qa/run` deep link staged a run asking for
+  // Hit It to be pressed. Wait for the runner's OWN armed signal — pushStore
+  // publishes `roundCount` from the session once the arm effect has run, and
+  // `phase` stays 'idle' until start — then settle, then take the button's
+  // exact path. `holdAudio` gates it the same way the audio stack is gated:
+  // never start a workout on a screen that is not the one being looked at.
+  // `startedRef` never resets while this screen stays mounted, so a second
+  // deep link in the same process cannot autostart — the suite cold-starts.
+  React.useEffect(() => {
+    if (!qaRun?.autostart || qaRun.autostartConsumed) return
+    if (live.phase !== 'idle' || live.roundCount === 0) return
+    if (!holdAudio) return
+    const delayMs = qaRun.autostartDelayMs ?? QA_AUTOSTART_SETTLE_MS
+    const timer = setTimeout(() => {
+      useQaStore.getState().consumeAutostart()
+      logger.info('puncheokie.qa.autostart', 'QA autostart pressed Hit It', {
+        workout: safe(workout.id),
+        nonce: safe(qaRun.nonce ?? null),
+        delayMs: safe(delayMs),
+      })
+      handleStart()
+    }, delayMs)
+    return () => clearTimeout(timer)
+  }, [qaRun, live.phase, live.roundCount, holdAudio, handleStart, workout.id])
+
+  // QA auto-sim (GH #291): scripted punches during WORK only. Phase-driven
+  // rather than constructor-time because `source.start()` runs at arm — a
+  // script handed to the constructor would throw punches in the lobby. The
+  // script loops (the source was built with `loop`) and is torn down on
+  // every phase change, so rest, pause and the end are silent; `roundIndex`
+  // in the deps restarts it fresh at each work-entered.
+  React.useEffect(() => {
+    if (sim === null || !qaRun || qaRun.sim === 'none' || live.phase !== 'work') return
+    const script = qaRun.sim
+    const bpm = qaRun.simBpm ?? simBpmForWorkout(script, workout)
+    sim.playScript(script, bpm)
+    logger.info('puncheokie.qa.sim', 'auto sim script started', {
+      script: safe(script),
+      bpm: safe(bpm),
+      roundIndex: safe(live.roundIndex),
+      targetPpm: safe(workout.estimatedActivePunchesPerMinute),
+    })
+    return () => {
+      sim.stopScript()
+    }
+  }, [sim, qaRun, live.phase, live.roundIndex, workout])
 
   const roundGoal = workout.schedule[Math.max(0, live.roundIndex)]?.targetPunches
 

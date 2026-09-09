@@ -41,11 +41,16 @@ import { fileURLToPath } from 'node:url'
 // Setup + args
 // ---------------------------------------------------------------------------
 
-const THIS_FILE = fileURLToPath(import.meta.url)
-const REPO_ROOT = resolve(dirname(THIS_FILE), '..', '..')
+// `import.meta.url` is null under jest's CommonJS transform, where the
+// suite's tests import this module for its helpers; cwd is the repo root there.
+const REPO_ROOT = import.meta.url
+  ? resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
+  : process.cwd()
 
-const PACKAGE = 'com.kyleruff.punchcraft'
+export const PACKAGE = 'com.kyleruff.punchcraft'
 const MAIN_ACTIVITY = `${PACKAGE}/.MainActivity`
+/** What every capture streams: JS records, the app's native tag, crashes. */
+export const LOGCAT_FILTER = ['ReactNativeJS:V', 'puncheokie:V', 'AndroidRuntime:E', 'System.err:W', '*:S']
 
 function parseArgs(argv) {
   const args = {
@@ -88,17 +93,17 @@ function parseArgs(argv) {
   return args
 }
 
-function adb(args, deviceId) {
+export function adb(args, deviceId) {
   const parts = deviceId ? ['-s', deviceId, ...args] : [...args]
   return execSync(`adb ${parts.join(' ')}`, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
 }
 
-function adbShell(cmd, deviceId) {
+export function adbShell(cmd, deviceId) {
   return adb(['shell', cmd], deviceId)
 }
 
 // Return the first device id from `adb devices`, honoring the arg override.
-function pickDevice(preferred) {
+export function pickDevice(preferred) {
   if (preferred) return preferred
   const out = execSync('adb devices', { encoding: 'utf8' })
   const rows = out.split('\n').slice(1)
@@ -107,11 +112,11 @@ function pickDevice(preferred) {
   return first[0]
 }
 
-function ensureDir(p) {
+export function ensureDir(p) {
   if (!existsSync(p)) mkdirSync(p, { recursive: true })
 }
 
-function log(msg) {
+export function log(msg) {
   const stamp = new Date().toISOString().slice(11, 19)
   console.log(`[${stamp}] ${msg}`)
 }
@@ -124,7 +129,7 @@ function log(msg) {
  * Dump the current UI and return the raw XML string. Uses tmp file on
  * device.
  */
-function dumpUi(deviceId) {
+export function dumpUi(deviceId) {
   adbShell('uiautomator dump /sdcard/ui.xml', deviceId)
   return adbShell('cat /sdcard/ui.xml', deviceId)
 }
@@ -133,7 +138,7 @@ function dumpUi(deviceId) {
  * Find a node in the UI dump by resource-id (exact) OR content-desc
  * (substring). Returns center coordinates or null.
  */
-function findTapTarget(xml, { resourceId, contentDescSubstring }) {
+export function findTapTarget(xml, { resourceId, contentDescSubstring }) {
   const nodeRe = /<node[^>]*>/g
   let match
   while ((match = nodeRe.exec(xml)) !== null) {
@@ -157,11 +162,11 @@ function findTapTarget(xml, { resourceId, contentDescSubstring }) {
   return null
 }
 
-function tap(deviceId, x, y) {
+export function tap(deviceId, x, y) {
   adbShell(`input tap ${x} ${y}`, deviceId)
 }
 
-async function sleep(ms) {
+export async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
@@ -181,7 +186,7 @@ async function sleep(ms) {
  * event-name line, so a discriminating field placed first is always
  * co-located with its event name.
  */
-async function waitForLogLine(
+export async function waitForLogLine(
   sessionDir,
   needleSubstring,
   timeoutMs,
@@ -212,7 +217,7 @@ async function waitForLogLine(
  * Poll UI dumps for a specific resource-id / content-desc target and
  * return once found (or null on timeout).
  */
-async function waitForUiTarget(deviceId, findSpec, timeoutMs, pollMs = 1500) {
+export async function waitForUiTarget(deviceId, findSpec, timeoutMs, pollMs = 1500) {
   const start = Date.now()
   while (Date.now() - start < timeoutMs) {
     try {
@@ -231,7 +236,7 @@ async function waitForUiTarget(deviceId, findSpec, timeoutMs, pollMs = 1500) {
 // The drive
 // ---------------------------------------------------------------------------
 
-async function drive(args) {
+export async function drive(args) {
   const deviceId = pickDevice(args.device)
   const timestampMs = Date.now()
   const sessionDir =
@@ -256,7 +261,7 @@ async function drive(args) {
 
   log('starting logcat capture')
   const logcatFile = join(sessionDir, 'logcat.txt')
-  const logcatFd = spawn('adb', ['-s', deviceId, 'logcat', '-v', 'time', 'ReactNativeJS:V', 'puncheokie:V', 'AndroidRuntime:E', 'System.err:W', '*:S'], {
+  const logcatFd = spawn('adb', ['-s', deviceId, 'logcat', '-v', 'time', ...LOGCAT_FILTER], {
     stdio: ['ignore', 'pipe', 'ignore'],
   })
   const fs = await import('node:fs')

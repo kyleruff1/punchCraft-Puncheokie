@@ -397,6 +397,23 @@ export interface MetronomeTransportSnapshot {
   baseBpm: number
 }
 
+/**
+ * A pre-rendered coach clip handed to the output port — text (logging /
+ * duck), Metro module id, measured duration (bus advance).
+ *
+ * `traceId` joins the runner's dispatch record to the audio record and to
+ * the timing observer's observation of the same play (GH #291, C0). The
+ * runner mints it — `slotId` for a combo-announce, `slot#dispatchAtMs` for
+ * a click-script, since a slot can be dispatched more than once in a round.
+ * Optional, so callers that predate it compile and simply log `null`.
+ */
+export interface VoiceClipPayload {
+  text: string
+  module: number
+  durationMs: number
+  traceId?: string
+}
+
 export interface VoiceOutputPort {
   /**
    * Play a pre-rendered clip.
@@ -415,7 +432,7 @@ export interface VoiceOutputPort {
    * is advanced by `durationMs` so schedulers see the coach as audible.
    * Optional: implementations that predate WS4 no-op silently.
    */
-  playInstruction?(clip: { text: string; module: number; durationMs: number }): void
+  playInstruction?(clip: VoiceClipPayload): void
   /**
    * Play a combo-announce clip (M39-V1c Phase B, Kyle 2026-08-30).
    *
@@ -435,7 +452,7 @@ export interface VoiceOutputPort {
    * runtime falls back to the interim per-punch phrase call in that
    * case, matching Phase A behaviour.
    */
-  playComboAnnounce?(clip: { text: string; module: number; durationMs: number }): void
+  playComboAnnounce?(clip: VoiceClipPayload): void
   /**
    * Play a click-script clip (Script Bible v2, Kyle 2026-09-01): a
    * section LEAD-IN spoken so it finishes as its section's first strike
@@ -454,7 +471,7 @@ export interface VoiceOutputPort {
    * the click sets simply stay coach-minimal there.
    */
   playClickScript?(
-    clip: { text: string; module: number; durationMs: number },
+    clip: VoiceClipPayload,
     opts?: {
       /**
        * The clip plays once this workout (a section lead-in) — the backend

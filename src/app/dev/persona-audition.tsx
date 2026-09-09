@@ -22,7 +22,8 @@
  */
 import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Stack } from 'expo-router'
+import { Stack , useFocusEffect } from 'expo-router'
+import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio'
 
 import { colors } from '@/theme/colors'
@@ -64,30 +65,41 @@ export default function PersonaAuditionScreen(): React.JSX.Element {
    */
   const playOne = useCallback(async (asset: AuditionAsset): Promise<void> => {
     setNowPlaying(asset.cueId)
-    try {
-      playerRef.current?.remove()
-    } catch {
-      // Already gone.
-    }
+    releaseAudioPlayer(playerRef.current)
+    playerRef.current = null
     const player = createAudioPlayer(asset.module)
     playerRef.current = player
 
-    // `play()` on a player that has not finished loading does nothing and
-    // reports nothing.
-    for (let i = 0; i < 60 && !player.isLoaded; i += 1) await sleep(25)
-    if (!player.isLoaded) {
-      setNote(`${asset.cueId}: never loaded`)
-      return
-    }
-    player.play()
-    await sleep(asset.durationMs + 250)
+    // try/finally so EVERY exit frees the player — the "never loaded" branch
+    // used to return with the native handle still open, and only a later
+    // playOne would have cleared it (GH #357 audit).
     try {
-      player.remove()
-    } catch {
-      // Already gone.
+      // `play()` on a player that has not finished loading does nothing and
+      // reports nothing.
+      for (let i = 0; i < 60 && !player.isLoaded; i += 1) await sleep(25)
+      if (!player.isLoaded) {
+        setNote(`${asset.cueId}: never loaded`)
+        return
+      }
+      player.play()
+      await sleep(asset.durationMs + 250)
+    } finally {
+      releaseAudioPlayer(player)
+      if (playerRef.current === player) playerRef.current = null
     }
-    playerRef.current = null
   }, [])
+
+  // Nothing freed this screen's player when it went away — one visit left a
+  // native handle open for the rest of the session (GH #357 audit).
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        releaseAudioPlayer(playerRef.current)
+        playerRef.current = null
+      },
+      [],
+    ),
+  )
 
   const selectionFor = useCallback(
     (combination: string, variant: string): AuditionAsset | undefined =>

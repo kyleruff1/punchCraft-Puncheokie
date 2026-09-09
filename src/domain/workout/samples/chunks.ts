@@ -99,6 +99,115 @@ export const CHUNKS: Record<string, SectionChunk> = {
   // Minted by the same rebalance: pace-pusher r4's trim landed on an
   // existing 1-2-3-2 time-and-a-half row's dose, making a new shared spot.
   'jab-cross-hook-cross-th-x20': { id: 'jab-cross-hook-cross-th-x20', motif: '1-2-3-2', rate: 1.5, reps: 20 },
+
+  // -------------------------------------------------------------------------
+  // The quick catalogue (quickWorkouts.ts, 2026-09-07): two rounds × 4:00
+  // each. Dose is identity, so a quick workout's spot at a new rep count is
+  // a NEW chunk even when its motif is an old friend. Grouped by the
+  // workout that minted it; a chunk minted by one workout and reused by
+  // another appears once, under the first.
+  //
+  // Naming, extending the rule above: rest slots are dropped from the slug,
+  // except a bar with two or more TRAILING rests takes `-coast`, the
+  // interior-rest bar `1-.-2-.` is `jab-hold-cross`, and a four-of-a-kind
+  // bar is `<slug>-pump`.
+  // -------------------------------------------------------------------------
+
+  // Jab School
+  'jab-jab-jab-jab-x13': { id: 'jab-jab-jab-jab-x13', motif: '1-1-1-1', rate: 1, reps: 13 },
+  'jab-jab-cross-dt-x30': { id: 'jab-jab-cross-dt-x30', motif: '1-1-2-.', rate: 2, reps: 30 },
+  'jab-cross-jab-cross-x14': { id: 'jab-cross-jab-cross-x14', motif: '1-2-1-2', rate: 1, reps: 14 },
+  'body-jab-pump-dt-x18': { id: 'body-jab-pump-dt-x18', motif: '1b-1b-1b-1b', rate: 2, reps: 18 },
+  'jab-jab-cross-hook-th-x16': { id: 'jab-jab-cross-hook-th-x16', motif: '1-1-2-3', rate: 1.5, reps: 16 },
+  'jab-jab-jab-jab-th-x30': { id: 'jab-jab-jab-jab-th-x30', motif: '1-1-1-1', rate: 1.5, reps: 30 },
+
+  // One-Two
+  'jab-cross-coast-x15': { id: 'jab-cross-coast-x15', motif: '1-2-.-.', rate: 1, reps: 15 },
+  'jab-cross-coast-th-x26': { id: 'jab-cross-coast-th-x26', motif: '1-2-.-.', rate: 1.5, reps: 26 },
+  'jab-cross-coast-dt-x28': { id: 'jab-cross-coast-dt-x28', motif: '1-2-.-.', rate: 2, reps: 28 },
+  'jab-jab-cross-x16': { id: 'jab-jab-cross-x16', motif: '1-1-2-.', rate: 1, reps: 16 },
+  'jab-jab-cross-th-x24': { id: 'jab-jab-cross-th-x24', motif: '1-1-2-.', rate: 1.5, reps: 24 },
+  'jab-cross-jab-cross-th-x26': { id: 'jab-cross-jab-cross-th-x26', motif: '1-2-1-2', rate: 1.5, reps: 26 },
+
+  // Hook Line
+  'jab-cross-hook-x15': { id: 'jab-cross-hook-x15', motif: '1-2-3-.', rate: 1, reps: 15 },
+  'hook-cross-hook-th-x18': { id: 'hook-cross-hook-th-x18', motif: '3-2-3-.', rate: 1.5, reps: 18 },
+  'jab-cross-hook-rear-hook-x9': { id: 'jab-cross-hook-rear-hook-x9', motif: '1-2-3-4', rate: 1, reps: 9 },
+  'jab-cross-hook-rear-hook-x13': { id: 'jab-cross-hook-rear-hook-x13', motif: '1-2-3-4', rate: 1, reps: 13 },
+  'hook-rear-hook-hook-rear-hook-x10': { id: 'hook-rear-hook-hook-rear-hook-x10', motif: '3-4-3-4', rate: 1, reps: 10 },
+  'jab-rear-hook-hook-cross-th-x20': { id: 'jab-rear-hook-hook-cross-th-x20', motif: '1-4-3-2', rate: 1.5, reps: 20 },
+  'jab-cross-hook-dt-x26': { id: 'jab-cross-hook-dt-x26', motif: '1-2-3-.', rate: 2, reps: 26 },
+
+  // The Square
+  'jab-rear-hook-cross-hook-x9': { id: 'jab-rear-hook-cross-hook-x9', motif: '1-4-2-3', rate: 1, reps: 9 },
+  'jab-rear-hook-cross-hook-th-x14': { id: 'jab-rear-hook-cross-hook-th-x14', motif: '1-4-2-3', rate: 1.5, reps: 14 },
+  'jab-cross-hook-cross-jab-rear-hook-hook-cross-x14': { id: 'jab-cross-hook-cross-jab-rear-hook-hook-cross-x14', motif: '1-2-3-2-1-4-3-2', rate: 1, reps: 14 },
+  'jab-rear-hook-hook-cross-x13': { id: 'jab-rear-hook-hook-cross-x13', motif: '1-4-3-2', rate: 1, reps: 13 },
+  'jab-cross-hook-rear-hook-th-x20': { id: 'jab-cross-hook-rear-hook-th-x20', motif: '1-2-3-4', rate: 1.5, reps: 20 },
+  'jab-rear-hook-hook-cross-dt-x26': { id: 'jab-rear-hook-hook-cross-dt-x26', motif: '1-4-3-2', rate: 2, reps: 26 },
+
+  // Uppercut Lane
+  'jab-cross-upper-cross-x13': { id: 'jab-cross-upper-cross-x13', motif: '1-2-5-2', rate: 1, reps: 13 },
+  'upper-rear-upper-upper-th-x16': { id: 'upper-rear-upper-upper-th-x16', motif: '5-6-5-.', rate: 1.5, reps: 16 },
+  'jab-rear-upper-hook-cross-x8': { id: 'jab-rear-upper-hook-cross-x8', motif: '1-6-3-2', rate: 1, reps: 8 },
+  'jab-upper-cross-dt-x19': { id: 'jab-upper-cross-dt-x19', motif: '1-5-2-.', rate: 2, reps: 19 },
+  'jab-cross-upper-rear-upper-x12': { id: 'jab-cross-upper-rear-upper-x12', motif: '1-2-5-6', rate: 1, reps: 12 },
+  'rear-upper-hook-rear-upper-hook-x8': { id: 'rear-upper-hook-rear-upper-hook-x8', motif: '6-3-6-3', rate: 1, reps: 8 },
+  'cross-upper-cross-th-x18': { id: 'cross-upper-cross-th-x18', motif: '2-5-2-.', rate: 1.5, reps: 18 },
+  'upper-cross-hook-dt-x19': { id: 'upper-cross-hook-dt-x19', motif: '5-2-3-.', rate: 2, reps: 19 },
+
+  // Downstairs
+  'jab-body-cross-jab-body-cross-x13': { id: 'jab-body-cross-jab-body-cross-x13', motif: '1-2b-1-2b', rate: 1, reps: 13 },
+  'body-jab-body-cross-coast-x9': { id: 'body-jab-body-cross-coast-x9', motif: '1b-2b-.-.', rate: 1, reps: 9 },
+  'jab-body-cross-hook-th-x22': { id: 'jab-body-cross-hook-th-x22', motif: '1-2b-3-.', rate: 1.5, reps: 22 },
+  'body-cross-body-hook-body-cross-x13': { id: 'body-cross-body-hook-body-cross-x13', motif: '2b-3b-2b-.', rate: 1, reps: 13 },
+  'jab-cross-body-hook-cross-x13': { id: 'jab-cross-body-hook-cross-x13', motif: '1-2-3b-2', rate: 1, reps: 13 },
+  'jab-cross-body-hook-th-x26': { id: 'jab-cross-body-hook-th-x26', motif: '1-2-3b-.', rate: 1.5, reps: 26 },
+  'jab-cross-body-hook-cross-th-x22': { id: 'jab-cross-body-hook-cross-th-x22', motif: '1-2-3b-2', rate: 1.5, reps: 22 },
+
+  // Level Change
+  'body-jab-jab-cross-x14': { id: 'body-jab-jab-cross-x14', motif: '1b-1-2-.', rate: 1, reps: 14 },
+  'jab-cross-body-jab-cross-x10': { id: 'jab-cross-body-jab-cross-x10', motif: '1-2-1b-2', rate: 1, reps: 10 },
+  'jab-body-jab-cross-dt-x20': { id: 'jab-body-jab-cross-dt-x20', motif: '1-1b-2-.', rate: 2, reps: 20 },
+  'body-jab-cross-jab-cross-th-x24': { id: 'body-jab-cross-jab-cross-th-x24', motif: '1b-2-1-2', rate: 1.5, reps: 24 },
+  'jab-body-cross-hook-body-rear-hook-x13': { id: 'jab-body-cross-hook-body-rear-hook-x13', motif: '1-2b-3-4b', rate: 1, reps: 13 },
+  'jab-cross-body-hook-cross-x9': { id: 'jab-cross-body-hook-cross-x9', motif: '1-2-3b-2', rate: 1, reps: 9 },
+  'body-jab-jab-cross-dt-x26': { id: 'body-jab-jab-cross-dt-x26', motif: '1b-1-2-.', rate: 2, reps: 26 },
+
+  // Southpaw Mirror
+  'jab-jab-cross-x8': { id: 'jab-jab-cross-x8', motif: '1-1-2-.', rate: 1, reps: 8 },
+  'jab-cross-hook-dt-x17': { id: 'jab-cross-hook-dt-x17', motif: '1-2-3-.', rate: 2, reps: 17 },
+  'jab-body-cross-hook-th-x18': { id: 'jab-body-cross-hook-th-x18', motif: '1-2b-3-.', rate: 1.5, reps: 18 },
+
+  // Speed Burst
+  'jab-jab-cross-dt-x34': { id: 'jab-jab-cross-dt-x34', motif: '1-1-2-.', rate: 2, reps: 34 },
+  'cross-hook-cross-dt-x18': { id: 'cross-hook-cross-dt-x18', motif: '2-3-2-.', rate: 2, reps: 18 },
+  'jab-cross-hook-th-x32': { id: 'jab-cross-hook-th-x32', motif: '1-2-3-.', rate: 1.5, reps: 32 },
+  'jab-cross-jab-cross-hook-cross-coast-dt-x20': { id: 'jab-cross-jab-cross-hook-cross-coast-dt-x20', motif: '1-2-1-2-3-2-.-.', rate: 2, reps: 20 },
+  'cross-hook-cross-dt-x34': { id: 'cross-hook-cross-dt-x34', motif: '2-3-2-.', rate: 2, reps: 34 },
+
+  // Heavy Two
+  'cross-hook-cross-th-x26': { id: 'cross-hook-cross-th-x26', motif: '2-3-2-.', rate: 1.5, reps: 26 },
+  'hook-cross-hook-dt-x22': { id: 'hook-cross-hook-dt-x22', motif: '3-2-3-.', rate: 2, reps: 22 },
+  'jab-cross-upper-cross-th-x22': { id: 'jab-cross-upper-cross-th-x22', motif: '1-2-5-2', rate: 1.5, reps: 22 },
+  'jab-jab-cross-hook-cross-upper-cross-x14': { id: 'jab-jab-cross-hook-cross-upper-cross-x14', motif: '1-1-2-3-2-5-2-.', rate: 1, reps: 14 },
+
+  // Coast & Reset
+  'jab-coast-x8': { id: 'jab-coast-x8', motif: '1-.-.-.', rate: 1, reps: 8 },
+  'cross-pump-dt-x10': { id: 'cross-pump-dt-x10', motif: '2-2-2-2', rate: 2, reps: 10 },
+  'jab-hold-cross-x14': { id: 'jab-hold-cross-x14', motif: '1-.-2-.', rate: 1, reps: 14 },
+  'cross-hook-coast-x9': { id: 'cross-hook-coast-x9', motif: '2-3-.-.', rate: 1, reps: 9 },
+  'jab-cross-coast-x9': { id: 'jab-cross-coast-x9', motif: '1-2-.-.', rate: 1, reps: 9 },
+  'cross-hook-coast-th-x20': { id: 'cross-hook-coast-th-x20', motif: '2-3-.-.', rate: 1.5, reps: 20 },
+  'jab-coast-x10': { id: 'jab-coast-x10', motif: '1-.-.-.', rate: 1, reps: 10 },
+  'jab-cross-hook-cross-th-x14': { id: 'jab-cross-hook-cross-th-x14', motif: '1-2-3-2', rate: 1.5, reps: 14 },
+
+  // Six Count
+  'jab-cross-hook-rear-hook-upper-rear-upper-coast-x10': { id: 'jab-cross-hook-rear-hook-upper-rear-upper-coast-x10', motif: '1-2-3-4-5-6-.-.', rate: 1, reps: 10 },
+  'jab-rear-upper-hook-th-x20': { id: 'jab-rear-upper-hook-th-x20', motif: '1-6-3-.', rate: 1.5, reps: 20 },
+  'jab-cross-hook-cross-jab-cross-upper-cross-x8': { id: 'jab-cross-hook-cross-jab-cross-upper-cross-x8', motif: '1-2-3-2-1-2-5-2', rate: 1, reps: 8 },
+  'jab-cross-hook-rear-hook-upper-rear-upper-coast-x8': { id: 'jab-cross-hook-rear-hook-upper-rear-upper-coast-x8', motif: '1-2-3-4-5-6-.-.', rate: 1, reps: 8 },
+  'jab-cross-upper-rear-upper-x9': { id: 'jab-cross-upper-rear-upper-x9', motif: '1-2-5-6', rate: 1, reps: 9 },
 }
 
 /** Look a chunk up by its minute ID, failing loudly on an unknown one. */

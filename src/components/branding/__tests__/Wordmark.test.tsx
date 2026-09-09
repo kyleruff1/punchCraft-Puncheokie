@@ -63,14 +63,19 @@ describe('Wordmark', () => {
     expect(src(vl)).toEqual(src(vlIsolated))
   })
 
-  it('keeps sizes ordered sm < tab < md < lg (so the type scale is meaningful)', () => {
+  it('keeps the content scale ordered sm < md < lg, with the TAB deliberately largest', () => {
     const heightFor = (size: WordmarkSize): number => {
       const tree = render(<Wordmark app="punchCraft" size={size} />)
       const image = tree.root.findByProps({ accessibilityRole: 'image' })
       return (image.props.style as { height: number }).height
     }
-    expect(heightFor('sm')).toBeLessThan(heightFor('tab'))
-    expect(heightFor('tab')).toBeLessThan(heightFor('md'))
+    // The in-content scale still reads small → large.
+    expect(heightFor('sm')).toBeLessThan(heightFor('md'))
     expect(heightFor('md')).toBeLessThan(heightFor('lg'))
+    // `tab` is NOT part of that scale: it is the app's primary navigation
+    // and was taken to 2.5x (Kyle 2026-09-06) so the bottom tabs read as
+    // prominent rather than as a footer. It outsizes every content step.
+    expect(heightFor('tab')).toBeGreaterThan(heightFor('lg'))
+    expect(heightFor('tab')).toBeGreaterThan(heightFor('sm'))
   })
 })

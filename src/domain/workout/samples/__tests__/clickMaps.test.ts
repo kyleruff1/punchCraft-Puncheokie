@@ -6,10 +6,26 @@
  * edit that breaks a denominator fails here, not on a drive.
  */
 import { CLICK_MAPS, breathBeats, clickMapsSelfCheck, clickSpecs, measuresPerRep } from '../clickMaps'
+import { allClickMaps } from '../allClickMaps'
+import { QUICK_WORKOUT_ORDER } from '../quickWorkouts'
 
 describe('clickMapsSelfCheck', () => {
   it('every round of every map sums exactly to its measure budget', () => {
     expect(clickMapsSelfCheck()).toEqual([])
+  })
+
+  it('the composed quick maps pass the same copy, rest, pace and fill lint', () => {
+    // compose() proves exact fill; this is the spoken-copy and pace lint
+    // that only the self-check performs (digit-free lead-ins, a rest on
+    // every non-final round and none on the last, burst/sustained caps).
+    expect(clickMapsSelfCheck(allClickMaps())).toEqual([])
+  })
+
+  it('allClickMaps() is the ten literal maps plus the twelve quick ones', () => {
+    expect(Object.keys(allClickMaps()).sort()).toEqual(
+      [...Object.keys(CLICK_MAPS), ...QUICK_WORKOUT_ORDER].sort(),
+    )
+    expect(Object.keys(allClickMaps())).toHaveLength(22)
   })
 
   it('covers all 10 predefined workouts', () => {

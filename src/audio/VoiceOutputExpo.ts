@@ -52,6 +52,9 @@ import {
 } from './voiceAssets/manifest'
 import { CALLOUT_CLIPS, type CalloutClipId } from './voiceAssets/calloutManifest'
 import { MetronomePlayer, type MetronomePlayerObserver } from './MetronomePlayer'
+import { releaseAudioPlayer } from './nativeAudioTeardown'
+import { PlaybackObserver, type ObservedKind, type ObservedRecord } from './PlaybackObserver'
+import { isTimingObserverEnabled } from '@diagnostics/qaFlags'
 import { MetronomeTransport } from './MetronomeTransport'
 
 const TONE_ASSETS: Record<ToneKind, VoiceAssetId> = {
@@ -214,7 +217,17 @@ export interface VoiceOutputExpoOptions {
    * family. Must be ≥ 0.
    */
   calibratedAudioOutputLatencyMs?: number
+  /**
+   * Attach the silent timing observer (GH #291, plan C1): every play gets a
+   * `puncheokie.voice.observed` record with its real onset and end, on the
+   * same clock as `dispatchMs`. Defaults to the persisted QA flag. Off, the
+   * observer is never constructed and the player factories are untouched.
+   */
+  timingObserver?: boolean | (() => boolean)
 }
+
+/** Status cadence for observed players: onset/end are transition events; this only feeds the stall check. */
+const OBSERVED_UPDATE_INTERVAL_MS = 40
 
 /**
  * Clips sharing one deadline — a phrase.
@@ -293,8 +306,28 @@ export const MAX_RESIDENT_PLAYERS = 24
  */
 export const CLICK_SCRIPT_RESIDENT_CAP = 8
 
-/** Clearance after a one-shot clip's end before its player is released. */
-const ONE_SHOT_RELEASE_PAD_MS = 1_500
+/**
+ * Clearance after a one-shot clip's end before its player is released.
+ *
+ * Generous on purpose: the release is DESTRUCTIVE and every one-shot timer is
+ * armed from the play() call, not from audible onset, so this pad is what
+ * absorbs a `downloadFirst` player's resolve + download + prepare latency.
+ */
+export const ONE_SHOT_RELEASE_PAD_MS = 1_500
+
+/**
+ * Why the coach's audio stack failed, and therefore whether trying again can
+ * possibly help (GH #356 follow-up, #357).
+ */
+export type AudioFailureClass =
+  /** The device could not give us a resource right now — worth one retry. */
+  | 'transient-resource'
+  /** A clip is missing or unreadable — retrying re-runs the same failure. */
+  | 'invalid-asset'
+  /** The device cannot decode this clip — permanent for this build. */
+  | 'unsupported-codec'
+  /** Unclassified: retry once under a new generation, then fail closed. */
+  | 'unknown'
 
 export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly manifest: VoiceAssetManifest
@@ -304,6 +337,11 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly cancelScheduled: (handle: unknown) => void
   private readonly makePlayer: (source: number) => AudioPlayer
   private readonly makeClickScriptPlayer: (source: number) => AudioPlayer
+  /** Null unless the QA flag (or the option) armed it at construction. */
+  private readonly observer: PlaybackObserver | null
+  /** Per-instance tag + counter: a playId is unique within one logcat capture. */
+  private readonly playTag = Math.random().toString(36).slice(2, 6)
+  private nextPlaySeq = 0
   private readonly speaker: Pick<typeof Speech, 'speak' | 'stop'>
   private readonly setAudioMode: typeof setAudioModeAsync
 
@@ -345,6 +383,26 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   private readonly clickScriptArmed = new Set<number>()
   /** Per-module play generation, so a scheduled pre-arm never seeks a player that has since replayed. */
   private readonly clickScriptGen = new Map<number, number>()
+
+  /**
+   * Strictly monotonic for the life of this instance, bumped by BOTH
+   * `release()` and `preload()` and re-checked after every await, so neither
+   * a released output nor a superseded preload can resurrect the pool
+   * (GH #356). Never reset — a stale continuation must not be able to equal a
+   * later generation by coincidence.
+   */
+  private generation = 0
+
+  /**
+   * Why the last failure happened, which decides whether a re-preload is
+   * allowed to retry. Clearing the latch unconditionally is right for
+   * transient resource exhaustion and wrong for a permanently broken asset,
+   * which would otherwise spin in a recreate/fail loop forever.
+   */
+  private failureClass: AudioFailureClass | null = null
+
+  /** Retries already spent on the CURRENT failure. Policy allows one. */
+  private retriesSinceFailure = 0
   /**
    * Scheduled-but-unstarted combination calls, fired by `advance()` — the
    * runner's tick — NOT by wall timers.
@@ -435,8 +493,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * calls `.start()` on `work-entered` and `.stop()` on the phase
    * transitions that end work. Public via the `metronome` port method,
    * which is optional so any pre-V1b test double compiles unchanged.
+   * Constructed in the constructor, not here: it takes the timing
+   * observer, which only exists once the QA flag has been read.
    */
-  private readonly metronomePlayer = new MetronomePlayer()
+  private readonly metronomePlayer: MetronomePlayer
 
   /**
    * The logical tick clock — the sole timing authority for score
@@ -672,11 +732,28 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.clock = opts.clock ?? (() => performance.now())
     this.schedule = opts.schedule ?? ((fn, ms) => setTimeout(fn, ms))
     this.cancelScheduled = opts.cancelScheduled ?? ((h) => clearTimeout(h as never))
-    this.makePlayer = opts.createPlayer ?? ((source) => createAudioPlayer(source))
+    const observing =
+      typeof opts.timingObserver === 'function'
+        ? opts.timingObserver()
+        : (opts.timingObserver ?? isTimingObserverEnabled())
+    this.observer = observing
+      ? new PlaybackObserver({
+          clock: this.clock,
+          schedule: this.schedule,
+          cancelScheduled: this.cancelScheduled,
+          onObserved: (record) => this.logObserved(record),
+        })
+      : null
+    this.metronomePlayer = new MetronomePlayer({ timing: this.observer })
+    // Observed players report status every 40 ms while playing (stall check
+    // only — onset and end are transition events). Injected factories are
+    // left alone; the option is a construction-time one on the native side.
+    const nativeOptions = observing ? { updateInterval: OBSERVED_UPDATE_INTERVAL_MS } : {}
+    this.makePlayer = opts.createPlayer ?? ((source) => createAudioPlayer(source, nativeOptions))
     this.makeClickScriptPlayer =
       opts.createClickScriptPlayer ??
       opts.createPlayer ??
-      ((source) => createAudioPlayer(source, { downloadFirst: true }))
+      ((source) => createAudioPlayer(source, { downloadFirst: true, ...nativeOptions }))
     this.speaker = opts.speaker ?? Speech
     this.setAudioMode = opts.setAudioMode ?? setAudioModeAsync
     const latency = opts.calibratedAudioOutputLatencyMs
@@ -721,6 +798,22 @@ export class VoiceOutputExpo implements VoiceOutputPort {
   audibleUntilMs(): number {
     const now = this.clock()
     return this.busyUntilMs > now ? this.busyUntilMs : 0
+  }
+
+  /**
+   * How long until the coach lane falls silent; 0 if it already is.
+   *
+   * The subtraction lives here rather than at the call site because
+   * `audibleUntilMs()` is stamped on THIS instance's clock, which defaults to
+   * `performance.now()` — a caller reaching for `Date.now()` would compute a
+   * garbage delay. Used to tear the pool down without cutting a clip short:
+   * the closing ding-ding is started by the same runner tick that publishes
+   * the terminal phase, so releasing on that edge would kill the bell about
+   * 0 ms into its ring (GH #356).
+   */
+  msUntilQuiet(): number {
+    const until = this.audibleUntilMs()
+    return until > 0 ? Math.max(0, until - this.clock()) : 0
   }
 
   /**
@@ -876,17 +969,44 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * than its voice.
    */
   async preload(opts?: { light?: boolean }): Promise<void> {
+    // Bump, never merely read: a preload that starts while an EARLIER one is
+    // still suspended supersedes it, so only the newest populates the pool.
+    const generation = (this.generation += 1)
+
+    // A re-warm is a genuine RETRY — `failed` was a permanent no-audio latch
+    // that nothing ever cleared, so one transient error muted the coach for
+    // the rest of the session. But it is a BOUNDED retry: a missing clip or a
+    // codec this device cannot decode fails identically every time, and
+    // clearing the latch unconditionally would spin there forever.
+    if (this.failed) {
+      if (!this.mayRetryAfterFailure()) return
+      this.retriesSinceFailure += 1
+      this.failed = false
+      this.failureClass = null
+    }
     try {
       // 'mixWithOthers' until something is actually audible — asking for
       // focus while silent would duck the athlete's music for nothing.
-      await this.setAudioMode({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
+      // But NEVER surrender held focus: expo-audio keeps ONE global
+      // interruption mode (last caller wins), so a mid-workout re-preload
+      // resetting to mixWithOthers would un-duck the athlete's music
+      // under the coach (isolation audit, 2026-09-05).
+      if (!this.focusHeld) {
+        await this.setAudioMode({ playsInSilentMode: true, interruptionMode: 'mixWithOthers' })
+      }
     } catch (err) {
-      this.failed = true
+      // The audio stack itself would not initialise. Unclassifiable from
+      // here, so policy is: one retry under a new generation, then closed.
+      this.fail('unknown')
       logger.warn('puncheokie.voice.unavailable', 'audio stack failed to initialise', {
         error: safe(String(err)),
       })
       return
     }
+
+    // Released while we were awaiting: the screen is gone, so creating the
+    // pool now would leak it.
+    if (generation !== this.generation) return
 
     // Warm the clips a round actually opens with, not every clip in every
     // form: the pool cap means preloading everything would only evict most of
@@ -925,9 +1045,49 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     }
 
     if (loaded === 0) {
-      this.failed = true
+      // Not one clip in the warm set could be created. That is the asset
+      // layer, not the device: retrying re-runs the identical failure, so
+      // this one does NOT get a second go.
+      this.fail('invalid-asset')
       logger.warn('puncheokie.voice.unavailable', 'no clips loaded; running without voice', {})
+      return
     }
+    // A warm that actually produced players clears the retry budget, so a
+    // later, unrelated transient failure still gets its own attempt.
+    this.retriesSinceFailure = 0
+    this.failureClass = null
+  }
+
+  /**
+   * Record a failure and its class. Kept in one place so every latch write
+   * carries a reason — an unclassified `failed = true` is what made the old
+   * latch permanent and unexplainable.
+   */
+  private fail(failureClass: AudioFailureClass): void {
+    this.failed = true
+    this.failureClass = failureClass
+    // `retriesSinceFailure` is deliberately NOT reset here. Resetting it on
+    // every failure is what makes a "bounded" retry unbounded: the retry
+    // clears the latch, the next attempt fails, the counter goes back to
+    // zero, and it loops forever. Only a SUCCESSFUL preload clears it.
+  }
+
+  /**
+   * Whether a re-preload may clear the failure latch (§ retry policy):
+   *
+   *   transient-resource   one retry — the device may have freed something
+   *   unknown              one retry under a new generation, then fail closed
+   *   invalid-asset        never — the clip is missing or unreadable
+   *   unsupported-codec    never — this device cannot decode it
+   *
+   * A permanent class fails CLOSED rather than looping, and the workout still
+   * runs: every call is already a no-op while `failed` is set.
+   */
+  private mayRetryAfterFailure(): boolean {
+    if (this.failureClass === 'invalid-asset' || this.failureClass === 'unsupported-codec') {
+      return false
+    }
+    return this.retriesSinceFailure < 1
   }
 
   /**
@@ -952,11 +1112,13 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       if (oldest.done) break
       const evicted = this.players.get(oldest.value)
       this.players.delete(oldest.value)
-      try {
-        evicted?.remove()
-      } catch {
-        // Already gone; the point was to stop holding the track.
-      }
+      // `remove()` alone is a registry map-delete: it frees no AudioTrack and
+      // does not even stop playback, so this cap bounded the JS Map while the
+      // native players accumulated until GC happened to run. That is the whole
+      // #356 defect, and it made MAX_RESIDENT_PLAYERS bound nothing that
+      // matters. `releaseAudioPlayer` is total and never throws.
+      if (evicted !== undefined) this.observer?.forget(evicted, 'evicted')
+      releaseAudioPlayer(evicted)
     }
 
     try {
@@ -996,7 +1158,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * ceremony, but they never mute other calls (they're not chime-ins;
    * they're standalone asides).
    */
-  playInstruction(clip: { text: string; module: number; durationMs: number }): void {
+  playInstruction(clip: { text: string; module: number; durationMs: number; traceId?: string }): void {
     if (this.failed) return
     this.requestFocus()
     try {
@@ -1004,12 +1166,29 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
+      // Stamped immediately before play(): the timing observer measures its
+      // onset latency from THIS instant, on the same clock as cue.tokenDue.
+      const dispatchMs = this.clock()
       player.play()
       this.markBusy(clip.durationMs)
+      const playId = this.mintPlayId()
       logger.info('puncheokie.voice.play', 'instruction playing', {
         kind: safe('instruction'),
         text: safe(clip.text),
         durationMs: safe(clip.durationMs),
+        dispatchMs: safe(Math.round(dispatchMs)),
+        traceId: safe(clip.traceId ?? null),
+        volume: safe(player.volume),
+        playId: safe(playId),
+      })
+      this.observe(player, {
+        playId,
+        kind: 'instruction',
+        label: clip.text,
+        expectedDurationMs: clip.durationMs,
+        dispatchMs,
+        volumeAtDispatch: player.volume,
+        traceId: clip.traceId,
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'instruction did not play', {
@@ -1028,7 +1207,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * can separate "coach's aside" from "coach's block-start command."
    * Same duck posture, same bus advance.
    */
-  playComboAnnounce(clip: { text: string; module: number; durationMs: number }): void {
+  playComboAnnounce(clip: { text: string; module: number; durationMs: number; traceId?: string }): void {
     if (this.failed) return
     this.requestFocus()
     try {
@@ -1036,12 +1215,30 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.trackOneShot(player, clip.durationMs)
       player.volume = this.callsMuted() ? 0 : this.volumes.voice
       player.seekTo(0)
+      const dispatchMs = this.clock()
       player.play()
       this.markBusy(clip.durationMs)
+      const playId = this.mintPlayId()
       logger.info('puncheokie.voice.play', 'combo-announce playing', {
         kind: safe('combo-announce'),
         text: safe(clip.text),
         durationMs: safe(clip.durationMs),
+        dispatchMs: safe(Math.round(dispatchMs)),
+        traceId: safe(clip.traceId ?? null),
+        // volume 0 here = born inside a chime-in duck window: this line
+        // prints and the athlete hears nothing (the dead-phrasePlayer
+        // restore never reaches a one-shot).
+        volume: safe(player.volume),
+        playId: safe(playId),
+      })
+      this.observe(player, {
+        playId,
+        kind: 'combo-announce',
+        label: clip.text,
+        expectedDurationMs: clip.durationMs,
+        dispatchMs,
+        volumeAtDispatch: player.volume,
+        traceId: clip.traceId,
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'combo-announce did not play', {
@@ -1061,7 +1258,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
    * other sounding clip.
    */
   playClickScript(
-    clip: { text: string; module: number; durationMs: number },
+    clip: { text: string; module: number; durationMs: number; traceId?: string },
     opts?: { oneShot?: boolean },
   ): void {
     if (this.failed) return
@@ -1126,6 +1323,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // logs "playing" at correct stride. positionMs ≈ durationMs on a
         // silent rep is that wedge, named.
         const positionMs = Math.round((target.currentTime ?? 0) * 1000)
+        const dispatchMs = this.clock()
         target.play()
         // RE-STAMP the busy window from the moment audio actually starts
         // (Kyle 2026-09-04, "calls out about every other set"): the
@@ -1135,6 +1333,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // dispatch-time stamp above still guards the rewind gap itself;
         // this one covers the real tail.
         this.markBusy(clip.durationMs)
+        const playId = this.mintPlayId()
         logger.info('puncheokie.voice.play', 'click-script playing', {
           kind: safe('click-script'),
           text: safe(clip.text),
@@ -1145,6 +1344,20 @@ export class VoiceOutputExpo implements VoiceOutputPort {
           volume: safe(target.volume),
           positionMs: safe(positionMs),
           path: safe(path),
+          dispatchMs: safe(Math.round(dispatchMs)),
+          traceId: safe(clip.traceId ?? null),
+          playId: safe(playId),
+        })
+        this.observe(target, {
+          playId,
+          kind: 'click-script',
+          label: clip.text,
+          expectedDurationMs: clip.durationMs,
+          dispatchMs,
+          volumeAtDispatch: target.volume,
+          positionAtDispatchMs: positionMs,
+          path,
+          traceId: clip.traceId,
         })
         // Re-arm for the next bar: once this call has finished, park the
         // player back at 0 during the idle gap so the repeat plays
@@ -1167,11 +1380,8 @@ export class VoiceOutputExpo implements VoiceOutputPort {
             this.clickScriptArmed.delete(module)
             this.clickScriptGen.delete(module)
             if (this.clickScriptPlayer === target) this.clickScriptPlayer = null
-            try {
-              target.remove()
-            } catch {
-              // Already gone.
-            }
+            this.observer?.forget(target, 'released')
+            releaseAudioPlayer(target)
             return
           }
           try {
@@ -1184,7 +1394,18 @@ export class VoiceOutputExpo implements VoiceOutputPort {
             .then(() => {
               if (this.clickScriptGen.get(module) === gen) this.clickScriptArmed.add(module)
             })
-        }, clip.durationMs + CLICK_SCRIPT_PREARM_PAD_MS)
+          // The pad has to fit what the timer DOES. The re-arm branch only
+          // pauses and seeks, so 200 ms of clearance is plenty and landing
+          // early is harmless. The one-shot branch DESTROYS the player, and
+          // this timer is armed from the play() call rather than from audible
+          // onset — a one-shot lead-in is always a fresh `downloadFirst`
+          // player, which holds no media item at play() and only sounds once
+          // Metro has delivered the whole file (lead-ins are the largest
+          // clips in the bank, up to 1.4 MB). Releasing on the 200 ms pad
+          // therefore truncated the tail of the whisper. This was invisible
+          // before the #356 fix only because `remove()` neither stopped nor
+          // freed anything, so the clip always played out — while leaking.
+        }, clip.durationMs + (oneShot ? ONE_SHOT_RELEASE_PAD_MS : CLICK_SCRIPT_PREARM_PAD_MS))
       }
       if (!reused || armed) {
         speak(reused ? 'armed' : 'fresh')
@@ -1229,11 +1450,10 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       this.clickScriptPlayers.delete(module)
       this.clickScriptArmed.delete(module)
       this.clickScriptGen.delete(module)
-      try {
-        player.remove()
-      } catch {
-        // Already gone.
-      }
+      // The loop above already skips the sounding player and the one just
+      // inserted, so nothing here is audible — a real release cuts nothing.
+      this.observer?.forget(player, 'evicted')
+      releaseAudioPlayer(player)
     }
   }
 
@@ -1251,11 +1471,12 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.oneShotPlayers.add(player)
     this.schedule(() => {
       this.oneShotPlayers.delete(player)
-      try {
-        player.remove()
-      } catch {
-        // Already gone.
-      }
+      // Fires a pad AFTER the clip's own duration, so the release is never
+      // cutting audio — and `remove()` here freed nothing, which is what made
+      // these "tracked" one-shots leak exactly as badly as the untracked ones
+      // this Set was introduced to fix.
+      this.observer?.forget(player, 'released')
+      releaseAudioPlayer(player)
     }, durationMs + ONE_SHOT_RELEASE_PAD_MS)
   }
 
@@ -1571,11 +1792,17 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     // Anything above safety keeps the previous "chop mid-syllable is
     // worse than late-and-heard" contract.
     if (belowPriority <= AUDIO_PRIORITY.safety) {
-      try {
-        this.phrasePlayer?.remove()
-      } catch {
-        // Already gone.
-      }
+      // NOTE: `phrasePlayer` is DEAD — Phase 5-iv gutted `playCombination`
+      // (it now returns false without ever assigning it), so the only writes
+      // to this field anywhere are `= null`. That means the A10 contract
+      // above is currently a NO-OP: a sounding combination announce today is
+      // a one-shot in `oneShotPlayers`, which cancel() never touches, so the
+      // coach keeps talking over a paused workout. Tracked separately —
+      // fixing it is a behaviour change, not a teardown change. Converted to
+      // the real teardown anyway so reviving the phrase path cannot silently
+      // strand the longest-lived player in the class; `remove()` would not
+      // have honoured the contract either, since it does not stop playback.
+      releaseAudioPlayer(this.phrasePlayer)
       this.phrasePlayer = null
       // Same A10 contract for a sounding click-script: a paused workout
       // must not keep a 14 s rest script (or a lead-in) talking. PAUSE,
@@ -1610,42 +1837,42 @@ export class VoiceOutputExpo implements VoiceOutputPort {
 
   /** Release players and any held focus. */
   release(): void {
+    // Invalidate any preload still in flight (GH #356). `preload()` awaits
+    // before it creates anything, so without this a blur landing inside that
+    // await would let release() empty the pool and then have the awaiting
+    // continuation refill it — up to 20 native players rebuilt on a screen
+    // that has already gone, with nothing left to free them.
+    this.generation += 1
     for (const group of this.pending) this.cancelScheduled(group.handle)
     this.pending = []
     this.clearSequence()
     this.scheduledPhrases = []
-    try {
-      this.phrasePlayer?.remove()
-    } catch {
-      // Already gone.
+    // Before any native release: closes every open observation as
+    // `released`, drops every listener, and reports the observer's own
+    // overhead so the analyzer can prove it never perturbed the timing.
+    if (this.observer !== null) {
+      const stats = this.observer.stats()
+      this.observer.release()
+      logger.info('puncheokie.observer.stats', 'timing observer released', {
+        watched: safe(stats.watched),
+        openAtRelease: safe(stats.open),
+        maxHandlerMs: safe(Math.round(stats.maxHandlerMs * 100) / 100),
+      })
     }
+    releaseAudioPlayer(this.phrasePlayer)
     this.phrasePlayer = null
-    for (const player of this.players.values()) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.players.values()) releaseAudioPlayer(player)
     this.players.clear()
-    for (const player of this.clickScriptPlayers.values()) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.clickScriptPlayers.values()) releaseAudioPlayer(player)
     this.clickScriptPlayers.clear()
     this.clickScriptArmed.clear()
-    this.clickScriptGen.clear()
+    // clickScriptGen is deliberately NOT cleared. It holds no native handle —
+    // only a monotonic per-module counter that in-flight pre-arm timers
+    // captured and compare against. Clearing it restarts those counters at 1,
+    // so a stale timer from before the release would match a fresh generation
+    // and write a dead player into the live cache.
     this.clickScriptPlayer = null
-    for (const player of this.oneShotPlayers) {
-      try {
-        player.remove()
-      } catch {
-        // Already gone; nothing to do.
-      }
-    }
+    for (const player of this.oneShotPlayers) releaseAudioPlayer(player)
     this.oneShotPlayers.clear()
     // Tear the metronome loop down alongside every other native
     // handle — a stranded loop after `release()` would keep clicking
@@ -1658,7 +1885,55 @@ export class VoiceOutputExpo implements VoiceOutputPort {
     this.focusHeld = false
   }
 
+  /**
+   * The armed timing observer, or null. The ceremony players (intro, round
+   * warning, recovery) are handed this so one observer covers every coach
+   * sound the screen makes and one `observer.stats` record accounts for it.
+   */
+  get timingObserver(): PlaybackObserver | null {
+    return this.observer
+  }
+
   // ------------------------------------------------------------- internals
+
+  private mintPlayId(): string {
+    this.nextPlaySeq += 1
+    return `${this.playTag}-${this.nextPlaySeq}`
+  }
+
+  /** Hand a play to the observer, if one is armed. Never throws into a play path. */
+  private observe(player: AudioPlayer, meta: Parameters<PlaybackObserver['watch']>[1]): void {
+    if (this.observer === null) return
+    try {
+      this.observer.watch(player, meta)
+    } catch (err) {
+      logger.warn('puncheokie.observer.watchFailed', 'timing observer could not attach', {
+        playId: safe(meta.playId),
+        error: safe(String(err)),
+      })
+    }
+  }
+
+  private logObserved(record: ObservedRecord): void {
+    logger.info('puncheokie.voice.observed', 'coach play observed', {
+      playId: safe(record.playId),
+      kind: safe(record.kind satisfies ObservedKind),
+      label: safe(record.label),
+      traceId: safe(record.traceId ?? null),
+      path: safe(record.path ?? null),
+      method: safe(record.method),
+      dispatchMs: safe(Math.round(record.dispatchMs)),
+      onsetMs: safe(record.onsetMs === null ? null : Math.round(record.onsetMs)),
+      endMs: safe(record.endMs === null ? null : Math.round(record.endMs)),
+      expectedDurationMs: safe(record.expectedDurationMs ?? null),
+      observedDurationMs: safe(record.observedDurationMs),
+      onsetLatencyMs: safe(record.onsetLatencyMs),
+      positionAtOnsetMs: safe(record.positionAtOnsetMs),
+      volumeAtDispatch: safe(record.volumeAtDispatch),
+      silentByVolume: safe(record.silentByVolume),
+      outcome: safe(record.outcome),
+    })
+  }
 
   private keyFor(id: VoiceAssetId, form: PhraseForm = 'standalone'): string {
     return `${this.vocabulary}/${form}/${id}`
@@ -1680,6 +1955,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
       // Rewind first: a clip played twice in a row would otherwise resume from
       // its own end and produce silence.
       player.seekTo(0)
+      const dispatchMs = this.clock()
       player.play()
       // A15: advance the busy window so schedulers know the coach is
       // audible for the length of this clip. `assetDurationMs` reads
@@ -1733,6 +2009,7 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         })
       }
       // Success-path record for the QA loop — see playCombination's note.
+      const playId = this.mintPlayId()
       logger.info('puncheokie.voice.play', 'clip playing', {
         asset: safe(id),
         form: safe(form),
@@ -1741,6 +2018,18 @@ export class VoiceOutputExpo implements VoiceOutputPort {
         // volume 0 here = born inside a duck window: audibly SILENT even
         // though this success line printed (the 35s-silence tell).
         volume: safe(player.volume),
+        dispatchMs: safe(Math.round(dispatchMs)),
+        playId: safe(playId),
+      })
+      this.observe(player, {
+        playId,
+        kind: 'clip',
+        label: id,
+        // The pool learns a clip's length lazily (a player reports 0 until
+        // its asset loads); absent, the observer times out on grace alone.
+        expectedDurationMs: this.durations.get(this.keyFor(id, form)),
+        dispatchMs,
+        volumeAtDispatch: player.volume,
       })
     } catch (err) {
       logger.warn('puncheokie.voice.playFailed', 'clip did not play', {

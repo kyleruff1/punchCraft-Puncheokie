@@ -24,6 +24,8 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
+import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -50,7 +52,13 @@ const monotonicNowMs = (): number =>
 
 export class IntroPlayer {
   private playlist: AudioPlaylist | null = null
+  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
+  private readonly timing: PlaybackObserver | null
   private pump: ReturnType<typeof setInterval> | null = null
+
+  constructor(opts: { observer?: PlaybackObserver | null } = {}) {
+    this.timing = opts.observer ?? null
+  }
   private started = false
   /** Sum of planned clip + pause milliseconds, set by load(). */
   private plannedMs = 0
@@ -87,7 +95,11 @@ export class IntroPlayer {
     }
     if (sources.length === 0) return
     try {
-      this.playlist = createAudioPlaylist({ sources, loop: 'none', updateInterval: 500 })
+      this.playlist = createAudioPlaylist({
+        sources,
+        loop: 'none',
+        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
+      })
       this.plannedMs = plannedMs
       logger.info('puncheokie.intro', 'intro loaded', {
         segments: safe(segments.length),
@@ -95,7 +107,10 @@ export class IntroPlayer {
         plannedMs: safe(plannedMs),
       })
     } catch (error) {
-      this.playlist = null
+      // Dispose rather than merely drop the reference: if the throw came
+      // from AFTER the field was assigned, nulling it would orphan a live
+      // native playlist with no handle left to free it.
+      this.dispose()
       logger.warn('puncheokie.intro', 'playlist creation failed', {
         error: safe(String(error)),
       })
@@ -161,6 +176,7 @@ export class IntroPlayer {
     }
     this.started = true
     this.onComplete = opts.onComplete ?? null
+    const dispatchMs = this.timing?.nowMs()
     try {
       this.playlist.volume = volume
       this.playlist.play()
@@ -172,9 +188,25 @@ export class IntroPlayer {
       this.finish('play-failed')
       return
     }
+    const playId = this.timing?.mintPlayId('intro') ?? null
     logger.info('puncheokie.intro', 'intro playing', {
       plannedMs: safe(this.plannedMs),
+      playId: safe(playId),
     })
+    if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
+      this.timing.watch(
+        this.playlist,
+        {
+          playId,
+          kind: 'intro',
+          label: 'intro',
+          expectedDurationMs: this.plannedMs,
+          dispatchMs,
+          volumeAtDispatch: volume,
+        },
+        { statusEvent: 'playlistStatusUpdate' },
+      )
+    }
     this.doneAt = Date.now() + this.plannedMs + (opts.tailMs ?? 0)
     this.startPump()
   }
@@ -259,16 +291,12 @@ export class IntroPlayer {
   }
 
   private dispose(): void {
-    try {
-      this.playlist?.pause()
-    } catch {
-      // Already stopped.
-    }
-    try {
-      this.playlist?.destroy()
-    } catch {
-      // Already gone.
-    }
+    // The observer must let go BEFORE the native release, or it would hold
+    // a listener on a freed playlist.
+    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
+    // pause + destroy + release. `destroy()` alone is only a registry
+    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
     this.plannedMs = 0
   }

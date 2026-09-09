@@ -18,10 +18,13 @@ import '@/ble'
 import { useEffect } from 'react'
 
 import { useAutoConnectOnLaunch } from '@ble/useAutoConnectOnLaunch'
+import { logger, safe } from '@diagnostics/logger'
 import { onKeepaliveBattery, startTrackerKeepalive } from '@protocol/trackerKeepalive'
 import { noteSlotBattery } from '@state/useTrackerStore'
 import { useVoiceSettingsOnLaunch } from '@state/loadVoiceSettings'
 import { useBackdropSettingsOnLaunch } from '@state/loadBackdropSettings'
+import { useInstrumentSettingsOnLaunch } from '@state/loadInstrumentSettings'
+import { useQaSettingsOnLaunch } from '@state/loadQaSettings'
 import { colors } from '@/theme/colors'
 import { fonts } from '@/theme/typography'
 
@@ -60,6 +63,23 @@ export default function RootLayout() {
   // against defaults the athlete has already changed.
   useVoiceSettingsOnLaunch()
   useBackdropSettingsOnLaunch()
+  useInstrumentSettingsOnLaunch()
+  // The QA flag must be known before any deep link is handled: the
+  // `qa/run` route decides autostart on it (GH #291).
+  useQaSettingsOnLaunch()
+
+  // The moment the router can receive a deep link (GH #291). Measured on the
+  // tablet: a Metro bundle reports `Running "main"` ~19 s before the first
+  // app-level record, and a `punchcraft://` intent delivered inside that
+  // window is dropped because no `url` listener exists yet. The suite
+  // driver waits for THIS record before sending a warm intent — never for a
+  // sleep.
+  useEffect(() => {
+    if (!fontsLoaded) return
+    logger.info('puncheokie.app.ready', 'root layout mounted; deep links accepted', {
+      dev: safe(__DEV__),
+    })
+  }, [fontsLoaded])
 
   if (!fontsLoaded) return null
 

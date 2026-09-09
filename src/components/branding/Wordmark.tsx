@@ -53,7 +53,9 @@ const WORDMARK_ASPECT = 2172 / 724
 
 const SIZE_HEIGHTS = {
   sm: 26,
-  tab: 40,
+  /** Bottom-tab wordmark — 100 (was 40, Kyle 2026-09-06): 2.5x, so the
+   *  tabs read as the app's primary navigation rather than a footer. */
+  tab: 100,
   /** Header wordmark — 2× the tab step (Kyle 2026-08-28). */
   hdr: 80,
   md: 64,

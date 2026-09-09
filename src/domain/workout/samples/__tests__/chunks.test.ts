@@ -6,13 +6,14 @@
  * rounds exactly or fails loudly.
  */
 import { CLICK_MAPS } from '../clickMaps'
+import { allClickMaps } from '../allClickMaps'
+import { QUICK_WORKOUT_DEFS } from '../quickWorkouts'
 import {
   CHUNKS,
   chunkSignature,
   chunksSelfCheck,
   getChunk,
   resolveRound,
-  type SectionChunk,
 } from '../chunks'
 import { compose, resolveToClickMap, roundBudget } from '../composeFromChunks'
 
@@ -21,9 +22,11 @@ describe('chunk library integrity', () => {
     expect(chunksSelfCheck()).toEqual([])
   })
 
-  it('every seeded chunk is a REAL spot — its choreography appears in CLICK_MAPS', () => {
+  it('every chunk is a REAL spot — its choreography appears in a map the app plays (no orphans)', () => {
+    // Grounded against EVERY map, literal or composed: a chunk minted for a
+    // quick workout is legal, but a chunk nothing links to is dead weight.
     const rowSigs = new Set<string>()
-    for (const map of Object.values(CLICK_MAPS)) {
+    for (const map of Object.values(allClickMaps())) {
       for (const round of map.rounds) {
         for (const row of round.rows) {
           rowSigs.add(chunkSignature(row))
@@ -36,7 +39,10 @@ describe('chunk library integrity', () => {
     expect(ungrounded).toEqual([])
   })
 
-  it('the seeded chunks are exactly the recurring tuples (n>1 across the maps)', () => {
+  it('every tuple recurring across the LITERAL maps is seeded (the original derivation proof)', () => {
+    // One direction only, now that composed workouts may mint chunks used
+    // once: the recurring spots of the hand-authored library must all be
+    // chunks, but a chunk need not recur.
     const freq = new Map<string, number>()
     for (const map of Object.values(CLICK_MAPS)) {
       for (const round of map.rounds) {
@@ -46,9 +52,17 @@ describe('chunk library integrity', () => {
         }
       }
     }
-    const recurring = [...freq.entries()].filter(([, n]) => n > 1).map(([s]) => s).sort()
-    const seeded = Object.values(CHUNKS).map((c) => chunkSignature(c)).sort()
-    expect(seeded).toEqual(recurring)
+    const recurring = [...freq.entries()].filter(([, n]) => n > 1).map(([s]) => s)
+    const seeded = new Set(Object.values(CHUNKS).map((c) => chunkSignature(c)))
+    expect(recurring.filter((s) => !seeded.has(s))).toEqual([])
+  })
+
+  it('every quick workout resolves entirely through CHUNKS', () => {
+    for (const def of QUICK_WORKOUT_DEFS) {
+      for (const round of def.rounds) {
+        for (const section of round.sections) expect(() => getChunk(section.chunk)).not.toThrow()
+      }
+    }
   })
 })
 

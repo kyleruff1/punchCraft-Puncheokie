@@ -19,6 +19,8 @@
  */
 
 import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
+import { releaseAudioPlaylist } from './nativeAudioTeardown'
+import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
@@ -35,7 +37,14 @@ export const RECOVERY_BELL_CLEARANCE_MS = 1_000
 
 export class RecoveryPlayer {
   private playlist: AudioPlaylist | null = null
+  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
+  private readonly timing: PlaybackObserver | null
   private preparedScriptId: string | null = null
+  private plannedMs = 0
+
+  constructor(opts: { observer?: PlaybackObserver | null } = {}) {
+    this.timing = opts.observer ?? null
+  }
   private started = false
   private paused = false
 
@@ -68,8 +77,13 @@ export class RecoveryPlayer {
     }
     if (sources.length === 0) return
     try {
-      this.playlist = createAudioPlaylist({ sources, loop: 'none', updateInterval: 500 })
+      this.playlist = createAudioPlaylist({
+        sources,
+        loop: 'none',
+        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
+      })
       this.preparedScriptId = script.scriptId
+      this.plannedMs = script.measuredTotalMs
       logger.info('puncheokie.recovery', 'recovery loaded', {
         scriptId: safe(script.scriptId),
         segments: safe(script.segments.length),
@@ -77,7 +91,10 @@ export class RecoveryPlayer {
         plannedMs: safe(script.measuredTotalMs),
       })
     } catch (error) {
-      this.playlist = null
+      // Dispose rather than merely drop the reference: if the throw came
+      // from AFTER the field was assigned, nulling it would orphan a live
+      // native playlist with no handle left to free it.
+      this.dispose()
       this.preparedScriptId = null
       logger.warn('puncheokie.recovery', 'playlist creation failed', {
         scriptId: safe(script.scriptId),
@@ -130,11 +147,31 @@ export class RecoveryPlayer {
     this.started = true
     try {
       this.playlist.volume = volume
+      const dispatchMs = this.timing?.nowMs()
       this.playlist.play()
+      const playId = this.timing?.mintPlayId('recovery') ?? null
       logger.info('puncheokie.recovery', 'recovery playing', {
         scriptId: safe(this.preparedScriptId),
         restElapsedMs: safe(restElapsedMs),
+        playId: safe(playId),
       })
+      if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
+        // Contract: the script finishes before the round warning starts —
+        // the analyzer checks this play's observed end against the next
+        // round-warning onset (> 0 required).
+        this.timing.watch(
+          this.playlist,
+          {
+            playId,
+            kind: 'recovery',
+            label: this.preparedScriptId ?? 'recovery',
+            expectedDurationMs: this.plannedMs,
+            dispatchMs,
+            volumeAtDispatch: volume,
+          },
+          { statusEvent: 'playlistStatusUpdate' },
+        )
+      }
     } catch (error) {
       logger.warn('puncheokie.recovery', 'playlist play failed', {
         scriptId: safe(this.preparedScriptId),
@@ -158,16 +195,11 @@ export class RecoveryPlayer {
   }
 
   private dispose(): void {
-    try {
-      this.playlist?.pause()
-    } catch {
-      // Already stopped.
-    }
-    try {
-      this.playlist?.destroy()
-    } catch {
-      // Already gone.
-    }
+    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
+    // pause + destroy + release. `destroy()` alone is only a registry
+    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
+    releaseAudioPlaylist(this.playlist)
     this.playlist = null
+    this.plannedMs = 0
   }
 }

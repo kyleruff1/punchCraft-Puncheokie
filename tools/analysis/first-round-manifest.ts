@@ -8,9 +8,12 @@
  * `tools/analysis/manifests/<workoutId>.json` — the ground truth the
  * verifier correlates against.
  *
- * Usage:
- *   npx tsx tools/analysis/first-round-manifest.ts --workout=<id>
- *   npx tsx tools/analysis/first-round-manifest.ts --all
+ * Usage (the stub loader makes the manifests' `require('…wav')` a
+ * placeholder under Node — a bare `npx tsx` fails on the first wav):
+ *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
+ *     tools/analysis/first-round-manifest.ts --workout=<id> [--vocab=techniques]
+ *   node --import ./tools/analysis/wav-stub.mjs --import tsx \
+ *     tools/analysis/first-round-manifest.ts --all [--vocab=techniques]
  *
  * Deterministic — same input produces byte-equal output.
  */
@@ -31,6 +34,7 @@ import { findComboAnnounceById } from '../../src/audio/voiceAssets/comboAnnounce
 import { findClickScript } from '../../src/audio/voiceAssets/clickScriptManifest'
 import { TRANSPORT_TICKS_PER_PULSE } from '../../src/domain/timing/TimingEngine'
 import { expandTimeline } from '../../src/domain/programs/CueTimeline'
+import { callDispatchAtMs, leadInDispatchAtMs } from '../../src/domain/coach/callPlacement'
 import type {
   CompiledCoachSlot,
   CompiledScoreStrike,
@@ -113,6 +117,14 @@ interface FirstRoundManifest {
   roundIndex: 0
   workDurationMs: number
   bpm: number
+  /**
+   * Whole-session shape for the unattended suite (GH #292): verify-suite.mjs
+   * sizes each drive's budget and the sim's pace from these, so it needs no
+   * TypeScript at runtime.
+   */
+  roundCount: number
+  scheduleMs: readonly { workMs: number; restMs: number }[]
+  estimatedActivePunchesPerMinute: number
   compiledAtEpochMs: 0
   identity: {
     workoutId: string
@@ -134,6 +146,13 @@ interface FirstRoundManifest {
 
 function tickToMs(tick: number): number {
   return Math.round(tick * MS_PER_TICK)
+}
+
+/** The bar's call slot name: punches as digits (`b` for body), rests as dots. */
+function motifOf(cue: { tokens: readonly { kind: string; number?: number; body?: boolean }[] }): string {
+  return cue.tokens
+    .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
+    .join('-')
 }
 
 function toExpectedStrike(strike: CompiledScoreStrike): ExpectedStrike {
@@ -286,7 +305,6 @@ export function buildFirstRoundManifest(
   // constant is duplicated (the runner module is React Native and cannot
   // be imported here); the correlator's window absorbs small drift, and a
   // pad change without a manifest regen shows up as a uniform offset.
-  const LEAD_IN_PAD_MS = 250
   if (round0) {
     const seenBlocks = new Set<string>()
     for (const cue of round0.cues) {
@@ -299,7 +317,29 @@ export function buildFirstRoundManifest(
       const slot = `lead-in/${workout.id}/r1s${seenBlocks.size}`
       const clip = findClickScript(slot, vocabulary)
       if (!clip) continue
-      const expectedStartMs = Math.max(0, cue.scheduledStartMs - clip.durationMs - LEAD_IN_PAD_MS)
+      // A lead-in ends before the section's opening CALL, not before its
+      // first STRIKE. This used to anchor on `cue.scheduledStartMs`, which
+      // is the strike — about two seconds later than the call's dispatch —
+      // so every lead-in of every quick workout was flagged as mismatched
+      // on drives where the runtime had placed it exactly right. Both sides
+      // now compute it from `@domain/coach/callPlacement`.
+      const callMotif = motifOf(cue)
+      const callClip = findClickScript(`call/${callMotif}`, vocabulary)
+      const rep0Call = callClip
+        ? callDispatchAtMs({
+            cue,
+            scheduledStartMs: cue.scheduledStartMs,
+            vocabulary,
+            slot: `call/${callMotif}`,
+            clipDurationMs: callClip.durationMs,
+          })
+        : undefined
+      const { dispatchAtMs: expectedStartMs } = leadInDispatchAtMs({
+        ...(rep0Call ? { rep0CallDispatchAtMs: rep0Call.dispatchAtMs } : {}),
+        scheduledStartMs: cue.scheduledStartMs,
+        clipDurationMs: clip.durationMs,
+        vocabulary,
+      })
       coachEvents.push({
         kind: 'lead-in',
         slot,
@@ -327,9 +367,7 @@ export function buildFirstRoundManifest(
       .filter((e) => e.kind === 'lead-in')
       .map((e) => ({ start: e.expectedStartMs - 500, end: e.expectedStartMs + e.durationMs }))
     for (const cue of round0.cues) {
-      const motif = cue.tokens
-        .map((t) => (t.kind === 'punch' ? `${t.number}${t.body ? 'b' : ''}` : '.'))
-        .join('-')
+      const motif = motifOf(cue)
       const clip = findClickScript(`call/${motif}`, vocabulary)
       if (!clip) continue
       // Rep-0 bars are CALLED since W3 (mid-round sections) and Variant B
@@ -360,6 +398,12 @@ export function buildFirstRoundManifest(
     roundIndex: 0,
     workDurationMs: workout.schedule[0]?.workDurationMs ?? 0,
     bpm,
+    roundCount: workout.schedule.length,
+    scheduleMs: workout.schedule.map((round) => ({
+      workMs: round.workDurationMs,
+      restMs: round.restAfterMs,
+    })),
+    estimatedActivePunchesPerMinute: workout.estimatedActivePunchesPerMinute,
     compiledAtEpochMs: 0,
     identity: {
       workoutId: compiled.identity.workoutId,
@@ -393,7 +437,7 @@ function writeManifest(manifest: FirstRoundManifest): string {
 function summarize(m: FirstRoundManifest): string {
   return [
     `${m.workoutId} (${m.workoutName})`,
-    `  round 1 · ${m.workDurationMs / 1000}s · ${m.bpm} bpm · hash=${m.identity.timelineHash}`,
+    `  round 1 · ${m.workDurationMs / 1000}s · ${m.bpm} bpm · hash=${m.identity.timelineHash} · ${m.roundCount} rounds · ${m.estimatedActivePunchesPerMinute}/min`,
     `  strikes=${m.strikes.length} · coachEvents=${m.coachEvents.length} · silentByDesign=${m.silentByDesign.length}`,
     ...(m.notes.length > 0 ? [`  notes:`, ...m.notes.map((n) => `    - ${n}`)] : []),
   ].join('\n')

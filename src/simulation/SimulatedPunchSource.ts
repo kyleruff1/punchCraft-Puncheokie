@@ -24,7 +24,7 @@ export const SIM_DECODER_ID = 'simulated'
 export const SIM_DECODER_VERSION = 'sim-1'
 
 /** Gap before a looped script restarts, in beats at the nominal BPM. */
-const LOOP_GAP_BEATS = 2
+export const LOOP_GAP_BEATS = 2
 
 export interface SimOptions {
   clock: MonotonicClock
@@ -143,6 +143,21 @@ export class SimulatedPunchSource implements PunchEventSource {
     this.pending.clear()
   }
 
+  /**
+   * Cancel every scheduled step — including a looping script's re-arm —
+   * WITHOUT stopping the source.
+   *
+   * `stop()` does both, which is wrong for a phase-driven driver (GH #291):
+   * the live screen wants punches during work and silence during rest, and
+   * a `stop()` at rest-entered would leave `started` false so the next
+   * `playScript()` at work-entered silently did nothing. This keeps the
+   * source armed and only empties its schedule.
+   */
+  stopScript(): void {
+    for (const cancel of this.pending) cancel()
+    this.pending.clear()
+  }
+
   /** Reset the random stream so a repeated run reproduces the first one. */
   reseed(): void {
     this.random = mulberry32(hashSeed(this.seed))
@@ -255,6 +270,14 @@ export class SimulatedPunchSource implements PunchEventSource {
       event.velocityRaw = step.velocityRaw ?? 8
       // Tracker units, never a physical unit (spec §4.3).
       event.velocityUnit = 'tracker-unit'
+    }
+
+    // Acceleration rides the same gate as velocity: both are raw tracker
+    // readings from the same record. Emitted only when the script supplies
+    // one, so the existing scripts keep their previous byte-for-byte shape
+    // rather than gaining a fabricated axis.
+    if (this.opts.velocity && step.accelerationRaw !== undefined) {
+      event.accelerationRaw = step.accelerationRaw
     }
 
     // punchType is deliberately absent: the capability says 'none', and a

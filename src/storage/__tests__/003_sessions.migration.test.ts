@@ -34,7 +34,7 @@ afterEach(() => {
 describe('migration registry', () => {
   it('registers 003_sessions with a unique, never-renumbered id', () => {
     const ids = MIGRATIONS_FOR_TESTS.map((m) => m.id)
-    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
     expect(new Set(ids).size).toBe(ids.length)
     expect(MIGRATIONS_FOR_TESTS.find((m) => m.id === 3)?.name).toBe('003_sessions')
     // 004 was claimed by the workouts migration (#176) and 005 by the
@@ -205,8 +205,11 @@ describe('punch_events alterations', () => {
     ]) {
       expect(cols).toContain(kept)
     }
-    // Added by 003.
-    expect(cols.slice(-4)).toEqual([
+    // Added by 003 as one contiguous group (a later migration may append
+    // further columns — 008 adds acceleration_raw — so anchor on the
+    // group's start index rather than the table's tail).
+    const start = cols.indexOf('session_id')
+    expect(cols.slice(start, start + 4)).toEqual([
       'session_id',
       'round_id',
       'calibration_profile_id',
