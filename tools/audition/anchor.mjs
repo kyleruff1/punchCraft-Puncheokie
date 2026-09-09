@@ -151,8 +151,18 @@ export function writeAnchors(sessionDir, anchors) {
 
 // -------------------------------------------------------------------- CLI
 
-const _thisFile = fileURLToPath(import.meta.url)
-if (process.argv[1] && resolve(process.argv[1]) === resolve(_thisFile)) {
+// `import.meta.url` is null under jest's ESM→CJS transform, and
+// fileURLToPath(null) throws — so this guard used to crash the moment
+// anything IMPORTED this module, which the header explicitly invites. Fail
+// soft: no resolvable path means we are not the entry point.
+const _thisFile = (() => {
+  try {
+    return import.meta.url ? fileURLToPath(import.meta.url) : null
+  } catch {
+    return null
+  }
+})()
+if (_thisFile && process.argv[1] && resolve(process.argv[1]) === resolve(_thisFile)) {
   const sessionDir = process.argv[2]
   if (!sessionDir) {
     console.error('usage: node tools/audition/anchor.mjs <sessionDir>')
