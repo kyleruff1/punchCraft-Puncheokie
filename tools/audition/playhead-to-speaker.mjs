@@ -53,6 +53,19 @@ import { readWavHeader } from './anchor.mjs'
 const MIN_REPS = 12
 
 /**
+ * Physically possible bounds for playhead → speaker. Sound cannot precede the
+ * playhead, and a fifth of a second of output buffering would be extraordinary
+ * on any device that can hold a beat. This band is also what makes the
+ * alignment DETERMINED rather than chosen: it is narrower than the spacing
+ * between plays, so at most one alignment can satisfy it.
+ */
+const PLAUSIBLE_LO = -20
+const PLAUSIBLE_HI = 400
+
+/** How far from its expected arrival an onset may sit and still be that play. */
+const MATCH_WINDOW_MS = 150
+
+/**
  * Onset detection. The probe leaves ~400 ms of silence between plays, so this
  * does not need to be clever — it needs to be honest about what it found.
  * A short-term energy envelope, then the first frame in each burst that
@@ -182,41 +195,69 @@ export function analyze({ wavPath, logText, offsetMs, triggeredAtHostEpochMs, wa
     if (slack < 0) causalityViolationMs = Math.round(-slack)
   }
 
-  // PAIR BY INDEX when the counts agree.
+  // ALIGN BY SHIFT, THEN MATCH IN A WINDOW.
   //
-  // The experiment is N isolated plays producing N isolated sounds in order,
-  // so rep i belongs to onset i — full stop. An earlier version searched for
-  // "the nearest onset after this rep", and that is how a latency tool lies:
-  // run it with the clock correction forgotten and every rep quietly matches
-  // a sound from two plays earlier, yielding ~405 ms, which is wrong but not
-  // absurd enough to notice. Index pairing cannot do that — a misalignment
-  // shows up as an impossible latency instead of a believable one.
-  const paired = []
-  let pairing = 'index'
-  if (onsetHostEpochMs.length === playheadHostEpochMs.length && reps.length > 0) {
-    for (let i = 0; i < reps.length; i += 1) {
-      paired.push({ ...reps[i], latencyMs: onsetHostEpochMs[i] - playheadHostEpochMs[i] })
-    }
-  } else {
-    // Counts differ: a play was missed, or the room added a sound. Fall back
-    // to an ordered search, but SAY that the clean correspondence was lost —
-    // the result is weaker evidence and should not read as though it were not.
-    pairing = 'search'
-    problems.push(
-      `onset count ${onsetHostEpochMs.length} ≠ rep count ${playheadHostEpochMs.length}` +
-        ` — paired by search instead of index; check the recording for missed or extra sounds`,
-    )
-    let cursor = 0
+  // A real run does not give equal counts: the dry run produced 80 plays, 82
+  // detected onsets (two spurious) and 78 parseable rep records (two plays
+  // logged a null playhead). Index pairing needs equal counts; greedy
+  // "nearest onset after this rep" silently slides by whole plays and returns
+  // a believable ~405 ms. Neither is usable.
+  //
+  // What saves it is geometry, not cleverness. The probe spaces plays ~554 ms
+  // apart, and a physically possible playhead→speaker latency spans only
+  // PLAUSIBLE_LO..PLAUSIBLE_HI (420 ms). Since that band is NARROWER than the
+  // spacing, at most ONE integer alignment between the two sequences can be
+  // physically possible — every other shift puts the median outside the band.
+  // So the alignment is determined, not chosen: if two shifts qualify the run
+  // is ambiguous and is rejected rather than resolved by picking the prettier
+  // one, which is how a measurement becomes a wish.
+  const shiftCandidates = []
+  for (let k = -6; k <= 6; k += 1) {
+    const v = []
     for (let i = 0; i < playheadHostEpochMs.length; i += 1) {
-      const p = playheadHostEpochMs[i]
-      while (cursor < onsetHostEpochMs.length && onsetHostEpochMs[cursor] < p - 50) cursor += 1
-      if (cursor >= onsetHostEpochMs.length) break
-      const latency = onsetHostEpochMs[cursor] - p
-      if (latency >= -50 && latency <= 1000) {
-        paired.push({ ...reps[i], latencyMs: latency })
-        cursor += 1
-      }
+      const o = onsetHostEpochMs[i + k]
+      if (o !== undefined) v.push(o - playheadHostEpochMs[i])
     }
+    if (v.length < Math.max(MIN_REPS, playheadHostEpochMs.length * 0.5)) continue
+    const med = median(v)
+    if (med >= PLAUSIBLE_LO && med <= PLAUSIBLE_HI) {
+      shiftCandidates.push({ k, medianMs: med, n: v.length, spreadMs: pct(v, 95) - pct(v, 5) })
+    }
+  }
+
+  const paired = []
+  let pairing = 'shift+window'
+  let shift = null
+  if (shiftCandidates.length === 1) {
+    shift = shiftCandidates[0]
+    // The shift gives a coarse latency; now match each rep to the onset
+    // nearest its EXPECTED arrival. This tolerates a missing rep or a spurious
+    // onset without letting either drag the sequence out of step, because
+    // every match is anchored to the global estimate rather than to its
+    // neighbour.
+    for (let i = 0; i < playheadHostEpochMs.length; i += 1) {
+      const expected = playheadHostEpochMs[i] + shift.medianMs
+      let best = null
+      for (const o of onsetHostEpochMs) {
+        const d = Math.abs(o - expected)
+        if (d <= MATCH_WINDOW_MS && (best === null || d < Math.abs(best - expected))) best = o
+      }
+      if (best !== null) paired.push({ ...reps[i], latencyMs: best - playheadHostEpochMs[i] })
+    }
+  } else if (shiftCandidates.length === 0) {
+    pairing = 'none'
+    problems.push(
+      `no alignment puts the median latency inside ${PLAUSIBLE_LO}..${PLAUSIBLE_HI} ms —` +
+        ` the clock offset (${offsetMs} ms) or the wav anchor is wrong, or the mic recorded` +
+        ` something other than these plays`,
+    )
+  } else {
+    pairing = 'ambiguous'
+    problems.push(
+      `${shiftCandidates.length} alignments are physically possible (shifts ` +
+        `${shiftCandidates.map((c) => `${c.k}→${r1(c.medianMs)}ms`).join(', ')})` +
+        ` — the run cannot be resolved without guessing; re-record with wider spacing`,
+    )
   }
 
   const lat = paired.map((p) => p.latencyMs)
@@ -227,7 +268,7 @@ export function analyze({ wavPath, logText, offsetMs, triggeredAtHostEpochMs, wa
   // anchor — and reporting it as a measurement would be worse than reporting
   // nothing, because it is a number and numbers get quoted.
   const centre = lat.length ? median(lat) : null
-  if (centre !== null && (centre < -20 || centre > 400)) {
+  if (centre !== null && (centre < PLAUSIBLE_LO || centre > PLAUSIBLE_HI)) {
     problems.push(
       `median latency ${r1(centre)} ms is not physically plausible for playhead → speaker` +
         ` — check the clock offset (${offsetMs} ms) and the wav anchor before believing any of this`,
@@ -250,6 +291,8 @@ export function analyze({ wavPath, logText, offsetMs, triggeredAtHostEpochMs, wa
     reps: reps.length,
     paired: paired.length,
     pairing,
+    shift: shift ? { k: shift.k, coarseMedianMs: r1(shift.medianMs), n: shift.n } : null,
+    shiftCandidates: shiftCandidates.map((c) => ({ k: c.k, medianMs: r1(c.medianMs), n: c.n })),
     offsetMs,
     playheadToSpeakerMs: lat.length ? r1(median(lat)) : null,
     p5Ms: lat.length ? r1(pct(lat, 5)) : null,
