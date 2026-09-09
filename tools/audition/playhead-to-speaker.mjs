@@ -48,11 +48,26 @@
  * Two assets measuring one output path disagreed by 69.5 ms (speech 134.6,
  * bell 65.1). An energy threshold fires when a sound has ramped ENOUGH, which
  * for a soft first phoneme is tens of ms after it began — so part of that gap
- * is the clips' envelopes, not the tablet. `sourceHeadMs` runs the identical
- * detector over the source clip and subtracts what it finds, cancelling the
- * detector's own bias instead of reporting it as latency. Whatever survives
- * the correction is a real difference between audio paths: worth knowing,
- * worth reporting per asset, and not worth averaging into one constant.
+ * is the clips' envelopes, not the tablet. And the threshold is ABSOLUTE for
+ * the whole recording, so a quieter asset crosses it further up its own
+ * envelope than a louder one: part of the gap is the level, too.
+ *
+ * `sourceHeadMs` therefore measures each source clip at the same FRACTION OF
+ * ITS OWN PEAK that the recording's detector reached on that asset, and
+ * subtracts it. A fraction is the transferable quantity — re-running the
+ * detector on the clip with the clip's own noise floor would pick a different
+ * point on the same envelope, since a clip is nearly all signal and a
+ * recording is mostly room. Whatever survives that correction is a real
+ * difference between audio paths: worth knowing, worth reporting per asset,
+ * and not worth averaging into one constant.
+ *
+ * ## What this tool still cannot do
+ *
+ * Detection uses one absolute threshold for the whole recording, so a quiet
+ * asset can go undetected wholesale — the dry run has a 15.25 s hole where
+ * roughly 27 plays should be. That is flagged loudly and refused, but it is
+ * not fixed: tuning an adaptive threshold without a good capture to tune it
+ * against would be the same class of mistake in a new place.
  *
  *   node tools/audition/playhead-to-speaker.mjs --session <dir> [--offset=N]
  *
