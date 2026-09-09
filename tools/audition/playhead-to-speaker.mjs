@@ -446,6 +446,28 @@ export function analyze({
   if (reps.length < MIN_REPS) problems.push(`only ${reps.length} rep records (want ≥ ${MIN_REPS})`)
   if (onsets.length === 0) problems.push('no acoustic onsets detected — is the mic on the right input, and near the speaker?')
 
+  // A LONG SILENCE IN THE MIDDLE OF A STEADY PROBE MEANS SOUNDS WENT MISSING.
+  // The threshold is one absolute level for the whole recording, so a quieter
+  // asset — the bell is at a different level from the speech — can fall under
+  // it wholesale and simply not appear. The dry run had a 15.25 s hole against
+  // a 555 ms median spacing: roughly 27 plays that were never detected, and
+  // nothing said so. Detection cannot be fixed from here without a capture to
+  // tune against, but it must not be silent.
+  let detectionGapMs = null
+  if (onsets.length > 2) {
+    const gaps = onsets.slice(1).map((v, i) => (v - onsets[i]) * 1000)
+    detectionGapMs = Math.round(Math.max(...gaps))
+    const typical = median(gaps)
+    if (detectionGapMs > Math.max(3 * typical, 2_000)) {
+      problems.push(
+        `a ${r1(detectionGapMs / 1000)} s stretch has no detected sound, against a ${Math.round(typical)} ms` +
+          ` typical spacing — roughly ${Math.round(detectionGapMs / typical)} plays are missing from the` +
+          ` recording, not from the tablet. Check the mic level, and whether one asset is quieter than` +
+          ` the detector's threshold`,
+      )
+    }
+  }
+
   // Causality, kept for the direction the bracket cannot see: a trigger stamped
   // after the first sound means the tap and the recording are not the same run.
   let causalityViolationMs = null
@@ -591,6 +613,9 @@ export function analyze({
       noiseFloor: r5(noiseFloor),
       threshold: r5(threshold),
       thresholdFractionOfPeak: r5(thresholdFraction),
+      /** Largest silence between detected sounds. A hole here is missing
+       *  DETECTIONS, not missing plays. */
+      largestGapMs: detectionGapMs,
     },
     reps: reps.length,
     paired: paired.length,

@@ -31,7 +31,12 @@ import { measureClockOffset } from './clock-offset.mjs'
 const arg = (n) => process.argv.find((a) => a.startsWith(`--${n}=`))?.slice(n.length + 3)
 const MIC = arg('mic') ?? process.env.AUDITION_MIC ?? 'Analogue 1 + 2 (16- Focusrite USB Audio)'
 const OUT = arg('out') ?? join('tools', 'analysis', 'listen', `p2s-${Date.now()}`)
-/** Long enough for 80 plays at ~400 ms plus arming pauses, with margin. */
+/**
+ * 2 assets x 40 plays, each separated by a 150 ms tail plus a randomised
+ * 200–800 ms gap plus the measurement itself: ~70 s of probe. 150 s leaves
+ * room for a slow start and gives the analyser a long stretch of pure room
+ * tone, which is what its noise floor is estimated from.
+ */
 const RECORD_S = Number(arg('seconds') ?? 150)
 const SETTLE_MS = 3_000
 

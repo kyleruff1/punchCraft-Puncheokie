@@ -485,6 +485,26 @@ describe('analyze — refuses a run it cannot trust', () => {
     expect(r.problems.join(' ')).toMatch(/self-selected/)
   })
 
+  it('reports a hole in the DETECTIONS rather than quietly analysing around it', () => {
+    // The dry run had a 15.25 s stretch with no detected sound against a 555 ms
+    // spacing — about 27 plays that never reached the analysis. The threshold
+    // is one absolute level for the whole recording, so a quieter asset can
+    // fall under it wholesale. Nothing said so.
+    const s = makeSession({ trueLatencyMs: 40, offsetMs: -1565, reps: 30, seed: 8 })
+    const rnd = lcg(8)
+    const regions = []
+    let t = 1.0
+    for (let i = 0; i < 30; i += 1) {
+      if (i < 10 || i > 20) regions.push({ atS: t, lengthS: 0.008 })
+      t += 0.4 + rnd() * 0.6
+    }
+    writeFileSync(s.wavPath, wavBuffer(t + 1.0, regions))
+    const r = analyze(s)
+    expect(r.detection.largestGapMs).toBeGreaterThan(5_000)
+    expect(r.ok).toBe(false)
+    expect(r.problems.join(' ')).toMatch(/no detected sound/)
+  })
+
   it('says so when the mic caught nothing, rather than returning null quietly', () => {
     const dir = mkdtempSync(join(tmpdir(), 'p2s-'))
     const wav = join(dir, 'silent.wav')
