@@ -487,12 +487,21 @@ async function timeArmedOboe(
           // reported a clean, plausible 20 ms on a session where the clock
           // correction had been omitted entirely.
           //
-          // An irregular gap makes the interval pattern unique, so exactly
-          // one alignment produces tightly clustered residuals and the rest
-          // scatter by the randomisation. The alignment then follows from the
-          // data, and "is the answer plausible" goes back to being an
-          // independent check instead of the selector.
-          await new Promise<void>((resolve) => setTimeout(resolve, 250 + Math.floor(Math.random() * 300)))
+          // An irregular gap makes the interval pattern unique. The analyser
+          // votes over every rep×onset pair, and the true delay is then the one
+          // nearly every play agrees on, while its nearest rival — "latency
+          // plus one gap" — is attested only by however many gaps happened to
+          // land near each other. The alignment follows from the data, and
+          // "is the answer plausible" goes back to being an independent check
+          // instead of the selector.
+          //
+          // The RANGE is what buys that margin, so it is deliberately wide:
+          // rival votes fall off as the analyser's ±40 ms tolerance over the
+          // spread. Simulated at 40 reps, 250–550 ms gave a median margin of
+          // 2.5× and rejected 3 runs in 200 as too close to call; 200–800 ms
+          // gives 3.6× median, 2.5× worst case, and rejected none in 200. Ten
+          // seconds of session for a margin that does not depend on luck.
+          await new Promise<void>((resolve) => setTimeout(resolve, 200 + Math.floor(Math.random() * 600)))
           const { statusMs, playheadMs, startedEpochMs } = await timeBothClocks(player)
           if (statusMs !== null && playheadMs !== null) pairs.push({ statusMs, playheadMs })
           // One line per rep, carrying the WALL epoch of each event. The

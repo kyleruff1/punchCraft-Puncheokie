@@ -325,6 +325,60 @@ describe('analyze — the attack-bias correction', () => {
     expect(sourceHeadMs(clip, undefined)).toBeNull()
   })
 
+  it('does not report a loud asset and a quiet one as two different audio paths', () => {
+    // The detector's threshold is ABSOLUTE, so a quiet sound crosses it
+    // further up its own envelope than a loud one — a per-asset bias sitting
+    // in exactly the quantity being corrected. Two assets on ONE path, same
+    // 40 ms latency, same ramp shape, one at a quarter the level: with a single
+    // global fraction the correction under-corrects the quiet one and the
+    // split survives. The fraction is measured per asset, so it does not.
+    // This is the shape of the real 69.5 ms speech-vs-bell disagreement.
+    const dir = mkdtempSync(join(tmpdir(), 'p2s-'))
+    const audioT0 = 1_700_000_000_000
+    const rnd = lcg(44)
+    const regions = []
+    const lines = []
+    let t = 1.0
+    for (let i = 0; i < 32; i += 1) {
+      const loud = i % 2 === 0
+      regions.push({ atS: t, lengthS: 0.25, attackS: 0.15, amp: loud ? 0.8 : 0.2 })
+      lines.push(repLine(i, Math.round(audioT0 + t * 1000 - 40 - 1565), loud ? 'call loud' : 'bell quiet'))
+      t += 0.6 + rnd() * 0.6
+    }
+    const durationS = t + 1.0
+    writeFileSync(join(dir, 'capture.wav'), wavBuffer(durationS, regions))
+    for (const [sub, amp] of [
+      [join('assets', 'voice', 'click-scripts', 'cornerman3', 'cc-e08318c0.wav'), 0.8],
+      [join('assets', 'voice', 'names', 'standalone', 'bell.wav'), 0.2],
+    ]) {
+      const p = join(dir, sub)
+      mkdirSync(dirname(p), { recursive: true })
+      writeFileSync(p, wavBuffer(0.3, [{ atS: 0, lengthS: 0.25, attackS: 0.15, amp }]))
+    }
+
+    const r = analyze({
+      wavPath: join(dir, 'capture.wav'),
+      logText: lines.join('\n'),
+      offsetMs: -1565,
+      wavMtimeMs: audioT0 + durationS * 1000,
+      triggeredAtHostEpochMs: audioT0 + 500,
+      ffmpegSpawnedAtHostEpochMs: audioT0 - 30,
+      ffmpegExitedAtHostEpochMs: audioT0 + durationS * 1000 + 40,
+      repoRoot: dir,
+    })
+
+    const loud = r.byAsset['call loud']
+    const quiet = r.byAsset['bell quiet']
+    // The quiet asset really does read later, uncorrected — that is the bias.
+    expect(quiet.rawMedianMs).toBeGreaterThan(loud.rawMedianMs + 5)
+    // Each is measured at its OWN fraction of peak, and they differ.
+    expect(quiet.thresholdFractionOfPeak).toBeGreaterThan(loud.thresholdFractionOfPeak)
+    // Corrected, both land on the one latency they actually share.
+    expect(Math.abs(loud.correctedMedianMs - 40)).toBeLessThan(4)
+    expect(Math.abs(quiet.correctedMedianMs - 40)).toBeLessThan(4)
+    expect(r.assetSplitMs).toBeLessThan(8)
+  })
+
   it('leaves the correction null rather than guessing when the clip is missing', () => {
     const s = makeSession({ trueLatencyMs: 40, offsetMs: -1565 })
     const r = analyze(s)

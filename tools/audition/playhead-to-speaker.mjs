@@ -240,6 +240,21 @@ export function sourceHeadMs(path, thresholdFraction) {
   return null
 }
 
+/** How far past an onset to look for that sound's peak, in the recording. */
+const ASSET_PEAK_WINDOW_MS = 250
+
+/** Loudest sample in [fromMs, fromMs + windowMs) of the recording. */
+function peakBetween(samples, sampleRate, fromMs, windowMs) {
+  const lo = Math.max(0, Math.round((fromMs / 1000) * sampleRate))
+  const hi = Math.min(samples.length, lo + Math.round((windowMs / 1000) * sampleRate))
+  let peak = 0
+  for (let i = lo; i < hi; i += 1) {
+    const v = Math.abs(samples[i])
+    if (v > peak) peak = v
+  }
+  return peak
+}
+
 /** Per-rep records from the probe: one JSON-ish logcat block per play. */
 export function parseRepLines(text) {
   const reps = []
@@ -458,7 +473,7 @@ export function analyze({
       if (best === null) censored += 1
       else {
         usedOnsets.set(best, (usedOnsets.get(best) ?? 0) + 1)
-        paired.push({ ...reps[i], latencyMs: best - playheadHostEpochMs[i] })
+        paired.push({ ...reps[i], latencyMs: best - playheadHostEpochMs[i], onsetHostEpochMs: best })
       }
     }
   } else if (!chosen.best) {
@@ -512,20 +527,34 @@ export function analyze({
   }
 
   // Per-asset, with the detector's own attack bias removed.
+  //
+  // The fraction of peak is computed PER ASSET, not once for the recording.
+  // The detector's threshold is absolute, so a quiet asset crosses it further
+  // up its own envelope than a loud one does — which is a per-asset bias in
+  // exactly the quantity being corrected. Using one global fraction would
+  // under-correct the quiet asset and leave that difference sitting in the
+  // asset split, where it would read as two audio paths disagreeing.
   const byAsset = {}
   for (const asset of new Set(paired.map((p) => p.asset ?? 'unknown'))) {
-    const raw = paired.filter((p) => (p.asset ?? 'unknown') === asset).map((p) => p.latencyMs)
+    const rows = paired.filter((p) => (p.asset ?? 'unknown') === asset)
+    const raw = rows.map((p) => p.latencyMs)
+    const assetPeak = median(
+      rows.map((p) => peakBetween(samples, sampleRate, p.onsetHostEpochMs - audioT0HostEpochMs, ASSET_PEAK_WINDOW_MS)),
+    )
+    const fraction = assetPeak > 0 ? threshold / assetPeak : thresholdFraction
     const clip = SOURCE_CLIPS.find((c) => c.match.test(asset))
     let head = null
     try {
-      head = clip ? sourceHeadMs(join(repoRoot, clip.path), thresholdFraction) : null
+      head = clip ? sourceHeadMs(join(repoRoot, clip.path), fraction) : null
     } catch {
       head = null
     }
     byAsset[asset] = {
       n: raw.length,
       rawMedianMs: r1(median(raw)),
-      /** What this clip's own envelope costs the detector, same detector. */
+      /** Where on THIS asset's rise the recording's detector fired. */
+      thresholdFractionOfPeak: r5(fraction),
+      /** What this clip's own envelope costs the detector, at that fraction. */
       sourceHeadMs: r1(head),
       /** What the tablet did, as opposed to what the clip's attack did. */
       correctedMedianMs: head === null ? null : r1(median(raw) - head),
