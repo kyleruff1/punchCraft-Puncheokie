@@ -54,13 +54,6 @@ export const SETTINGS_KEYS = {
    * loop volume, never `recipe.metronome.enabled` or the visual grid.
    */
   click: 'click.enabled',
-  /**
-   * A/B ONLY (plan step 5a): `{ enabled: boolean }`. When true the coach
-   * places calls the way it did before DELIVERED_BREATH_SHORTFALL_MS, so the
-   * two placements can be heard inside one session. Defaults false — the
-   * shipped placement — and is retired once Kyle has ruled on the breath.
-   */
-  legacyBreathFloor: 'coach.legacyBreathFloor',
   /** Puncheoke instrument: `{ patchId }` — the selected PunchPatch. */
   instrumentPatch: 'instrument.patch',
   /** Puncheoke instrument: `{ url }` — the PunchBridge WebSocket address. */

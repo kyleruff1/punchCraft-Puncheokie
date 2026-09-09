@@ -45,20 +45,6 @@ export interface VoiceSettingsState {
    * the click sounds or not (mute-only semantics, Kyle 2026-09-04).
    */
   clickEnabled: boolean
-  /**
-   * A/B ONLY. When true the coach places calls the way it did before
-   * `DELIVERED_BREATH_SHORTFALL_MS` existed — the clamp floors at
-   * `MIN_BREATH_MS` alone.
-   *
-   * It exists so the on-glass listening test can hear both placements inside
-   * one session; a ~50-95 ms difference on wide bars is not something memory
-   * settles across two installs. It defaults to the SHIPPED behaviour, so
-   * forgetting it leaves the athlete on the measured placement, and it gates
-   * nothing but the number handed to `breathForBar`.
-   *
-   * Retire it once Kyle has ruled on the breath (plan step 5a).
-   */
-  legacyBreathFloor: boolean
   /** True once a load has run, so a screen never writes over unread values. */
   loaded: boolean
   load(repo: SettingsRepository): void
@@ -71,15 +57,10 @@ export interface VoiceSettingsState {
   setVolumes(v: Volumes): void
   /** Flip the audible development click on or off (persisted). */
   setClickEnabled(on: boolean): void
-  /** Flip the A/B placement between the delivered floor and the retired one. */
-  setLegacyBreathFloor(on: boolean): void
 }
 
 /** The click is dev instrumentation — it never defaults audible. */
 const DEFAULT_CLICK_ENABLED = false
-
-/** The A/B defaults to the SHIPPED placement, never the retired one. */
-const DEFAULT_LEGACY_BREATH_FLOOR = false
 
 /**
  * The repository the store writes through.
@@ -105,7 +86,6 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
   policy: defaultVoiceCoachPolicy(),
   volumes: { ...DEFAULT_VOLUMES },
   clickEnabled: DEFAULT_CLICK_ENABLED,
-  legacyBreathFloor: DEFAULT_LEGACY_BREATH_FLOOR,
   loaded: false,
 
   load(repo) {
@@ -130,16 +110,7 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
     const click = repo.read<{ enabled: boolean }>(SETTINGS_KEYS.click, {
       enabled: DEFAULT_CLICK_ENABLED,
     })
-    const legacy = repo.read<{ enabled: boolean }>(SETTINGS_KEYS.legacyBreathFloor, {
-      enabled: DEFAULT_LEGACY_BREATH_FLOOR,
-    })
-    set({
-      policy,
-      volumes,
-      clickEnabled: click.enabled === true,
-      legacyBreathFloor: legacy.enabled === true,
-      loaded: true,
-    })
+    set({ policy, volumes, clickEnabled: click.enabled === true, loaded: true })
   },
 
   setPolicy(patch) {
@@ -169,11 +140,6 @@ export const useVoiceSettingsStore = create<VoiceSettingsState>((set, get) => ({
     set({ clickEnabled: on })
     persistClick(on)
   },
-
-  setLegacyBreathFloor(on) {
-    set({ legacyBreathFloor: on })
-    repository?.write(SETTINGS_KEYS.legacyBreathFloor, { enabled: on })
-  },
 }))
 
 /* ------------------------------------------------------ narrow selectors */
@@ -188,7 +154,6 @@ export function __resetVoiceSettingsForTests(): void {
     policy: defaultVoiceCoachPolicy(),
     volumes: { ...DEFAULT_VOLUMES },
     clickEnabled: DEFAULT_CLICK_ENABLED,
-    legacyBreathFloor: DEFAULT_LEGACY_BREATH_FLOOR,
     loaded: false,
   })
 }
