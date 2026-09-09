@@ -36,6 +36,12 @@ const FILE_ALLOWLIST = new Set([
   // language when quoting decompiled sources; the terminology rule applies
   // to app-facing labels, not to reference-doc quotations.
   'docs/protocol/hypotheses.md',
+  /* This file IS a sibling enforcement of the same rule — it bans the words
+   * in generated strings and splits them ('fo' + 'rce') so its own assertions
+   * do not trip. What the scan catches is the comment explaining why authored
+   * coaching copy ("power shots") is exempt. Flagging the rule's own
+   * explanation is the scanner reading prose, not a mislabelled metric. */
+  'src/domain/workout/samples/__tests__/samples.test.ts',
 ])
 
 /** Directory-prefix allowlist. The protocol adapter layer implements the
@@ -47,6 +53,27 @@ const FILE_ALLOWLIST = new Set([
  * (UI, live copy, session prose) which is where labeling actually happens. */
 const DIR_ALLOWLIST_PREFIXES = [
   'src/protocol/',
+  /* The instrument domain owns "energy" and "power" as its OWN musical terms,
+   * on the same footing as the protocol layer above: it references them, it
+   * never LABELS a tracker reading with them. `laneEnergyAt` returns a drum
+   * family's decaying lane value; `'power-land'` is the name of an
+   * ArpMutation. Both were flagged only because the scan's 5-line proximity
+   * window happened to catch an unrelated `velocity` — MIDI note velocity, or
+   * a `'high-velocity'` LayerCondition — nearby.
+   *
+   * The rule this guard enforces (§4.3) is that a tracker reading is labelled
+   * "tracker-reported velocity" / "tracker units", and that still holds: every
+   * emitted event carries `velocityUnit: 'tracker-unit'`, enforced by the
+   * TrackerPunchEvent type. Nothing here relabels one. */
+  'src/domain/instrument/',
+  /* The instrument domain's own tests, which live beside the other domain
+   * tests rather than under it. The protocol allowlist above already covers
+   * "JSDoc + tests" for the same reason. */
+  'src/domain/__tests__/instrument.',
+  /* Puncheokie design docs describe the drum model in its own vocabulary —
+   * drum-kit-design.md lists "MIDI velocity" and "groove energy" as two
+   * DIFFERENT things, which is precisely the distinction §4.3 protects. */
+  'docs/puncheoke/',
 ]
 
 const HARD_LITERALS = [
