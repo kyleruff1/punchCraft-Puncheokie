@@ -23,5 +23,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm test -- --ci --colors --reporters=default
+      # The suite is 176 files / ~4 100 tests and the runner OOM'd at Node's
+      # default ~2 GB heap ("Reached heap limit", exit 134) with the main
+      # process at 2 040 MB — the results accumulating in the parent, not a
+      # leak in any one test. Raise the ceiling and recycle workers that grow
+      # past half a gig, so a suite that keeps growing degrades into a slower
+      # run rather than a crash that looks like a test failure.
+      - run: npm test -- --ci --colors --reporters=default --maxWorkers=2 --workerIdleMemoryLimit=512MB
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
       - run: node tools/guards/velocity-terminology.mjs
