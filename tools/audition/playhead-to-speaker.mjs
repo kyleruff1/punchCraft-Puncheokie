@@ -701,6 +701,11 @@ function main() {
   })
 
   console.log(JSON.stringify(report, null, 2))
+  // Notes print on EVERY path, including the failing ones. They are what a
+  // rejected run leaves you to work with — the anchor's width, how many plays
+  // were dropped — and hiding them behind success would mean the runs that
+  // most need diagnosing are the ones that say least.
+  if (report.notes.length) console.log('\n' + report.notes.map((n) => 'NOTE: ' + n).join('\n'))
   if (report.causalityViolationMs !== null) {
     console.error(
       `\nREJECTED: the first sound lands ${report.causalityViolationMs} ms BEFORE the command that` +
@@ -712,7 +717,6 @@ function main() {
     console.error('\n' + report.problems.map((p) => 'PROBLEM: ' + p).join('\n'))
     process.exit(2)
   }
-  if (report.notes.length) console.log('\n' + report.notes.map((n) => 'NOTE: ' + n).join('\n'))
   console.log(
     `\nraw median ${report.playheadToSpeakerMs} ms (MAD ${report.madMs}) over ${report.paired} plays` +
       `\nper asset, attack-corrected: ` +
