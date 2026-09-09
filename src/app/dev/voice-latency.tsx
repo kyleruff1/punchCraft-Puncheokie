@@ -477,7 +477,22 @@ async function timeArmedOboe(
         await new Promise<void>((resolve) => setTimeout(resolve, 400))
         for (let i = 0; i < REPS; i += 1) {
           player.seekTo(0)
-          await new Promise<void>((resolve) => setTimeout(resolve, 250))
+          // RANDOMISED, and that is the whole point rather than a detail.
+          //
+          // With a fixed gap the plays and the recorded sounds are two
+          // periodic sequences of the SAME period, so nothing in the data
+          // says which sound belongs to which play — every candidate
+          // alignment fits equally well, and the analysis is left picking one
+          // by whether the answer looks reasonable. That is circular, and it
+          // reported a clean, plausible 20 ms on a session where the clock
+          // correction had been omitted entirely.
+          //
+          // An irregular gap makes the interval pattern unique, so exactly
+          // one alignment produces tightly clustered residuals and the rest
+          // scatter by the randomisation. The alignment then follows from the
+          // data, and "is the answer plausible" goes back to being an
+          // independent check instead of the selector.
+          await new Promise<void>((resolve) => setTimeout(resolve, 250 + Math.floor(Math.random() * 300)))
           const { statusMs, playheadMs, startedEpochMs } = await timeBothClocks(player)
           if (statusMs !== null && playheadMs !== null) pairs.push({ statusMs, playheadMs })
           // One line per rep, carrying the WALL epoch of each event. The

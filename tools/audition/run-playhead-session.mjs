@@ -84,12 +84,29 @@ async function main() {
 
   log(`starting ffmpeg on "${MIC}"…`)
   const wavPath = join(OUT, 'capture.wav')
+  // BRACKET THE RECORDING. The wav's start epoch is derived from
+  // `mtime − duration`, and ffmpeg's close/flush delay makes mtime LATE, which
+  // inflates every latency. The causality check could only ever fire when the
+  // anchor was EARLY — the one direction ffmpeg cannot produce — so it had a
+  // 2.26 s dead band on the dry run and could not catch its own failure mode.
+  //
+  // These two stamps close it from both sides. Recording cannot begin before
+  // ffmpeg was spawned, and the last sample cannot arrive after it exited, so
+  //     spawn ≤ t0 ≤ exit − duration
+  // is a hard bracket that the mtime estimate must fall inside. Its width is
+  // ffmpeg's startup plus close delay — measured, not assumed.
+  const ffmpegSpawnedAtHostEpochMs = Date.now()
   const ff = spawn(
     'ffmpeg',
-    ['-hide_banner', '-loglevel', 'error', '-f', 'dshow', '-i', `audio=${MIC}`,
+    ['-hide_banner', '-loglevel', 'warning', '-f', 'dshow', '-rtbufsize', '256M',
+     '-i', `audio=${MIC}`,
      '-ac', '1', '-ar', '48000', '-t', String(RECORD_S), '-y', wavPath],
-    { stdio: ['pipe', 'inherit', 'inherit'] },
+    { stdio: ['pipe', 'inherit', 'pipe'] },
   )
+  // dshow overrun warnings mean dropped samples, which shifts everything after
+  // the drop. Keep them with the session rather than letting them scroll past.
+  const ffErr = createWriteStream(join(OUT, 'ffmpeg.log'))
+  ff.stderr.pipe(ffErr)
 
   // Settle before triggering: the head of the file is the part the anchor
   // formula understands least.
@@ -102,6 +119,8 @@ async function main() {
   // 80 plays at ~400 ms each, plus arming pauses.
   log(`recording for ${RECORD_S}s — keep the room quiet…`)
   await new Promise((resolve) => ff.on('exit', resolve))
+  const ffmpegExitedAtHostEpochMs = Date.now()
+  ffErr.end()
 
   log('measuring clock offset (after)…')
   const offsetAfter = measureClockOffset({ samples: 30 })
@@ -118,6 +137,8 @@ async function main() {
     JSON.stringify(
       {
         triggeredAtHostEpochMs,
+        ffmpegSpawnedAtHostEpochMs,
+        ffmpegExitedAtHostEpochMs,
         // The midpoint is the best single estimate; the drift is reported so a
         // reader can see whether treating it as constant was defensible.
         clockOffsetMs: Math.round((offsetBefore.offsetMs + offsetAfter.offsetMs) / 2),
