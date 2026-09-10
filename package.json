@@ -19,6 +19,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "guard:velocity-terminology": "node tools/guards/velocity-terminology.mjs",
+    "guard:playlist-sample-rate": "node tools/guards/playlist-sample-rate.mjs",
     "kit:render": "tsx tools/tablet-voice/src/render-brass-bank.ts --kit",
     "kit:audition": "tsx tools/tablet-voice/src/render-kit-audition.ts"
   },

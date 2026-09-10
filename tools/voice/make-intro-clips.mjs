@@ -32,6 +32,7 @@ import { join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
+import { SHIPPED_SAMPLE_RATE } from './persona.mjs'
 import { ACTIVE_PERSONA, getPersona, rendererId } from './personas.mjs'
 import { measureDuration, trimEnds, renameWithRetry } from './wav.mjs'
 
@@ -46,7 +47,7 @@ const PRODUCTION_EXPRESSION = PERSONA.expression
 const PRODUCTION_TEXTURE = PERSONA.texture
 const REFERENCE_VOICE = PERSONA.reference
 const RENDERER = rendererId(PERSONA)
-const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? 24000)
+const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? SHIPPED_SAMPLE_RATE)
 const RENDER_ATTEMPTS = Number(process.argv.find((a) => a.startsWith('--attempts='))?.slice('--attempts='.length) ?? 8)
 // The walkout texture — full broadcast punch at the bright ceiling (Kyle's
 // growl ask, 2026-09-04). Falls back to the persona's call texture.
