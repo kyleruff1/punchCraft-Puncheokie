@@ -16,16 +16,17 @@
  * whole walkthrough finishes before the warning starts. So there is no
  * completion pump and no `onComplete` — start on the first tick after
  * a short bell clearance and let the native playlist run to its end.
+ *
+ * The playlist itself is a `CeremonyPlaylist`; what stays here is the
+ * script's source order and the bell-clearance trigger.
  */
 
-import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
-import { releaseAudioPlaylist } from './nativeAudioTeardown'
-import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
+import { CeremonyPlaylist } from './CeremonyPlaylist'
+import type { PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
 import type { RecoveryScript } from './voiceAssets/recoveryManifest'
-import { silenceFor } from './voiceAssets/silenceManifest'
 
 /**
  * Wait for the ding to clear before the coach speaks. Kept short (1 s)
@@ -36,14 +37,11 @@ import { silenceFor } from './voiceAssets/silenceManifest'
 export const RECOVERY_BELL_CLEARANCE_MS = 1_000
 
 export class RecoveryPlayer {
-  private playlist: AudioPlaylist | null = null
-  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
-  private readonly timing: PlaybackObserver | null
+  private readonly pl: CeremonyPlaylist
   private preparedScriptId: string | null = null
-  private plannedMs = 0
 
   constructor(opts: { observer?: PlaybackObserver | null } = {}) {
-    this.timing = opts.observer ?? null
+    this.pl = new CeremonyPlaylist(opts.observer ?? null, 'puncheokie.recovery')
   }
   private started = false
   private paused = false
@@ -55,52 +53,23 @@ export class RecoveryPlayer {
    */
   prepare(script: RecoveryScript): void {
     if (this.preparedScriptId === script.scriptId) return
-    this.dispose()
     const sources: number[] = []
     for (let i = 0; i < script.segments.length; i += 1) {
       const segment = script.segments[i] as RecoveryScript['segments'][number]
       sources.push(segment.module)
-      if (segment.pauseAfterMs <= 0) continue
-      const silence = silenceFor(segment.pauseAfterMs)
-      if (silence !== undefined) {
-        sources.push(silence)
-        continue
-      }
-      // A hold with no silence track is a manifest/silence-tracks
-      // mismatch: the recovery still plays without that pause, and the
-      // log names it so it can be re-generated (see silenceManifest.ts).
-      logger.warn('puncheokie.recovery', 'no silence track for planned hold', {
+      const silence = this.pl.silenceTrack(segment.pauseAfterMs, {
         scriptId: safe(script.scriptId),
         segmentIndex: safe(i),
-        pauseAfterMs: safe(segment.pauseAfterMs),
       })
+      if (silence !== undefined) sources.push(silence)
     }
-    if (sources.length === 0) return
-    try {
-      this.playlist = createAudioPlaylist({
-        sources,
-        loop: 'none',
-        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
-      })
-      this.preparedScriptId = script.scriptId
-      this.plannedMs = script.measuredTotalMs
-      logger.info('puncheokie.recovery', 'recovery loaded', {
-        scriptId: safe(script.scriptId),
-        segments: safe(script.segments.length),
-        tracks: safe(sources.length),
-        plannedMs: safe(script.measuredTotalMs),
-      })
-    } catch (error) {
-      // Dispose rather than merely drop the reference: if the throw came
-      // from AFTER the field was assigned, nulling it would orphan a live
-      // native playlist with no handle left to free it.
-      this.dispose()
-      this.preparedScriptId = null
-      logger.warn('puncheokie.recovery', 'playlist creation failed', {
-        scriptId: safe(script.scriptId),
-        error: safe(String(error)),
-      })
-    }
+    const built = this.pl.build(sources, script.measuredTotalMs, 'recovery loaded', {
+      scriptId: safe(script.scriptId),
+      segments: safe(script.segments.length),
+    })
+    // The latch follows the playlist: set only when one exists, so a failed
+    // build is retried on the caller's next tick rather than latched out.
+    this.preparedScriptId = built ? script.scriptId : null
   }
 
   /**
@@ -109,13 +78,9 @@ export class RecoveryPlayer {
    * walkthrough that has not started yet has nothing to suspend.
    */
   pause(): void {
-    if (!this.started || this.paused || this.playlist === null) return
+    if (!this.started || this.paused || !this.pl.loaded) return
     this.paused = true
-    try {
-      this.playlist.pause()
-    } catch {
-      // Already stopped.
-    }
+    this.pl.pause()
     logger.info('puncheokie.recovery', 'recovery paused in place', {
       scriptId: safe(this.preparedScriptId),
     })
@@ -128,13 +93,12 @@ export class RecoveryPlayer {
    * clock froze with the playlist, so alignment is preserved).
    */
   playIfDue(restElapsedMs: number, volume: number): void {
-    if (this.playlist === null) return
+    if (!this.pl.loaded) return
     if (this.started) {
       if (!this.paused) return
       this.paused = false
       try {
-        this.playlist.volume = volume
-        this.playlist.play()
+        this.pl.resume(volume)
       } catch {
         // The rest continues without the walkthrough.
       }
@@ -146,32 +110,19 @@ export class RecoveryPlayer {
     if (restElapsedMs < RECOVERY_BELL_CLEARANCE_MS) return
     this.started = true
     try {
-      this.playlist.volume = volume
-      const dispatchMs = this.timing?.nowMs()
-      this.playlist.play()
-      const playId = this.timing?.mintPlayId('recovery') ?? null
+      // Contract: the script finishes before the round warning starts —
+      // the analyzer checks this play's observed end against the next
+      // round-warning onset (> 0 required).
+      const playId = this.pl.start(volume, {
+        kind: 'recovery',
+        label: this.preparedScriptId ?? 'recovery',
+        playIdPrefix: 'recovery',
+      })
       logger.info('puncheokie.recovery', 'recovery playing', {
         scriptId: safe(this.preparedScriptId),
         restElapsedMs: safe(restElapsedMs),
         playId: safe(playId),
       })
-      if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
-        // Contract: the script finishes before the round warning starts —
-        // the analyzer checks this play's observed end against the next
-        // round-warning onset (> 0 required).
-        this.timing.watch(
-          this.playlist,
-          {
-            playId,
-            kind: 'recovery',
-            label: this.preparedScriptId ?? 'recovery',
-            expectedDurationMs: this.plannedMs,
-            dispatchMs,
-            volumeAtDispatch: volume,
-          },
-          { statusEvent: 'playlistStatusUpdate' },
-        )
-      }
     } catch (error) {
       logger.warn('puncheokie.recovery', 'playlist play failed', {
         scriptId: safe(this.preparedScriptId),
@@ -182,24 +133,15 @@ export class RecoveryPlayer {
 
   /** End of rest, or unmount. Frees the playlist. Safe to call repeatedly. */
   stop(): void {
-    if (this.playlist !== null) {
+    if (this.pl.loaded) {
       logger.info('puncheokie.recovery', 'recovery stopped', {
         scriptId: safe(this.preparedScriptId),
         wasPlaying: safe(this.started),
       })
     }
-    this.dispose()
+    this.pl.dispose()
     this.preparedScriptId = null
     this.started = false
     this.paused = false
-  }
-
-  private dispose(): void {
-    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
-    // pause + destroy + release. `destroy()` alone is only a registry
-    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
-    releaseAudioPlaylist(this.playlist)
-    this.playlist = null
-    this.plannedMs = 0
   }
 }

@@ -21,16 +21,19 @@
  * planned total has elapsed and fires `onComplete`, so the caller can
  * skip the countdown's padded cap and ring the bell. A stalled pump
  * delays only the bell skip — never the speech — and the cap bounds it.
+ *
+ * The playlist itself — build, start, observer wiring, teardown — is a
+ * `CeremonyPlaylist`, shared with the round warning and the recovery.
+ * What stays here is what only the walkout has: the completion pump, and
+ * a pause/resume that has to shift the pump's deadline by the pause.
  */
 
-import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
-import { releaseAudioPlaylist } from './nativeAudioTeardown'
-import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
+import { CeremonyPlaylist } from './CeremonyPlaylist'
+import type { PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
 import type { PlannedIntroSegment } from './introPlan'
-import { silenceFor } from './voiceAssets/silenceManifest'
 
 /** Pump cadence — the error bound on completion detection, not on audio. */
 const PUMP_INTERVAL_MS = 150
@@ -51,17 +54,13 @@ const monotonicNowMs = (): number =>
     : Date.now()
 
 export class IntroPlayer {
-  private playlist: AudioPlaylist | null = null
-  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
-  private readonly timing: PlaybackObserver | null
+  private readonly pl: CeremonyPlaylist
   private pump: ReturnType<typeof setInterval> | null = null
 
   constructor(opts: { observer?: PlaybackObserver | null } = {}) {
-    this.timing = opts.observer ?? null
+    this.pl = new CeremonyPlaylist(opts.observer ?? null, 'puncheokie.intro')
   }
   private started = false
-  /** Sum of planned clip + pause milliseconds, set by load(). */
-  private plannedMs = 0
   private doneAt: number | null = null
   private onComplete: (() => void) | null = null
   /** Monotonic moment a pause() suspended playback, or null. */
@@ -74,47 +73,18 @@ export class IntroPlayer {
    */
   load(segments: readonly PlannedIntroSegment[]): void {
     if (this.started) return
-    this.dispose()
     const sources: number[] = []
     let plannedMs = 0
     for (const segment of segments) {
-      const silence = silenceFor(segment.gapBeforeMs)
+      const silence = this.pl.silenceTrack(segment.gapBeforeMs, { segment: safe(segment.id) })
       if (silence !== undefined) {
         sources.push(silence)
         plannedMs += segment.gapBeforeMs
-      } else if (segment.gapBeforeMs > 0) {
-        // A gap with no silence track is a planner/manifest mismatch —
-        // the speech goes on without the pause, and the log names it.
-        logger.warn('puncheokie.intro', 'no silence track for planned gap', {
-          segment: safe(segment.id),
-          gapMs: safe(segment.gapBeforeMs),
-        })
       }
       sources.push(segment.module)
       plannedMs += segment.durationMs
     }
-    if (sources.length === 0) return
-    try {
-      this.playlist = createAudioPlaylist({
-        sources,
-        loop: 'none',
-        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
-      })
-      this.plannedMs = plannedMs
-      logger.info('puncheokie.intro', 'intro loaded', {
-        segments: safe(segments.length),
-        tracks: safe(sources.length),
-        plannedMs: safe(plannedMs),
-      })
-    } catch (error) {
-      // Dispose rather than merely drop the reference: if the throw came
-      // from AFTER the field was assigned, nulling it would orphan a live
-      // native playlist with no handle left to free it.
-      this.dispose()
-      logger.warn('puncheokie.intro', 'playlist creation failed', {
-        error: safe(String(error)),
-      })
-    }
+    this.pl.build(sources, plannedMs, 'intro loaded', { segments: safe(segments.length) })
   }
 
   /**
@@ -128,7 +98,7 @@ export class IntroPlayer {
     volume: number,
     opts: { tailMs?: number; onComplete?: () => void } = {},
   ): void {
-    if (this.playlist === null) return
+    if (!this.pl.loaded) return
     if (this.started) {
       if (this.pausedAt !== null) {
         // Resume-in-place after a pause(): the countdown's session clock
@@ -144,8 +114,7 @@ export class IntroPlayer {
         // the freshest one so skipCountdown fires on the live closure.
         if (opts.onComplete) this.onComplete = opts.onComplete
         try {
-          this.playlist.volume = volume
-          this.playlist.play()
+          this.pl.resume(volume)
         } catch (error) {
           logger.warn('puncheokie.intro', 'playlist resume failed', {
             error: safe(String(error)),
@@ -176,10 +145,9 @@ export class IntroPlayer {
     }
     this.started = true
     this.onComplete = opts.onComplete ?? null
-    const dispatchMs = this.timing?.nowMs()
+    let playId: string | null
     try {
-      this.playlist.volume = volume
-      this.playlist.play()
+      playId = this.pl.start(volume, { kind: 'intro', label: 'intro', playIdPrefix: 'intro' })
     } catch (error) {
       logger.warn('puncheokie.intro', 'playlist play failed', {
         error: safe(String(error)),
@@ -188,26 +156,11 @@ export class IntroPlayer {
       this.finish('play-failed')
       return
     }
-    const playId = this.timing?.mintPlayId('intro') ?? null
     logger.info('puncheokie.intro', 'intro playing', {
-      plannedMs: safe(this.plannedMs),
+      plannedMs: safe(this.pl.plannedMs),
       playId: safe(playId),
     })
-    if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
-      this.timing.watch(
-        this.playlist,
-        {
-          playId,
-          kind: 'intro',
-          label: 'intro',
-          expectedDurationMs: this.plannedMs,
-          dispatchMs,
-          volumeAtDispatch: volume,
-        },
-        { statusEvent: 'playlistStatusUpdate' },
-      )
-    }
-    this.doneAt = Date.now() + this.plannedMs + (opts.tailMs ?? 0)
+    this.doneAt = Date.now() + this.pl.plannedMs + (opts.tailMs ?? 0)
     this.startPump()
   }
 
@@ -220,7 +173,7 @@ export class IntroPlayer {
    * "complete" on the wall clock and ring the bell into a paused app.
    */
   pause(): void {
-    if (!this.started || this.pausedAt !== null || this.playlist === null) return
+    if (!this.started || this.pausedAt !== null || !this.pl.loaded) return
     // finish() may have raced this call (the pause effect runs a commit
     // after the phase change; the pump can fire in that gap). A finished
     // walkout has nothing to hold — arming pausedAt here would make the
@@ -232,11 +185,7 @@ export class IntroPlayer {
       clearInterval(this.pump)
       this.pump = null
     }
-    try {
-      this.playlist.pause()
-    } catch {
-      // Already stopped.
-    }
+    this.pl.pause()
     logger.info('puncheokie.intro', 'intro paused in place', {})
   }
 
@@ -249,12 +198,7 @@ export class IntroPlayer {
       // Planned end reached — but the NATIVE playlist is the truth. If it
       // started late, it is still speaking; the ding must not ring over
       // the coach or before the athlete's cue that the round begins.
-      let stillPlaying = false
-      try {
-        stillPlaying = this.playlist?.playing === true
-      } catch {
-        // Treat an unreadable playlist as done.
-      }
+      const stillPlaying = this.pl.playing
       if (stillPlaying && now < this.doneAt + INTRO_COMPLETE_GRACE_MS) return
       this.finish(stillPlaying ? 'grace-elapsed' : 'planned-end')
     }, PUMP_INTERVAL_MS)
@@ -275,7 +219,7 @@ export class IntroPlayer {
 
   /** The bell ends the speech. Frees the playlist. Safe to call repeatedly. */
   stop(): void {
-    if (this.playlist !== null) {
+    if (this.pl.loaded) {
       logger.info('puncheokie.intro', 'intro stopped', {
         wasPlaying: safe(this.started),
       })
@@ -287,17 +231,6 @@ export class IntroPlayer {
     this.doneAt = null
     this.pausedAt = null
     this.onComplete = null // The bell already rang; nothing left to skip.
-    this.dispose()
-  }
-
-  private dispose(): void {
-    // The observer must let go BEFORE the native release, or it would hold
-    // a listener on a freed playlist.
-    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
-    // pause + destroy + release. `destroy()` alone is only a registry
-    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
-    releaseAudioPlaylist(this.playlist)
-    this.playlist = null
-    this.plannedMs = 0
+    this.pl.dispose()
   }
 }

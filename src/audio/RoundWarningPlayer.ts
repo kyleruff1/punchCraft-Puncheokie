@@ -18,17 +18,19 @@
  * clip starts on the first tick inside its window. A missed tick delays
  * the start slightly; the countdown then ends a touch early — never
  * late, never cut by the bell.
+ *
+ * The playlist itself is a `CeremonyPlaylist`; what stays here is the
+ * ceremony's assembly (opener, theme, lead, core, breaths between) and
+ * the remaining-rest window that triggers it.
  */
 
-import { createAudioPlaylist, type AudioPlaylist } from 'expo-audio'
-import { releaseAudioPlaylist } from './nativeAudioTeardown'
-import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, type PlaybackObserver } from './PlaybackObserver'
+import { CeremonyPlaylist } from './CeremonyPlaylist'
+import type { PlaybackObserver } from './PlaybackObserver'
 
 import { logger, safe } from '@/diagnostics/logger'
 
 import { themeClipFor } from './voiceAssets/calloutManifest'
 import { INTRO_SEGMENTS } from './voiceAssets/introManifest'
-import { silenceFor } from './voiceAssets/silenceManifest'
 
 const OPENER_COUNT = 15
 const OPENER_GAP_MS = 350
@@ -39,16 +41,13 @@ const OPENER_GAP_MS = 350
 const LEAD_SLACK_MS = 400
 
 export class RoundWarningPlayer {
-  private playlist: AudioPlaylist | null = null
-  /** The silent timing observer (GH #291, C2), or null. Shared with the coach output. */
-  private readonly timing: PlaybackObserver | null
-  private totalMs = 0
+  private readonly pl: CeremonyPlaylist
 
   constructor(opts: { observer?: PlaybackObserver | null } = {}) {
-    this.timing = opts.observer ?? null
+    this.pl = new CeremonyPlaylist(opts.observer ?? null, 'puncheokie.warn')
   }
   private preparedRound: number | null = null
-  private played = false
+  private started = false
   private paused = false
 
   /**
@@ -69,12 +68,16 @@ export class RoundWarningPlayer {
     lead?: { module: number; durationMs: number },
   ): void {
     if (this.preparedRound === roundNumber) return
-    this.dispose()
-    this.preparedRound = roundNumber
-    this.played = false
+    this.started = false
 
     const core = INTRO_SEGMENTS[`warn-round-${roundNumber}`]
-    if (!core) return // Round number outside the rendered range.
+    if (!core) {
+      // Round number outside the rendered range. Latch it anyway: there is
+      // nothing to retry, and the caller ticks ~60 times per rest.
+      this.pl.dispose()
+      this.preparedRound = roundNumber
+      return
+    }
     const openerIndex = 1 + Math.floor(Math.random() * OPENER_COUNT)
     const opener = INTRO_SEGMENTS[`warn-opener-${String(openerIndex).padStart(2, '0')}`]
     // "Coming up — the Square Builder!" (Set Ceremonies): the next
@@ -86,7 +89,7 @@ export class RoundWarningPlayer {
     let totalMs = 0
     const pushWithBreath = (module: number, durationMs: number): void => {
       if (sources.length > 0) {
-        const breath = silenceFor(OPENER_GAP_MS)
+        const breath = this.pl.silenceTrack(OPENER_GAP_MS, { round: safe(roundNumber) })
         if (breath !== undefined) {
           sources.push(breath)
           totalMs += OPENER_GAP_MS
@@ -100,52 +103,17 @@ export class RoundWarningPlayer {
     if (lead) pushWithBreath(lead.module, lead.durationMs)
     pushWithBreath(core.module, core.durationMs)
 
-    try {
-      this.playlist = createAudioPlaylist({
-        sources,
-        loop: 'none',
-        updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
-      })
-      this.totalMs = totalMs
-      // `tracks` is the field IntroPlayer and RecoveryPlayer already log and
-      // this one did not, which is why the round warning is the one ceremony
-      // whose dead air cannot be quantified per round.
-      //
-      // It matters more here than anywhere else. Plan 5b measured ~95 ms lost
-      // entering a 24 kHz track and ~193 ms entering a 48 kHz one, and this
-      // playlist alternates 24 kHz breaths with 48 kHz speech — so a 3-track
-      // warning runs ~290 ms past `totalMs` and a 7-track one ~865 ms. The
-      // analyzer's `warnEndToBellMs` is built on `totalMs`, and its whole job
-      // is the SIGN of that number: the bell cutting the countdown off. It
-      // currently reads a median +386 ms of margin that is partly not there,
-      // and without the track count there is no way to say how much per round.
-      logger.info('puncheokie.warn', 'round warning prepared', {
-        round: safe(roundNumber),
-        opener: safe(opener?.id),
-        totalMs: safe(totalMs),
-        tracks: safe(sources.length),
-        boundaries: safe(Math.max(0, sources.length - 1)),
-      })
-    } catch (error) {
-      // Dispose rather than merely drop the reference: if the throw came
-      // from AFTER the field was assigned, nulling it would orphan a live
-      // native playlist with no handle left to free it.
-      this.dispose()
-      // And CLEAR THE LATCH. `preparedRound` is set before the try so the
-      // idempotence guard at the top of this method works — but that means a
-      // failed build leaves it pointing at a round that has no playlist, and
-      // every later `prepare()` for the same round returns at the guard. The
-      // caller re-prepares on every store tick for the whole rest, so that is
-      // ~60 retry opportunities all thrown away: one transient throw here and
-      // that round gets no "three, two, one" into the bell. RecoveryPlayer's
-      // otherwise-identical catch has always cleared its own latch; this one
-      // drifted, and the drift cost a whole ceremony.
-      this.preparedRound = null
-      logger.warn('puncheokie.warn', 'round warning playlist failed', {
-        round: safe(roundNumber),
-        error: safe(String(error)),
-      })
-    }
+    const built = this.pl.build(sources, totalMs, 'round warning prepared', {
+      round: safe(roundNumber),
+      opener: safe(opener?.id),
+      totalMs: safe(totalMs),
+    })
+    // The latch follows the playlist. A failed build used to leave
+    // `preparedRound` pointing at a round with no playlist, and every later
+    // tick returned at the guard above — one transient throw and that round
+    // got no "three, two, one" into the bell (`fd700e4d`). Now it is set
+    // only when there is something to be idempotent about.
+    this.preparedRound = built ? roundNumber : null
   }
 
   /**
@@ -156,13 +124,9 @@ export class RoundWarningPlayer {
    * suspend.
    */
   pause(): void {
-    if (!this.played || this.paused || this.playlist === null) return
+    if (!this.started || this.paused || !this.pl.loaded) return
     this.paused = true
-    try {
-      this.playlist.pause()
-    } catch {
-      // Already stopped.
-    }
+    this.pl.pause()
     logger.info('puncheokie.warn', 'round warning paused in place', {
       round: safe(this.preparedRound),
     })
@@ -175,13 +139,12 @@ export class RoundWarningPlayer {
    * replaying from the top (which the bell would cut).
    */
   playIfDue(remainingMs: number, volume: number): void {
-    if (this.playlist === null) return
-    if (this.played) {
+    if (!this.pl.loaded) return
+    if (this.started) {
       if (!this.paused) return
       this.paused = false
       try {
-        this.playlist.volume = volume
-        this.playlist.play()
+        this.pl.resume(volume)
       } catch {
         // The bell still rings without the countdown.
       }
@@ -191,36 +154,23 @@ export class RoundWarningPlayer {
       })
       return
     }
-    if (remainingMs > this.totalMs + LEAD_SLACK_MS) return
-    this.played = true
+    if (remainingMs > this.pl.plannedMs + LEAD_SLACK_MS) return
+    this.started = true
     try {
-      this.playlist.volume = volume
-      const dispatchMs = this.timing?.nowMs()
-      this.playlist.play()
-      const playId = this.timing?.mintPlayId('warn') ?? null
+      // The contract is "the countdown ends ON the bell": the analyzer
+      // compares this play's observed end with the next work-entered
+      // bell's onset (target [0, LEAD_SLACK_MS]; negative = cut off).
+      const playId = this.pl.start(volume, {
+        kind: 'round-warning',
+        label: `warn-round-${this.preparedRound ?? 0}`,
+        playIdPrefix: 'warn',
+      })
       logger.info('puncheokie.warn', 'round warning playing', {
         round: safe(this.preparedRound),
         remainingMs: safe(remainingMs),
-        totalMs: safe(this.totalMs),
+        totalMs: safe(this.pl.plannedMs),
         playId: safe(playId),
       })
-      if (this.timing !== null && playId !== null && dispatchMs !== undefined) {
-        // The contract is "the countdown ends ON the bell": the analyzer
-        // compares this play's observed end with the next work-entered
-        // bell's onset (target [0, LEAD_SLACK_MS]; negative = cut off).
-        this.timing.watch(
-          this.playlist,
-          {
-            playId,
-            kind: 'round-warning',
-            label: `warn-round-${this.preparedRound ?? 0}`,
-            expectedDurationMs: this.totalMs,
-            dispatchMs,
-            volumeAtDispatch: volume,
-          },
-          { statusEvent: 'playlistStatusUpdate' },
-        )
-      }
     } catch (error) {
       logger.warn('puncheokie.warn', 'round warning play failed', {
         error: safe(String(error)),
@@ -230,18 +180,15 @@ export class RoundWarningPlayer {
 
   /** The bell (or an exit) ends it. Safe to call repeatedly. */
   stop(): void {
-    this.dispose()
+    if (this.pl.loaded) {
+      logger.info('puncheokie.warn', 'round warning stopped', {
+        round: safe(this.preparedRound),
+        wasPlaying: safe(this.started),
+      })
+    }
+    this.pl.dispose()
     this.preparedRound = null
-    this.played = false
+    this.started = false
     this.paused = false
-  }
-
-  private dispose(): void {
-    if (this.playlist !== null) this.timing?.forget(this.playlist, 'released')
-    // pause + destroy + release. `destroy()` alone is only a registry
-    // unlink — see nativeAudioTeardown.ts; the ExoPlayer survives it.
-    releaseAudioPlaylist(this.playlist)
-    this.playlist = null
-    this.totalMs = 0
   }
 }
