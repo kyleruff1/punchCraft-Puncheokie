@@ -127,11 +127,13 @@ export const PERSONA_VERSION = PERSONA.version
  * rather than costing air time.
  *
  * The FALLBACK is the shipped rate, not 24 kHz. Only `cornerman3` declares
- * `sampleRate`, and `ACTIVE_PERSONA` is still `cornerman`, which declares
- * nothing — so a `?? 24000` here resolved to 24 kHz for every renderer that
- * did not pass `--persona=cornerman3`, and that is exactly how the silence
- * generator's first run wrote nothing. The container the app ships is 48 kHz;
- * a persona that wants otherwise has to say so.
+ * `sampleRate`; while `ACTIVE_PERSONA` still pointed at `cornerman`, which
+ * declares nothing, a `?? 24000` here resolved to 24 kHz for every renderer
+ * that did not pass `--persona=cornerman3` — which is exactly how the silence
+ * generator's first run wrote nothing. `ACTIVE_PERSONA` is `cornerman3` now,
+ * so the persona itself resolves to 48 kHz; the fallback stays at the shipped
+ * rate so a persona that declares nothing cannot silently drop to 24 kHz
+ * again. A persona that wants otherwise has to say so.
  */
 export const SHIPPED_SAMPLE_RATE = 48000
 export const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? SHIPPED_SAMPLE_RATE)
