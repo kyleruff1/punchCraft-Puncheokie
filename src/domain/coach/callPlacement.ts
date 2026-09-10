@@ -34,8 +34,20 @@ export type CallVocabulary = 'numbers' | 'techniques'
  * Breath between a section lead-in's last word and its section's first
  * strike (Script Bible v2). The clip is scheduled to END this far before
  * the block starts; the 50 ms tick granularity eats into it, never past it.
+ *
+ * **250 → 282 (Kyle 2026-09-10, paired with the DELIVERED_BREATH_SHORTFALL_MS
+ * 95 → 127 bump):** the shortfall bump moves the rep-0 call's dispatch
+ * (`endByMs` here) 32 ms earlier, so `dispatchAtMs = endByMs − clipDurationMs
+ * − LEAD_IN_PAD_MS − leadMs` slides left by the same 32 ms while the clip
+ * duration is fixed — the whisper's last word therefore reaches its
+ * `endByMs` 32 ms later relative to the call, and lead-in walkovers jumped
+ * 4 → 7 out of 8 in the follow-up drive (`quick-coast-reset`, sha
+ * 0cbb3e18). Restoring the pre-fix buffer exactly means adding those 32 ms
+ * back into the pad. The whisper stays audibly clean; the call now finishes
+ * ~64 ms further before the punch than pre-fix (pad 282 + breath 277 vs
+ * pre-fix 250 + 245).
  */
-export const LEAD_IN_PAD_MS = 250
+export const LEAD_IN_PAD_MS = 282
 
 /**
  * Per-bar loop calls finish ~half a second before the bar's first strike
