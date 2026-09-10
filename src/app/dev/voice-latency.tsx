@@ -240,9 +240,15 @@ async function armPlayer(player: AudioPlayer): Promise<void> {
 async function timeBothClocks(
   player: AudioPlayer,
   timeoutMs = 3_000,
-): Promise<{ statusMs: number | null; playheadMs: number | null }> {
+): Promise<{ statusMs: number | null; playheadMs: number | null; startedEpochMs: number }> {
   let statusMs: number | null = null
   const startedAt = performance.now()
+  // Wall epoch of the SAME instant as `startedAt`, so a mic recording made on
+  // another machine can be placed against these plays. `performance.now()`
+  // alone is a device-local origin with no meaning off the device; the two are
+  // read back-to-back so the pair is good to well under a millisecond, and the
+  // window they anchor is ~3 s, far too short for the two clocks to diverge.
+  const startedEpochMs = Date.now()
   // Attached BEFORE play() so the transition cannot be missed. This is the
   // exact predicate PlaybackObserver.onStatus uses for onset.
   const subscription = player.addListener('playbackStatusUpdate', (status: { playing?: boolean }) => {
@@ -262,7 +268,7 @@ async function timeBothClocks(
   // pair is scored — otherwise a late callback would read as "never fired".
   if (statusMs === null) await new Promise<void>((resolve) => setTimeout(resolve, 120))
   subscription.remove()
-  return { statusMs, playheadMs }
+  return { statusMs, playheadMs, startedEpochMs }
 }
 
 async function timeArmedPlay(
@@ -471,9 +477,48 @@ async function timeArmedOboe(
         await new Promise<void>((resolve) => setTimeout(resolve, 400))
         for (let i = 0; i < REPS; i += 1) {
           player.seekTo(0)
-          await new Promise<void>((resolve) => setTimeout(resolve, 250))
-          const { statusMs, playheadMs } = await timeBothClocks(player)
+          // RANDOMISED, and that is the whole point rather than a detail.
+          //
+          // With a fixed gap the plays and the recorded sounds are two
+          // periodic sequences of the SAME period, so nothing in the data
+          // says which sound belongs to which play — every candidate
+          // alignment fits equally well, and the analysis is left picking one
+          // by whether the answer looks reasonable. That is circular, and it
+          // reported a clean, plausible 20 ms on a session where the clock
+          // correction had been omitted entirely.
+          //
+          // An irregular gap makes the interval pattern unique. The analyser
+          // votes over every rep×onset pair, and the true delay is then the one
+          // nearly every play agrees on, while its nearest rival — "latency
+          // plus one gap" — is attested only by however many gaps happened to
+          // land near each other. The alignment follows from the data, and
+          // "is the answer plausible" goes back to being an independent check
+          // instead of the selector.
+          //
+          // The RANGE is what buys that margin, so it is deliberately wide:
+          // rival votes fall off as the analyser's ±40 ms tolerance over the
+          // spread. Simulated at 40 reps, 250–550 ms gave a median margin of
+          // 2.5× and rejected 3 runs in 200 as too close to call; 200–800 ms
+          // gives 3.6× median, 2.5× worst case, and rejected none in 200. Ten
+          // seconds of session for a margin that does not depend on luck.
+          await new Promise<void>((resolve) => setTimeout(resolve, 200 + Math.floor(Math.random() * 600)))
+          const { statusMs, playheadMs, startedEpochMs } = await timeBothClocks(player)
           if (statusMs !== null && playheadMs !== null) pairs.push({ statusMs, playheadMs })
+          // One line per rep, carrying the WALL epoch of each event. The
+          // aggregate below answers "how far does the status event understate
+          // the playhead"; this answers "when, in a clock a microphone can
+          // also be placed on, did each of those happen" — which is what
+          // PLAYHEAD_TO_SPEAKER_MS needs, since the remaining unknown is
+          // entirely off-device.
+          logger.info('puncheokie.ruler.rep', 'rep timing', {
+            asset: safe(c.label),
+            rep: safe(i),
+            startedEpochMs: safe(startedEpochMs),
+            statusEpochMs: safe(statusMs === null ? null : Math.round(startedEpochMs + statusMs)),
+            playheadEpochMs: safe(playheadMs === null ? null : Math.round(startedEpochMs + playheadMs)),
+            statusMs: safe(statusMs === null ? null : Math.round(statusMs * 10) / 10),
+            playheadMs: safe(playheadMs === null ? null : Math.round(playheadMs * 10) / 10),
+          })
           player.pause()
           await new Promise<void>((resolve) => setTimeout(resolve, 150))
         }
