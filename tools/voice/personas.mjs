@@ -25,7 +25,17 @@
  */
 
 /** The persona rendered when none is named. */
-export const ACTIVE_PERSONA = 'cornerman'
+/**
+ * `cornerman3` is the voice that ships: the 48 kHz intro, warn, recovery and
+ * click-script banks were all rendered from it with `--persona=cornerman3`.
+ * This pointed at `cornerman` long after that, so every renderer that read
+ * the flat `persona.mjs` constants — texture, reference voice, version, and
+ * the sample rate — was defaulting to a voice no longer in the app, and the
+ * flag-aware renderers needed the flag to produce what was already shipped.
+ * The 24 kHz silence tracks (plan 5b's ~800 ms walkout dead-air finding)
+ * were one consequence. Flipped 2026-09-10, on Kyle's call.
+ */
+export const ACTIVE_PERSONA = 'cornerman3'
 
 export const PERSONAS = {
   /**
