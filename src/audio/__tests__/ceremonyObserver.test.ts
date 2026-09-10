@@ -17,6 +17,7 @@
  *   (seek + play, no rebuild) does not re-watch; a loop change forgets the
  *   old playlist and watches the new one.
  */
+import { createAudioPlaylist } from 'expo-audio'
 import { IntroPlayer } from '../IntroPlayer'
 import { MetronomePlayer } from '../MetronomePlayer'
 import { OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS, PlaybackObserver, type ObservedRecord, type StatusLike } from '../PlaybackObserver'
@@ -226,6 +227,32 @@ describe('RoundWarningPlayer', () => {
     // Later ticks are idempotent: no second watch.
     player.playIfDue(200, 0.9)
     expect(observer.stats().watched).toBe(1)
+    player.stop()
+  })
+
+  it('a failed prepare does NOT latch the round out — the next tick rebuilds', () => {
+    // The caller re-prepares on every store tick for the whole rest, so a
+    // transient throw from createAudioPlaylist has ~60 chances to recover.
+    // `preparedRound` is set before the try (for the idempotence guard), so
+    // unless the catch clears it every one of those chances returns at the
+    // guard and the round gets no countdown into the bell. RecoveryPlayer's
+    // byte-identical catch has always cleared its latch; this one drifted.
+    const { observer } = rig()
+    const player = new RoundWarningPlayer({ observer })
+    ;(createAudioPlaylist as jest.Mock).mockImplementationOnce(() => {
+      throw new Error('transient native failure')
+    })
+
+    player.prepare(2)
+    expect(playlists).toHaveLength(0)
+
+    // The very next tick. Same round — the guard must not swallow it.
+    player.prepare(2)
+    expect(playlists).toHaveLength(1)
+
+    player.playIfDue(500, 0.9)
+    expect(playlists[0]!.play).toHaveBeenCalledTimes(1)
+    expect(observer.stats()).toMatchObject({ watched: 1, open: 1 })
     player.stop()
   })
 

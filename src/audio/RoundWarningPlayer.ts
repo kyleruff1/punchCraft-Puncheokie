@@ -131,7 +131,18 @@ export class RoundWarningPlayer {
       // from AFTER the field was assigned, nulling it would orphan a live
       // native playlist with no handle left to free it.
       this.dispose()
+      // And CLEAR THE LATCH. `preparedRound` is set before the try so the
+      // idempotence guard at the top of this method works — but that means a
+      // failed build leaves it pointing at a round that has no playlist, and
+      // every later `prepare()` for the same round returns at the guard. The
+      // caller re-prepares on every store tick for the whole rest, so that is
+      // ~60 retry opportunities all thrown away: one transient throw here and
+      // that round gets no "three, two, one" into the bell. RecoveryPlayer's
+      // otherwise-identical catch has always cleared its own latch; this one
+      // drifted, and the drift cost a whole ceremony.
+      this.preparedRound = null
       logger.warn('puncheokie.warn', 'round warning playlist failed', {
+        round: safe(roundNumber),
         error: safe(String(error)),
       })
     }
