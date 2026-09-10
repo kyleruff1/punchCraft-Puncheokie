@@ -63,6 +63,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
 import {
   createAudioPlayer,
+  createAudioPlaylist,
   requestRecordingPermissionsAsync,
   setAudioModeAsync,
   type AudioPlayer,
@@ -74,7 +75,7 @@ import {
   type AnalyserNode as OboeAnalyser,
   type AudioBuffer as OboeBuffer,
 } from 'react-native-audio-api'
-import { releaseAudioPlayer } from '@audio/nativeAudioTeardown'
+import { releaseAudioPlayer, releaseAudioPlaylist } from '@audio/nativeAudioTeardown'
 import { logger, safe } from '@/diagnostics/logger'
 import { findClickScript } from '@audio/voiceAssets/clickScriptManifest'
 
@@ -109,6 +110,13 @@ const SHORT_CLIP = require('../../../assets/spike-voice/tone-short.wav')
 const LONG_CLIP = require('../../../assets/spike-voice/tone-long.wav')
 /** The round bell — the only coach asset rendered at 24 kHz, and the slowest measured. */
 const BELL_MODULE = require('../../../assets/voice/numbers/standalone/bell.wav')
+/**
+ * The walkout's inter-sentence pause, as the ceremony players actually queue
+ * it. 24 kHz — which matches the bell and does NOT match the 48 kHz intro and
+ * warn clips it is interleaved with in production. That mismatch is the thing
+ * `probePlaylistRuler` is built to test.
+ */
+const SILENCE_350 = require('../../../assets/voice/numbers/standalone/silence-350.wav')
 /* eslint-enable @typescript-eslint/no-require-imports */
 
 type CaseId =
@@ -558,6 +566,352 @@ async function timeArmedOboe(
     }
   }, [say])
 
+  /**
+   * The ceremony path's ruler (plan 5b) — and the experiment that says WHY it
+   * needs one.
+   *
+   * ## Two questions, one run
+   *
+   * **1. What is the playlist's onset skew?** `OBSERVER_ONSET_SKEW_MS = 95` was
+   * measured on `createAudioPlayer`. The walkout, round warning and rest scripts
+   * are `createAudioPlaylist` — a different native object — so
+   * `SKEW_CORRECTED_KINDS` deliberately leaves them raw rather than borrowing a
+   * constant from a path it was never measured on.
+   *
+   * **2. Where does the dead air come from?** The captures already say there IS
+   * dead air, and where it is NOT. Onset latency is flat across playlist
+   * length — 15.5 ms at one track, 24 at three, 25 at seven — while the
+   * end-event residual grows 121 → 343 → 790 ms. A long playlist starts as fast
+   * as a short one and loses the time DURING playback, at the boundaries: about
+   * 111 ms each, which is what makes a 7-track walkout run ~670 ms long.
+   *
+   * The suspect is named, and contradicted, by the asset it blames.
+   * `silenceManifest.ts` says its files are "generated with ffmpeg anullsrc at
+   * 24 kHz mono, matching the voice clips so the playlist never renegotiates
+   * format". All 18 silence tracks are indeed 24 kHz — but all 25 intro clips
+   * and all 26 warn openers are 48 kHz, so the format changes at every boundary
+   * in exactly the two ceremonies that carry the accumulation.
+   *
+   * ## The estimator, and why it is a DIFFERENCE OF DWELLS
+   *
+   * The obvious measurement — "when should track k have started, when did it" —
+   * needs each track's true decoded length, and that is the one number not
+   * safely in hand. A stated duration can disagree with the decoded length
+   * (encoder padding, resampling), and it would disagree DIFFERENTLY for a
+   * 24 kHz file than a 48 kHz one, which is the contrast under test. An earlier
+   * draft of this probe hardcoded 926 ms for a clip whose manifest fallback is
+   * 1384.6 ms; it would have printed a confident, badly wrong answer.
+   *
+   * So the headline number uses no stated duration at all. Between two
+   * consecutive `trackChanged` events the playlist dwells on exactly one track
+   * plus one boundary:
+   *
+   *     dwell(k) = trueLength(track k) + boundaryCost
+   *
+   * Run the SAME clip in a homogeneous playlist and in one interleaved with a
+   * foreign rate, and subtract:
+   *
+   *     dwell_heterogeneous − dwell_homogeneous = g_hetero − g_homo
+   *
+   * `trueLength` cancels. So do the onset skew and the end-event lag, neither of
+   * which appears in a difference of two mid-playlist stamps. It is also immune
+   * to what instant `trackChanged` actually marks — whether it fires when the
+   * outgoing audio ends or when the incoming audio starts, any CONSISTENT
+   * instant cancels in the difference.
+   *
+   * ## The arms
+   *
+   * "Matched" is ambiguous and the ambiguity could invert the conclusion: the
+   * silence tracks are 24 kHz, so if the tablet's output is 48 kHz then the
+   * all-24 kHz arm is the one being resampled throughout. The pair that settles
+   * it uses one clip and differs only in whether a foreign rate is interleaved:
+   *
+   *     call 48k x4, no silence     every boundary 48→48    HOMOGENEOUS
+   *     call 48k x4 + silence 24k   every boundary 48↔24    HETEROGENEOUS
+   *
+   * The bell pair is the control: both of ITS multi-track arms are homogeneous
+   * 24 kHz, so if they differ the cause is the silence track itself rather than
+   * its rate, and the fix is a different one. The single-track arms carry the
+   * skew and give the residual something to difference against.
+   *
+   * Arms are interleaved rep by rep, not run in blocks: thermal drift and
+   * AudioTrack churn rise monotonically across a three-minute run, and in block
+   * order that drift would lie exactly along the axis being compared.
+   */
+  const probePlaylistRuler = useCallback(async () => {
+    if (running) {
+      say('playlist ruler: already running')
+      return
+    }
+    const runId = Date.now()
+
+    const call = findClickScript('call/1-2-.-.', 'numbers') ?? findClickScript('call/1-1-2-.', 'numbers')
+    if (!call) {
+      say('playlist ruler: no call clip found — cannot form the 48 kHz arm')
+      return
+    }
+    // The 48 kHz arm has to actually BE 48 kHz. `findClickScript` falls through
+    // to a different slot, and the same id exists in both the 24 kHz cornerman2
+    // bank and the 48 kHz cornerman3 one, so the clip that arrives here is not
+    // guaranteed to be the clip this experiment is about. Name it in the log
+    // and let the analysis refuse a run that used a substitute.
+    const CALL_MS = call.durationMs
+    const REPS = 8
+    /** Four clips, three silences: the walkout's shape at half its length. */
+    const CLIPS_IN_MULTI = 4
+    const BELL_MS = 1180
+    const SILENCE_MS = 350
+
+    type Arm = {
+      key: string
+      label: string
+      clip: number
+      clipMs: number
+      clips: number
+      silence: boolean
+      rates: string
+    }
+    const arms: Arm[] = [
+      { key: 'call1', label: 'call 48k x1', clip: call.module, clipMs: CALL_MS, clips: 1, silence: false, rates: 'baseline' },
+      { key: 'callHom', label: 'call 48k x4 no-sil', clip: call.module, clipMs: CALL_MS, clips: CLIPS_IN_MULTI, silence: false, rates: 'HOMOGENEOUS-48' },
+      { key: 'callHet', label: 'call 48k x4 + sil 24k', clip: call.module, clipMs: CALL_MS, clips: CLIPS_IN_MULTI, silence: true, rates: 'HETEROGENEOUS-48/24' },
+      { key: 'bell1', label: 'bell 24k x1', clip: BELL_MODULE, clipMs: BELL_MS, clips: 1, silence: false, rates: 'baseline' },
+      { key: 'bellHom', label: 'bell 24k x4 no-sil', clip: BELL_MODULE, clipMs: BELL_MS, clips: CLIPS_IN_MULTI, silence: false, rates: 'HOMOGENEOUS-24' },
+      { key: 'bellHet', label: 'bell 24k x4 + sil 24k', clip: BELL_MODULE, clipMs: BELL_MS, clips: CLIPS_IN_MULTI, silence: true, rates: 'HOMOGENEOUS-24+sil' },
+    ]
+
+    const build = (arm: Arm): { sources: number[]; trackIsClip: boolean[]; plannedTrackMs: number[] } => {
+      const sources: number[] = []
+      const trackIsClip: boolean[] = []
+      const plannedTrackMs: number[] = []
+      for (let i = 0; i < arm.clips; i += 1) {
+        if (i > 0 && arm.silence) {
+          sources.push(SILENCE_350)
+          trackIsClip.push(false)
+          plannedTrackMs.push(SILENCE_MS)
+        }
+        sources.push(arm.clip)
+        trackIsClip.push(true)
+        plannedTrackMs.push(arm.clipMs)
+      }
+      return { sources, trackIsClip, plannedTrackMs }
+    }
+
+    const med = (v: number[]): number | null => {
+      if (v.length === 0) return null
+      const s = [...v].sort((a, b) => a - b)
+      const m = Math.floor(s.length / 2)
+      return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2
+    }
+    const r1 = (v: number | null): number | null => (v === null ? null : Math.round(v * 10) / 10)
+
+    const acc: Record<string, { skew: number[]; residual: number[]; clipDwell: number[]; silDwell: number[]; failed: number }> = {}
+    for (const a of arms) acc[a.key] = { skew: [], residual: [], clipDwell: [], silDwell: [], failed: 0 }
+
+    setRunning(true)
+    try {
+      // `play()` is a silent no-op when the device is in a ringer mode the
+      // module considers silent — the Run buttons set this, and a cold start
+      // straight to this screen does not. Without it every stamp comes back
+      // null and the run looks like a code failure rather than a mute switch.
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        interruptionMode: 'mixWithOthers',
+        shouldPlayInBackground: false,
+      })
+
+      say(`playlist ruler: ${arms.length} arms x ${REPS} reps, interleaved — clip ${call.id} (${CALL_MS} ms)`)
+      logger.info('puncheokie.plruler.start', 'playlist ruler starting', {
+        runId: safe(runId),
+        arms: safe(arms.length),
+        reps: safe(REPS),
+        callClipId: safe(call.id),
+        callClipMs: safe(CALL_MS),
+      })
+
+      for (let rep = 0; rep < REPS; rep += 1) {
+        for (const arm of arms) {
+          const { sources, trackIsClip, plannedTrackMs } = build(arm)
+          const plannedMs = plannedTrackMs.reduce((a, b) => a + b, 0)
+          // Each rep is isolated. One throw used to abort every remaining arm
+          // AND discard the in-progress one, which in block order meant losing
+          // precisely the arm the experiment exists for.
+          try {
+            // A FRESH playlist per rep, which is what production does: every
+            // ceremony player disposes and rebuilds, then plays exactly once.
+            const playlist = createAudioPlaylist({ sources, loop: 'none', updateInterval: 10 })
+            for (let i = 0; i < 60 && !playlist.isLoaded; i += 1) await sleep(25)
+
+            // A source whose uri resolves null is dropped SILENTLY by the
+            // native loader — no throw, no status. Every dwell after the drop
+            // would then be attributed to the wrong track, and the log would
+            // still assert the count we asked for. Read back what native holds.
+            const nativeTracks = playlist.trackCount
+            if (nativeTracks !== sources.length) {
+              acc[arm.key]!.failed += 1
+              logger.warn('puncheokie.plruler.rep', 'track count mismatch — rep skipped', {
+                runId: safe(runId),
+                arm: safe(arm.label),
+                rep: safe(rep),
+                asked: safe(sources.length),
+                native: safe(nativeTracks),
+              })
+              releaseAudioPlaylist(playlist)
+              continue
+            }
+
+            let statusMs: number | null = null
+            let playheadMs: number | null = null
+            let endedMs: number | null = null
+            let transitioned = false
+            const transitions: { index: number; atMs: number }[] = []
+
+            // Fixed BEFORE the listeners attach: native emits a status the
+            // moment a playlist is constructed, and every stamp has to share
+            // one origin or the arms are not measured against a common zero.
+            const startedAt = performance.now()
+
+            const statusSub = playlist.addListener(
+              'playlistStatusUpdate',
+              (s: { playing?: boolean; didJustFinish?: boolean }) => {
+                if (statusMs === null && s.playing === true) statusMs = performance.now() - startedAt
+                if (endedMs === null && s.didJustFinish === true) endedMs = performance.now() - startedAt
+              },
+            )
+            const trackSub = playlist.addListener('trackChanged', (d: { previousIndex: number; currentIndex: number }) => {
+              transitioned = true
+              transitions.push({ index: d.currentIndex, atMs: performance.now() - startedAt })
+            })
+
+            playlist.play()
+
+            // Poll for the playhead, LATCHED TO TRACK 0. A playlist's
+            // `currentTime` is per-track and resets at every boundary, so once
+            // a transition has fired, `currentTime > 0` is track 1's progress
+            // and would report a boundary as if it were the start.
+            for (;;) {
+              if (playlist.currentTime > 0) {
+                if (!transitioned) playheadMs = performance.now() - startedAt
+                break
+              }
+              if (transitioned) break
+              if (performance.now() - startedAt > 4_000) break
+              await sleep(1)
+            }
+
+            const deadline = startedAt + plannedMs + 5_000
+            while (endedMs === null && performance.now() < deadline) await sleep(10)
+
+            statusSub.remove()
+            trackSub.remove()
+            releaseAudioPlaylist(playlist)
+
+            const skewMs = statusMs !== null && playheadMs !== null ? playheadMs - statusMs : null
+            // Residual against the STATED total — the secondary estimator, and
+            // the one comparable to the field captures' 121/343/790 ms.
+            const residualMs = endedMs !== null && playheadMs !== null ? endedMs - playheadMs - plannedMs : null
+            if (skewMs !== null) acc[arm.key]!.skew.push(skewMs)
+            if (residualMs !== null) acc[arm.key]!.residual.push(residualMs)
+
+            // THE HEADLINE: dwell between consecutive transitions. Spans
+            // exactly one track plus one boundary, and needs no stated
+            // duration, no origin, and no assumption about which instant
+            // `trackChanged` marks.
+            const dwells: string[] = []
+            for (let i = 0; i + 1 < transitions.length; i += 1) {
+              const a = transitions[i]!
+              const b = transitions[i + 1]!
+              if (b.index !== a.index + 1) continue
+              const ms = b.atMs - a.atMs
+              const isClip = trackIsClip[a.index] === true
+              ;(isClip ? acc[arm.key]!.clipDwell : acc[arm.key]!.silDwell).push(ms)
+              dwells.push(`${a.index}${isClip ? 'c' : 's'}:${Math.round(ms)}`)
+            }
+
+            logger.info('puncheokie.plruler.rep', 'playlist rep timing', {
+              runId: safe(runId),
+              arm: safe(arm.label),
+              rates: safe(arm.rates),
+              rep: safe(rep),
+              tracks: safe(nativeTracks),
+              plannedMs: safe(plannedMs),
+              statusMs: safe(r1(statusMs)),
+              playheadMs: safe(r1(playheadMs)),
+              skewMs: safe(r1(skewMs)),
+              endedMs: safe(endedMs === null ? null : Math.round(endedMs)),
+              residualMs: safe(residualMs === null ? null : Math.round(residualMs)),
+              // The raw material, so every derived number above can be
+              // recomputed offline rather than trusted.
+              transitionsMs: safe(transitions.map((t) => `${t.index}@${Math.round(t.atMs)}`).join('|')),
+              dwellsMs: safe(dwells.join('|')),
+            })
+          } catch (err) {
+            acc[arm.key]!.failed += 1
+            logger.warn('puncheokie.plruler.rep', 'rep failed', {
+              runId: safe(runId),
+              arm: safe(arm.label),
+              rep: safe(rep),
+              error: safe(err instanceof Error ? err.message : String(err)),
+            })
+          }
+          await sleep(250)
+        }
+      }
+
+      for (const arm of arms) {
+        const a = acc[arm.key]!
+        const line =
+          `  ${arm.label} [${arm.rates}]: skew=${r1(med(a.skew)) ?? 'n/a'} ` +
+          `clipDwell=${r1(med(a.clipDwell)) ?? 'n/a'} silDwell=${r1(med(a.silDwell)) ?? 'n/a'} ` +
+          `residual=${r1(med(a.residual)) ?? 'n/a'} (n=${a.residual.length}, failed=${a.failed})`
+        say(line)
+        logger.info('puncheokie.plruler.arm', 'playlist arm summary', {
+          runId: safe(runId),
+          arm: safe(arm.label),
+          rates: safe(arm.rates),
+          n: safe(a.residual.length),
+          failed: safe(a.failed),
+          skewMedianMs: safe(r1(med(a.skew))),
+          clipDwellMedianMs: safe(r1(med(a.clipDwell))),
+          clipDwellN: safe(a.clipDwell.length),
+          silDwellMedianMs: safe(r1(med(a.silDwell))),
+          residualMedianMs: safe(r1(med(a.residual))),
+        })
+      }
+
+      // The verdict, stated on device so the operator sees it without a laptop.
+      // Same clip both sides, so the clip's true length cancels and what is
+      // left is the difference the boundaries cost.
+      for (const [hom, het, what] of [
+        ['callHom', 'callHet', 'call 48k: interleaving 24 kHz silence'],
+        ['bellHom', 'bellHet', 'bell 24k: interleaving 24 kHz silence (CONTROL)'],
+      ] as const) {
+        const h = med(acc[hom]!.clipDwell)
+        const t = med(acc[het]!.clipDwell)
+        if (h === null || t === null) {
+          say(`  ${what}: n/a`)
+          continue
+        }
+        say(`  ${what}: ${r1(t - h)} ms per boundary`)
+        logger.info('puncheokie.plruler.verdict', 'boundary cost difference', {
+          runId: safe(runId),
+          comparison: safe(what),
+          homogeneousDwellMs: safe(r1(h)),
+          heterogeneousDwellMs: safe(r1(t)),
+          perBoundaryDeltaMs: safe(r1(t - h)),
+        })
+      }
+      say('playlist ruler: done — the call delta is the finding, the bell delta is the control')
+      logger.info('puncheokie.plruler.done', 'playlist ruler complete', { runId: safe(runId) })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      say(`playlist ruler FAILED: ${message}`)
+      logger.warn('puncheokie.plruler', 'playlist calibration failed', { runId: safe(runId), error: safe(message) })
+    } finally {
+      setRunning(false)
+    }
+  }, [running, say])
+
   const probeDynamics = useCallback(async () => {
     try {
       const ctx = new OboeAudioContext({ sampleRate: 48000 })
@@ -922,6 +1276,16 @@ async function timeArmedOboe(
         </Pressable>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel="Playlist ruler"
+          testID="probe-playlist-ruler"
+          disabled={running}
+          onPress={() => void probePlaylistRuler()}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Playlist ruler</Text>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
           onPress={probeOboe}
           style={styles.button}
           testID="probe-oboe"
@@ -963,7 +1327,12 @@ const styles = StyleSheet.create({
   container: { padding: 20, gap: 12, paddingBottom: 60 },
   heading: { fontSize: 22, fontWeight: '800', color: colors.textPrimary },
   note: { fontSize: 12, lineHeight: 17, color: colors.textSecondary },
-  row: { flexDirection: 'row', gap: 12, marginVertical: 8 },
+  // WRAPS. Seven buttons at their intrinsic widths total ~1675 dp against the
+  // TB125FU's ~960 dp of usable width, and React Native does not shrink them —
+  // the last ones simply render past the right edge, where a touch lands on
+  // nothing and `uiautomator dump` reports bounds outside the display rect. An
+  // unreachable button reads as a dead probe, not as a layout bug.
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginVertical: 8 },
   button: {
     paddingVertical: 14,
     paddingHorizontal: 18,
