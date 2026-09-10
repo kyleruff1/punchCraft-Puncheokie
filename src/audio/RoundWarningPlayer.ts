@@ -107,17 +107,42 @@ export class RoundWarningPlayer {
         updateInterval: this.timing ? OBSERVED_PLAYLIST_UPDATE_INTERVAL_MS : 500,
       })
       this.totalMs = totalMs
+      // `tracks` is the field IntroPlayer and RecoveryPlayer already log and
+      // this one did not, which is why the round warning is the one ceremony
+      // whose dead air cannot be quantified per round.
+      //
+      // It matters more here than anywhere else. Plan 5b measured ~95 ms lost
+      // entering a 24 kHz track and ~193 ms entering a 48 kHz one, and this
+      // playlist alternates 24 kHz breaths with 48 kHz speech — so a 3-track
+      // warning runs ~290 ms past `totalMs` and a 7-track one ~865 ms. The
+      // analyzer's `warnEndToBellMs` is built on `totalMs`, and its whole job
+      // is the SIGN of that number: the bell cutting the countdown off. It
+      // currently reads a median +386 ms of margin that is partly not there,
+      // and without the track count there is no way to say how much per round.
       logger.info('puncheokie.warn', 'round warning prepared', {
         round: safe(roundNumber),
         opener: safe(opener?.id),
         totalMs: safe(totalMs),
+        tracks: safe(sources.length),
+        boundaries: safe(Math.max(0, sources.length - 1)),
       })
     } catch (error) {
       // Dispose rather than merely drop the reference: if the throw came
       // from AFTER the field was assigned, nulling it would orphan a live
       // native playlist with no handle left to free it.
       this.dispose()
+      // And CLEAR THE LATCH. `preparedRound` is set before the try so the
+      // idempotence guard at the top of this method works — but that means a
+      // failed build leaves it pointing at a round that has no playlist, and
+      // every later `prepare()` for the same round returns at the guard. The
+      // caller re-prepares on every store tick for the whole rest, so that is
+      // ~60 retry opportunities all thrown away: one transient throw here and
+      // that round gets no "three, two, one" into the bell. RecoveryPlayer's
+      // otherwise-identical catch has always cleared its own latch; this one
+      // drifted, and the drift cost a whole ceremony.
+      this.preparedRound = null
       logger.warn('puncheokie.warn', 'round warning playlist failed', {
+        round: safe(roundNumber),
         error: safe(String(error)),
       })
     }
