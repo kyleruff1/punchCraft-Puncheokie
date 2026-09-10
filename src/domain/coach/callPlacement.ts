@@ -174,8 +174,18 @@ export const MIN_BREATH_MS = 150
  * resolved to one JS loop turn, so it reads late and compresses the gap.
  * Closing that last stretch needs a microphone — see the still-open
  * `PLAYHEAD_TO_SPEAKER_MS`.
+ *
+ * **95 → 127 (Kyle 2026-09-10):** the post-floor 24-drive A/B (b8e72bc5) cut
+ * `barsAtOrPastPunch` 41 → 1 but left one −3.9 ms bar in `quick-coast-reset`
+ * (`call/1-.-2-.` r0, median delivery 118.1 ms against the 150 ms floor).
+ * The ruler-calibrated 95 ms median is right for the median; the tightest
+ * slot needs 32 ms more headroom to actually clear the floor. Raising the
+ * clamp by exactly that 32 ms scheduled 32 ms more silence per bar, hits the
+ * 150 ms floor at the ear on the tight slots, and — the immediate goal — pushes
+ * the −3.9 ms outlier to ≈ +28 ms so `barsAtOrPastPunch = 0` on every drive.
+ * MIN_BREATH_MS = 150 (Kyle's comfort target) is unchanged.
  */
-export const DELIVERED_BREATH_SHORTFALL_MS = 95
+export const DELIVERED_BREATH_SHORTFALL_MS = 127
 
 /**
  * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
