@@ -397,6 +397,14 @@ export function renderSummaryMd(rows, meta) {
   // the device (`OBSERVER_ONSET_SKEW_MS` in observed-timing.mjs). Naming it
   // plainly is the point: the raw and corrected views must never be read as
   // the same number.
+  //
+  // That ~95 now covers every kind in this column. It used to include
+  // `intro`, `recovery`, `round-warning` and `metronome`, which are exactly
+  // the kinds `observed-timing.mjs` refused to correct because 95 had never
+  // been measured on `createAudioPlaylist` — so the sentence above was
+  // asserting the constant across the boundary the analyzer was careful to
+  // keep. Plan 5b measured the playlist path at 94.8 ms and the claim is now
+  // true as written.
   lines.push('| workout | vocab | verdict | reason | verify | timing | breath min / p5 | at·past punch | under floor | stats | voice onset (status event, ms) | instrument onset (ms) | AudioTracks arm→end | elapsed |')
   lines.push('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|')
   for (const r of rows) {

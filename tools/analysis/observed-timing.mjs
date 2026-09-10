@@ -100,13 +100,33 @@ export const TAIL_MIN_SAMPLES = 20
 export const OBSERVER_ONSET_SKEW_MS = 95
 
 /**
- * The skew was measured on `createAudioPlayer`. The ceremony players are
- * `createAudioPlaylist` — a different native object whose startup was never
- * calibrated — so the correction is NOT applied to them and their numbers
- * stay raw rather than being silently adjusted by a constant borrowed from a
- * different code path.
+ * The skew was measured on `createAudioPlayer`, and then — plan 5b, on glass,
+ * 2026-09-09 — on `createAudioPlaylist` too. Pooled over 48 reps across six
+ * playlist shapes the playlist's onset skew is **94.8 ms**, against the
+ * player's 95. They are the same number, which is not a coincidence: the two
+ * objects share `BaseAudioPlayer` on the Android side and differ at the onset
+ * event only in the name the status is emitted under.
+ *
+ * So one constant covers both paths, and the ceremony kinds join the corrected
+ * domain rather than sitting outside it. `warnEndToBellMs` in particular stops
+ * being a corrected-vs-raw subtraction — see the domain note in `ceremonies`.
+ *
+ * `metronome` is included on the same evidence as the rest of the playlist
+ * path, NOT on its own measurement: no capture in the suite carries a
+ * metronome observation (the recipes have it disabled), so there is nothing to
+ * cross-check it against. It is a playlist, and the constant is a property of
+ * playlists.
  */
-const SKEW_CORRECTED_KINDS = new Set(['click-script', 'clip', 'instruction', 'combo-announce'])
+const SKEW_CORRECTED_KINDS = new Set([
+  'click-script',
+  'clip',
+  'instruction',
+  'combo-announce',
+  'intro',
+  'recovery',
+  'round-warning',
+  'metronome',
+])
 
 /**
  * How far the end-event residual may sit from zero before this tool says the
@@ -833,8 +853,15 @@ export function analyze(text, constants = null) {
   const metronomes = observed.filter((o) => o.kind === 'metronome')
   const rounds = []
   for (const b of boundaries.filter((x) => x.transition === 'work-entered' && x.monotonicTimeMs !== undefined)) {
-    const bell = bells.filter((o) => o.onsetMs - b.monotonicTimeMs >= BELL_WINDOW_MS[0] && o.onsetMs - b.monotonicTimeMs <= BELL_WINDOW_MS[1]).sort((x, y) => Math.abs(x.onsetMs - b.monotonicTimeMs) - Math.abs(y.onsetMs - b.monotonicTimeMs))[0]
-    const bellAt = bell?.onsetMs ?? b.monotonicTimeMs
+    // SELECT on the same onset this row REPORTS. The bell used to be picked
+    // against `BELL_WINDOW_MS` using its raw `onsetMs` and then reported ten
+    // lines later through `trueOnsetMs`, so the stated ±[-500, 3000] window was
+    // silently [-405, 3095] in the domain the number came out in. One
+    // observation, two domains, in one loop body.
+    const bell = bells
+      .filter((o) => trueOnsetMs(o) - b.monotonicTimeMs >= BELL_WINDOW_MS[0] && trueOnsetMs(o) - b.monotonicTimeMs <= BELL_WINDOW_MS[1])
+      .sort((x, y) => Math.abs(trueOnsetMs(x) - b.monotonicTimeMs) - Math.abs(trueOnsetMs(y) - b.monotonicTimeMs))[0]
+    const bellAt = bell ? trueOnsetMs(bell) : b.monotonicTimeMs
     const warn = warns.filter((o) => typeof o.endMs === 'number' && o.endMs <= bellAt + 2_000 && bellAt - o.endMs < 30_000).sort((x, y) => y.endMs - x.endMs)[0]
     const recovery = warn ? recoveries.filter((o) => typeof o.endMs === 'number' && typeof warn.onsetMs === 'number' && o.endMs < warn.onsetMs + 5_000 && warn.onsetMs - o.endMs < 90_000).sort((x, y) => y.endMs - x.endMs)[0] : undefined
     // The ceremonies are scored on the AUDIBLE end, exactly as calls and
@@ -845,34 +872,56 @@ export function analyze(text, constants = null) {
     // actually just "the bell stopped it, then rang". The true gaps were
     // 420 ms and 498 ms, both past this analyzer's own 400 ms band, and no
     // warning fired.
-    // DOMAIN RULE. The skew correction applies to players, not to the ceremony
-    // playlists (`SKEW_CORRECTED_KINDS`), so three kinds of comparison exist
-    // here and only two are legitimate:
+    // DOMAIN RULE. Every audio observation here is now in ONE domain: plan 5b
+    // measured the playlist's onset skew at 94.8 ms against the player's 95, so
+    // the ceremony kinds are corrected alongside the bell and the split this
+    // block used to carry is gone. Two comparisons remain, both legitimate:
     //
-    //   corrected audio vs a CLOCK event  — fine, and it must be corrected:
-    //       the bell against `round.boundary` is real audio lateness.
-    //   raw audio vs raw audio            — fine: both playlists, one domain.
-    //   corrected audio vs RAW audio      — never. It manufactures the skew as
-    //       a finding. The warning (playlist, uncalibrated) against the bell
-    //       (player, calibrated) is exactly that pairing, so the bell is used
-    //       RAW there and the row says so.
+    //   corrected audio vs a CLOCK event  — the bell against `round.boundary`,
+    //       real audio lateness.
+    //   corrected audio vs corrected audio — the warning against the bell, the
+    //       recovery against the warning. The correction cancels in the second
+    //       kind, which is why it MUST be applied to both operands or neither.
     //
-    // Once the playlist path is calibrated too (plan 5b), warnEndToBell moves
-    // into the corrected domain and this split goes away.
+    // That last point was a live bug and is the reason these reads are spelled
+    // out rather than left to `audibleEndMs`. `warnEndToBellMs` used
+    // `bell.onsetMs` raw and justified it as "raw vs raw, both playlists" — but
+    // the bell is a `createAudioPlayer` (kind `clip`), so it was a player read
+    // raw against a playlist read raw, and the two only cancel if their skews
+    // are equal. They are, as it turns out; that was luck, not reasoning, and
+    // the same line would have been wrong for any other pair.
+    //
+    // STILL UNDERSTATED, and not fixed here. `audibleEndMs` is
+    // `trueOnset + statedTotal`, which is right for a one-track playlist and
+    // wrong for a multi-track one: 5b also measured ~95 ms of dead air entering
+    // a 24 kHz track and ~193 ms entering a 48 kHz one, and the ceremonies
+    // interleave 24 kHz silence between 48 kHz clips. So a 7-track walkout runs
+    // ~800 ms longer than `statedTotal` claims, and `warnEndToBellMs` below is
+    // optimistic by whatever its own boundaries cost. Correcting it needs the
+    // track composition per observation, which `RoundWarningPlayer` does not
+    // log yet — that is why it now does.
     const warnAudibleEnd = audibleEndMs(warn)
     const recoveryAudibleEnd = audibleEndMs(recovery)
+    const warnTrueOnset = trueOnsetMs(warn)
     const row = {
       roundIndex: b.roundIndex,
       bellOnsetLatencyMs: bell ? r1(trueOnsetMs(bell) - b.monotonicTimeMs) : null,
-      warnEndToBellMs: warn && bell && warnAudibleEnd !== null ? r1(bell.onsetMs - warnAudibleEnd) : null,
-      /** Both operands raw: the playlist path has no calibration yet. */
-      warnEndToBellDomain: 'raw (playlist uncalibrated)',
+      warnEndToBellMs: warn && bell && warnAudibleEnd !== null ? r1(trueOnsetMs(bell) - warnAudibleEnd) : null,
+      /** One domain now; the operands cancel rather than merely agreeing. */
+      warnEndToBellDomain: 'corrected (both operands)',
       warnOutcome: warn?.outcome ?? null,
       // How long the playlist was held open past its own audio — the teardown
       // gap, NOT the clip overrunning. Reported separately so the two can
-      // never be read as one number again.
+      // never be read as one number again. `endMs` is a CLOCK stamp taken in
+      // the observer's `close()`, so it carries no skew and must not be
+      // corrected; the audible end it is measured against does.
       warnHeldOpenPastAudioMs: warn && typeof warn.endMs === 'number' && warnAudibleEnd !== null ? r1(warn.endMs - warnAudibleEnd) : null,
-      recoveryEndToWarnOnsetMs: recovery && warn && typeof warn.onsetMs === 'number' && recoveryAudibleEnd !== null ? r1(warn.onsetMs - recoveryAudibleEnd) : null,
+      // Playlist against playlist: the correction cancels, and it only cancels
+      // because BOTH sides go through `trueOnsetMs`. Reading `warn.onsetMs`
+      // raw here while the recovery side was corrected would have moved this
+      // number by the whole constant and called it a finding.
+      recoveryEndToWarnOnsetMs:
+        recovery && warn && warnTrueOnset !== null && recoveryAudibleEnd !== null ? r1(warnTrueOnset - recoveryAudibleEnd) : null,
       recoveryOutcome: recovery?.outcome ?? null,
     }
     if (row.warnEndToBellMs !== null && (row.warnEndToBellMs < WARN_END_TO_BELL_TARGET_MS[0] || row.warnEndToBellMs > WARN_END_TO_BELL_TARGET_MS[1])) {
@@ -883,14 +932,26 @@ export function analyze(text, constants = null) {
   }
   const ceremonies = {
     rounds,
-    // Which domain each row is reported in, so a reader never lines these up
-    // against the corrected family medians and reads the difference as a
-    // finding. Intro/metronome/warning/recovery run through
-    // `createAudioPlaylist`, which the ruler has not measured (plan 5b); the
-    // bell is a player and is corrected.
-    domain: { bells: 'corrected', intro: 'raw (playlist uncalibrated)', metronome: 'raw (playlist uncalibrated)', rounds: 'mixed — see per-row *Domain fields' },
-    intro: intros.map((o) => ({ onsetLatencyMs: o.onsetLatencyMs ?? null, driftMs: typeof o.observedDurationMs === 'number' && typeof o.expectedDurationMs === 'number' ? r1(o.observedDurationMs - o.expectedDurationMs) : null, outcome: o.outcome })),
-    metronome: { n: metronomes.length, onset: latencyStats(metronomes.map((o) => o.onsetLatencyMs)), outcomes: tally(metronomes, 'outcome') },
+    // Which domain each row is reported in. Since plan 5b measured the playlist
+    // path there is only one, and this field says so rather than being deleted
+    // — a reader coming from an older report needs to see that the split
+    // closed, not find the label quietly missing.
+    domain: { bells: 'corrected', intro: 'corrected', metronome: 'corrected', rounds: 'corrected' },
+    // These two read `onsetLatencyMs` directly, which is why adding kinds to
+    // `SKEW_CORRECTED_KINDS` could never reach them: the Set is consulted
+    // inside `trueOnsetLatencyMs`, and these were not calling it. Left as raw
+    // reads while the domain label above changed, they would have been a
+    // labelled lie rather than a visible inconsistency.
+    intro: intros.map((o) => ({
+      onsetLatencyMs: trueOnsetLatencyMs(o),
+      // A duration DIFFERENCE, so no onset correction touches it — but its
+      // meaning is now known: this is the boundary dead air (~95 ms entering a
+      // 24 kHz track, ~193 entering a 48 kHz one) plus the end-event lag, and
+      // for a 7-track walkout it runs ~800 ms.
+      driftMs: typeof o.observedDurationMs === 'number' && typeof o.expectedDurationMs === 'number' ? r1(o.observedDurationMs - o.expectedDurationMs) : null,
+      outcome: o.outcome,
+    })),
+    metronome: { n: metronomes.length, onset: latencyStats(metronomes.map((o) => trueOnsetLatencyMs(o))), outcomes: tally(metronomes, 'outcome') },
     bells: { n: bells.length, onset: latencyStats(bells.map((o) => trueOnsetLatencyMs(o))) },
   }
 

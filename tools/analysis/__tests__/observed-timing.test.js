@@ -331,25 +331,43 @@ describe('joins', () => {
     // boundary — a CLOCK event — is corrected: raw 20 and 50 become 115/145.
     expect(report.ceremonies.rounds).toEqual([
       expect.objectContaining({ roundIndex: 0, bellOnsetLatencyMs: 115, warnEndToBellMs: null, recoveryEndToWarnOnsetMs: null }),
-      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 145, warnEndToBellMs: 150, warnHeldOpenPastAudioMs: 0, recoveryEndToWarnOnsetMs: 30000 }),
+      // `warnHeldOpenPastAudioMs` moved 0 → −95 when the playlist path joined
+      // the corrected domain, and that is the correction working rather than a
+      // regression. `warn.endMs` is a CLOCK stamp from the observer's close()
+      // and carries no skew; the audible end it is subtracted from does. So
+      // believing the audio started 95 ms later than the status event said
+      // means believing it ENDED 95 ms later too, and the playlist was held
+      // open 95 ms less past its own audio than this used to claim.
+      expect.objectContaining({ roundIndex: 1, bellOnsetLatencyMs: 145, warnEndToBellMs: 150, warnHeldOpenPastAudioMs: -95, recoveryEndToWarnOnsetMs: 30000 }),
     ])
     expect(report.ceremonies.bells).toMatchObject({ n: 2 })
   })
 
-  it('never subtracts a corrected time from a raw one', () => {
-    // The trap this pins. The bell is a PLAYER (corrected); the round warning
-    // is a `createAudioPlaylist` ceremony the ruler never measured (raw). Had
-    // `warnEndToBellMs` used the corrected bell onset it would have read 245
-    // — the countdown apparently finishing a quarter-second early — and the
-    // whole of that 95 would have been the correction showing up as a finding
-    // in a comparison where it cancels. Both operands raw, the gap is 150.
+  it('applies the correction to BOTH operands or neither, never one', () => {
+    // What this used to pin: the bell was a player (corrected) and the round
+    // warning a `createAudioPlaylist` ceremony the ruler had never measured
+    // (raw), so `warnEndToBellMs` deliberately read the bell RAW to keep the
+    // subtraction inside one domain. Plan 5b measured the playlist at 94.8 ms
+    // against the player's 95, both operands are corrected now, and there is
+    // one domain — so the old assertion, that two views of the same bell must
+    // differ by exactly the skew, is gone because the second view is gone.
+    //
+    // What replaces it is the invariant that actually protects these numbers.
+    // A comparison between two AUDIO events must not move when the constant
+    // moves: the correction has to cancel. Both of these are audio-vs-audio,
+    // and both would shift by the whole 95 if someone corrected one side and
+    // read the other's raw field — which is exactly the shape of the bug that
+    // was live here, and the reason these reads are spelled out in the source
+    // rather than left to `audibleEndMs`.
     const round1 = report.ceremonies.rounds[1]
-    expect(round1.warnEndToBellMs).toBe(150)
-    expect(round1.warnEndToBellDomain).toBe('raw (playlist uncalibrated)')
-    // The two views of the same bell must therefore DIFFER by exactly the
-    // skew — that difference is the boundary, and it is deliberate.
-    expect(round1.bellOnsetLatencyMs - 50).toBe(OBSERVER_ONSET_SKEW_MS)
-    expect(report.ceremonies.domain).toMatchObject({ bells: 'corrected', metronome: 'raw (playlist uncalibrated)' })
+    expect(round1.warnEndToBellMs).toBe(150) // player vs playlist
+    expect(round1.recoveryEndToWarnOnsetMs).toBe(30_000) // playlist vs playlist
+    expect(round1.warnEndToBellDomain).toBe('corrected (both operands)')
+    expect(report.ceremonies.domain).toMatchObject({ bells: 'corrected', metronome: 'corrected', intro: 'corrected', rounds: 'corrected' })
+    // And the correction is still a real, non-zero thing — a test that passes
+    // because nothing is being corrected would look identical to this one.
+    expect(OBSERVER_ONSET_SKEW_MS).toBeGreaterThan(0)
+    expect(round1.bellOnsetLatencyMs).toBe(50 + OBSERVER_ONSET_SKEW_MS)
   })
 
   it('reports rings against their own schedule and the instrument tap', () => {
