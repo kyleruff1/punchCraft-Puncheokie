@@ -362,8 +362,13 @@ describe('joins', () => {
     const round1 = report.ceremonies.rounds[1]
     expect(round1.warnEndToBellMs).toBe(150) // player vs playlist
     expect(round1.recoveryEndToWarnOnsetMs).toBe(30_000) // playlist vs playlist
-    expect(round1.warnEndToBellDomain).toBe('corrected (both operands)')
-    expect(report.ceremonies.domain).toMatchObject({ bells: 'corrected', metronome: 'corrected', intro: 'corrected', rounds: 'corrected' })
+    // The domain LABELS are gone, deliberately. They were hand-written strings
+    // describing what the code did, and a string can drift from the code it
+    // describes. With one domain there is nothing to label — the skew is
+    // applied once at the parse boundary and no raw onset field reaches
+    // anything below it, so the labelled property is now the only property.
+    expect(round1).not.toHaveProperty('warnEndToBellDomain')
+    expect(report.ceremonies).not.toHaveProperty('domain')
     // And the correction is still a real, non-zero thing — a test that passes
     // because nothing is being corrected would look identical to this one.
     expect(OBSERVER_ONSET_SKEW_MS).toBeGreaterThan(0)
