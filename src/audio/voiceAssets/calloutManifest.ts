@@ -438,7 +438,7 @@ export interface ThemeClip {
 }
 
 export const THEME_CLIPS: readonly ThemeClip[] = [
-  { id: 'theme-straight-extension', theme: "Straight Extension", module: require('../../../assets/voice/numbers/standalone/theme-straight-extension.wav'), durationMs: 2650 },
+  { id: 'theme-straight-extension', theme: "Straight Extension", module: require('../../../assets/voice/numbers/standalone/theme-straight-extension.wav'), durationMs: 2550 },
   { id: 'theme-jab-volume-ladder', theme: "Jab Volume Ladder", module: require('../../../assets/voice/numbers/standalone/theme-jab-volume-ladder.wav'), durationMs: 3121 },
   { id: 'theme-hook-finish-ladder', theme: "Hook Finish Ladder", module: require('../../../assets/voice/numbers/standalone/theme-hook-finish-ladder.wav'), durationMs: 3133 },
   { id: 'theme-lead-side-disguise', theme: "Lead-Side Disguise", module: require('../../../assets/voice/numbers/standalone/theme-lead-side-disguise.wav'), durationMs: 8657 },
