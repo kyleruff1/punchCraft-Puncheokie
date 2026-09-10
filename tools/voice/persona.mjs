@@ -108,4 +108,31 @@ export const PRODUCTION_BLEND = PERSONA.blend ?? PERSONAS.stone.blend
  * (D16, spec §3.2 versioned decoders).
  */
 export const PERSONA_VERSION = PERSONA.version
+
+/**
+ * The shipped container's sample rate, as an ffmpeg `-ar` argument.
+ *
+ * ONE reader. The persona has declared 48 kHz since Kyle's hi-fi ask, and the
+ * three renderers that read it (intro, recovery, click-script) emit 48 kHz —
+ * but ten others hardcoded `'-ar', '24000'` and the silence tracks had no
+ * generator at all. So the walkout was `[48k, 24k, 48k, 24k, …]`, and plan 5b
+ * measured what that costs: the native playlist renegotiates its format at
+ * every track boundary, ~95 ms entering a 24 kHz track and ~193 ms entering a
+ * 48 kHz one — about 800 ms of dead air across a seven-track walkout, and the
+ * round warning's countdown ending later than the analyzer believed.
+ *
+ * Any renderer whose output can sit in a playlist next to another renderer's
+ * output must use this and nothing else. `tools/guards/playlist-sample-rate.mjs`
+ * checks the shipped files, so a hardcoded rate that creeps back in fails CI
+ * rather than costing air time.
+ *
+ * The FALLBACK is the shipped rate, not 24 kHz. Only `cornerman3` declares
+ * `sampleRate`, and `ACTIVE_PERSONA` is still `cornerman`, which declares
+ * nothing — so a `?? 24000` here resolved to 24 kHz for every renderer that
+ * did not pass `--persona=cornerman3`, and that is exactly how the silence
+ * generator's first run wrote nothing. The container the app ships is 48 kHz;
+ * a persona that wants otherwise has to say so.
+ */
+export const SHIPPED_SAMPLE_RATE = 48000
+export const OUT_SAMPLE_RATE = String(PERSONA.sampleRate ?? SHIPPED_SAMPLE_RATE)
 export const RENDERER = rendererId(PERSONA)

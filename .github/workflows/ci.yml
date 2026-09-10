@@ -33,3 +33,4 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=6144
       - run: node tools/guards/velocity-terminology.mjs
+      - run: node tools/guards/playlist-sample-rate.mjs

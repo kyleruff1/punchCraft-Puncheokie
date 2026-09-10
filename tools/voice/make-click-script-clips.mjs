@@ -34,6 +34,7 @@ import { dirname, join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
+import { SHIPPED_SAMPLE_RATE } from './persona.mjs'
 import { ACTIVE_PERSONA, getPersona, rendererId } from './personas.mjs'
 import { measureDuration, renameWithRetry, trimEnds } from './wav.mjs'
 
@@ -51,7 +52,7 @@ const PRODUCTION_EXPRESSION = PERSONA.expression
 // bit rate"). Default to the persona's approved texture at 24kHz (the
 // Chatterbox model's native rate).
 const PRODUCTION_TEXTURE = process.argv.find((a) => a.startsWith('--texture='))?.slice('--texture='.length) ?? PERSONA.texture
-const OUT_SAMPLE_RATE = process.argv.find((a) => a.startsWith('--sample-rate='))?.slice('--sample-rate='.length) ?? String(PERSONA.sampleRate ?? 24000)
+const OUT_SAMPLE_RATE = process.argv.find((a) => a.startsWith('--sample-rate='))?.slice('--sample-rate='.length) ?? String(PERSONA.sampleRate ?? SHIPPED_SAMPLE_RATE)
 const RENDERER = rendererId(PERSONA)
 const OUT_ROOT = join('assets', 'voice', 'click-scripts', PERSONA.id)
 

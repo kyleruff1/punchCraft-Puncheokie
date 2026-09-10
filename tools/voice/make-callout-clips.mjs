@@ -30,6 +30,7 @@ import { textureChain } from './texture.mjs'
 import {
   ENGINE,
   EXAGGERATION,
+  OUT_SAMPLE_RATE,
   PRODUCTION_EXPRESSION,
   PRODUCTION_TEXTURE,
   REFERENCE_VOICE,
@@ -209,8 +210,11 @@ for (const job of jobs) {
   const temp = `${job.wav}.p.wav`
   execFileSync(
     FFMPEG,
+    // The persona's rate, not a literal. The theme clips this emits sit in
+    // the round-warning playlist between 48 kHz openers and cores; at 24 kHz
+    // every boundary around them was a format renegotiation (plan 5b).
     ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav, '-af', filters,
-      '-ar', '24000', '-ac', '1', temp],
+      '-ar', OUT_SAMPLE_RATE, '-ac', '1', temp],
     { stdio: 'ignore' },
   )
   if (existsSync(temp)) renameWithRetry(temp, job.wav)
