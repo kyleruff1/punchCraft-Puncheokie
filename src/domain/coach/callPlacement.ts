@@ -197,8 +197,24 @@ export const DELIVERED_BREATH_SHORTFALL_MS = 95
  * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
  * by design — the escape hatch when the mic says a specific bucket wants a
  * bespoke breath the formula doesn't nail. A value here replaces the formula.
+ *
+ * `call/1-.-2-.` = 290 (Kyle 2026-09-11, closes #368 via cross-workout-safe
+ * path per #385): the two `1-.-2-.` coast bars (in `quick-coast-reset` and
+ * `pump-and-coast`) hit the formula's `MIN + SHORTFALL = 245 ms` floor because
+ * the 1200 ms inter-punch spacing collapses the density term (`dense − GAIN ×
+ * (1200 − 300) = −300 ms`). At 245 ms scheduled the tail delivers slightly
+ * past the punch on cold `r0` plays (worst observed: −3.9 ms on release
+ * `b8e72bc5`, the last hard bar in the release verification ledger).
+ * Widening THIS slot only to 290 ms adds 45 ms of head-room per bar — the
+ * same +45 the global `DELIVERED_BREATH_SHORTFALL_MS` 95 → 127 bump would
+ * have delivered — but scoped to bars whose call slot is exactly
+ * `call/1-.-2-.`. The four workouts that regressed under the global bump
+ * (`establish-the-jab-20`, `quick-uppercut-lane`, `switch-by-round`,
+ * `quick-heavy-two`) all use DIFFERENT slot keys and are untouched.
  */
-export const CALL_BREATH_OVERRIDES: Record<string, number> = {}
+export const CALL_BREATH_OVERRIDES: Record<string, number> = {
+  'call/1-.-2-.': 290,
+}
 
 /** The minimum a bar must expose for placement: its tokens and their offsets. */
 export interface PlaceableBar {
