@@ -34,20 +34,8 @@ export type CallVocabulary = 'numbers' | 'techniques'
  * Breath between a section lead-in's last word and its section's first
  * strike (Script Bible v2). The clip is scheduled to END this far before
  * the block starts; the 50 ms tick granularity eats into it, never past it.
- *
- * **250 → 282 (Kyle 2026-09-10, paired with the DELIVERED_BREATH_SHORTFALL_MS
- * 95 → 127 bump):** the shortfall bump moves the rep-0 call's dispatch
- * (`endByMs` here) 32 ms earlier, so `dispatchAtMs = endByMs − clipDurationMs
- * − LEAD_IN_PAD_MS − leadMs` slides left by the same 32 ms while the clip
- * duration is fixed — the whisper's last word therefore reaches its
- * `endByMs` 32 ms later relative to the call, and lead-in walkovers jumped
- * 4 → 7 out of 8 in the follow-up drive (`quick-coast-reset`, sha
- * 0cbb3e18). Restoring the pre-fix buffer exactly means adding those 32 ms
- * back into the pad. The whisper stays audibly clean; the call now finishes
- * ~64 ms further before the punch than pre-fix (pad 282 + breath 277 vs
- * pre-fix 250 + 245).
  */
-export const LEAD_IN_PAD_MS = 282
+export const LEAD_IN_PAD_MS = 250
 
 /**
  * Per-bar loop calls finish ~half a second before the bar's first strike
@@ -187,17 +175,23 @@ export const MIN_BREATH_MS = 150
  * Closing that last stretch needs a microphone — see the still-open
  * `PLAYHEAD_TO_SPEAKER_MS`.
  *
- * **95 → 127 (Kyle 2026-09-10):** the post-floor 24-drive A/B (b8e72bc5) cut
- * `barsAtOrPastPunch` 41 → 1 but left one −3.9 ms bar in `quick-coast-reset`
- * (`call/1-.-2-.` r0, median delivery 118.1 ms against the 150 ms floor).
- * The ruler-calibrated 95 ms median is right for the median; the tightest
- * slot needs 32 ms more headroom to actually clear the floor. Raising the
- * clamp by exactly that 32 ms scheduled 32 ms more silence per bar, hits the
- * 150 ms floor at the ear on the tight slots, and — the immediate goal — pushes
- * the −3.9 ms outlier to ≈ +28 ms so `barsAtOrPastPunch = 0` on every drive.
- * MIN_BREATH_MS = 150 (Kyle's comfort target) is unchanged.
+ * **95 → 127 → 95 (Kyle 2026-09-10, reverted):** the post-floor A/B left one
+ * −3.9 ms bar in `quick-coast-reset` (`call/1-.-2-.` r0). Bumping this to
+ * 127 (paired with LEAD_IN_PAD_MS 250 → 282, commit ea5df336) cleared THAT
+ * bar and even improved under-floor rates, but the full 24-workout suite
+ * (release ea5df336, sha 1789073388672) revealed cross-workout regressions
+ * the single-workout drive could not see: `quick-uppercut-lane` −113.5 ms
+ * on `call/1-2-5-2` r0 (was 0.4 ms of margin pre-fix), `establish-the-jab-20`
+ * −32.5 ms on `call/1-2-1b-2` r2, `switch-by-round` −24.7 ms on `call/1-1-2-.`
+ * r0, plus a tokenDue disagreement 342 ms on quick-uppercut-lane round 0. 4
+ * FAIL, 1 ERROR, 17 WARN, 0 PASS. The knob's tail sensitivity across
+ * workouts exceeds the median headroom it buys on the target — the ruler
+ * was right for the median, wrong for the tail. Reverted; #368's −3.9 ms
+ * bar stays on the ledger under a new approach (per-workout override or
+ * scheduler-side fix, not a global constant tune). MIN_BREATH_MS = 150
+ * (Kyle's comfort target) untouched throughout.
  */
-export const DELIVERED_BREATH_SHORTFALL_MS = 127
+export const DELIVERED_BREATH_SHORTFALL_MS = 95
 
 /**
  * Per-call breath override, keyed by call slot (e.g. 'call/1-2-.-.'). Empty
