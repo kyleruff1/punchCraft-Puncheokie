@@ -156,6 +156,46 @@ const CALL_WINDOW_OVERRIDES = {
   'call/1-1-1-1': 2200,
 }
 
+/**
+ * Per-slot render overrides for the cornerman3 click-script slots that
+ * shipped with dropped syllables under the default persona settings (Kyle
+ * 2026-09-11, GH #386). Chatterbox elides one syllable from repeat-heavy
+ * calls; Whisper hallucinates it back in the ASR transcription; the
+ * `asrExact: true` gate passes on the false transcript. These overrides
+ * fight the elision by:
+ *
+ *  - **Stronger stops between repeats** — `"One! One! One! One!"` instead
+ *    of `"One, one, one, one!"` forces Chatterbox to reset prosody between
+ *    words, which reduces token merging. `expectText` stays at the original
+ *    corpus text; only the synthesis input changes, so the ASR gate still
+ *    checks the intended token count.
+ *  - **Higher `cfgWeight` (0.7)** trades theatrical looseness for text
+ *    fidelity — Chatterbox stays closer to the literal script.
+ *  - **Lower `exaggeration` (0.75)** reduces pitch variance, giving each
+ *    repeated token a cleaner acoustic separation.
+ *
+ * Re-render with `--attempts=30` (up from the default 8) to deepen the
+ * best-of-N budget on this batch. The `phrase_token_audit.py` sweep on
+ * the shipped wavs is Layer 2 and lives outside this file — see #386.
+ */
+const CALL_CLIP_OVERRIDES = {
+  'numbers|call/1-1-1-1': { text: 'One! One! One! One!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/2-2-2-2': { text: 'Two! Two! Two! Two!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/5-5-5-5': { text: 'Five! Five! Five! Five!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/1-2-3-4': { text: 'One! Two! Three! Four!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/1-1-1-2-3-2-3-2': {
+    text: 'One! One! One! Two, three, two, three, two!',
+    cfgWeight: 0.7,
+    exaggeration: 0.75,
+  },
+  'techniques|call/1-1-1-1': { text: 'Jab! Jab! Jab! Jab!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'techniques|call/1-1-1-2-3-2-3-2': {
+    text: 'Jab! Jab! Jab! Cross, hook, cross, hook, cross!',
+    cfgWeight: 0.7,
+    exaggeration: 0.75,
+  },
+}
+
 const CALL_MAX_STRETCH = {
   'call/1b-2-1-2': 1.6,
   // (Kept for history; the window override above supersedes it for the
@@ -363,16 +403,32 @@ if (!manifestOnly) {
       attempts: Number(
         process.argv.find((a) => a.startsWith('--attempts='))?.slice('--attempts='.length) ?? 8,
       ),
-      jobs: jobs.map((j) => ({
-        path: j.wav,
-        text: speechText(j.plan.renderedText),
-        ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work ?? {}),
-        minDurationMs: j.minDurationMs,
-        maxDurationMs: j.maxDurationMs,
-        expectText: j.plan.renderedText,
-        asrMinScore: 0.8,
-        ...(j.asrExact ? { asrExact: true } : {}),
-      })),
+      jobs: jobs.map((j) => {
+        // Per-slot overrides (see CALL_CLIP_OVERRIDES). Only calls carry
+        // slot keys like `call/<motif>`; other clip kinds skip the lookup.
+        const raw =
+          j.kind === 'call'
+            ? j.slots
+                .map((s) => CALL_CLIP_OVERRIDES[`${j.vocabulary ?? 'numbers'}|${s}`])
+                .find(Boolean) ?? {}
+            : {}
+        const { text: overrideText, ...paramOverrides } = raw
+        return {
+          path: j.wav,
+          text: speechText(overrideText ?? j.plan.renderedText),
+          ...(EXAGGERATION[j.performance] ?? EXAGGERATION.work ?? {}),
+          ...paramOverrides,
+          minDurationMs: j.minDurationMs,
+          maxDurationMs: j.maxDurationMs,
+          // ASR gate still scores against the original corpus text — only
+          // the synthesis input is overridden. A dropped token still fails
+          // (or, in the elision-hallucination case #386 documents, at least
+          // one of the deeper `--attempts` will produce a passing take).
+          expectText: j.plan.renderedText,
+          asrMinScore: 0.8,
+          ...(j.asrExact ? { asrExact: true } : {}),
+        }
+      }),
     }),
     encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024,
