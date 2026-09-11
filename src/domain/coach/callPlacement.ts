@@ -198,22 +198,40 @@ export const DELIVERED_BREATH_SHORTFALL_MS = 95
  * by design — the escape hatch when the mic says a specific bucket wants a
  * bespoke breath the formula doesn't nail. A value here replaces the formula.
  *
- * `call/1-.-2-.` = 290 (Kyle 2026-09-11, closes #368 via cross-workout-safe
- * path per #385): the two `1-.-2-.` coast bars (in `quick-coast-reset` and
- * `pump-and-coast`) hit the formula's `MIN + SHORTFALL = 245 ms` floor because
- * the 1200 ms inter-punch spacing collapses the density term (`dense − GAIN ×
- * (1200 − 300) = −300 ms`). At 245 ms scheduled the tail delivers slightly
- * past the punch on cold `r0` plays (worst observed: −3.9 ms on release
- * `b8e72bc5`, the last hard bar in the release verification ledger).
- * Widening THIS slot only to 290 ms adds 45 ms of head-room per bar — the
- * same +45 the global `DELIVERED_BREATH_SHORTFALL_MS` 95 → 127 bump would
- * have delivered — but scoped to bars whose call slot is exactly
- * `call/1-.-2-.`. The four workouts that regressed under the global bump
- * (`establish-the-jab-20`, `quick-uppercut-lane`, `switch-by-round`,
- * `quick-heavy-two`) all use DIFFERENT slot keys and are untouched.
+ * **Coast-bar family widened to 340 ms** (Kyle 2026-09-11, closes #368
+ * via the cross-workout-safe path per #385):
+ *
+ *   'call/1-.-.-.': 340
+ *   'call/1-.-2-.': 340
+ *
+ * The single-punch (`1-.-.-.`) and wide-spaced-two-punch (`1-.-2-.`) coast
+ * bars share the same failure mode: the formula floors both at
+ * `MIN + SHORTFALL = 245 ms` because their inter-punch spacing (Infinity /
+ * 1200 ms) collapses the density term. At 245 ms scheduled the fresh (cold)
+ * cold-load tail eats the whole breath — observed worst deliveries across
+ * four consecutive drives: `1-.-2-.` r0 was −3.9 at pre-fix and needed
+ * widening; `1-.-.-.` r0 has drifted 97 → 36 → 10.8 → −27.8 across drives,
+ * finally hitting hard-red at the same cold-load tail. Both belong to the
+ * same authored "coast" pattern in `quick-coast-reset` (via
+ * `jab-coast-x8` / `jab-coast-x10` / `jab-hold-cross-x14`) and
+ * `pump-and-coast` (r0/r1/r2/r3 use them repeatedly).
+ *
+ * 340 ms buys ~95 ms above the formula floor — comfortably above the
+ * observed fresh-path tail max of ~305 ms (~35 ms margin worst-case,
+ * ~130 ms typical). For a coast bar this is what the author WANTS: a
+ * spacious call that finishes well before the athlete's next punch;
+ * the aesthetic and the arithmetic agree.
+ *
+ * Cross-workout safety: these slot keys appear in `quick-coast-reset`
+ * and `pump-and-coast` only. The four workouts that regressed under the
+ * global `DELIVERED_BREATH_SHORTFALL_MS` bump (`establish-the-jab-20
+ * call/1-2-1b-2`, `quick-uppercut-lane call/1-2-5-2` &
+ * `call/6-3-6-3`, `switch-by-round call/1-1-2-.`, `quick-heavy-two`'s
+ * clip truncation) all use different slot keys and are untouched.
  */
 export const CALL_BREATH_OVERRIDES: Record<string, number> = {
-  'call/1-.-2-.': 290,
+  'call/1-.-.-.': 340,
+  'call/1-.-2-.': 340,
 }
 
 /** The minimum a bar must expose for placement: its tokens and their offsets. */
