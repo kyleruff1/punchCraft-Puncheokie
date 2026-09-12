@@ -179,15 +179,19 @@ const CALL_WINDOW_OVERRIDES = {
  * the shipped wavs is Layer 2 and lives outside this file — see #386.
  */
 const CALL_CLIP_OVERRIDES = {
-  // Empty by design as of 2026-09-11 (Kyle). Every text-tweak strategy
-  // tried — v1 strong stops ("!"), v2 soft stops (". "), v3 soft stops
-  // + higher cfg, and the "and" coordination pattern — either failed at
-  // the ear or produced too-long output, or in the "and" case had
-  // Chatterbox pronounce the coordinator as an audible token. The
-  // plumbing works and the reference now carries 4-token cadence seeds
-  // (2026-09-11 selfref rebuild); the remaining lever is a persona-level
-  // tempo bump on the 'push' performance. Do NOT re-populate this table
-  // without full pump-and-coast ear evidence.
+  // Pattern-naming workaround for the five 4-of-same slots Chatterbox
+  // reliably elides on repeat text (Kyle 2026-09-11). The click grid
+  // gives the athlete four beats; the coach names the pattern once
+  // rather than counting to four. Precedent: techniques `1b-1b-1b-1b`
+  // already ships as "Body jabs!" (plural noun, single word); this
+  // extends the same pattern to the remaining broken slots. The
+  // override text is the canonical text — synthesis, ASR gate, and
+  // manifest all move to it (see the render-jobs map for the plumbing).
+  'numbers|call/1-1-1-1': { text: 'Four ones!' },
+  'numbers|call/2-2-2-2': { text: 'Four twos!' },
+  'numbers|call/5-5-5-5': { text: 'Four fives!' },
+  'numbers|call/1b-1b-1b-1b': { text: 'Four body ones!' },
+  'techniques|call/1-1-1-1': { text: 'Four jabs!' },
 }
 
 const CALL_MAX_STRETCH = {
@@ -286,6 +290,22 @@ const allJobs = [
   ...assemble('rest', corpus.techniques?.rests ?? [], 'rt', restPlan, 'techniques'),
   ...assemble('call', callRows((c) => c.techniqueText).filter((r) => r.text), 'ct', callPlan, 'techniques'),
 ].map((job) => ({ ...job, wav: join(process.cwd(), OUT_ROOT, `${job.id}.wav`) }))
+
+// Apply CALL_CLIP_OVERRIDES.text to the canonical text fields BEFORE any
+// downstream consumer (validator, manifest, render) reads them. Without
+// this the manifest and phrase_token_audit.py score against the corpus
+// text while the shipped wav says the override text — the mismatch that
+// prompted the 2026-09-11 plumbing hardening.
+for (const j of allJobs) {
+  if (j.kind !== 'call') continue
+  const raw = j.slots
+    .map((s) => CALL_CLIP_OVERRIDES[`${j.vocabulary ?? 'numbers'}|${s}`])
+    .find(Boolean)
+  if (raw?.text !== undefined) {
+    j.text = raw.text
+    j.plan = { ...j.plan, renderedText: raw.text }
+  }
+}
 
 if (process.argv.includes('--list')) {
   for (const j of allJobs) console.log(`${j.id}\t${j.slots.length} slot(s)\t${JSON.stringify(j.text)}`)
@@ -407,6 +427,23 @@ if (!manifestOnly) {
                 .find(Boolean) ?? {}
             : {}
         const { text: overrideText, ...paramOverrides } = raw
+        // When the override provides a text, it becomes the canonical
+        // text for that clip — synthesis, ASR gate, and manifest all
+        // move to it. The workflow ships pattern-naming workarounds
+        // (e.g. numbers `1-1-1-1` → "Four ones!") where Chatterbox
+        // reliably elides a token on the 4-of-same repeat; the click
+        // grid still gives the athlete 4 beats to throw against.
+        // Manifest text is patched into `j.plan.renderedText` up here
+        // so the report/manifest section picks it up too.
+        if (overrideText !== undefined) {
+          // Patch both the plan (used by the ASR gate and validator) and
+          // the top-level text field (used by the shipped manifest and
+          // downstream token audits). Without the top-level patch the
+          // manifest keeps the corpus text and phrase_token_audit.py
+          // scores the wav against tokens it never speaks.
+          j.plan = { ...j.plan, renderedText: overrideText }
+          j.text = overrideText
+        }
         return {
           path: j.wav,
           text: speechText(overrideText ?? j.plan.renderedText),
@@ -414,10 +451,6 @@ if (!manifestOnly) {
           ...paramOverrides,
           minDurationMs: j.minDurationMs,
           maxDurationMs: j.maxDurationMs,
-          // ASR gate still scores against the original corpus text — only
-          // the synthesis input is overridden. A dropped token still fails
-          // (or, in the elision-hallucination case #386 documents, at least
-          // one of the deeper `--attempts` will produce a passing take).
           expectText: j.plan.renderedText,
           asrMinScore: 0.8,
           ...(j.asrExact ? { asrExact: true } : {}),
