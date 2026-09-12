@@ -57,9 +57,17 @@ const INTRO_TEXTURE = PERSONA.introTexture ?? PERSONA.texture
 const INTRO_DRIFT_SEMITONES = 0.12
 const INTRO_DRIFT_HZ = 4.2
 // power-strikes is a calm mid-round instruction ("slow down a bit"), not a
-// shout — it keeps the eased call texture + a landing finish; everything
-// else (walkout + round-start warnings) gets the punch + rising shout.
-const isCalmSegment = (id) => id === 'power-strikes'
+// shout. The walkout tail (`intro-letsgo`) and every round-start warning
+// (`warn-round-2..12`) join it as CALM segments per Kyle 2026-09-11: the
+// rising-pitch `finish:'shout'` on those clips baked a terminal "HEY"
+// accent on the final vowel of "started!" / "one!" that plays right before
+// the round bell — Kyle wants the bell to land clean. These clips keep
+// the punchy `broadcast-bright-punch` intro texture (so the walkout still
+// carries the growl); only the terminal pitch contour changes.
+const isCalmSegment = (id) =>
+  id === 'power-strikes' ||
+  id === 'intro-letsgo' ||
+  /^warn-round-\d+$/.test(id)
 
 const OUT_DIR = join('assets', 'voice', 'numbers', 'standalone')
 
