@@ -144,6 +144,33 @@ licensing of this reference is exactly the licensing of
 clone the production sound (texture chain included) instead of the raw
 extract, so they match what the athlete already hears.
 
+## cornerman3-selfref-30s.wav (rebuilt 2026-09-11 — added quad-cadence seeds)
+
+### 2026-09-11 rebuild
+
+Same construction recipe as the 2026-09-02 version below (raw v4 concat, no
+texture), with the six original walkout lines PLUS two new four-token
+sequential seeds designed to bias the clone toward the 4-token cadence
+the shipped click-script batch renders (GH #386):
+
+```
+sr-quad-numbers      "One, two, three, four!"
+sr-quad-techniques   "Jab, cross, hook, rear hook!"
+```
+
+Two three-consecutive-repeat seed variants were tried and dropped: Chatterbox
+rendered elided takes on those (3/4 twos, 3/4 jabs) at v4-raw, and including
+elided seeds would bias the clone toward the exact failure mode the click-script
+re-render is trying to fix. The sequential quads teach the four-token cadence
+without embedding the elision pattern.
+
+Total reference: 8 lines, ~41 s at 24 kHz mono. Still well within Chatterbox's
+usable reference range.
+
+**The 2026-09-02 recipe below is preserved verbatim as the origin narrative.**
+
+---
+
 ## cornerman3-selfref-30s.wav (2026-09-02)
 
 Clean self-clone reference for the `cornerman3` persona — the echo fix.

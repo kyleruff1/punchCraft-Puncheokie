@@ -116,6 +116,15 @@ const SELFREF_LINES = [
   { id: 'sr-prog-int', text: "Today's program: intermediate combinations, body work and counters, at a steady pace." },
   { id: 'sr-prog-adv', text: "Today's program: advanced chains, multi phase patterns and pressure, at a steady pace." },
   { id: 'sr-letsgo', text: "Let's get started!" },
+  // Four-token cadence seeds (Kyle 2026-09-11, GH #386): bias the clone
+  // toward the quad-call rhythm the shipped click-script batch renders.
+  // ONLY the non-repeating four-token variants — Chatterbox is
+  // stochastic on 3+-consecutive-repeat text at v4-raw render, so
+  // including a repeat seed risks baking an elision pattern into the
+  // reference. Sequential-token quads teach the four-token cadence
+  // without embedding the failure mode. Still raw v4, still no texture.
+  { id: 'sr-quad-numbers', text: "One, two, three, four!" },
+  { id: 'sr-quad-techniques', text: "Jab, cross, hook, rear hook!" },
 ]
 
 mkdirSync(join(OUT_ROOT, 'selfref-src'), { recursive: true })
@@ -145,6 +154,14 @@ if (!existsSync(SELFREF_CLEAN) && !process.argv.includes('--skip-selfref')) {
     { stdio: 'ignore' },
   )
   console.log(`  wrote ${SELFREF_CLEAN}`)
+}
+
+// `--only-selfref` exits after Stage 1 (the shipping-reference build),
+// skipping the bakeoff matrix. Added for the 2026-09-11 shipping-ref
+// rebuild — the matrix has already picked its winner.
+if (process.argv.includes('--only-selfref')) {
+  console.log('Stage 1 complete — exiting per --only-selfref.')
+  process.exit(0)
 }
 
 // ---------------------------------------------------------------------------

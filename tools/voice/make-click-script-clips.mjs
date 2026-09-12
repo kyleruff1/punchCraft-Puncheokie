@@ -34,7 +34,7 @@ import { dirname, join } from 'node:path'
 
 import { compileAdlib } from './prosody.mjs'
 import { textureChain } from './texture.mjs'
-import { SHIPPED_SAMPLE_RATE } from './persona.mjs'
+import { CHATTERBOX_TEMPO_CALIBRATION, SHIPPED_SAMPLE_RATE } from './persona.mjs'
 import { ACTIVE_PERSONA, getPersona, rendererId } from './personas.mjs'
 import { measureDuration, renameWithRetry, trimEnds } from './wav.mjs'
 
@@ -179,14 +179,15 @@ const CALL_WINDOW_OVERRIDES = {
  * the shipped wavs is Layer 2 and lives outside this file — see #386.
  */
 const CALL_CLIP_OVERRIDES = {
-  // Empty by design as of 2026-09-11 (Kyle, Path A revert). The plumbing
-  // works and multiple text-tweak iterations (v1 strong stops, v2 soft
-  // + cfg 0.6, v3 soft + cfg 0.75, Path A shipping subset with 1.7×
-  // rubberband) all produced audio worse than the shipped-broken state
-  // at the ear — either wrong syllable count, or content-correct but
-  // audibly smeared. #386 tracks the next attempt (persona-level tempo
-  // bump on 'push' rather than continuing to tune text at this level).
-  // Do NOT re-populate without a full pump-and-coast ear check first.
+  // Empty by design as of 2026-09-11 (Kyle). Every text-tweak strategy
+  // tried — v1 strong stops ("!"), v2 soft stops (". "), v3 soft stops
+  // + higher cfg, and the "and" coordination pattern — either failed at
+  // the ear or produced too-long output, or in the "and" case had
+  // Chatterbox pronounce the coordinator as an audible token. The
+  // plumbing works and the reference now carries 4-token cadence seeds
+  // (2026-09-11 selfref rebuild); the remaining lever is a persona-level
+  // tempo bump on the 'push' performance. Do NOT re-populate this table
+  // without full pump-and-coast ear evidence.
 }
 
 const CALL_MAX_STRETCH = {
@@ -444,15 +445,38 @@ if (!manifestOnly) {
       { stdio: 'ignore' },
     )
     if (existsSync(temp)) renameWithRetry(temp, job.wav)
+    // Persona-level tempo bump (Kyle 2026-09-11, GH #386): apply the
+    // persona's `tempoCalibration` UNCONDITIONALLY to every call clip
+    // as a formant-preserved rubberband pass, matching how
+    // make-phrase-clips.mjs and make-voice-clips.mjs already treat this
+    // constant. Click-scripts were the outlier — they rendered at 1.0×
+    // while every other clip family shipped at cornerman3's 1.35×. That
+    // explains why the 3+-consecutive-repeat family blew stride windows:
+    // the raw Chatterbox pace was 35% slower than the persona baseline
+    // it was tuned against. This pass brings click-scripts onto the same
+    // pace footing. Runs BEFORE the fit-safety compression (which stays
+    // conditional on the post-tempo measurement).
+    if (job.kind === 'call' && CHATTERBOX_TEMPO_CALIBRATION !== 1) {
+      const rate = CHATTERBOX_TEMPO_CALIBRATION
+      const tempoTemp = `${job.wav}.t.wav`
+      execFileSync(
+        FFMPEG,
+        ['-hide_banner', '-loglevel', 'error', '-y', '-i', job.wav,
+          '-af', `rubberband=tempo=${rate.toFixed(4)}:formant=preserved:pitchq=quality`,
+          '-ar', OUT_SAMPLE_RATE, '-ac', '1', tempoTemp],
+        { stdio: 'ignore' },
+      )
+      if (existsSync(tempoTemp)) renameWithRetry(tempoTemp, job.wav)
+    }
     // Fit safety for calls: a take the renderer could not land inside the
-    // stride window gets the make-phrase-clips rubberband pass (formant-
-    // preserved). Capped at 1.3× — beyond that the delivery smears (the
-    // documented b-syllable crush), so we flag rather than push harder.
-    // Per-slot exceptions raise the cap for a specific call Kyle has
-    // ear-approved at a harder stretch: 1b-2-1-2 (lone body jab among head
-    // shots — no legal copy factoring) needs ~1.5× to clear its 2.0s
-    // stride, and Kyle signed off on the extra compression for that one
-    // bar (2026-09-03).
+    // stride window (post-tempo) gets the make-phrase-clips rubberband
+    // pass (formant-preserved). Capped at 1.3× — beyond that the delivery
+    // smears (the documented b-syllable crush), so we flag rather than
+    // push harder. Per-slot exceptions raise the cap for a specific call
+    // Kyle has ear-approved at a harder stretch: 1b-2-1-2 (lone body jab
+    // among head shots — no legal copy factoring) needs ~1.5× to clear
+    // its 2.0s stride, and Kyle signed off on the extra compression for
+    // that one bar (2026-09-03).
     if (job.kind === 'call') {
       const stretchCap = Math.max(1.3, ...job.slots.map((s) => CALL_MAX_STRETCH[s] ?? 1.3))
       const measured = measureDuration(job.wav)
