@@ -164,44 +164,39 @@ const CALL_WINDOW_OVERRIDES = {
  * `asrExact: true` gate passes on the false transcript. These overrides
  * fight the elision by:
  *
- *  - **Soft stops between repeats** — `"Two. two. two. two."` (period +
- *    lowercase) instead of `"Two, two, two, two!"` forces a small prosody
- *    reset between words without the length blow-up harder punctuation
- *    ("Two! Two! Two! Two!") caused. `expectText` stays at the original
+ *  - **Stronger stops between repeats** — `"One! One! One! One!"` instead
+ *    of `"One, one, one, one!"` forces Chatterbox to reset prosody between
+ *    words, which reduces token merging. `expectText` stays at the original
  *    corpus text; only the synthesis input changes, so the ASR gate still
  *    checks the intended token count.
- *  - **Higher `cfgWeight` (0.75)** trades theatrical looseness for text
+ *  - **Higher `cfgWeight` (0.7)** trades theatrical looseness for text
  *    fidelity — Chatterbox stays closer to the literal script.
  *  - **Lower `exaggeration` (0.75)** reduces pitch variance, giving each
  *    repeated token a cleaner acoustic separation.
  *
- * Even at `--attempts=30` and the softest text tweak, Chatterbox is
- * stochastic: only two of seven candidate slots (numbers `2-2-2-2` and
- * `1-2-3-4`) both converged on content AND fit under the stride window
- * after 1.7× rubberband compression. The other five slots (numbers
- * `1-1-1-1`, `5-5-5-5`, both `1-1-1-2-3-2-3-2` variants, techniques
- * `1-1-1-1`) stay at their shipped-broken state; #386 tracks a
- * persona-level tempo bump as the next attempt.
+ * Re-render with `--attempts=30` (up from the default 8) to deepen the
+ * best-of-N budget on this batch. The `phrase_token_audit.py` sweep on
+ * the shipped wavs is Layer 2 and lives outside this file — see #386.
  */
 const CALL_CLIP_OVERRIDES = {
-  // Iteration 2 (Kyle 2026-09-11): softer stops. Period + lowercase signals
-  // a SHORTER pause than "!" and less emphatic prosody than a capitalized
-  // start, keeping the elision-fighting prosody reset without the length
-  // blow-up the strong-stop v1 caused (every v1 clip rendered ~1.4× longer
-  // than the shipped comma version and blew its stride window). cfgWeight
-  // also drops 0.7 → 0.6 so Chatterbox pace loosens toward natural delivery.
-  'numbers|call/2-2-2-2': { text: 'Two. two. two. two.', cfgWeight: 0.75, exaggeration: 0.75 },
-  'numbers|call/1-2-3-4': { text: 'One. two. three. four.', cfgWeight: 0.75, exaggeration: 0.75 },
+  'numbers|call/1-1-1-1': { text: 'One! One! One! One!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/2-2-2-2': { text: 'Two! Two! Two! Two!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/5-5-5-5': { text: 'Five! Five! Five! Five!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/1-2-3-4': { text: 'One! Two! Three! Four!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'numbers|call/1-1-1-2-3-2-3-2': {
+    text: 'One! One! One! Two, three, two, three, two!',
+    cfgWeight: 0.7,
+    exaggeration: 0.75,
+  },
+  'techniques|call/1-1-1-1': { text: 'Jab! Jab! Jab! Jab!', cfgWeight: 0.7, exaggeration: 0.75 },
+  'techniques|call/1-1-1-2-3-2-3-2': {
+    text: 'Jab! Jab! Jab! Cross, hook, cross, hook, cross!',
+    cfgWeight: 0.7,
+    exaggeration: 0.75,
+  },
 }
 
 const CALL_MAX_STRETCH = {
-  // Path A shipping subset (Kyle 2026-09-11). 1.7× rubberband compression
-  // brings the soft-stop overrides for these slots inside stride window.
-  // Only the two entries below correspond to shipping wavs; other slots
-  // that were candidates during Path A iteration (call/5-5-5-5,
-  // techniques call/1-1-1-1) did not land content-clean and are omitted.
-  'call/2-2-2-2': 1.7,
-  'call/1-2-3-4': 1.7,
   'call/1b-2-1-2': 1.6,
   // (Kept for history; the window override above supersedes it for the
   // four-count. Note this table is Math.max'd against 1.3 — it can only
