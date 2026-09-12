@@ -179,21 +179,14 @@ const CALL_WINDOW_OVERRIDES = {
  * the shipped wavs is Layer 2 and lives outside this file — see #386.
  */
 const CALL_CLIP_OVERRIDES = {
-  'numbers|call/1-1-1-1': { text: 'One! One! One! One!', cfgWeight: 0.7, exaggeration: 0.75 },
-  'numbers|call/2-2-2-2': { text: 'Two! Two! Two! Two!', cfgWeight: 0.7, exaggeration: 0.75 },
-  'numbers|call/5-5-5-5': { text: 'Five! Five! Five! Five!', cfgWeight: 0.7, exaggeration: 0.75 },
-  'numbers|call/1-2-3-4': { text: 'One! Two! Three! Four!', cfgWeight: 0.7, exaggeration: 0.75 },
-  'numbers|call/1-1-1-2-3-2-3-2': {
-    text: 'One! One! One! Two, three, two, three, two!',
-    cfgWeight: 0.7,
-    exaggeration: 0.75,
-  },
-  'techniques|call/1-1-1-1': { text: 'Jab! Jab! Jab! Jab!', cfgWeight: 0.7, exaggeration: 0.75 },
-  'techniques|call/1-1-1-2-3-2-3-2': {
-    text: 'Jab! Jab! Jab! Cross, hook, cross, hook, cross!',
-    cfgWeight: 0.7,
-    exaggeration: 0.75,
-  },
+  // Empty by design as of 2026-09-11 (Kyle, Path A revert). The plumbing
+  // works and multiple text-tweak iterations (v1 strong stops, v2 soft
+  // + cfg 0.6, v3 soft + cfg 0.75, Path A shipping subset with 1.7×
+  // rubberband) all produced audio worse than the shipped-broken state
+  // at the ear — either wrong syllable count, or content-correct but
+  // audibly smeared. #386 tracks the next attempt (persona-level tempo
+  // bump on 'push' rather than continuing to tune text at this level).
+  // Do NOT re-populate without a full pump-and-coast ear check first.
 }
 
 const CALL_MAX_STRETCH = {
