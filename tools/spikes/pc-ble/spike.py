@@ -141,25 +141,46 @@ class GloveSession:
         self.log(f"ack(1078): {bytes(payload).hex()}")
 
     async def connect_and_init(self, do_pair: bool) -> None:
-        self.log(f"scanning for {self.cfg['mac']} (tap the glove awake)…")
-        device = await BleakScanner.find_device_by_address(self.cfg["mac"], timeout=25.0)
-        if device is None:
-            raise RuntimeError(
-                f"{self.name}: not found in 25s. Tablet app closed? Glove tapped awake?"
-            )
-        self.log(f"found (rssi n/a at connect), connecting…")
-        client = BleakClient(device, disconnected_callback=self.on_disconnect, timeout=30.0)
-        await client.connect()
+        client: BleakClient | None = None
+        last_err: Exception | None = None
+        for attempt in range(1, 4):
+            self.log(f"attempt {attempt}/3: scanning for {self.cfg['mac']} (keep tapping the glove)…")
+            device = await BleakScanner.find_device_by_address(self.cfg["mac"], timeout=45.0)
+            if device is not None:
+                self.log("found by scan, connecting (pair-before-discovery)…")
+                candidate = BleakClient(
+                    device,
+                    disconnected_callback=self.on_disconnect,
+                    timeout=40.0,
+                    pair=do_pair,  # bleak 3.x: bonds BEFORE service discovery, so the
+                    # glove's ~4 s SMP Security Request is answered, not left to
+                    # stall discovery and kill the link at ~37 s.
+                )
+            else:
+                # Directed-advertiser / weak-signal fallback: hand WinRT the
+                # bare address (random-static — top bits 0b11 on both gloves).
+                # Works once the OS has the device cached or bonded.
+                self.log("not seen in scan — trying DIRECT connect by address (random-static)…")
+                candidate = BleakClient(
+                    self.cfg["mac"],
+                    disconnected_callback=self.on_disconnect,
+                    timeout=40.0,
+                    pair=do_pair,
+                    winrt={"address_type": "random", "use_cached_services": False},
+                )
+            try:
+                await candidate.connect()
+                client = candidate
+                break
+            except Exception as err:
+                last_err = err
+                self.log(f"attempt {attempt} failed: {err!r}")
+                await asyncio.sleep(2.0)
+        if client is None:
+            raise RuntimeError(f"{self.name}: all connect attempts failed; last: {last_err!r}")
         self.client = client
         self.connected_at = time.monotonic()
-        self.log("connected")
-
-        if do_pair:
-            try:
-                paired = await client.pair()
-                self.log(f"pair() -> {paired} (a Windows consent toast may need a click)")
-            except Exception as err:  # already-paired lands here on some stacks
-                self.log(f"pair() raised: {err!r} — continuing (may already be bonded)")
+        self.log(f"connected (paired={do_pair})")
 
         # ---- init choreography, exact order of buildInitializationPlan ----
         await client.write_gatt_char(CHAR_CLOCK_SYNC, clock_sync_bytes(time.time() * 1000), response=True)
