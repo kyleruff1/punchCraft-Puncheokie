@@ -4,19 +4,27 @@
  * expected shape, but extra sockets are accepted and get their own session
  * (each with its own latch), so a stale connection cannot wedge a new one.
  *
- * Run: npm run bridge -- [--port 8787] [--midi "loopMIDI"] [--watchdog 4000]
- * Port choice prefers, in order: an explicit --midi substring, then common
- * loopback names, then Studio One, then the Windows GS synth (always
+ * Run: npm run bridge -- [--port 8787] [--midi "loopMIDI"] [--midi-in "PunchCraft Ctl"]
+ *                        [--watchdog 4000] [--profile studio-one-stock]
+ * Output port choice prefers, in order: an explicit --midi substring, then
+ * common loopback names, then Studio One, then the Windows GS synth (always
  * audible), then the first port.
+ * Input (DAW → bridge) is opt-in: --midi-in names a port substring and there
+ * is no fallback. It must be a DIFFERENT loopMIDI port from the output one —
+ * loopMIDI ports are loopbacks, and the bridge refuses to listen to its own
+ * output. See README.md.
  */
 import { WebSocketServer, type WebSocket } from 'ws'
 
 import { openBestBackend } from './midiBackend'
+import { LoopbackRefusedError, openInputBackend } from './midiInput'
+import { MidiInMonitor } from './midiInMonitor'
 import { BridgeSession } from './server'
 
 interface Args {
   port: number
   midiPreferred: string[]
+  midiInPreferred: string[]
   watchdogMs: number
   profile: string | null
 }
@@ -25,6 +33,7 @@ function parseArgs(argv: readonly string[]): Args {
   const args: Args = {
     port: 8787,
     midiPreferred: [],
+    midiInPreferred: [],
     watchdogMs: 4000,
     profile: null,
   }
@@ -36,6 +45,9 @@ function parseArgs(argv: readonly string[]): Args {
       i += 1
     } else if (flag === '--midi' && value) {
       args.midiPreferred = [value]
+      i += 1
+    } else if (flag === '--midi-in' && value) {
+      args.midiInPreferred = [value]
       i += 1
     } else if (flag === '--watchdog' && value) {
       args.watchdogMs = Number.parseInt(value, 10)
@@ -75,6 +87,26 @@ function main(): void {
   console.log(`punchbridge: instrument profile "${profile}"`)
 
   const clock = { now: () => performance.now() }
+
+  // DAW → bridge (opt-in). Listening only for now: the monitor logs what
+  // arrives and exposes `subscribe` as the seam a consumer attaches to
+  // later (host-clock authority, #351). Nothing in the session or the
+  // harmonic engine reads it yet. The one hard failure is asking to
+  // listen to our own output port — a loopMIDI loopback — which is a
+  // port-layout mistake to fix, not something to run half-wired.
+  let midiInMonitor: MidiInMonitor
+  try {
+    const midiIn = openInputBackend(args.midiInPreferred, { excludePortName: midi.portName })
+    midiInMonitor = new MidiInMonitor(midiIn, clock)
+  } catch (err) {
+    if (err instanceof LoopbackRefusedError) {
+      console.log(`punchbridge: ${err.message}`)
+      midi.close()
+      process.exit(2)
+    }
+    throw err
+  }
+
   const wss = new WebSocketServer({ port: args.port })
   console.log(`punchbridge: listening on ws://0.0.0.0:${args.port}`)
 
@@ -113,6 +145,7 @@ function main(): void {
 
   const shutdown = (): void => {
     console.log('punchbridge: shutting down — all notes off')
+    midiInMonitor.close()
     midi.close()
     wss.close()
     process.exit(0)
